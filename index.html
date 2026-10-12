@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V1.33 PWA Prototype</title>
+<title>HeliLog V1.34 PWA Prototype</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -111,7 +111,9 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:11px 9px;
 @media(max-width:1050px){.filterbar,.filterbar.second{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:650px){.filterbar,.filterbar.second{grid-template-columns:1fr}.filtermeta{align-items:flex-start;flex-direction:column}}.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.mini{font-size:13px;color:var(--muted)}
 @media(max-width:850px){
-  html,body{overscroll-behavior-y:none}
+  html,body{overscroll-behavior-y:none;overflow-x:clip}
+  .layout{width:100%;max-width:100%;min-width:0}
+  main,.card,.grid>*{min-width:0}
   .desktop-only{display:none!important}
   .mobile-logbook th:nth-child(3),.mobile-logbook td:nth-child(3),
   .mobile-logbook th:nth-child(7),.mobile-logbook td:nth-child(7),
@@ -124,7 +126,8 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:11px 9px;
   main{
     margin:0;
     width:100%;
-    max-width:none;
+    max-width:100%;
+    min-width:0;
     padding:calc(14px + env(safe-area-inset-top)) 12px calc(88px + env(safe-area-inset-bottom));
   }
   .stats,.kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -231,7 +234,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:11px 9px;
 @media(max-width:850px){.dashboard-actions{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style></head>
 <body><div class="layout">
-<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V1.33</span></div><nav>
+<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V1.34</span></div><nav>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="aircraft">🚁 Aircraft</button><button data-v="pilots">👤 Pilots</button><button data-v="endorsements">✎ Endorsements</button><button data-v="totals">◉ Totals</button><button data-v="profile">○ Profile</button>
 </nav></aside><main id="app"></main>
 <div class="mobile">
@@ -618,11 +621,8 @@ function setupInstalledMobileZoomGuard(){
   if(!touchDevice || !isStandaloneApp()) return;
   document.documentElement.classList.add('helilog-no-zoom');
 
-  const viewport=document.querySelector('meta[name="viewport"]');
-  if(viewport){
-    viewport.setAttribute('content','width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover');
-  }
-
+  // Keep the original viewport meta tag unchanged: changing it after initial layout
+  // can leave iOS standalone WebKit zoomed/cropped with no way to zoom back out.
   // WebKit's gesture events still need explicit cancellation on some iOS versions.
   const stopPinch=e=>{if(e.cancelable)e.preventDefault()};
   document.addEventListener('gesturestart',stopPinch,{passive:false});
@@ -2744,7 +2744,7 @@ function profile(){
     <div class="install-help" style="margin-top:10px">On iPhone/iPad, open the hosted HeliLog site in Safari, use <b>Share → Add to Home Screen</b>. Full offline PWA support requires HeliLog to be served over HTTPS. Opening this prototype directly as a file still works for testing, but it cannot register the offline service worker.</div>
   </div>
 
-  <div class="note" style="margin-top:16px">Profile, licence, rating and medical information in V1.33 is for record keeping and PDF identification only. Automatic EASA validity, recency and expiry calculations are planned for a later version.</div>`;
+  <div class="note" style="margin-top:16px">Profile, licence, rating and medical information in V1.34 is for record keeping and PDF identification only. Automatic EASA validity, recency and expiry calculations are planned for a later version.</div>`;
   updatePWAStatus();
 }
 
@@ -2764,7 +2764,7 @@ function makeFullBackup(){
     app:'HeliLog',
     format:'helilog-full-backup',
     backupSchema:1,
-    appVersion:'1.33',
+    appVersion:'1.34',
     exportedAt:new Date().toISOString(),
     data:JSON.parse(JSON.stringify(S))
   };
