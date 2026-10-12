@@ -1,0 +1,2623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="HeliLog">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<title>HeliLog V1.24 PWA Prototype</title>
+<style>
+:root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
+button,input,select,textarea{font:inherit}button{cursor:pointer}.layout{display:flex;min-height:100vh}
+aside{width:230px;background:var(--dark);color:white;padding:22px 14px;position:fixed;inset:0 auto 0 0}.brand{font-size:23px;font-weight:800;padding:7px 10px 24px}
+nav button{width:100%;border:0;background:transparent;color:#cbd5e1;text-align:left;padding:11px;border-radius:9px;margin:2px 0}
+nav button:hover,nav button.on{background:#273244;color:#fff}main{margin-left:230px;padding:28px;width:calc(100% - 230px);max-width:1450px}
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}.top h1{margin:0;font-size:27px}.sub{color:var(--muted);margin-top:4px}
+.btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:10px 14px}.primary{background:var(--dark);color:#fff;border-color:var(--dark)}
+.grid{display:grid;gap:14px}.stats{grid-template-columns:repeat(4,1fr)}.two{grid-template-columns:1.5fr 1fr}.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+.label{font-size:12px;color:var(--muted)}.big{font-size:27px;font-weight:800;margin-top:7px}.head{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px}.head h2{font-size:17px;margin:0}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:11px 9px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}th{font-size:12px;color:var(--muted)}tr.click{cursor:pointer}
+.tag{font-size:12px;background:var(--soft);border-radius:999px;padding:4px 8px;font-weight:700}.form{display:grid;gap:15px}.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.field label{font-size:13px;font-weight:700;display:block;margin-bottom:6px}.field input,.field select,.field textarea{width:100%;border:1px solid #d5dae0;border-radius:9px;padding:10px;background:#fff}.field textarea{min-height:90px}
+.inline{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.timewrap{position:relative}.timewrap input[type=text]{padding-right:44px}
+.timebtn{position:absolute;right:5px;top:5px;width:34px;height:34px;border:0;background:transparent;border-radius:7px;font-size:18px}
+.timebtn:hover{background:#eef2f7}
+.time-input-invalid{border-color:#d92d20!important;box-shadow:0 0 0 2px rgba(217,45,32,.08)}
+.field-error{display:none;color:#b42318;font-size:12px;margin-top:5px}
+.field-error.show{display:block}
+.timepicker{display:none;position:absolute;right:0;top:45px;z-index:50;background:#fff;border:1px solid #d5dae0;border-radius:10px;box-shadow:0 10px 25px rgba(0,0,0,.15);padding:10px;min-width:190px}
+.timepicker.open{display:block}
+.timepicker-row{display:flex;align-items:center;gap:7px}
+.timepicker select{width:70px;border:1px solid #d5dae0;border-radius:8px;padding:8px;background:#fff}
+.timepicker .colon{font-weight:800}
+.timepicker-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:9px}
+.timepicker-actions button{border:1px solid #d5dae0;background:#fff;border-radius:7px;padding:6px 9px}
+.timepicker-actions .settime{background:#111827;color:#fff;border-color:#111827}
+.errorbox{display:none;background:#fff4f2;border:1px solid #f3b4aa;color:#8a1c12;border-radius:9px;padding:11px;font-size:13px}
+.errorbox.show{display:block}
+.editnotice{background:#f8fafc;border:1px solid var(--line);border-radius:9px;padding:10px 12px;font-size:13px;color:#4b5563}
+.dangerbtn{background:#fff;color:#b42318;border:1px solid #f1b4ad}
+.dangerbtn:hover{background:#fff5f3}
+.modalbackdrop{display:none;position:fixed;inset:0;background:rgba(17,24,39,.45);z-index:100;align-items:center;justify-content:center;padding:18px}
+.modalbackdrop.open{display:flex}
+.modal{background:#fff;border-radius:14px;border:1px solid var(--line);box-shadow:0 20px 50px rgba(0,0,0,.22);max-width:440px;width:100%;padding:20px}
+.modal h3{margin:0 0 8px;font-size:20px}.modal p{color:#6b7280;margin:0 0 18px}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px}.note{font-size:13px;color:#4b5563;background:#f8fafc;border:1px solid var(--line);border-radius:9px;padding:11px}.actions{display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--line);padding-top:15px}
+.aircraft{grid-template-columns:repeat(3,1fr)}.icao{font-size:24px;font-weight:850}.muted{color:var(--muted)}details{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fafafa}details summary{cursor:pointer;font-weight:700}
+.mobile{display:none}.section-title{font-size:14px;font-weight:800;margin-top:4px}
+.checkbox-row{display:flex;align-items:center;gap:9px;padding:10px 0}
+.checkbox-row input[type=checkbox]{width:18px;height:18px;accent-color:#111827}
+.checkbox-row label{font-size:14px;font-weight:700;cursor:pointer}
+.filterbar{display:grid;grid-template-columns:2fr repeat(3,1fr);gap:10px;align-items:end;margin-bottom:14px}
+.filterbar.second{grid-template-columns:repeat(4,1fr) auto}
+.filterfield label{display:block;font-size:11px;font-weight:750;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.03em}
+.filterfield input,.filterfield select{width:100%;border:1px solid #d5dae0;border-radius:8px;padding:9px 10px;background:#fff}
+.filtermeta{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;border-top:1px solid var(--line);padding-top:12px;margin-top:12px;color:var(--muted);font-size:13px}
+.filtertotals{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:18px}
+.filtertotals span{white-space:nowrap}
+.resultcount{font-weight:700;color:var(--ink)}
+.importsummary{margin-top:12px;padding:11px;border:1px solid var(--line);border-radius:9px;background:#f8fafc;font-size:13px}
+.importerrors{max-height:150px;overflow:auto;margin-top:10px;color:#b42318;font-size:12px}
+.importpreview{max-height:230px;overflow:auto;margin-top:12px;border:1px solid var(--line);border-radius:9px}
+.importpreview table{font-size:12px}
+.fileinput{width:100%;border:1px dashed #b8c0ca;border-radius:10px;padding:16px;background:#fafafa}
+.successbox{background:#ecfdf3;border:1px solid #abefc6;color:#067647;border-radius:9px;padding:10px 12px;font-size:13px;margin-top:10px}
+.choice-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+.choice-option{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:9px;padding:9px 12px;background:#fff;cursor:pointer}
+.choice-option input{margin:0}
+.engine-indicator{border:1px solid var(--line);border-radius:9px;background:#f8fafc;padding:10px 12px;font-weight:700}
+.engine-indicator .tick{margin-right:6px}
+
+.pilot-card{position:relative}
+.badge{display:inline-flex;align-items:center;padding:3px 7px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:11px;font-weight:700}
+.badge.gray{background:#f1f5f9;color:#475569}
+.pic-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}
+.pic-row .field{margin:0}
+.signature-placeholder{border:1px dashed var(--line);border-radius:8px;padding:8px 10px;background:#fafafa;color:var(--muted);font-size:12px}
+
+.profilegrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.profileline{display:grid;grid-template-columns:145px 1fr;gap:12px;padding:8px 0;border-bottom:1px solid var(--line)}
+.profileline:last-child{border-bottom:0}
+.profileline .k{font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.qual-list{display:grid;gap:10px}
+.qual-item{border:1px solid var(--line);border-radius:10px;padding:12px;background:#fff}
+.qual-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.qual-meta{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;color:var(--muted);font-size:12px}
+.qual-actions{display:flex;gap:7px;flex-wrap:wrap}
+.empty-state{padding:18px;border:1px dashed var(--line);border-radius:10px;color:var(--muted);text-align:center}
+.endorsement-list{display:grid;gap:12px}
+.endorsement-card{border:1px solid var(--line);border-radius:12px;padding:14px;background:#fff}
+.endorsement-body{white-space:pre-wrap;line-height:1.45;margin-top:10px}
+.endorsement-meta{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px}
+.signature-preview{margin-top:12px;border-top:1px solid var(--line);padding-top:10px;display:flex;gap:12px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}
+.signature-preview img{max-width:220px;max-height:70px;display:block}
+.signature-status{font-size:12px;color:var(--muted)}
+.signature-canvas-wrap{border:1px solid var(--line);border-radius:10px;background:#fff;padding:10px}
+#signatureCanvas{width:100%;height:190px;display:block;border:1px dashed #aab2bd;border-radius:8px;touch-action:none;background:#fff}
+.signer-card{border:1px solid var(--line);border-radius:10px;background:#f8fafc;padding:12px;margin-bottom:12px}
+@media(max-width:760px){.profilegrid{grid-template-columns:1fr}.profileline{grid-template-columns:1fr;gap:2px}}
+
+@media(max-width:1050px){.filterbar,.filterbar.second{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:650px){.filterbar,.filterbar.second{grid-template-columns:1fr}.filtermeta{align-items:flex-start;flex-direction:column}}.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.mini{font-size:13px;color:var(--muted)}
+@media(max-width:850px){
+  html,body{overscroll-behavior-y:none}
+  aside{display:none}
+  main{
+    margin:0;
+    width:100%;
+    max-width:none;
+    padding:calc(14px + env(safe-area-inset-top)) 12px calc(88px + env(safe-area-inset-bottom));
+  }
+  .stats,.kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .two,.formgrid{grid-template-columns:1fr}
+  .aircraft{grid-template-columns:1fr}
+  .card{padding:15px;border-radius:12px}
+  .top{align-items:flex-start;gap:12px;flex-direction:column;margin-bottom:16px}
+  .top>div:last-child:not(:first-child){width:100%}
+  .top>div:last-child:not(:first-child) .btn,.top>button{min-height:44px}
+  .top h1{font-size:23px}
+  .sub{font-size:13px}
+  button,.btn{min-height:44px}
+  input,select,textarea{font-size:16px}
+  textarea{min-height:110px}
+  .field input,.field select,.field textarea{min-height:46px}
+  .choice-option{min-height:46px;flex:1 1 145px}
+  .filterbar,.filterbar.second{grid-template-columns:1fr}
+  .filtermeta{align-items:flex-start;flex-direction:column}
+  .filtertotals{justify-content:flex-start;gap:8px 16px}
+  .timepicker{max-width:calc(100vw - 32px)}
+  .modal{max-height:calc(100vh - 30px);overflow:auto;margin:15px}
+  .form .actions{
+    position:sticky;
+    bottom:calc(67px + env(safe-area-inset-bottom));
+    z-index:8;
+    background:rgba(255,255,255,.96);
+    backdrop-filter:blur(8px);
+    border-top:1px solid var(--line);
+    margin:18px -15px -15px;
+    padding:10px 15px;
+  }
+  .form .actions .btn{flex:1}
+  .mobile{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    position:fixed;
+    z-index:50;
+    bottom:0;
+    left:0;
+    right:0;
+    background:rgba(255,255,255,.97);
+    backdrop-filter:blur(14px);
+    border-top:1px solid var(--line);
+    padding:5px 6px calc(5px + env(safe-area-inset-bottom));
+    box-shadow:0 -4px 18px rgba(15,23,42,.06);
+  }
+  .mobile button{
+    border:0;
+    background:transparent;
+    min-height:52px;
+    border-radius:10px;
+    font-size:11px;
+    font-weight:700;
+    color:#64748b;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    gap:2px;
+  }
+  .mobile button.on{background:#eef2f7;color:#111827}
+  .mobile .navicon{font-size:18px;line-height:1}
+  .more-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .more-link{min-height:92px;text-align:left;display:flex;flex-direction:column;justify-content:center;gap:5px}
+  .more-link b{font-size:15px}
+  .mobile-hide{display:none!important}
+}
+@media(max-width:480px){
+  .stats,.kpi-grid{grid-template-columns:1fr 1fr}
+  .big{font-size:23px}
+  .card{padding:13px}
+  main{padding-left:10px;padding-right:10px}
+  .more-grid{grid-template-columns:1fr 1fr}
+}
+@media(min-width:851px) and (max-width:1180px){
+  aside{width:205px}
+  main{margin-left:205px;width:calc(100% - 205px);padding:24px 20px}
+  .stats,.kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .two{grid-template-columns:1fr}
+}
+.pwa-state{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pwa-dot{width:9px;height:9px;border-radius:50%;background:#94a3b8;display:inline-block}
+.pwa-dot.ok{background:#16a34a}
+.pwa-dot.warn{background:#d97706}
+.install-help{font-size:12px;color:var(--muted);line-height:1.45}
+.more-grid{display:grid;gap:12px}
+</style></head>
+<body><div class="layout">
+<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V1.24</span></div><nav>
+<button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="aircraft">🚁 Aircraft</button><button data-v="pilots">👤 Pilots</button><button data-v="endorsements">✎ Endorsements</button><button data-v="totals">◉ Totals</button><button data-v="profile">○ Profile</button>
+</nav></aside><main id="app"></main>
+<div class="mobile">
+  <button data-v="dashboard"><span class="navicon">⌂</span><span>Home</span></button>
+  <button data-v="logbook"><span class="navicon">▤</span><span>Logbook</span></button>
+  <button data-v="add"><span class="navicon">＋</span><span>Flight</span></button>
+  <button data-v="mobilemore"><span class="navicon">•••</span><span>More</span></button>
+</div>
+</div>
+<div id="deleteModal" class="modalbackdrop" onclick="if(event.target===this)closeDeleteModal()">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="deleteTitle">
+    <h3 id="deleteTitle">Delete flight?</h3>
+    <p id="deleteText">This will remove the flight from the V1 prototype logbook.</p>
+    <div class="modal-actions">
+      <button class="btn" type="button" onclick="closeDeleteModal()">Cancel</button>
+      <button class="btn dangerbtn" type="button" onclick="confirmDeleteFlight()">Delete flight</button>
+    </div>
+  </div>
+</div>
+
+<div id="importModal" class="modalbackdrop" onclick="if(event.target===this)closeImportModal()">
+  <div class="modal" style="max-width:760px" role="dialog" aria-modal="true" aria-labelledby="importTitle">
+    <h3 id="importTitle">Import flights from CSV</h3>
+    <p>Select a HeliLog-format CSV. The file is checked before anything is added to your logbook.</p>
+    <input id="csvFileInput" class="fileinput" type="file" accept=".csv,text/csv">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+      <button class="btn" type="button" onclick="downloadImportTemplate()">Download blank CSV template</button>
+    </div>
+    <div id="importStatus"></div>
+    <div id="importPreview"></div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn" type="button" onclick="closeImportModal()">Cancel</button>
+      <button id="confirmImportBtn" class="btn primary" type="button" onclick="confirmCSVImport()" disabled>Import flights</button>
+    </div>
+  </div>
+</div>
+
+<div id="exportModal" class="modalbackdrop" onclick="if(event.target===this)closeExportModal()">
+  <div class="modal" style="max-width:620px" role="dialog" aria-modal="true" aria-labelledby="exportTitle">
+    <h3 id="exportTitle">Export logbook</h3>
+    <p>Export all flights, or only the flights currently visible through your Logbook filters.</p>
+
+    <div class="field" style="margin-bottom:14px">
+      <label>Export scope</label>
+      <select id="exportScope" onchange="refreshExportSummary()">
+        <option value="filtered">Current filtered flights</option>
+        <option value="all">All flights</option>
+      </select>
+    </div>
+
+    <div id="exportSummary" class="importsummary"></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px">
+      <button class="btn" type="button" onclick="exportLogbookCSV()">
+        Export CSV
+      </button>
+      <button class="btn primary" type="button" onclick="exportPrintableLogbook()">
+        Print / Save as PDF
+      </button>
+    </div>
+
+    <div class="note" style="margin-top:14px">
+      CSV is compatible with the HeliLog importer. Print / Save as PDF opens a paper-logbook-style view that can be printed or saved as PDF from your browser.
+    </div>
+
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn" type="button" onclick="closeExportModal()">Close</button>
+    </div>
+  </div>
+</div>
+<script>
+const KEY='helilog_v111';
+const seed={pilot:{name:'Matas',licence:'CPL(H)',authority:'TKA'},aircraft:[
+{id:'a1',reg:'LY-ABC',manufacturer:'Guimbal',model:'Cabri',variant:'G2',icao:'G2CA',engine:'Single engine'},
+{id:'a2',reg:'LY-H125',manufacturer:'Airbus',model:'H125',variant:'',icao:'AS50',engine:'Single engine'},
+{id:'a3',reg:'LY-R44',manufacturer:'Robinson',model:'R44',variant:'Raven II',icao:'R44',engine:'Single engine'},
+{id:'a_ec135_demo',reg:'LY-EC1',manufacturer:'Airbus Helicopters',model:'EC135',variant:'',icao:'EC35',engine:'Multi engine'}
+],people:[
+{id:'p1',name:'Matas'},{id:'p2',name:'Jonas Instructor'},{id:'p3',name:'Marco Rossi'},{id:'p4',name:'Anna Pilot'}
+],flights:[
+{id:'f101',date:'2026-10-01',aid:'a1',dep:'EYVI',arr:'EYVI',off:'10:15',on:'11:35',mins:80,role:'PIC',picName:'Matas',nightMin:0,ifrMin:0,takeoffDay:3,takeoffNight:0,landingDay:3,landingNight:0,crossCountry:false,remarks:'Local handling flight'},
+{id:'f102',date:'2026-09-29',aid:'a1',dep:'EYVI',arr:'EYKA',off:'09:30',on:'10:55',mins:85,role:'PIC',picName:'Matas',nightMin:0,ifrMin:0,takeoffDay:1,takeoffNight:0,landingDay:1,landingNight:0,crossCountry:true,remarks:'Cross-country to Kaunas'},
+{id:'f103',date:'2026-09-27',aid:'a1',dep:'EYVI',arr:'EYVI',off:'13:10',on:'14:05',mins:55,role:'DUAL',picName:'Jonas Instructor',nightMin:0,ifrMin:0,takeoffDay:4,takeoffNight:0,landingDay:4,landingNight:0,crossCountry:false,remarks:'Advanced handling training'},
+{id:'f104',date:'2026-09-24',aid:'a1',dep:'EYVI',arr:'EYPN',off:'15:05',on:'16:25',mins:80,role:'SOLO',picName:'Matas',nightMin:0,ifrMin:0,takeoffDay:1,takeoffNight:0,landingDay:1,landingNight:0,crossCountry:true,remarks:'Solo navigation exercise'},
+{id:'f105',date:'2026-09-20',aid:'a1',dep:'EYVI',arr:'EYVI',off:'19:10',on:'20:25',mins:75,role:'PIC',picName:'Matas',nightMin:35,ifrMin:0,takeoffDay:1,takeoffNight:2,landingDay:1,landingNight:2,crossCountry:false,remarks:'Night circuits'},
+{id:'f106',date:'2026-09-17',aid:'a2',dep:'EYVI',arr:'EYSA',off:'08:20',on:'10:05',mins:105,role:'PICUS',picName:'Marco Rossi',nightMin:0,ifrMin:30,takeoffDay:1,takeoffNight:0,landingDay:1,landingNight:0,crossCountry:true,remarks:'Supervised cross-country with IFR segment'},
+{id:'f107',date:'2026-09-14',aid:'a2',dep:'EYSA',arr:'EYVI',off:'11:00',on:'12:30',mins:90,role:'PICUS',picName:'Marco Rossi',nightMin:0,ifrMin:20,takeoffDay:1,takeoffNight:0,landingDay:1,landingNight:0,crossCountry:true,remarks:'Return sector under supervision'},
+{id:'f108',date:'2026-09-10',aid:'a2',dep:'EYVI',arr:'EYVI',off:'17:40',on:'18:35',mins:55,role:'CO-PILOT',picName:'Anna Pilot',nightMin:0,ifrMin:0,takeoffDay:2,takeoffNight:0,landingDay:2,landingNight:0,crossCountry:false,remarks:'Familiarisation flight'},
+{id:'f109',date:'2026-09-06',aid:'a1',dep:'EYVI',arr:'EYVI',off:'07:15',on:'08:05',mins:50,role:'SPIC',picName:'Jonas Instructor',nightMin:0,ifrMin:0,takeoffDay:3,takeoffNight:0,landingDay:3,landingNight:0,crossCountry:false,remarks:'SPIC local training'},
+{id:'f110',date:'2026-09-02',aid:'a3',dep:'EYVI',arr:'EYKA',off:'12:25',on:'13:50',mins:85,role:'DUAL',picName:'Anna Pilot',nightMin:0,ifrMin:0,takeoffDay:1,takeoffNight:0,landingDay:1,landingNight:0,crossCountry:true,remarks:'R44 conversion navigation'},
+{id:'f111',date:'2026-08-29',aid:'a3',dep:'EYKA',arr:'EYVI',off:'14:10',on:'15:30',mins:80,role:'DUAL',picName:'Anna Pilot',nightMin:0,ifrMin:0,takeoffDay:1,takeoffNight:0,landingDay:1,landingNight:0,crossCountry:true,remarks:'R44 return navigation'},
+{id:'f112',date:'2026-08-25',aid:'a1',dep:'EYVI',arr:'EYVI',off:'20:20',on:'21:25',mins:65,role:'PIC',picName:'Matas',nightMin:65,ifrMin:0,takeoffDay:0,takeoffNight:4,landingDay:0,landingNight:4,crossCountry:false,remarks:'Night proficiency'},
+{id:'f113',date:'2026-08-19',aid:'a2',dep:'EYVI',arr:'EYPA',off:'09:00',on:'10:40',mins:100,role:'CO-PILOT',picName:'Marco Rossi',nightMin:0,ifrMin:45,takeoffDay:1,takeoffNight:0,landingDay:1,landingNight:0,crossCountry:true,remarks:'IFR training sector'},
+{id:'f114',date:'2026-08-15',aid:'a2',dep:'EYPA',arr:'EYVI',off:'12:30',on:'14:05',mins:95,role:'CO-PILOT',picName:'Marco Rossi',nightMin:0,ifrMin:40,takeoffDay:1,takeoffNight:0,landingDay:1,landingNight:0,crossCountry:true,remarks:'IFR return sector'},
+{id:'f115',date:'2026-08-09',aid:'a1',dep:'EYVI',arr:'EYMO',off:'16:00',on:'17:10',mins:70,role:'PIC',picName:'Matas',nightMin:0,ifrMin:0,takeoffDay:1,takeoffNight:0,landingDay:1,landingNight:0,crossCountry:true,remarks:'Cross-country navigation'},
+{id:'f116',date:'2026-08-03',aid:'a1',dep:'EYMO',arr:'EYVI',off:'10:40',on:'11:50',mins:70,role:'PIC',picName:'Matas',nightMin:0,ifrMin:0,takeoffDay:1,takeoffNight:0,landingDay:1,landingNight:0,crossCountry:true,remarks:'Return navigation'},
+{id:'f117',date:'2026-07-28',aid:'a1',dep:'EYVI',arr:'EYVI',off:'06:50',on:'07:45',mins:55,role:'PIC',picName:'Matas',nightMin:0,ifrMin:0,takeoffDay:5,takeoffNight:0,landingDay:5,landingNight:0,crossCountry:false,remarks:'Circuits and confined area practice'},
+{id:'f118',date:'2026-07-22',aid:'a3',dep:'EYVI',arr:'EYVI',off:'18:10',on:'19:00',mins:50,role:'DUAL',picName:'Anna Pilot',nightMin:0,ifrMin:0,takeoffDay:3,takeoffNight:0,landingDay:3,landingNight:0,crossCountry:false,remarks:'R44 handling'}
+]}; 
+let S; try{S=JSON.parse(localStorage.getItem(KEY)||'null')||seed}catch(e){S=seed}
+const $=s=>document.querySelector(s), app=$('#app');
+
+function normalizeEngineConfig(v){
+  let s=String(v||'').trim().toLowerCase();
+  if(s==='me' || s.includes('multi')) return 'Multi engine';
+  return 'Single engine';
+}
+function engineCode(a){
+  return normalizeEngineConfig(a?.engine)==='Multi engine'?'ME':'SE';
+}
+function flightPilotConfig(f){
+  if(f?.pilotConfig==='multi' || f?.pilotConfig==='single') return f.pilotConfig;
+  return Number(f?.multiPilotMin||0)>0?'multi':'single';
+}
+function configurationTimes(f){
+  let mins=Number(f?.mins||0);
+  if(flightPilotConfig(f)==='multi') return {spSE:0,spME:0,multi:mins};
+  let a=ac(f?.aid);
+  return engineCode(a)==='ME'
+    ? {spSE:0,spME:mins,multi:0}
+    : {spSE:mins,spME:0,multi:0};
+}
+function ensureV116Data(){
+  if(!Array.isArray(S.aircraft)) S.aircraft=[];
+  if(!Array.isArray(S.flights)) S.flights=[];
+  if(!Array.isArray(S.people)) S.people=[];
+
+  S.aircraft.forEach(a=>a.engine=normalizeEngineConfig(a.engine));
+  if(!S.aircraft.some(a=>String(a.icao||'').toUpperCase()==='EC35')){
+    S.aircraft.push({id:'a_ec135_demo',reg:'LY-EC1',manufacturer:'Airbus Helicopters',model:'EC135',variant:'',icao:'EC35',engine:'Multi engine'});
+  }
+
+  // Ensure the account holder also has a linked pilot profile.
+  let owner=S.people.find(p=>String(p.name||'').trim().toLowerCase()===String(S.pilot.name||'').trim().toLowerCase());
+  if(!owner){
+    owner={id:'p_owner',name:S.pilot.name,role:'Account holder',licence:S.pilot.licence||'',notes:'',isAccountHolder:true};
+    S.people.unshift(owner);
+  }
+  owner.isAccountHolder=true;
+  owner.role=owner.role||'Account holder';
+  owner.licence=owner.licence||S.pilot.licence||'';
+  owner.notes=owner.notes||'';
+
+  S.people.forEach((p,i)=>{
+    if(!p.id) p.id='p'+Date.now()+i;
+    p.name=String(p.name||'').trim();
+    p.role=p.role||(p.isAccountHolder?'Account holder':'Pilot');
+    p.licence=p.licence||'';
+    p.notes=p.notes||'';
+  });
+
+  S.flights.forEach(f=>{
+    if(!f.pilotConfig) f.pilotConfig=Number(f.multiPilotMin||0)>0?'multi':'single';
+    if(!f.picPersonId && f.picName){
+      let person=S.people.find(p=>p.name.toLowerCase()===String(f.picName).trim().toLowerCase());
+      if(person) f.picPersonId=person.id;
+    }
+  });
+
+  try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+}
+ensureV116Data();
+
+function ensureV121Data(){
+  if(!S.pilot || typeof S.pilot!=='object') S.pilot={};
+  S.pilot.name=S.pilot.name||'';
+  S.pilot.licenceType=S.pilot.licenceType||S.pilot.licence||'';
+  S.pilot.licenceNumber=S.pilot.licenceNumber||'';
+  S.pilot.authority=S.pilot.authority||'';
+  // Keep the older field for compatibility with earlier HeliLog versions.
+  S.pilot.licence=S.pilot.licenceType;
+
+  if(!S.pilot.medical || typeof S.pilot.medical!=='object'){
+    S.pilot.medical={class:'',number:'',issueDate:'',validUntil:'',notes:''};
+  }else{
+    S.pilot.medical.class=S.pilot.medical.class||'';
+    S.pilot.medical.number=S.pilot.medical.number||'';
+    S.pilot.medical.issueDate=S.pilot.medical.issueDate||'';
+    S.pilot.medical.validUntil=S.pilot.medical.validUntil||'';
+    S.pilot.medical.notes=S.pilot.medical.notes||'';
+  }
+
+  if(!Array.isArray(S.qualifications)){
+    S.qualifications=[];
+    if(S.pilot.licenceType){
+      S.qualifications.push({
+        id:'q_primary_licence',
+        category:'Licence',
+        name:S.pilot.licenceType,
+        number:S.pilot.licenceNumber||'',
+        issueDate:'',
+        validUntil:'',
+        notes:'Primary flight crew licence',
+        isPrimary:true
+      });
+    }
+    S.qualifications.push({
+      id:'q_g2_demo',
+      category:'Type rating',
+      name:'Cabri G2',
+      number:'',
+      issueDate:'',
+      validUntil:'',
+      notes:'',
+      isPrimary:false
+    });
+  }
+
+  S.qualifications.forEach((q,i)=>{
+    if(!q.id) q.id='q'+Date.now()+i;
+    q.category=q.category||'Other';
+    q.name=q.name||'';
+    q.number=q.number||'';
+    q.issueDate=q.issueDate||'';
+    q.validUntil=q.validUntil||'';
+    q.notes=q.notes||'';
+    q.isPrimary=!!q.isPrimary;
+  });
+
+  let owner=ownerPerson();
+  if(owner){
+    owner.name=S.pilot.name;
+    owner.licence=pilotLicenceDisplay();
+  }
+
+  if(!Array.isArray(S.endorsements)) S.endorsements=[];
+  S.endorsements.forEach((e,i)=>{
+    if(!e.id) e.id='e'+Date.now()+i;
+    e.date=e.date||'';
+    e.category=e.category||'Other';
+    e.title=e.title||'';
+    e.text=e.text||'';
+    e.location=e.location||'';
+    e.qualificationId=e.qualificationId||'';
+    e.signatoryPersonId=e.signatoryPersonId||'';
+    e.signatureData=e.signatureData||'';
+    e.signedAt=e.signedAt||'';
+    e.signedName=e.signedName||'';
+    e.signedLicence=e.signedLicence||'';
+  });
+
+  try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+}
+function pilotLicenceDisplay(){
+  let t=String(S.pilot?.licenceType||S.pilot?.licence||'').trim();
+  let n=String(S.pilot?.licenceNumber||'').trim();
+  return [t,n].filter(Boolean).join(' · ');
+}
+function displayDate(v){return v?htmlEscape(v):'—'}
+function qualificationById(id){return S.qualifications.find(q=>q.id===id)}
+ensureV121Data();
+
+function ownerPerson(){
+  return S.people.find(p=>p.isAccountHolder) ||
+    S.people.find(p=>String(p.name||'').toLowerCase()===String(S.pilot.name||'').toLowerCase());
+}
+function personById(id){return S.people.find(p=>p.id===id)}
+function personByName(name){
+  let n=String(name||'').trim().toLowerCase();
+  return S.people.find(p=>String(p.name||'').trim().toLowerCase()===n);
+}
+function ensurePersonForName(name){
+  let clean=String(name||'').trim();
+  if(!clean) return null;
+  let existing=personByName(clean);
+  if(existing) return existing;
+  let p={
+    id:'p'+Date.now()+Math.random().toString(36).slice(2,6),
+    name:clean,
+    role:'Pilot',
+    licence:'',
+    notes:'',
+    isAccountHolder:false
+  };
+  S.people.push(p);
+  return p;
+}
+
+let editingFlightId=null;
+let pendingDeleteFlightId=null;
+let pendingImport=null;
+let editingAircraftId=null;
+let editingPersonId=null;
+let editingQualificationId=null;
+let editingEndorsementId=null;
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function fmt(n){n=Math.max(0,Number(n)||0);return Math.floor(n/60)+':'+String(n%60).padStart(2,'0')}
+function parseHM(v){if(!v)return 0;let p=v.split(':').map(Number);return (p[0]||0)*60+(p[1]||0)}
+function ac(id){return S.aircraft.find(a=>a.id===id)}
+function calcTotals(){return S.flights.reduce((t,f)=>{t.total+=f.mins||0;t.copilot+=f.role==='CO-PILOT'?f.mins:0;t.dual+=f.role==='DUAL'?f.mins:0;t.pic+=['PIC','SOLO','SPIC','PICUS'].includes(f.role)?f.mins:0;t.spic+=f.role==='SPIC'?f.mins:0;t.picus+=f.role==='PICUS'?f.mins:0;t.night+=f.nightMin||0;t.ifr+=f.ifrMin||0;return t},{total:0,pic:0,copilot:0,dual:0,spic:0,picus:0,night:0,ifr:0})}
+
+let deferredInstallPrompt=null;
+
+function isStandaloneApp(){
+  return window.matchMedia?.('(display-mode: standalone)')?.matches || window.navigator.standalone===true;
+}
+function isAppleMobile(){
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+}
+function pwaEnvironment(){
+  if(isStandaloneApp()) return {kind:'installed',label:'Installed app',detail:'HeliLog is running in standalone app mode.'};
+  if(location.protocol==='file:') return {kind:'file',label:'File mode',detail:'Responsive app works, but install/offline PWA features need HTTPS or localhost.'};
+  if(location.protocol==='https:' || location.hostname==='localhost' || location.hostname==='127.0.0.1'){
+    return {kind:'secure',label:'PWA ready',detail:'Secure context detected. HeliLog can use its offline app cache.'};
+  }
+  return {kind:'http',label:'Web mode',detail:'The app is being served, but full offline PWA features normally require HTTPS.'};
+}
+function pwaStatusMarkup(){
+  let e=pwaEnvironment();
+  let cls=e.kind==='installed'||e.kind==='secure'?'ok':e.kind==='file'||e.kind==='http'?'warn':'';
+  let extra='';
+  if(isAppleMobile() && !isStandaloneApp()){
+    extra='<div class="install-help" style="margin-top:7px">iPhone/iPad: Safari → Share → Add to Home Screen.</div>';
+  }else if(deferredInstallPrompt && !isStandaloneApp()){
+    extra='<div class="install-help" style="margin-top:7px">This browser is ready to show the install prompt.</div>';
+  }
+  return `<div class="pwa-state"><span class="pwa-dot ${cls}"></span><b>${e.label}</b><span class="muted">${e.detail}</span></div>${extra}`;
+}
+function updatePWAStatus(){
+  ['pwaStatus','mobilePWAStatus'].forEach(id=>{
+    let el=document.getElementById(id);
+    if(el) el.innerHTML=pwaStatusMarkup();
+  });
+}
+async function installHeliLog(){
+  if(isStandaloneApp()){
+    alert('HeliLog is already running as an installed app.');
+    return;
+  }
+  if(deferredInstallPrompt){
+    deferredInstallPrompt.prompt();
+    try{await deferredInstallPrompt.userChoice}catch(e){}
+    deferredInstallPrompt=null;
+    updatePWAStatus();
+    return;
+  }
+  if(isAppleMobile()){
+    alert('On iPhone or iPad: open HeliLog in Safari, tap Share, then choose “Add to Home Screen”. For full offline support, use the HTTPS-hosted PWA version.');
+    return;
+  }
+  if(location.protocol==='file:'){
+    alert('This HTML file is running in file mode. The responsive interface works, but browser installation and offline caching require HeliLog to be served from localhost or HTTPS. Use the V1.24 PWA ZIP.');
+    return;
+  }
+  alert('Use your browser menu and choose “Install HeliLog” or “Install app” if available.');
+}
+
+window.addEventListener('beforeinstallprompt',ev=>{
+  ev.preventDefault();
+  deferredInstallPrompt=ev;
+  updatePWAStatus();
+});
+window.addEventListener('appinstalled',()=>{
+  deferredInstallPrompt=null;
+  updatePWAStatus();
+});
+
+if('serviceWorker' in navigator && (location.protocol==='https:' || location.hostname==='localhost' || location.hostname==='127.0.0.1')){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./service-worker.js').then(()=>updatePWAStatus()).catch(()=>updatePWAStatus());
+  });
+}
+
+function header(title,sub,action=''){return `<div class="top"><div><h1>${title}</h1><div class="sub">${sub||''}</div></div>${action}</div>`}
+function go(v){location.hash=v;render()} document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>go(b.dataset.v));window.onhashchange=render;
+
+function mobilemore(){
+  app.innerHTML=header('More','Aircraft, pilots, endorsements and account tools')+
+  `<div class="grid more-grid">
+    <button class="card more-link" onclick="go('aircraft')"><span>🚁</span><b>Aircraft</b><span class="muted">Fleet and SE/ME setup</span></button>
+    <button class="card more-link" onclick="go('pilots')"><span>👤</span><b>Pilots</b><span class="muted">Saved PICs and endorsers</span></button>
+    <button class="card more-link" onclick="go('endorsements')"><span>✎</span><b>Endorsements</b><span class="muted">Memoranda and signatures</span></button>
+    <button class="card more-link" onclick="go('totals')"><span>◉</span><b>Totals</b><span class="muted">Flight-time breakdown</span></button>
+    <button class="card more-link" onclick="go('profile')"><span>○</span><b>Profile</b><span class="muted">Licence, medical and backup</span></button>
+    <button class="card more-link" onclick="installHeliLog()"><span>▣</span><b>Install HeliLog</b><span class="muted">Home-screen / PWA setup</span></button>
+  </div>
+  <div id="mobilePWAStatus" class="card" style="margin-top:14px"></div>`;
+  updatePWAStatus();
+}
+
+function dashboard(){let t=calcTotals(),fs=[...S.flights].sort((a,b)=>b.date.localeCompare(a.date));app.innerHTML=header('Dashboard',`Good afternoon, ${S.pilot.name}`,`<button class="btn primary" onclick="go('add')">＋ Add flight</button>`)+
+`<div class="grid stats">${[['Total flight time',t.total],['PIC',t.pic],['Co-pilot',t.copilot],['Dual',t.dual]].map(x=>`<div class="card"><div class="label">${x[0]}</div><div class="big">${fmt(x[1])}</div></div>`).join('')}</div>
+<div class="grid two" style="margin-top:16px"><div class="card"><div class="head"><h2>Recent flights</h2><button class="btn" onclick="go('logbook')">View all</button></div><div style="overflow:auto"><table><thead><tr><th>Date</th><th>Type</th><th>Route</th><th>Time</th><th>Function</th></tr></thead><tbody>${fs.slice(0,5).map(row).join('')}</tbody></table></div></div>
+<div class="card"><div class="head"><h2>Aircraft</h2><button class="btn" onclick="go('aircraft')">Manage</button></div>${S.aircraft.map(a=>`<p><b>${a.icao}</b> · ${a.reg}<br><span class="muted">${a.manufacturer} ${a.model} ${a.variant}</span></p>`).join('')}</div></div>`}
+function row(f){let a=ac(f.aid);return `<tr class="click" onclick="flight('${f.id}')"><td>${f.date}</td><td><b>${a?.icao||'—'}</b></td><td>${f.dep} → ${f.arr}</td><td>${fmt(f.mins)}</td><td><span class="tag">${f.role}</span></td></tr>`}
+function logbook(){
+  let aircraftOptions=S.aircraft.map(a=>`<option value="${a.id}">${a.icao} — ${a.reg}</option>`).join('');
+  app.innerHTML=header('Logbook','Search and filter your flight records',`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="openImportModal()">Import CSV</button><button class="btn" onclick="openExportModal()">Export</button><button class="btn primary" onclick="go('add')">＋ Add flight</button></div>`)+`
+  <div class="card">
+    <div class="filterbar">
+      <div class="filterfield"><label>Search</label><input id="logSearch" type="search" placeholder="Route, PIC, registration, remarks…"></div>
+      <div class="filterfield"><label>From date</label><input id="filterFrom" type="date"></div>
+      <div class="filterfield"><label>To date</label><input id="filterTo" type="date"></div>
+      <div class="filterfield"><label>Aircraft</label><select id="filterAircraft"><option value="">All aircraft</option>${aircraftOptions}</select></div>
+    </div>
+    <div class="filterbar second">
+      <div class="filterfield"><label>Pilot function</label><select id="filterRole"><option value="">All functions</option>${['PIC','CO-PILOT','DUAL','SOLO','SPIC','PICUS'].map(r=>`<option>${r}</option>`).join('')}</select></div>
+      <div class="filterfield"><label>Cross-country</label><select id="filterXC"><option value="">All flights</option><option value="yes">XC only</option><option value="no">Non-XC only</option></select></div>
+      <div class="filterfield"><label>Night</label><select id="filterNight"><option value="">All flights</option><option value="yes">Night time recorded</option><option value="no">No night time</option></select></div>
+      <div class="filterfield"><label>IFR</label><select id="filterIFR"><option value="">All flights</option><option value="yes">IFR time recorded</option><option value="no">No IFR time</option></select></div>
+      <button type="button" class="btn" onclick="clearLogbookFilters()">Clear filters</button>
+    </div>
+    <div style="overflow:auto">
+      <table>
+        <thead><tr><th>Date</th><th>Type</th><th>Reg.</th><th>Departure</th><th>Arrival</th><th>Total</th><th>PIC name</th><th>Function</th><th>Night</th><th>IFR</th><th>XC</th></tr></thead>
+        <tbody id="logbookBody"></tbody>
+      </table>
+    </div>
+    <div class="filtermeta">
+      <div><span id="resultCount" class="resultcount">0 flights</span> shown</div>
+      <div class="filtertotals">
+        <span>Filtered flight time: <b id="filteredTime">0:00</b></span>
+        <span id="filteredIFRWrap" style="display:none">Filtered IFR time: <b id="filteredIFRTime">0:00</b></span>
+        <span id="filteredNightWrap" style="display:none">Filtered Night time: <b id="filteredNightTime">0:00</b></span>
+      </div>
+    </div>
+  </div>`;
+
+  ['logSearch','filterFrom','filterTo','filterAircraft','filterRole','filterXC','filterNight','filterIFR'].forEach(id=>{
+    let el=document.getElementById(id);
+    el.addEventListener(id==='logSearch'?'input':'change',applyLogbookFilters);
+  });
+  applyLogbookFilters();
+}
+
+function getFilteredFlights(){
+  let q=(document.getElementById('logSearch')?.value||'').trim().toLowerCase();
+  let from=document.getElementById('filterFrom')?.value||'';
+  let to=document.getElementById('filterTo')?.value||'';
+  let aircraftId=document.getElementById('filterAircraft')?.value||'';
+  let role=document.getElementById('filterRole')?.value||'';
+  let xc=document.getElementById('filterXC')?.value||'';
+  let night=document.getElementById('filterNight')?.value||'';
+  let ifr=document.getElementById('filterIFR')?.value||'';
+
+  return [...S.flights].filter(f=>{
+    let a=ac(f.aid);
+    let searchable=[
+      f.date,f.dep,f.arr,f.off,f.on,f.picName,f.role,f.remarks,
+      a?.icao,a?.reg,a?.manufacturer,a?.model,a?.variant
+    ].filter(Boolean).join(' ').toLowerCase();
+
+    if(q && !searchable.includes(q)) return false;
+    if(from && f.date<from) return false;
+    if(to && f.date>to) return false;
+    if(aircraftId && f.aid!==aircraftId) return false;
+    if(role && f.role!==role) return false;
+    if(xc==='yes' && !f.crossCountry) return false;
+    if(xc==='no' && !!f.crossCountry) return false;
+    if(night==='yes' && !(Number(f.nightMin||0)>0)) return false;
+    if(night==='no' && Number(f.nightMin||0)>0) return false;
+    if(ifr==='yes' && !(Number(f.ifrMin||0)>0)) return false;
+    if(ifr==='no' && Number(f.ifrMin||0)>0) return false;
+    return true;
+  }).sort((a,b)=>b.date.localeCompare(a.date));
+}
+
+function applyLogbookFilters(){
+  let body=document.getElementById('logbookBody');
+  if(!body) return;
+  let flights=getFilteredFlights();
+  body.innerHTML=flights.length?flights.map(f=>{
+    let a=ac(f.aid);
+    return `<tr class="click" onclick="flight('${f.id}')">
+      <td>${f.date}</td><td><b>${a?.icao||'—'}</b></td><td>${a?.reg||'—'}</td>
+      <td>${f.dep} ${f.off||''}</td><td>${f.arr} ${f.on||''}</td><td>${fmt(f.mins)}</td>
+      <td>${f.picName||'—'}</td><td><span class="tag">${f.role}</span></td>
+      <td>${fmt(f.nightMin||0)}</td><td>${fmt(f.ifrMin||0)}</td><td>${f.crossCountry?'✓':'—'}</td>
+    </tr>`;
+  }).join(''):`<tr><td colspan="11" style="text-align:center;padding:28px;color:var(--muted)">No flights match the current filters.</td></tr>`;
+
+  let total=flights.reduce((n,f)=>n+(Number(f.mins)||0),0);
+  let ifrTotal=flights.reduce((n,f)=>n+(Number(f.ifrMin)||0),0);
+  let nightTotal=flights.reduce((n,f)=>n+(Number(f.nightMin)||0),0);
+
+  document.getElementById('resultCount').textContent=`${flights.length} flight${flights.length===1?'':'s'}`;
+  document.getElementById('filteredTime').textContent=fmt(total);
+  document.getElementById('filteredIFRTime').textContent=fmt(ifrTotal);
+  document.getElementById('filteredNightTime').textContent=fmt(nightTotal);
+
+  let ifrFilter=document.getElementById('filterIFR')?.value||'';
+  let nightFilter=document.getElementById('filterNight')?.value||'';
+
+  document.getElementById('filteredIFRWrap').style.display=ifrFilter?'inline':'none';
+  document.getElementById('filteredNightWrap').style.display=nightFilter?'inline':'none';
+}
+
+function clearLogbookFilters(){
+  ['logSearch','filterFrom','filterTo','filterAircraft','filterRole','filterXC','filterNight','filterIFR'].forEach(id=>{
+    let el=document.getElementById(id); if(el) el.value='';
+  });
+  applyLogbookFilters();
+}
+
+
+const IMPORT_HEADERS=[
+  'date','icao_type','registration','manufacturer','model','variant','engine_configuration',
+  'departure','departure_time','arrival','arrival_time',
+  'pilot_configuration','total_time',
+  'pilot_function','pic_name','takeoffs_day','takeoffs_night',
+  'landings_day','landings_night','night_time','ifr_time',
+  'cross_country','remarks'
+];
+const OPTIONAL_IMPORT_HEADERS=['engine_configuration','pilot_configuration'];
+const LEGACY_CONFIG_HEADERS=['single_pilot_se_time','single_pilot_me_time','multi_pilot_time'];
+
+function openImportModal(){
+  pendingImport=null;
+  document.getElementById('csvFileInput').value='';
+  document.getElementById('importStatus').innerHTML='';
+  document.getElementById('importPreview').innerHTML='';
+  document.getElementById('confirmImportBtn').disabled=true;
+  document.getElementById('importModal').classList.add('open');
+  document.getElementById('csvFileInput').onchange=handleCSVFile;
+}
+function closeImportModal(){
+  pendingImport=null;
+  document.getElementById('importModal').classList.remove('open');
+}
+
+function parseCSV(text){
+  let rows=[], row=[], cell='', quoted=false;
+  for(let i=0;i<text.length;i++){
+    let ch=text[i];
+    if(quoted){
+      if(ch==='"' && text[i+1]==='"'){cell+='"';i++;}
+      else if(ch==='"'){quoted=false;}
+      else cell+=ch;
+    }else{
+      if(ch==='"') quoted=true;
+      else if(ch===','){row.push(cell);cell='';}
+      else if(ch==='\n'){row.push(cell);rows.push(row);row=[];cell='';}
+      else if(ch!=='\r') cell+=ch;
+    }
+  }
+  if(cell.length || row.length){row.push(cell);rows.push(row);}
+  return rows.filter(r=>r.some(c=>String(c).trim()!==''));
+}
+
+function parseDuration(value){
+  let v=String(value??'').trim();
+  if(v==='') return 0;
+  if(/^\d+$/.test(v)) return Number(v);
+  let m=v.match(/^(\d{1,3}):([0-5]\d)$/);
+  if(!m) return null;
+  return Number(m[1])*60+Number(m[2]);
+}
+
+function importClock(value){
+  let v=String(value??'').trim();
+  if(!v) return null;
+  let raw=v.replace(/[^0-9]/g,'');
+  if(raw.length===3) raw='0'+raw;
+  if(raw.length!==4) return null;
+  let h=Number(raw.slice(0,2)), m=Number(raw.slice(2,4));
+  if(h>23||m>59) return null;
+  return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+}
+
+function parseBoolean(value){
+  let v=String(value??'').trim().toLowerCase();
+  if(['1','true','yes','y','x','xc'].includes(v)) return true;
+  if(['0','false','no','n',''].includes(v)) return false;
+  return null;
+}
+
+function csvEscape(v){
+  let s=String(v??'');
+  if(/[",\n]/.test(s)) return '"'+s.replace(/"/g,'""')+'"';
+  return s;
+}
+
+function downloadImportTemplate(){
+  let sample=[
+    IMPORT_HEADERS,
+    ['2026-10-02','G2CA','LY-XYZ','Guimbal','Cabri','G2','SE','EYVI','0935','EYKA','1055','single-pilot','1:20','PIC','Matas','1','0','1','0','0:00','0:00','yes','Example cross-country flight']
+  ];
+  let csv=sample.map(r=>r.map(csvEscape).join(',')).join('\r\n');
+  let b=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  let u=URL.createObjectURL(b),a=document.createElement('a');
+  a.href=u;a.download='HeliLog_Import_Template.csv';a.click();URL.revokeObjectURL(u);
+}
+
+async function handleCSVFile(e){
+  let file=e.target.files?.[0];
+  if(!file) return;
+  let status=document.getElementById('importStatus');
+  let preview=document.getElementById('importPreview');
+  document.getElementById('confirmImportBtn').disabled=true;
+  pendingImport=null;
+
+  try{
+    let raw=await file.text();
+    let rows=parseCSV(raw);
+    if(rows.length<2){
+      status.innerHTML='<div class="importerrors">The CSV has no flight rows.</div>'; preview.innerHTML=''; return;
+    }
+    let headers=rows[0].map(x=>String(x).trim().toLowerCase());
+    let missing=IMPORT_HEADERS.filter(h=>!OPTIONAL_IMPORT_HEADERS.includes(h) && !headers.includes(h));
+    if(missing.length){
+      status.innerHTML=`<div class="importerrors">Missing columns: ${missing.join(', ')}</div>`; preview.innerHTML=''; return;
+    }
+
+    let idx={}; headers.forEach((h,i)=>idx[h]=i);
+    let parsed=[], errors=[];
+    const roles=['PIC','CO-PILOT','DUAL','SOLO','SPIC','PICUS'];
+
+    rows.slice(1).forEach((r,n)=>{
+      let rowNo=n+2;
+      let get=h=>idx[h]===undefined?'':String(r[idx[h]]??'').trim();
+      let date=get('date');
+      let off=importClock(get('departure_time')), on=importClock(get('arrival_time'));
+      let legacySpSE=parseDuration(get('single_pilot_se_time'));
+      let legacySpME=parseDuration(get('single_pilot_me_time'));
+      let legacyMulti=parseDuration(get('multi_pilot_time'));
+      let total=parseDuration(get('total_time')), night=parseDuration(get('night_time')), ifr=parseDuration(get('ifr_time'));
+      let xc=parseBoolean(get('cross_country'));
+      let role=get('pilot_function').toUpperCase();
+
+      let engineRaw=get('engine_configuration').toLowerCase();
+      let engine=engineRaw
+        ? (['me','multi','multi-engine','multi engine'].includes(engineRaw)?'Multi engine':
+           ['se','single','single-engine','single engine'].includes(engineRaw)?'Single engine':null)
+        : null;
+      if(!engine){
+        let existingAircraft=S.aircraft.find(a=>String(a.reg||'').toUpperCase()===get('registration').toUpperCase() || String(a.icao||'').toUpperCase()===get('icao_type').toUpperCase());
+        if(existingAircraft) engine=normalizeEngineConfig(existingAircraft.engine);
+        else if(get('icao_type').toUpperCase()==='EC35') engine='Multi engine';
+        else if((legacySpME||0)>0) engine='Multi engine';
+        else engine='Single engine';
+      }
+
+      let pilotConfigRaw=get('pilot_configuration').toLowerCase();
+      let pilotConfig=pilotConfigRaw
+        ? (['multi','multi-pilot','multi pilot','mp'].includes(pilotConfigRaw)?'multi':
+           ['single','single-pilot','single pilot','sp'].includes(pilotConfigRaw)?'single':null)
+        : null;
+      if(!pilotConfig) pilotConfig=(legacyMulti||0)>0?'multi':'single';
+
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(date)) errors.push(`Row ${rowNo}: date must be YYYY-MM-DD.`);
+      if(!get('icao_type')) errors.push(`Row ${rowNo}: ICAO type is required.`);
+      if(!get('registration')) errors.push(`Row ${rowNo}: registration is required.`);
+      if(!get('manufacturer')) errors.push(`Row ${rowNo}: manufacturer is required.`);
+      if(!get('model')) errors.push(`Row ${rowNo}: model is required.`);
+      if(!get('departure')) errors.push(`Row ${rowNo}: departure is required.`);
+      if(!get('arrival')) errors.push(`Row ${rowNo}: arrival is required.`);
+      if(!off) errors.push(`Row ${rowNo}: invalid departure time.`);
+      if(!on) errors.push(`Row ${rowNo}: invalid arrival time.`);
+      if(get('engine_configuration') && !['se','me','single','multi','single-engine','multi-engine','single engine','multi engine'].includes(get('engine_configuration').toLowerCase())) errors.push(`Row ${rowNo}: engine_configuration must be SE or ME.`);
+      if(get('pilot_configuration') && !pilotConfig) errors.push(`Row ${rowNo}: pilot_configuration must be single-pilot or multi-pilot.`);
+      if(total===null || total<=0) errors.push(`Row ${rowNo}: invalid total_time.`);
+      if(night===null) errors.push(`Row ${rowNo}: invalid night_time.`);
+      if(ifr===null) errors.push(`Row ${rowNo}: invalid ifr_time.`);
+      if(total!==null && night!==null && night>total) errors.push(`Row ${rowNo}: night_time exceeds total_time.`);
+      if(total!==null && ifr!==null && ifr>total) errors.push(`Row ${rowNo}: ifr_time exceeds total_time.`);
+      if(!roles.includes(role)) errors.push(`Row ${rowNo}: pilot_function must be ${roles.join(', ')}.`);
+      if(!get('pic_name')) errors.push(`Row ${rowNo}: pic_name is required.`);
+      if(xc===null) errors.push(`Row ${rowNo}: cross_country must be yes/no or true/false.`);
+
+      parsed.push({
+        date,
+        aircraft:{
+          icao:get('icao_type').toUpperCase(),
+          reg:get('registration').toUpperCase(),
+          manufacturer:get('manufacturer'),
+          model:get('model'),
+          variant:get('variant'),
+          engine:engine
+        },
+        dep:get('departure').toUpperCase(),off,
+        arr:get('arrival').toUpperCase(),on,
+        pilotConfig:pilotConfig,
+        mins:total,role,picName:get('pic_name'),
+        takeoffDay:Number(get('takeoffs_day')||0),
+        takeoffNight:Number(get('takeoffs_night')||0),
+        landingDay:Number(get('landings_day')||0),
+        landingNight:Number(get('landings_night')||0),
+        nightMin:night,ifrMin:ifr,crossCountry:xc,
+        remarks:get('remarks')
+      });
+    });
+
+    if(errors.length){
+      status.innerHTML=`<div class="importsummary"><b>${rows.length-1} rows found</b>, but the file has validation errors.</div><div class="importerrors">${errors.slice(0,30).map(x=>'• '+x).join('<br>')}${errors.length>30?'<br>…and more':''}</div>`;
+      preview.innerHTML=''; return;
+    }
+
+    pendingImport=parsed;
+    status.innerHTML=`<div class="successbox"><b>${parsed.length} flights are ready to import.</b> No validation errors found.</div>`;
+    preview.innerHTML=`<div class="importpreview"><table><thead><tr><th>Date</th><th>Type</th><th>Engine</th><th>Route</th><th>Total</th><th>Pilot config.</th><th>Function</th><th>XC</th></tr></thead><tbody>${parsed.slice(0,8).map(f=>`<tr><td>${f.date}</td><td><b>${f.aircraft.icao}</b></td><td>${engineCode(f.aircraft)}</td><td>${f.dep} → ${f.arr}</td><td>${fmt(f.mins)}</td><td>${f.pilotConfig==='multi'?'Multi-pilot':'Single-pilot'}</td><td>${f.role}</td><td>${f.crossCountry?'✓':'—'}</td></tr>`).join('')}</tbody></table></div>${parsed.length>8?`<div class="mini" style="margin-top:6px">Showing first 8 of ${parsed.length} flights.</div>`:''}`;
+    document.getElementById('confirmImportBtn').disabled=false;
+  }catch(err){
+    status.innerHTML=`<div class="importerrors">Could not read this CSV: ${String(err)}</div>`;
+  }
+}
+
+function confirmCSVImport(){
+  if(!pendingImport?.length) return;
+  let aircraftAdded=0;
+  pendingImport.forEach(item=>{
+    let a=S.aircraft.find(x=>x.reg.toUpperCase()===item.aircraft.reg && x.icao.toUpperCase()===item.aircraft.icao);
+    if(!a){
+      a={
+        id:'a'+Date.now()+Math.random().toString(36).slice(2,7),
+        reg:item.aircraft.reg,icao:item.aircraft.icao,
+        manufacturer:item.aircraft.manufacturer,model:item.aircraft.model,
+        variant:item.aircraft.variant,engine:normalizeEngineConfig(item.aircraft.engine)
+      };
+      S.aircraft.push(a); aircraftAdded++;
+    }
+
+    let importedPerson=item.picName.toLowerCase()===S.pilot.name.toLowerCase()
+      ? ownerPerson()
+      : ensurePersonForName(item.picName);
+
+    S.flights.push({
+      id:'f'+Date.now()+Math.random().toString(36).slice(2,8),
+      date:item.date,aid:a.id,dep:item.dep,arr:item.arr,off:item.off,on:item.on,
+      mins:item.mins,role:item.role,picName:importedPerson?.name||item.picName,
+      picPersonId:importedPerson?.id||'',
+      pilotConfig:item.pilotConfig||'single',
+      nightMin:item.nightMin,ifrMin:item.ifrMin,
+      takeoffDay:item.takeoffDay,takeoffNight:item.takeoffNight,
+      landingDay:item.landingDay,landingNight:item.landingNight,
+      crossCountry:item.crossCountry,remarks:item.remarks,
+      instrMin:0,stdType:'',stdMin:0,
+      createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()
+    });
+  });
+  let count=pendingImport.length;
+  save();
+  pendingImport=null;
+  document.getElementById('importModal').classList.remove('open');
+  logbook();
+  setTimeout(()=>alert(`${count} flight${count===1?'':'s'} imported successfully${aircraftAdded?` and ${aircraftAdded} new aircraft added`:''}.`),50);
+}
+
+
+function openExportModal(){
+  let scope=document.getElementById('exportScope');
+  if(scope) scope.value='filtered';
+  document.getElementById('exportModal').classList.add('open');
+  refreshExportSummary();
+}
+function closeExportModal(){
+  document.getElementById('exportModal').classList.remove('open');
+}
+
+function exportFlightsForScope(){
+  let scope=document.getElementById('exportScope')?.value||'filtered';
+  if(scope==='all') return [...S.flights].sort((a,b)=>a.date.localeCompare(b.date));
+  return getFilteredFlights().sort((a,b)=>a.date.localeCompare(b.date));
+}
+
+function refreshExportSummary(){
+  let box=document.getElementById('exportSummary');
+  if(!box) return;
+  let flights=exportFlightsForScope();
+  let total=flights.reduce((n,f)=>n+(Number(f.mins)||0),0);
+  let pic=flights.reduce((n,f)=>n+(['PIC','SOLO','SPIC','PICUS'].includes(f.role)?Number(f.mins||0):0),0);
+  let copilot=flights.reduce((n,f)=>n+(f.role==='CO-PILOT'?Number(f.mins||0):0),0);
+  let dual=flights.reduce((n,f)=>n+(f.role==='DUAL'?Number(f.mins||0):0),0);
+  let night=flights.reduce((n,f)=>n+Number(f.nightMin||0),0);
+  let ifr=flights.reduce((n,f)=>n+Number(f.ifrMin||0),0);
+  let xc=flights.filter(f=>f.crossCountry).length;
+  box.innerHTML=`<b>${flights.length} flight${flights.length===1?'':'s'}</b><br>
+    Total ${fmt(total)} · PIC ${fmt(pic)} · Co-pilot ${fmt(copilot)} · Dual ${fmt(dual)} · Night ${fmt(night)} · IFR ${fmt(ifr)} · XC ${xc}`;
+}
+
+function durationForExport(mins){
+  return fmt(Number(mins)||0);
+}
+
+function exportLogbookCSV(){
+  let flights=exportFlightsForScope();
+  if(!flights.length){alert('There are no flights to export.');return;}
+
+  let rows=[IMPORT_HEADERS];
+  flights.forEach(f=>{
+    let a=ac(f.aid)||{};
+    rows.push([
+      f.date||'',
+      a.icao||'',
+      a.reg||'',
+      a.manufacturer||'',
+      a.model||'',
+      a.variant||'',
+      engineCode(a),
+      f.dep||'',
+      f.off||'',
+      f.arr||'',
+      f.on||'',
+      flightPilotConfig(f)==='multi'?'multi-pilot':'single-pilot',
+      durationForExport(f.mins),
+      f.role||'',
+      f.picName||'',
+      Number(f.takeoffDay||0),
+      Number(f.takeoffNight||0),
+      Number(f.landingDay||0),
+      Number(f.landingNight||0),
+      durationForExport(f.nightMin),
+      durationForExport(f.ifrMin),
+      f.crossCountry?'yes':'no',
+      f.remarks||''
+    ]);
+  });
+
+  let csv=rows.map(r=>r.map(csvEscape).join(',')).join('\r\n');
+  let b=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  let u=URL.createObjectURL(b),a=document.createElement('a');
+  let scope=document.getElementById('exportScope')?.value||'filtered';
+  a.href=u;
+  a.download=`HeliLog_${scope==='all'?'All_Flights':'Filtered_Flights'}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(u);
+}
+
+function htmlEscape(v){
+  return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function functionTime(f, kind){
+  let m=Number(f.mins||0);
+  if(kind==='pic') return ['PIC','SOLO','SPIC','PICUS'].includes(f.role)?m:0;
+  if(kind==='copilot') return f.role==='CO-PILOT'?m:0;
+  if(kind==='dual') return f.role==='DUAL'?m:0;
+  if(kind==='instructor') return Number(f.instrMin||0);
+  return 0;
+}
+
+function exportPrintableLogbook(){
+  let flights=exportFlightsForScope();
+  if(!flights.length){alert('There are no flights to export.');return;}
+
+  const ROWS_PER_PAGE=14;
+
+  function sumFields(list){
+    return {
+      spSE:list.reduce((n,f)=>n+configurationTimes(f).spSE,0),
+      spME:list.reduce((n,f)=>n+configurationTimes(f).spME,0),
+      multi:list.reduce((n,f)=>n+configurationTimes(f).multi,0),
+      total:list.reduce((n,f)=>n+Number(f.mins||0),0),
+      toDay:list.reduce((n,f)=>n+Number(f.takeoffDay||0),0),
+      toNight:list.reduce((n,f)=>n+Number(f.takeoffNight||0),0),
+      ldgDay:list.reduce((n,f)=>n+Number(f.landingDay||0),0),
+      ldgNight:list.reduce((n,f)=>n+Number(f.landingNight||0),0),
+      night:list.reduce((n,f)=>n+Number(f.nightMin||0),0),
+      ifr:list.reduce((n,f)=>n+Number(f.ifrMin||0),0),
+      pic:list.reduce((n,f)=>n+functionTime(f,'pic'),0),
+      copilot:list.reduce((n,f)=>n+functionTime(f,'copilot'),0),
+      dual:list.reduce((n,f)=>n+functionTime(f,'dual'),0),
+      instructor:list.reduce((n,f)=>n+functionTime(f,'instructor'),0),
+      std:list.reduce((n,f)=>n+Number(f.stdMin||0),0)
+    };
+  }
+
+  function totalCells(t,label,signatureCell=false,remarksCovered=false){
+    let remarksCell='';
+    if(signatureCell){
+      remarksCell=`<td class="totals-signature-cell" rowspan="3">
+        <div class="totals-signature-title">PILOT SIGNATURE</div>
+        <div class="totals-signature-space"></div>
+      </td>`;
+    }else if(!remarksCovered){
+      remarksCell='<td></td>';
+    }
+
+    return `
+      <tr class="totals-row">
+        <td colspan="4" class="totals-label">${label}</td>
+        <td></td><td></td><td></td>
+        <td class="num">${fmt(t.spSE)}</td>
+        <td class="num">${fmt(t.spME)}</td>
+        <td class="num">${fmt(t.multi)}</td>
+        <td class="num">${fmt(t.total)}</td>
+        <td></td>
+        <td class="num">${t.toDay}</td>
+        <td class="num">${t.toNight}</td>
+        <td class="num">${t.ldgDay}</td>
+        <td class="num">${t.ldgNight}</td>
+        <td class="num">${fmt(t.night)}</td>
+        <td class="num">${fmt(t.ifr)}</td>
+        <td class="num">${fmt(t.pic)}</td>
+        <td class="num">${fmt(t.copilot)}</td>
+        <td class="num">${fmt(t.dual)}</td>
+        <td class="num">${fmt(t.instructor)}</td>
+        <td></td><td></td>
+        <td class="num">${fmt(t.std)}</td>
+        ${remarksCell}
+      </tr>`;
+  }
+
+  function flightRow(f){
+    let a=ac(f.aid)||{};
+    let picVal=functionTime(f,'pic');
+    let copVal=functionTime(f,'copilot');
+    let dualVal=functionTime(f,'dual');
+    let instrVal=functionTime(f,'instructor');
+    let cfg=configurationTimes(f);
+
+    return `<tr class="flight-row">
+      <td>${htmlEscape(f.date||'')}</td>
+      <td>${htmlEscape(f.dep||'')}</td>
+      <td>${htmlEscape(f.off||'')}</td>
+      <td>${htmlEscape(f.arr||'')}</td>
+      <td>${htmlEscape(f.on||'')}</td>
+      <td class="type">${htmlEscape(a.icao||'')}</td>
+      <td>${htmlEscape(a.reg||'')}</td>
+
+      <td class="num">${cfg.spSE?fmt(cfg.spSE):''}</td>
+      <td class="num">${cfg.spME?fmt(cfg.spME):''}</td>
+      <td class="num">${cfg.multi?fmt(cfg.multi):''}</td>
+      <td class="num">${fmt(f.mins||0)}</td>
+      <td class="pic-name">${htmlEscape(f.picName||'')}</td>
+
+      <td class="num">${Number(f.takeoffDay||0)||''}</td>
+      <td class="num">${Number(f.takeoffNight||0)||''}</td>
+      <td class="num">${Number(f.landingDay||0)||''}</td>
+      <td class="num">${Number(f.landingNight||0)||''}</td>
+
+      <td class="num">${Number(f.nightMin||0)>0?fmt(f.nightMin):''}</td>
+      <td class="num">${Number(f.ifrMin||0)>0?fmt(f.ifrMin):''}</td>
+
+      <td class="num">${picVal?fmt(picVal):''}</td>
+      <td class="num">${copVal?fmt(copVal):''}</td>
+      <td class="num">${dualVal?fmt(dualVal):''}</td>
+      <td class="num">${instrVal?fmt(instrVal):''}</td>
+
+      <td></td>
+      <td>${htmlEscape(f.stdType||'')}</td>
+      <td class="num">${Number(f.stdMin||0)>0?fmt(f.stdMin):''}</td>
+
+      <td class="remarks">${htmlEscape(f.remarks||'')}</td>
+    </tr>`;
+  }
+
+  let pages=[];
+  for(let i=0;i<flights.length;i+=ROWS_PER_PAGE){
+    pages.push(flights.slice(i,i+ROWS_PER_PAGE));
+  }
+
+  let cumulativeBefore=[];
+  let running=[];
+  pages.forEach((p,idx)=>{
+    cumulativeBefore[idx]=sumFields(running);
+    running=running.concat(p);
+  });
+
+  let allTotals=sumFields(flights);
+
+  let pageHtml=pages.map((pageFlights,pageIndex)=>{
+    let thisPage=sumFields(pageFlights);
+    let prev=cumulativeBefore[pageIndex];
+    let cumulative=sumFields(flights.slice(0,(pageIndex*ROWS_PER_PAGE)+pageFlights.length));
+
+    let blanks='';
+    for(let i=pageFlights.length;i<ROWS_PER_PAGE;i++){
+      blanks+=`<tr class="blank-row">${'<td></td>'.repeat(26)}</tr>`;
+    }
+
+    return `<section class="logbook-page">
+      <div class="page-header">
+        <div class="titleblock">
+          <div class="title">PILOT LOG BOOK</div>
+          <div class="subtitle">HeliLog — EASA-style flight record export</div>
+        </div>
+        <div class="pilotblock">
+          <div><b>Pilot:</b> ${htmlEscape(S.pilot.name||'')}</div>
+          <div><b>Licence:</b> ${htmlEscape(pilotLicenceDisplay()||'—')}</div>
+          <div><b>Authority:</b> ${htmlEscape(S.pilot.authority||'—')}</div>
+          <div><b>Page:</b> ${pageIndex+1} / ${pages.length}</div>
+        </div>
+      </div>
+
+      <table class="logbook-table">
+        <colgroup>
+          <col class="c-date">
+          <col class="c-place"><col class="c-time">
+          <col class="c-place"><col class="c-time">
+          <col class="c-type"><col class="c-reg">
+          <col class="c-sp"><col class="c-sp"><col class="c-mp">
+          <col class="c-total">
+          <col class="c-picname">
+          <col class="c-small"><col class="c-small">
+          <col class="c-small"><col class="c-small">
+          <col class="c-small"><col class="c-small">
+          <col class="c-func"><col class="c-func"><col class="c-func"><col class="c-func">
+          <col class="c-fstd-date"><col class="c-fstd-type"><col class="c-fstd-time">
+          <col class="c-remarks">
+        </colgroup>
+        <thead>
+          <tr class="group-row">
+            <th rowspan="3">DATE</th>
+            <th colspan="2">DEPARTURE</th>
+            <th colspan="2">ARRIVAL</th>
+            <th colspan="2">AIRCRAFT</th>
+            <th colspan="2">SINGLE-PILOT TIME</th>
+            <th rowspan="3">MULTI-<br>PILOT<br>TIME</th>
+            <th rowspan="3">TOTAL<br>TIME OF<br>FLIGHT</th>
+            <th rowspan="3">NAME OF PIC</th>
+            <th colspan="2">TAKE-OFFS</th>
+            <th colspan="2">LANDINGS</th>
+            <th colspan="2">OPERATIONAL<br>CONDITION TIME</th>
+            <th colspan="4">PILOT FUNCTION TIME</th>
+            <th colspan="3">SYNTHETIC TRAINING DEVICE SESSION</th>
+            <th rowspan="3">REMARKS AND ENDORSEMENTS</th>
+          </tr>
+          <tr class="subgroup-row">
+            <th rowspan="2">PLACE</th><th rowspan="2">TIME</th>
+            <th rowspan="2">PLACE</th><th rowspan="2">TIME</th>
+            <th rowspan="2">TYPE</th><th rowspan="2">REG.</th>
+            <th rowspan="2">SE</th><th rowspan="2">ME</th>
+            <th rowspan="2">DAY</th><th rowspan="2">NIGHT</th>
+            <th rowspan="2">DAY</th><th rowspan="2">NIGHT</th>
+            <th rowspan="2">NIGHT</th><th rowspan="2">IFR</th>
+            <th rowspan="2">PIC</th><th rowspan="2">CO-<br>PILOT</th><th rowspan="2">DUAL</th><th rowspan="2">INSTR.</th>
+            <th rowspan="2">DATE</th><th rowspan="2">TYPE</th><th rowspan="2">TOTAL<br>TIME</th>
+          </tr>
+          <tr></tr>
+        </thead>
+        <tbody>
+          ${pageFlights.map(flightRow).join('')}
+          ${blanks}
+          ${totalCells(thisPage,'TOTAL THIS PAGE',true,false)}
+          ${totalCells(prev,'TOTAL FROM PREVIOUS PAGES',false,true)}
+          ${totalCells(cumulative,'TOTAL TIME',false,true)}
+        </tbody>
+      </table>
+
+      <div class="page-footer">
+        <div class="certification">
+          I certify that the entries on this page are a true record of the flights shown above.
+        </div>
+      </div>
+    </section>`;
+  }).join('');
+
+  let report=`<!doctype html>
+  <html>
+  <head>
+    <meta charset="utf-8">
+    <title>HeliLog Pilot Log Book</title>
+    <style>
+      @page{size:A4 landscape;margin:7mm}
+      *{box-sizing:border-box}
+      body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#111;background:#fff}
+      .toolbar{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid #bbb;position:sticky;top:0;background:#fff;z-index:20}
+      .toolbar strong{font-size:14px}
+      .toolbar button{font-size:13px;padding:8px 12px}
+      .logbook-page{page-break-after:always;min-height:190mm;padding:0}
+      .logbook-page:last-child{page-break-after:auto}
+      .page-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:5px}
+      .title{font-weight:800;font-size:16px;letter-spacing:.06em}
+      .subtitle{font-size:8px;color:#555;margin-top:2px}
+      .pilotblock{font-size:8px;display:grid;grid-template-columns:auto auto;column-gap:14px;row-gap:2px;text-align:left}
+      table{border-collapse:collapse;width:100%;table-layout:fixed}
+      .logbook-table th,.logbook-table td{border:1px solid #222;padding:2px 2px;text-align:center;vertical-align:middle}
+      .logbook-table th{font-size:6.6px;font-weight:700;line-height:1.05;background:#f2f2f2}
+      .group-row th{background:#e8e8e8;font-size:6.7px}
+      .subgroup-row th{background:#f5f5f5}
+      .flight-row td,.blank-row td{height:7.6mm;font-size:7px;line-height:1.05}
+      .blank-row td{height:7.6mm}
+      .num{font-variant-numeric:tabular-nums}
+      .type{font-weight:700}
+      .pic-name{font-size:6.7px!important}
+      .remarks{text-align:left!important;padding-left:3px!important;font-size:6.5px!important}
+      .totals-row td{height:5.3mm;font-size:6.8px;font-weight:700;background:#f8f8f8}
+      .totals-label{text-align:right!important;padding-right:5px!important}
+      .page-footer{margin-top:4px;font-size:7.5px}
+      .certification{font-style:italic}
+      .totals-signature-cell{
+        padding:0!important;
+        background:#fff!important;
+        vertical-align:stretch!important;
+      }
+      .totals-signature-cell > div{box-sizing:border-box}
+      .totals-signature-title{
+        height:5.3mm;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        border-bottom:1px solid #222;
+        font-size:6.7px;
+        font-weight:700;
+        letter-spacing:.04em;
+        background:#f2f2f2
+      }
+      .totals-signature-space{
+        height:10.6mm;
+        background:#fff
+      }
+
+      .c-date{width:7.5mm}
+      .c-place{width:8mm}
+      .c-time{width:7.5mm}
+      .c-type{width:8mm}
+      .c-reg{width:8mm}
+      .c-sp{width:6mm}
+      .c-mp{width:6.5mm}
+      .c-total{width:7.5mm}
+      .c-picname{width:14mm}
+      .c-small{width:5.8mm}
+      .c-func{width:7mm}
+      .c-fstd-date{width:8mm}
+      .c-fstd-type{width:8mm}
+      .c-fstd-time{width:7mm}
+      .c-remarks{width:23mm}
+
+      @media print{
+        .toolbar{display:none}
+        body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      }
+    </style>
+  </head>
+  <body>
+    <div class="toolbar">
+      <strong>HeliLog — Pilot Log Book Export</strong>
+      <button onclick="window.print()">Print / Save as PDF</button>
+    </div>
+    ${pageHtml}
+  </body>
+  </html>`;
+
+  let w=window.open('','_blank');
+  if(!w){
+    alert('The printable logbook could not open because the browser blocked the new window. Please allow pop-ups for this local page and try again.');
+    return;
+  }
+  w.document.open();
+  w.document.write(report);
+  w.document.close();
+  w.focus();
+}
+
+function add(editId=null){
+editingFlightId=editId||null;
+let existing=editingFlightId?S.flights.find(f=>f.id===editingFlightId):null;
+if(editingFlightId && !existing){editingFlightId=null; return go('logbook');}
+let editing=!!existing;
+app.innerHTML=header(
+  editing?'Edit flight':'Add flight',
+  editing?'Update the existing flight record':'Structured around your paper logbook',
+  `<button class="btn" onclick="${editing?`flight('${existing.id}')`:`go('dashboard')`}">Cancel</button>`
+)+`<form id="flightForm" class="card form" novalidate>
+<div id="formError" class="errorbox"></div>
+${editing?`<div class="editnotice">You are editing an existing V1 record. Formal correction history and post-certification audit controls will be introduced in V2.</div>`:''}
+
+<div class="section-title">Flight identification</div>
+<div class="formgrid">
+  <div class="field"><label>Date</label><input id="date" type="date"></div>
+  <div class="field"><label>Aircraft</label><select id="aid">${S.aircraft.map(a=>`<option value="${a.id}">${a.icao} — ${a.reg}</option>`).join('')}</select></div>
+
+  <div class="field"><label>Departure place</label><input id="dep" maxlength="4"></div>
+  <div class="field"><label>Departure time (24h)</label>
+    <div class="timewrap">
+      <input id="off" type="text" inputmode="numeric" maxlength="5" autocomplete="off">
+      <button type="button" class="timebtn" title="Choose time" onclick="toggleTimePicker('offPicker','off')">◷</button>
+      <div id="offPicker" class="timepicker">
+        <div class="timepicker-row">
+          <select id="offHour"></select><span class="colon">:</span><select id="offMinute"></select>
+        </div>
+        <div class="timepicker-actions">
+          <button type="button" onclick="closeTimePicker('offPicker')">Cancel</button>
+          <button type="button" class="settime" onclick="applyTimePicker('offPicker','off','offHour','offMinute')">Set</button>
+        </div>
+      </div>
+    </div>
+    <div class="mini">HHmm or HH:mm</div>
+    <div id="offError" class="field-error">Enter a valid 24-hour time.</div>
+  </div>
+
+  <div class="field"><label>Arrival place</label><input id="arr" maxlength="4"></div>
+  <div class="field"><label>Arrival time (24h)</label>
+    <div class="timewrap">
+      <input id="on" type="text" inputmode="numeric" maxlength="5" autocomplete="off">
+      <button type="button" class="timebtn" title="Choose time" onclick="toggleTimePicker('onPicker','on')">◷</button>
+      <div id="onPicker" class="timepicker">
+        <div class="timepicker-row">
+          <select id="onHour"></select><span class="colon">:</span><select id="onMinute"></select>
+        </div>
+        <div class="timepicker-actions">
+          <button type="button" onclick="closeTimePicker('onPicker')">Cancel</button>
+          <button type="button" class="settime" onclick="applyTimePicker('onPicker','on','onHour','onMinute')">Set</button>
+        </div>
+      </div>
+    </div>
+    <div class="mini">HHmm or HH:mm</div>
+    <div id="onError" class="field-error">Enter a valid 24-hour time.</div>
+  </div>
+</div>
+
+<div class="section-title">Flight time and function</div>
+<div class="formgrid">
+  <div class="field"><label>Total time of flight (minutes)</label><input id="mins" type="number" min="1"></div>
+  <div class="field"><label>Pilot function</label><select id="role" onchange="roleChanged()">${['PIC','CO-PILOT','DUAL','SOLO','SPIC','PICUS'].map(x=>`<option>${x}</option>`).join('')}</select></div>
+  <div class="field">
+    <label>Name of PIC</label>
+    <input id="picName" list="picPeopleList" autocomplete="off">
+    <datalist id="picPeopleList">${S.people.filter(p=>!p.isAccountHolder).map(p=>`<option value="${htmlEscape(p.name)}"></option>`).join('')}</datalist>
+    <div class="mini">Choose a saved pilot or type a new name. New names are saved automatically.</div>
+  </div>
+</div>
+
+<div class="section-title">Aircraft and pilot configuration</div>
+<div class="formgrid">
+  <div class="field">
+    <label>Aircraft engine configuration</label>
+    <div id="aircraftEngineInfo" class="engine-indicator"></div>
+    <div class="mini">Set automatically from the selected helicopter.</div>
+  </div>
+  <div class="field">
+    <label>Pilot configuration</label>
+    <div class="choice-row">
+      <label class="choice-option"><input type="radio" name="pilotConfig" value="single" checked> Single-pilot</label>
+      <label class="choice-option"><input type="radio" name="pilotConfig" value="multi"> Multi-pilot</label>
+    </div>
+    <div class="mini">The total flight time will be allocated automatically in the PDF export.</div>
+  </div>
+</div>
+
+<div class="section-title">Take-offs and landings</div>
+<div class="formgrid">
+  <div class="field"><label>Take-offs day</label><input id="toDay" type="number" min="0" value="0"></div>
+  <div class="field"><label>Take-offs night</label><input id="toNight" type="number" min="0" value="0"></div>
+  <div class="field"><label>Landings day</label><input id="ldgDay" type="number" min="0" value="0"><div class="mini">Automatically follows take-offs unless overwritten.</div></div>
+  <div class="field"><label>Landings night</label><input id="ldgNight" type="number" min="0" value="0"><div class="mini">Automatically follows take-offs unless overwritten.</div></div>
+</div>
+
+<div class="section-title">Operational condition time</div>
+<div class="formgrid">
+  <div class="field"><label>Night time (minutes)</label><input id="nightMin" type="number" min="0" value="0"></div>
+  <div class="field"><label>IFR time (minutes)</label><input id="ifrMin" type="number" min="0" value="0"></div>
+</div>
+
+<div class="checkbox-row">
+  <input id="crossCountry" type="checkbox">
+  <label for="crossCountry">Cross-country flight</label>
+</div>
+
+<details id="moreDetails"><summary>More details</summary>
+  <div class="formgrid" style="margin-top:12px">
+    <div class="field"><label>Instructor time (minutes)</label><input id="instrMin" type="number" min="0" value="0"></div>
+    <div class="field"><label>Synthetic training device type</label><input id="stdType"></div>
+    <div class="field"><label>Synthetic session time (minutes)</label><input id="stdMin" type="number" min="0" value="0"></div>
+  </div>
+</details>
+
+<div class="field"><label>Remarks and endorsements</label><textarea id="remarks"></textarea></div>
+<div class="actions"><button type="button" class="btn" onclick="${editing?`flight('${existing.id}')`:`go('dashboard')`}">Cancel</button><button type="button" id="saveFlightBtn" class="btn primary" onclick="saveFlight()">${editing?'Save changes':'Save flight'}</button></div>
+</form>`;
+
+populateTimePicker('offHour','offMinute');
+populateTimePicker('onHour','onMinute');
+
+if(existing){
+  $('#date').value=existing.date||'';
+  $('#aid').value=existing.aid||S.aircraft[0]?.id||'';
+  $('#dep').value=existing.dep||'';
+  $('#arr').value=existing.arr||'';
+  $('#off').value=existing.off||'';
+  $('#on').value=existing.on||'';
+  $('#mins').value=existing.mins||'';
+  $('#role').value=existing.role||'PIC';
+  $('#picName').value=existing.picName||'';
+  $('#picName').dataset.personId=existing.picPersonId||'';
+  let pc=flightPilotConfig(existing);
+  let pcRadio=document.querySelector(`input[name="pilotConfig"][value="${pc}"]`);
+  if(pcRadio) pcRadio.checked=true;
+  $('#toDay').value=existing.takeoffDay||0;
+  $('#toNight').value=existing.takeoffNight||0;
+  $('#ldgDay').value=existing.landingDay||0;
+  $('#ldgNight').value=existing.landingNight||0;
+  $('#nightMin').value=existing.nightMin||0;
+  $('#ifrMin').value=existing.ifrMin||0;
+  $('#instrMin').value=existing.instrMin||0;
+  $('#stdType').value=existing.stdType||'';
+  $('#stdMin').value=existing.stdMin||0;
+  $('#crossCountry').checked=!!existing.crossCountry;
+  $('#remarks').value=existing.remarks||'';
+  if((existing.instrMin||0)>0 || (existing.stdType||'') || (existing.stdMin||0)>0) $('#moreDetails').open=true;
+}else{
+  $('#date').value=new Date().toISOString().slice(0,10);
+}
+
+$('#off').onblur=()=>validateTimeField('off');
+$('#on').onblur=()=>validateTimeField('on');
+$('#off').oninput=()=>{clearTimeError('off');calc();};
+$('#on').oninput=()=>{clearTimeError('on');calc();};
+
+let dayLandingOverridden=existing ? Number(existing.landingDay||0)!==Number(existing.takeoffDay||0) : false;
+let nightLandingOverridden=existing ? Number(existing.landingNight||0)!==Number(existing.takeoffNight||0) : false;
+$('#ldgDay').oninput=()=>{dayLandingOverridden=true};
+$('#ldgNight').oninput=()=>{nightLandingOverridden=true};
+$('#toDay').oninput=()=>{ if(!dayLandingOverridden) $('#ldgDay').value=$('#toDay').value||0; };
+$('#toNight').oninput=()=>{ if(!nightLandingOverridden) $('#ldgNight').value=$('#toNight').value||0; };
+
+$('#aid').onchange=updateAircraftEngineInfo;
+updateAircraftEngineInfo();
+roleChanged();
+}
+function editFlight(id){add(id);}
+function populateTimePicker(hourId, minuteId){
+  let h=document.getElementById(hourId), m=document.getElementById(minuteId);
+  h.innerHTML=Array.from({length:24},(_,i)=>`<option value="${String(i).padStart(2,'0')}">${String(i).padStart(2,'0')}</option>`).join('');
+  m.innerHTML=Array.from({length:60},(_,i)=>`<option value="${String(i).padStart(2,'0')}">${String(i).padStart(2,'0')}</option>`).join('');
+}
+
+function canonicalTime(v){
+  let raw=(v||'').trim().replace(/[^0-9]/g,'');
+  if(!raw) return '';
+  if(raw.length===3) raw='0'+raw;
+  if(raw.length!==4) return null;
+  let h=Number(raw.slice(0,2)), m=Number(raw.slice(2,4));
+  if(h>23 || m>59) return null;
+  return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+}
+
+function normalizeTimeInput(el){
+  let c=canonicalTime(el.value);
+  if(c===null) return false;
+  if(c!=='') el.value=c;
+  return true;
+}
+
+function clearTimeError(fieldId){
+  let el=document.getElementById(fieldId);
+  let err=document.getElementById(fieldId+'Error');
+  el.classList.remove('time-input-invalid');
+  if(err) err.classList.remove('show');
+}
+
+function markTimeError(fieldId){
+  let el=document.getElementById(fieldId);
+  let err=document.getElementById(fieldId+'Error');
+  el.classList.add('time-input-invalid');
+  if(err) err.classList.add('show');
+}
+
+function validateTimeField(fieldId){
+  let el=document.getElementById(fieldId);
+  if(!el.value.trim()){
+    clearTimeError(fieldId);
+    return false;
+  }
+  if(!normalizeTimeInput(el)){
+    markTimeError(fieldId);
+    return false;
+  }
+  clearTimeError(fieldId);
+  calc();
+  return true;
+}
+
+function toggleTimePicker(pickerId, fieldId){
+  let p=document.getElementById(pickerId);
+  let opening=!p.classList.contains('open');
+  document.querySelectorAll('.timepicker.open').forEach(x=>x.classList.remove('open'));
+  if(opening){
+    let c=canonicalTime(document.getElementById(fieldId).value);
+    if(c){
+      let parts=c.split(':');
+      let prefix=fieldId==='off'?'off':'on';
+      document.getElementById(prefix+'Hour').value=parts[0];
+      document.getElementById(prefix+'Minute').value=parts[1];
+    }
+    p.classList.add('open');
+  }
+}
+
+function closeTimePicker(pickerId){
+  document.getElementById(pickerId).classList.remove('open');
+}
+
+function applyTimePicker(pickerId, fieldId, hourId, minuteId){
+  let value=document.getElementById(hourId).value+':'+document.getElementById(minuteId).value;
+  document.getElementById(fieldId).value=value;
+  clearTimeError(fieldId);
+  closeTimePicker(pickerId);
+  calc();
+}
+
+function calc(){
+  let aa=canonicalTime($('#off').value), bb=canonicalTime($('#on').value);
+  if(!aa||!bb)return;
+  let n=parseHM(bb)-parseHM(aa); if(n<0)n+=1440;
+  $('#mins').value=n;
+}
+function updateAircraftEngineInfo(){
+  let el=document.getElementById('aircraftEngineInfo');
+  let a=ac(document.getElementById('aid')?.value);
+  if(!el || !a) return;
+  let code=engineCode(a);
+  el.innerHTML=`<span class="tick">✓</span>${code==='ME'?'Multi-engine (ME)':'Single-engine (SE)'}`;
+}
+function roleChanged(){
+  let r=$('#role').value, field=$('#picName');
+  if(['PIC','SOLO'].includes(r)){
+    let owner=ownerPerson();
+    field.value=S.pilot.name;
+    field.dataset.personId=owner?.id||'';
+    field.readOnly=true;
+    field.style.background='#f3f4f6';
+  }else{
+    if(field.value===S.pilot.name){
+      field.value='';
+      field.dataset.personId='';
+    }
+    field.readOnly=false;
+    field.style.background='#fff';
+  }
+}
+
+function showFormError(msg){
+  let box=$('#formError');
+  box.textContent=msg;
+  box.classList.add('show');
+  box.scrollIntoView({behavior:'smooth',block:'center'});
+}
+function clearFormError(){
+  let box=$('#formError');
+  if(box){box.textContent='';box.classList.remove('show');}
+}
+function saveFlight(){
+  clearFormError();
+
+  if(!$('#date').value) return showFormError('Please select the flight date.');
+  if(!$('#aid').value) return showFormError('Please select an aircraft.');
+  if(!$('#dep').value.trim() || !$('#arr').value.trim()) return showFormError('Please enter both departure and arrival places.');
+
+  let offValid=validateTimeField('off');
+  let onValid=validateTimeField('on');
+  if(!offValid || !onValid){
+    return showFormError('Please correct the highlighted departure or arrival time before saving.');
+  }
+  calc();
+
+  let m=Number($('#mins').value||0);
+  if(m<=0) return showFormError('Total flight time must be greater than zero.');
+
+  let night=Number($('#nightMin').value||0), ifr=Number($('#ifrMin').value||0);
+  if(night>m) return showFormError('Night time cannot be greater than total flight time.');
+  if(ifr>m) return showFormError('IFR time cannot be greater than total flight time.');
+
+  let pilotConfig=document.querySelector('input[name="pilotConfig"]:checked')?.value||'single';
+
+  let role=$('#role').value;
+  let picName=$('#picName').value.trim();
+  if(!picName) return showFormError('Please enter the name of the PIC.');
+  if(!['PIC','SOLO'].includes(role) && picName.toLowerCase()===S.pilot.name.toLowerCase()){
+    return showFormError('For '+role+', Name of PIC must be the commander/PIC of the flight, not the account holder.');
+  }
+
+  let picPerson=['PIC','SOLO'].includes(role)?ownerPerson():ensurePersonForName(picName);
+  if(picPerson) picName=picPerson.name;
+
+  let existingIndex=editingFlightId?S.flights.findIndex(x=>x.id===editingFlightId):-1;
+  let original=existingIndex>=0?S.flights[existingIndex]:null;
+  let f={
+    id:original?original.id:'f'+Date.now(),
+    date:$('#date').value,
+    aid:$('#aid').value,
+    dep:$('#dep').value.trim().toUpperCase(),
+    arr:$('#arr').value.trim().toUpperCase(),
+    off:$('#off').value,
+    on:$('#on').value,
+    mins:m,
+    role:role,
+    picName:picName,
+    picPersonId:picPerson?.id||'',
+    pilotConfig:pilotConfig,
+    nightMin:night,
+    ifrMin:ifr,
+    takeoffDay:Number($('#toDay').value||0),
+    takeoffNight:Number($('#toNight').value||0),
+    landingDay:Number($('#ldgDay').value||0),
+    landingNight:Number($('#ldgNight').value||0),
+    instrMin:Number($('#instrMin').value||0),
+    stdType:$('#stdType').value.trim(),
+    stdMin:Number($('#stdMin').value||0),
+    crossCountry:$('#crossCountry').checked,
+    remarks:$('#remarks').value.trim(),
+    createdAt:original?.createdAt||new Date().toISOString(),
+    updatedAt:new Date().toISOString()
+  };
+
+  if(existingIndex>=0) S.flights[existingIndex]=f;
+  else S.flights.push(f);
+  editingFlightId=null;
+  save();
+  flight(f.id);
+}
+function flight(id){editingFlightId=null;let f=S.flights.find(x=>x.id===id),a=ac(f.aid);app.innerHTML=header('Flight details',`${f.date} · ${a.icao}`,`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="go('logbook')">← Logbook</button><button class="btn primary" onclick="editFlight('${id}')">Edit flight</button><button class="btn dangerbtn" onclick="openDeleteModal('${id}')">Delete flight</button></div>`)+`<div class="card">
+<div class="icao">${a.icao}</div><div class="muted">${a.reg} · ${a.manufacturer} ${a.model} ${a.variant}</div>
+<h2 style="margin-top:22px">${f.dep} ${f.off||''} → ${f.arr} ${f.on||''}</h2>
+<div class="kpi-grid"><div class="card"><div class="label">Total time</div><div class="big">${fmt(f.mins)}</div></div><div class="card"><div class="label">Pilot function</div><div class="big" style="font-size:20px">${f.role}</div></div><div class="card"><div class="label">Night</div><div class="big">${fmt(f.nightMin||0)}</div></div><div class="card"><div class="label">IFR</div><div class="big">${fmt(f.ifrMin||0)}</div></div></div>
+<div class="formgrid" style="margin-top:18px"><div><b>Name of PIC</b><div class="muted">${f.picName||'—'}</div></div><div><b>Engine configuration</b><div class="muted">✓ ${engineCode(a)==='ME'?'Multi-engine (ME)':'Single-engine (SE)'}</div></div><div><b>Pilot configuration</b><div class="muted">${flightPilotConfig(f)==='multi'?'Multi-pilot':'Single-pilot'}</div></div><div><b>Configuration time</b><div class="muted">${(()=>{let c=configurationTimes(f);return c.multi?`Multi-pilot ${fmt(c.multi)}`:c.spME?`Single-pilot ME ${fmt(c.spME)}`:`Single-pilot SE ${fmt(c.spSE)}`})()}</div></div><div><b>Take-offs</b><div class="muted">Day ${f.takeoffDay||0} · Night ${f.takeoffNight||0}</div></div><div><b>Landings</b><div class="muted">Day ${f.landingDay||0} · Night ${f.landingNight||0}</div></div><div><b>Cross-country</b><div class="muted">${f.crossCountry?'Yes':'No'}</div></div></div>
+<p><b>Remarks / endorsements</b><br><span class="muted">${f.remarks||'—'}</span></p></div>`}
+
+function openDeleteModal(id){
+  let f=S.flights.find(x=>x.id===id);
+  if(!f) return;
+  pendingDeleteFlightId=id;
+  let a=ac(f.aid);
+  let modal=document.getElementById('deleteModal');
+  let textEl=document.getElementById('deleteText');
+  textEl.textContent=`Delete ${f.date} · ${a?.icao||'aircraft'} · ${f.dep} → ${f.arr} · ${fmt(f.mins)}? This removes the flight from the V1 prototype.`;
+  modal.classList.add('open');
+}
+function closeDeleteModal(){
+  pendingDeleteFlightId=null;
+  document.getElementById('deleteModal').classList.remove('open');
+}
+function confirmDeleteFlight(){
+  if(!pendingDeleteFlightId) return;
+  let idx=S.flights.findIndex(f=>f.id===pendingDeleteFlightId);
+  if(idx>=0){
+    S.flights.splice(idx,1);
+    save();
+  }
+  pendingDeleteFlightId=null;
+  document.getElementById('deleteModal').classList.remove('open');
+  go('logbook');
+}
+
+function aircraft(){
+  editingAircraftId=null;
+  app.innerHTML=header('Aircraft','ICAO type designator is the primary logbook identifier',`<button class="btn primary" onclick="newAircraft()">＋ Add aircraft</button>`)+
+  `<div class="grid aircraft">${S.aircraft.map(a=>{
+    let usedFlights=S.flights.filter(f=>f.aid===a.id);
+    let m=usedFlights.reduce((n,f)=>n+Number(f.mins||0),0);
+    return `<div class="card">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
+        <div>
+          <div class="icao">${a.icao}</div>
+          <h3>${a.reg}</h3>
+        </div>
+        <button class="btn" type="button" onclick="editAircraft('${a.id}')">Edit</button>
+      </div>
+      <div class="muted">${a.manufacturer} ${a.model} ${a.variant||''}</div>
+      <p><b>${fmt(m)}</b> <span class="muted">your time · ${usedFlights.length} flight${usedFlights.length===1?'':'s'}</span></p>
+      <span class="muted">✓ ${engineCode(a)==='ME'?'Multi-engine (ME)':'Single-engine (SE)'}</span>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function newAircraft(editId=null){
+  editingAircraftId=editId;
+  let existing=editId?S.aircraft.find(a=>a.id===editId):null;
+  if(editId && !existing){go('aircraft');return;}
+
+  let linkedFlights=existing?S.flights.filter(f=>f.aid===existing.id).length:0;
+  let title=existing?'Edit aircraft':'Add aircraft';
+  let subtitle=existing
+    ? 'Update aircraft details. Existing flights remain linked to this aircraft.'
+    : 'The ICAO type designator will appear in flight records';
+
+  app.innerHTML=header(title,subtitle,`<button class="btn" onclick="go('aircraft')">Cancel</button>`)+
+  `<form class="card form" onsubmit="saveAircraft(event)">
+    ${existing && linkedFlights?`<div class="note" style="margin-bottom:16px"><b>${linkedFlights} existing flight${linkedFlights===1?'':'s'} use this aircraft.</b><br>Changes to the aircraft details will also be reflected in those flight records and exports. If you change SE ↔ ME, the Single-pilot SE/ME allocation for those flights will change accordingly.</div>`:''}
+    <div class="formgrid">
+      <div class="field"><label>Registration</label><input id="reg" placeholder="LY-ABC" required value="${existing?htmlEscape(existing.reg||''):''}"></div>
+      <div class="field"><label>ICAO type designator</label><input id="icao" placeholder="G2CA" required value="${existing?htmlEscape(existing.icao||''):''}"></div>
+      <div class="field"><label>Manufacturer</label><input id="man" placeholder="Guimbal" required value="${existing?htmlEscape(existing.manufacturer||''):''}"></div>
+      <div class="field"><label>Model</label><input id="model" placeholder="Cabri" required value="${existing?htmlEscape(existing.model||''):''}"></div>
+      <div class="field"><label>Variant</label><input id="variant" placeholder="G2" value="${existing?htmlEscape(existing.variant||''):''}"></div>
+      <div class="field"><label>Engine configuration</label>
+        <select id="engine">
+          <option value="Single engine"${existing&&engineCode(existing)==='SE'?' selected':''}>Single-engine (SE)</option>
+          <option value="Multi engine"${existing&&engineCode(existing)==='ME'?' selected':''}>Multi-engine (ME)</option>
+        </select>
+        <div class="mini">Used automatically for Single-pilot SE/ME logbook allocation.</div>
+      </div>
+    </div>
+    <div class="actions"><button class="btn primary">${existing?'Save changes':'Save aircraft'}</button></div>
+  </form>`;
+}
+
+function editAircraft(id){
+  newAircraft(id);
+}
+
+function saveAircraft(e){
+  e.preventDefault();
+
+  let reg=$('#reg').value.trim().toUpperCase();
+  let icao=$('#icao').value.trim().toUpperCase();
+  let manufacturer=$('#man').value.trim();
+  let model=$('#model').value.trim();
+  let variant=$('#variant').value.trim();
+  let engine=$('#engine').value;
+
+  let duplicate=S.aircraft.find(a=>a.id!==editingAircraftId && String(a.reg||'').toUpperCase()===reg);
+  if(duplicate){
+    alert(`Another aircraft already uses registration ${reg}.`);
+    return;
+  }
+
+  if(editingAircraftId){
+    let a=S.aircraft.find(a=>a.id===editingAircraftId);
+    if(!a){go('aircraft');return;}
+    a.reg=reg;
+    a.icao=icao;
+    a.manufacturer=manufacturer;
+    a.model=model;
+    a.variant=variant;
+    a.engine=engine;
+  }else{
+    S.aircraft.push({
+      id:'a'+Date.now(),
+      reg,icao,manufacturer,model,variant,engine
+    });
+  }
+
+  save();
+  editingAircraftId=null;
+  go('aircraft');
+}
+
+function pilots(){
+  editingPersonId=null;
+  let cards=S.people
+    .slice()
+    .sort((a,b)=>(b.isAccountHolder?1:0)-(a.isAccountHolder?1:0) || a.name.localeCompare(b.name))
+    .map(p=>{
+      let linked=S.flights.filter(f=>f.picPersonId===p.id || (!f.picPersonId && String(f.picName||'').toLowerCase()===p.name.toLowerCase()));
+      return `<div class="card pilot-card">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
+          <div>
+            <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
+              <h3 style="margin:0">${htmlEscape(p.name)}</h3>
+              ${p.isAccountHolder?'<span class="badge">Account holder</span>':'<span class="badge gray">'+htmlEscape(p.role||'Pilot')+'</span>'}
+            </div>
+            ${p.licence?`<div class="muted" style="margin-top:5px">${htmlEscape(p.licence)}</div>`:''}
+          </div>
+          ${p.isAccountHolder
+            ? `<button class="btn" type="button" onclick="go('profile')">Profile</button>`
+            : `<button class="btn" type="button" onclick="editPerson('${p.id}')">Edit</button>`}
+        </div>
+        <p><b>${linked.length}</b> <span class="muted">flight${linked.length===1?'':'s'} recorded with this person as PIC</span></p>
+        ${p.notes?`<div class="muted" style="margin-bottom:10px">${htmlEscape(p.notes)}</div>`:''}
+        <div class="signature-placeholder">Signature profile: planned for V2 — this pilot profile will be the link point for reusable signatures/certifications.</div>
+      </div>`;
+    }).join('');
+
+  app.innerHTML=header('Pilots','Saved pilot profiles for quick selection and future certification workflows',
+    `<button class="btn primary" onclick="newPerson()">＋ Add pilot</button>`)+
+    `<div class="grid aircraft">${cards||'<div class="card"><p class="muted">No saved pilots yet.</p></div>'}</div>`;
+}
+
+function newPerson(editId=null){
+  editingPersonId=editId;
+  let existing=editId?personById(editId):null;
+  if(existing?.isAccountHolder){go('profile');return;}
+  if(editId && !existing){go('pilots');return;}
+
+  let linked=existing?S.flights.filter(f=>f.picPersonId===existing.id).length:0;
+  app.innerHTML=header(existing?'Edit pilot':'Add pilot',
+    existing?'Update the saved pilot profile. Linked flights stay connected.':'Save a pilot once, then select them quickly when adding flights.',
+    `<button class="btn" onclick="go('pilots')">Cancel</button>`)+
+    `<form class="card form" onsubmit="savePerson(event)">
+      ${existing&&linked?`<div class="note" style="margin-bottom:16px"><b>${linked} linked flight${linked===1?'':'s'}.</b><br>If you change this pilot's name, linked flight records will be updated automatically.</div>`:''}
+      <div class="formgrid">
+        <div class="field"><label>Name</label><input id="personName" required value="${existing?htmlEscape(existing.name):''}" placeholder="Pilot name"></div>
+        <div class="field"><label>Role / relationship</label><input id="personRole" value="${existing?htmlEscape(existing.role||'Pilot'):'Pilot'}" placeholder="Instructor, examiner, commander..."></div>
+        <div class="field"><label>Licence / identifier</label><input id="personLicence" value="${existing?htmlEscape(existing.licence||''):''}" placeholder="Optional"></div>
+        <div class="field"><label>Notes</label><input id="personNotes" value="${existing?htmlEscape(existing.notes||''):''}" placeholder="Optional"></div>
+      </div>
+      <div class="signature-placeholder" style="margin-top:14px">Signature association will be added later in V2. This profile ID is already stored with linked flights so signatures can be attached to the person rather than re-entered each time.</div>
+      <div class="actions"><button class="btn primary">${existing?'Save changes':'Save pilot'}</button></div>
+    </form>`;
+}
+
+function editPerson(id){newPerson(id)}
+
+function savePerson(e){
+  e.preventDefault();
+  let name=$('#personName').value.trim();
+  let role=$('#personRole').value.trim()||'Pilot';
+  let licence=$('#personLicence').value.trim();
+  let notes=$('#personNotes').value.trim();
+  if(!name) return;
+
+  let duplicate=S.people.find(p=>p.id!==editingPersonId && p.name.toLowerCase()===name.toLowerCase());
+  if(duplicate){
+    alert('A saved pilot with this name already exists.');
+    return;
+  }
+
+  if(editingPersonId){
+    let p=personById(editingPersonId);
+    if(!p){go('pilots');return;}
+    let oldName=p.name;
+    p.name=name;p.role=role;p.licence=licence;p.notes=notes;
+    S.flights.forEach(f=>{
+      if(f.picPersonId===p.id || (!f.picPersonId && String(f.picName||'').toLowerCase()===oldName.toLowerCase())){
+        f.picPersonId=p.id;
+        f.picName=name;
+      }
+    });
+  }else{
+    S.people.push({
+      id:'p'+Date.now()+Math.random().toString(36).slice(2,6),
+      name,role,licence,notes,isAccountHolder:false
+    });
+  }
+
+  save();
+  editingPersonId=null;
+  go('pilots');
+}
+
+
+function endorsementById(id){return (S.endorsements||[]).find(e=>e.id===id)}
+
+function endorsements(){
+  editingEndorsementId=null;
+  let items=[...(S.endorsements||[])].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  app.innerHTML=header('Pilot Memoranda / Endorsements',
+    'Instructor, examiner and licensing endorsements kept alongside your flight records.',
+    `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="go('pilots')">Manage pilots</button><button class="btn primary" onclick="endorsementForm()">＋ Add endorsement</button></div>`)+
+  `<div class="card">
+    <div class="note" style="margin-bottom:14px">V1.22 stores and signs endorsements inside HeliLog. A dedicated paper-style endorsement-page export will be added later.</div>
+    <div class="endorsement-list">
+      ${items.length?items.map(e=>{
+        let signer=personById(e.signatoryPersonId);
+        let q=qualificationById(e.qualificationId);
+        return `<div class="endorsement-card">
+          <div class="qual-top">
+            <div>
+              <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
+                <b>${htmlEscape(e.title||e.category||'Endorsement')}</b>
+                <span class="badge gray">${htmlEscape(e.category||'Other')}</span>
+                ${e.signatureData?'<span class="badge">Signed</span>':'<span class="badge gray">Unsigned</span>'}
+              </div>
+              <div class="endorsement-meta">
+                <span><b>Date:</b> ${displayDate(e.date)}</span>
+                ${e.location?`<span><b>Place:</b> ${htmlEscape(e.location)}</span>`:''}
+                ${q?`<span><b>Related:</b> ${htmlEscape(q.name)}</span>`:''}
+                ${signer?`<span><b>Endorsed by:</b> ${htmlEscape(signer.name)}</span>`:''}
+              </div>
+            </div>
+            <div class="qual-actions">
+              <button class="btn" type="button" onclick="endorsementForm('${e.id}')">Edit</button>
+              <button class="btn" type="button" onclick="signEndorsement('${e.id}')">${e.signatureData?'Re-sign':'Sign'}</button>
+              <button class="btn dangerbtn" type="button" onclick="deleteEndorsement('${e.id}')">Delete</button>
+            </div>
+          </div>
+
+          <div class="endorsement-body">${htmlEscape(e.text||'')}</div>
+
+          ${e.signatureData?`<div class="signature-preview">
+            <div>
+              <div class="signature-status"><b>Signed by:</b> ${htmlEscape(e.signedName||signer?.name||'')}</div>
+              ${e.signedLicence?`<div class="signature-status"><b>Licence / ID:</b> ${htmlEscape(e.signedLicence)}</div>`:''}
+              <div class="signature-status"><b>Signed:</b> ${e.signedAt?new Date(e.signedAt).toLocaleString():'—'}</div>
+            </div>
+            <img src="${e.signatureData}" alt="Endorsement signature">
+          </div>`:''}
+        </div>`;
+      }).join(''):`<div class="empty-state">No memoranda or endorsements recorded yet.</div>`}
+    </div>
+  </div>`;
+}
+
+function endorsementForm(editId=null){
+  editingEndorsementId=editId;
+  let e=editId?endorsementById(editId):null;
+  if(editId && !e){endorsements();return;}
+  e=e||{
+    date:new Date().toISOString().slice(0,10),
+    category:'Proficiency check / revalidation',
+    title:'',
+    text:'',
+    location:'',
+    qualificationId:'',
+    signatoryPersonId:'',
+    signatureData:''
+  };
+
+  let signers=S.people.filter(p=>!p.isAccountHolder);
+  app.innerHTML=header(editId?'Edit endorsement':'Add endorsement',
+    'Record the wording written by an instructor, examiner or other authorised person.',
+    `<button class="btn" onclick="go('endorsements')">Cancel</button>`)+
+  `<form class="card form" onsubmit="saveEndorsement(event)">
+    ${e.signatureData?`<div class="note" style="margin-bottom:16px"><b>This endorsement is currently signed.</b><br>Saving edits will remove the existing signature and require the endorsement to be signed again.</div>`:''}
+    <div class="formgrid">
+      <div class="field"><label>Date</label><input id="endorseDate" type="date" required value="${htmlEscape(e.date||'')}"></div>
+      <div class="field"><label>Category</label>
+        <select id="endorseCategory">
+          ${['Skill test','Proficiency check / revalidation','Type rating endorsement','Licence endorsement','Training completion','Other'].map(x=>`<option${e.category===x?' selected':''}>${x}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field"><label>Title</label><input id="endorseTitle" required value="${htmlEscape(e.title||'')}" placeholder="e.g. Cabri G2 type rating revalidation"></div>
+      <div class="field"><label>Place</label><input id="endorseLocation" value="${htmlEscape(e.location||'')}" placeholder="Optional"></div>
+
+      <div class="field"><label>Related licence / rating</label>
+        <select id="endorseQualification">
+          <option value="">None</option>
+          ${(S.qualifications||[]).map(q=>`<option value="${q.id}"${e.qualificationId===q.id?' selected':''}>${htmlEscape(q.name)} — ${htmlEscape(q.category)}</option>`).join('')}
+        </select>
+      </div>
+
+      <div class="field"><label>Instructor / examiner / endorser</label>
+        <select id="endorseSigner" required>
+          <option value="">Select saved pilot</option>
+          ${signers.map(p=>`<option value="${p.id}"${e.signatoryPersonId===p.id?' selected':''}>${htmlEscape(p.name)}${p.licence?' — '+htmlEscape(p.licence):''}</option>`).join('')}
+        </select>
+        <div class="mini">The endorser is linked to a saved pilot profile so a reusable signature can be associated with that profile later.</div>
+      </div>
+    </div>
+
+    <div class="field" style="margin-top:14px"><label>Endorsement / memorandum text</label>
+      <textarea id="endorseText" required placeholder="Enter the endorsement wording here...">${htmlEscape(e.text||'')}</textarea>
+    </div>
+
+    <div class="actions">
+      <button class="btn" type="button" onclick="go('pilots')">Manage pilots</button>
+      <button class="btn primary">${editId?'Save changes':'Save endorsement'}</button>
+    </div>
+  </form>`;
+}
+
+function saveEndorsement(ev){
+  ev.preventDefault();
+  let date=$('#endorseDate').value;
+  let category=$('#endorseCategory').value;
+  let title=$('#endorseTitle').value.trim();
+  let location=$('#endorseLocation').value.trim();
+  let qualificationId=$('#endorseQualification').value;
+  let signatoryPersonId=$('#endorseSigner').value;
+  let body=$('#endorseText').value.trim();
+  if(!date||!title||!signatoryPersonId||!body) return;
+
+  let item={
+    date,category,title,location,qualificationId,signatoryPersonId,text:body
+  };
+
+  if(editingEndorsementId){
+    let e=endorsementById(editingEndorsementId);
+    if(!e){endorsements();return;}
+    Object.assign(e,item);
+    // An edited statement must be signed again.
+    e.signatureData='';
+    e.signedAt='';
+    e.signedName='';
+    e.signedLicence='';
+  }else{
+    S.endorsements.push({
+      id:'e'+Date.now()+Math.random().toString(36).slice(2,6),
+      ...item,
+      signatureData:'',
+      signedAt:'',
+      signedName:'',
+      signedLicence:''
+    });
+  }
+
+  save();
+  editingEndorsementId=null;
+  endorsements();
+}
+
+function deleteEndorsement(id){
+  let e=endorsementById(id);
+  if(!e) return;
+  if(!confirm(`Delete "${e.title}"?`)) return;
+  S.endorsements=S.endorsements.filter(x=>x.id!==id);
+  save();
+  endorsements();
+}
+
+function signEndorsement(id){
+  let e=endorsementById(id);
+  if(!e){endorsements();return;}
+  let signer=personById(e.signatoryPersonId);
+  if(!signer){
+    alert('This endorsement has no valid saved endorser profile. Edit it and select a saved pilot first.');
+    return;
+  }
+
+  app.innerHTML=header('Sign endorsement',
+    'The selected instructor/examiner explicitly signs this specific endorsement.',
+    `<button class="btn" onclick="go('endorsements')">Cancel</button>`)+
+  `<div class="card">
+    <div class="signer-card">
+      <div><b>${htmlEscape(e.title)}</b></div>
+      <div class="endorsement-meta">
+        <span><b>Date:</b> ${displayDate(e.date)}</span>
+        <span><b>Endorser:</b> ${htmlEscape(signer.name)}</span>
+        ${signer.licence?`<span><b>Licence / ID:</b> ${htmlEscape(signer.licence)}</span>`:''}
+      </div>
+      <div class="endorsement-body">${htmlEscape(e.text)}</div>
+    </div>
+
+    <div class="note" style="margin-bottom:12px">Prototype signature capture only. This is not yet presented as a qualified or authority-approved electronic signature. The endorser should review the text above before signing.</div>
+
+    <div class="signature-canvas-wrap">
+      <div style="font-weight:700;margin-bottom:8px">Signature of ${htmlEscape(signer.name)}</div>
+      <canvas id="signatureCanvas" width="900" height="260"></canvas>
+      <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:10px">
+        <button class="btn" type="button" onclick="clearEndorsementSignature()">Clear</button>
+        <button class="btn primary" type="button" onclick="applyEndorsementSignature('${e.id}')">Apply signature</button>
+      </div>
+    </div>
+  </div>`;
+
+  setupEndorsementSignaturePad();
+}
+
+let endorsementSignatureDirty=false;
+function setupEndorsementSignaturePad(){
+  let canvas=document.getElementById('signatureCanvas');
+  if(!canvas) return;
+  let ctx=canvas.getContext('2d');
+  ctx.lineWidth=3;
+  ctx.lineCap='round';
+  ctx.lineJoin='round';
+  let drawing=false,lastX=0,lastY=0;
+  endorsementSignatureDirty=false;
+
+  function pos(ev){
+    let r=canvas.getBoundingClientRect();
+    let p=ev.touches?ev.touches[0]:ev;
+    return {
+      x:(p.clientX-r.left)*(canvas.width/r.width),
+      y:(p.clientY-r.top)*(canvas.height/r.height)
+    };
+  }
+  function start(ev){
+    ev.preventDefault();
+    let p=pos(ev); drawing=true;lastX=p.x;lastY=p.y;
+  }
+  function move(ev){
+    if(!drawing) return;
+    ev.preventDefault();
+    let p=pos(ev);
+    ctx.beginPath();ctx.moveTo(lastX,lastY);ctx.lineTo(p.x,p.y);ctx.stroke();
+    lastX=p.x;lastY=p.y;endorsementSignatureDirty=true;
+  }
+  function end(ev){if(drawing){ev?.preventDefault?.();drawing=false}}
+
+  canvas.addEventListener('mousedown',start);
+  canvas.addEventListener('mousemove',move);
+  window.addEventListener('mouseup',end,{once:false});
+  canvas.addEventListener('touchstart',start,{passive:false});
+  canvas.addEventListener('touchmove',move,{passive:false});
+  canvas.addEventListener('touchend',end,{passive:false});
+}
+
+function clearEndorsementSignature(){
+  let canvas=document.getElementById('signatureCanvas');
+  if(!canvas) return;
+  canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
+  endorsementSignatureDirty=false;
+}
+
+function applyEndorsementSignature(id){
+  let e=endorsementById(id);
+  let canvas=document.getElementById('signatureCanvas');
+  if(!e||!canvas) return;
+  if(!endorsementSignatureDirty){
+    alert('Please sign inside the signature box first.');
+    return;
+  }
+  let signer=personById(e.signatoryPersonId);
+  if(!signer) return;
+
+  e.signatureData=canvas.toDataURL('image/png');
+  e.signedAt=new Date().toISOString();
+  e.signedName=signer.name;
+  e.signedLicence=signer.licence||'';
+  save();
+  endorsements();
+}
+
+function totals(){let t=calcTotals(),by={};S.flights.forEach(f=>{let k=ac(f.aid)?.icao||'—';by[k]=(by[k]||0)+f.mins});app.innerHTML=header('Totals','Calculated from your recorded flights')+
+`<div class="grid stats">${[['Total',t.total],['PIC',t.pic],['Co-pilot',t.copilot],['Dual',t.dual]].map(x=>`<div class="card"><div class="label">${x[0]}</div><div class="big">${fmt(x[1])}</div></div>`).join('')}</div>
+<div class="grid two" style="margin-top:16px"><div class="card"><div class="head"><h2>By ICAO type</h2></div>${Object.entries(by).map(([k,v])=>`<p><b>${k}</b><span style="float:right">${fmt(v)}</span></p>`).join('')}</div>
+<div class="card"><div class="head"><h2>Additional breakdown</h2></div><p>SPIC <span style="float:right">${fmt(t.spic)}</span></p><p>PICUS <span style="float:right">${fmt(t.picus)}</span></p><p>Night <span style="float:right">${fmt(t.night)}</span></p><p>IFR <span style="float:right">${fmt(t.ifr)}</span></p></div></div>`}
+function profile(){
+  editingQualificationId=null;
+  let med=S.pilot.medical||{};
+  let qualifications=[...(S.qualifications||[])].sort((a,b)=>{
+    let order={'Licence':1,'Type rating':2,'Instrument rating':3,'Instructor rating':4,'Other':5};
+    return (order[a.category]||99)-(order[b.category]||99) || a.name.localeCompare(b.name);
+  });
+
+  app.innerHTML=header('Profile','Pilot details, licences, ratings and medical records',
+    `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="go('pilots')">Manage pilots</button><button class="btn" onclick="go('endorsements')">Endorsements</button><button class="btn primary" onclick="editOwnProfile()">Edit profile</button></div>`)+
+  `<div class="profilegrid">
+    <div class="card">
+      <div class="head"><h2>Pilot details</h2><button class="btn" onclick="editOwnProfile()">Edit</button></div>
+      <div class="profileline"><div class="k">Full name</div><div><b>${htmlEscape(S.pilot.name||'—')}</b></div></div>
+      <div class="profileline"><div class="k">Licence type</div><div>${htmlEscape(S.pilot.licenceType||'—')}</div></div>
+      <div class="profileline"><div class="k">Licence number</div><div>${htmlEscape(S.pilot.licenceNumber||'—')}</div></div>
+      <div class="profileline"><div class="k">Competent authority</div><div>${htmlEscape(S.pilot.authority||'—')}</div></div>
+      <div class="signature-placeholder" style="margin-top:14px">Reusable signature: planned for V2. It will be associated with this profile and only applied when you explicitly sign or certify a record.</div>
+    </div>
+
+    <div class="card">
+      <div class="head"><h2>Medical</h2><button class="btn" onclick="editMedical()">Edit</button></div>
+      <div class="profileline"><div class="k">Class</div><div>${htmlEscape(med.class||'—')}</div></div>
+      <div class="profileline"><div class="k">Certificate / reference</div><div>${htmlEscape(med.number||'—')}</div></div>
+      <div class="profileline"><div class="k">Issue date</div><div>${displayDate(med.issueDate)}</div></div>
+      <div class="profileline"><div class="k">Valid until</div><div>${displayDate(med.validUntil)}</div></div>
+      <div class="profileline"><div class="k">Notes</div><div>${htmlEscape(med.notes||'—')}</div></div>
+      <div class="mini" style="margin-top:12px">V1.21 stores the dates only. HeliLog does not yet determine medical validity or provide regulatory currency advice.</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="head">
+      <div><h2>Licences &amp; ratings</h2><div class="muted">Record your licences, type ratings and other privileges.</div></div>
+      <button class="btn primary" onclick="qualificationForm()">＋ Add licence / rating</button>
+    </div>
+    <div class="qual-list">
+      ${qualifications.length?qualifications.map(q=>`
+        <div class="qual-item">
+          <div class="qual-top">
+            <div>
+              <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+                <b>${htmlEscape(q.name||'Unnamed qualification')}</b>
+                <span class="badge gray">${htmlEscape(q.category||'Other')}</span>
+                ${q.isPrimary?'<span class="badge">Primary licence</span>':''}
+              </div>
+              <div class="qual-meta">
+                ${q.number?`<span><b>No.:</b> ${htmlEscape(q.number)}</span>`:''}
+                <span><b>Issued:</b> ${displayDate(q.issueDate)}</span>
+                <span><b>Valid until:</b> ${displayDate(q.validUntil)}</span>
+              </div>
+              ${q.notes?`<div class="muted" style="margin-top:7px">${htmlEscape(q.notes)}</div>`:''}
+            </div>
+            <div class="qual-actions">
+              <button class="btn" type="button" onclick="qualificationForm('${q.id}')">Edit</button>
+              <button class="btn dangerbtn" type="button" onclick="deleteQualification('${q.id}')">Delete</button>
+            </div>
+          </div>
+        </div>`).join(''):`<div class="empty-state">No licences or ratings recorded yet.</div>`}
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="head">
+      <div>
+        <h2>Backup &amp; restore</h2>
+        <div class="muted">Keep a complete copy of your HeliLog data outside this browser.</div>
+      </div>
+    </div>
+    <div class="profilegrid">
+      <div>
+        <p><b>Full HeliLog backup</b></p>
+        <p class="muted">Includes flights, aircraft, saved pilots, profile, licences/ratings, medical details, endorsements and captured endorsement signatures.</p>
+        <button class="btn primary" type="button" onclick="downloadFullBackup()">Download backup</button>
+      </div>
+      <div>
+        <p><b>Restore from backup</b></p>
+        <p class="muted">Restoring replaces the HeliLog data currently stored in this browser. The selected file is checked before anything is changed.</p>
+        <input id="restoreBackupInput" type="file" accept=".json,application/json" style="display:none" onchange="handleBackupRestoreFile(event)">
+        <button class="btn" type="button" onclick="document.getElementById('restoreBackupInput').click()">Choose backup file</button>
+      </div>
+    </div>
+    <div id="backupRestoreStatus" style="margin-top:12px"></div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="head">
+      <div>
+        <h2>App &amp; device</h2>
+        <div class="muted">Install HeliLog on a phone or tablet and check offline-app status.</div>
+      </div>
+      <button class="btn primary" type="button" onclick="installHeliLog()">Install HeliLog</button>
+    </div>
+    <div id="pwaStatus"></div>
+    <div class="install-help" style="margin-top:10px">On iPhone/iPad, open the hosted HeliLog site in Safari, use <b>Share → Add to Home Screen</b>. Full offline PWA support requires HeliLog to be served over HTTPS. Opening this prototype directly as a file still works for testing, but it cannot register the offline service worker.</div>
+  </div>
+
+  <div class="note" style="margin-top:16px">Profile, licence, rating and medical information in V1.24 is for record keeping and PDF identification only. Automatic EASA validity, recency and expiry calculations are planned for a later version.</div>`;
+  updatePWAStatus();
+}
+
+
+function backupSummary(data){
+  return {
+    flights:Array.isArray(data?.flights)?data.flights.length:0,
+    aircraft:Array.isArray(data?.aircraft)?data.aircraft.length:0,
+    pilots:Array.isArray(data?.people)?data.people.length:0,
+    qualifications:Array.isArray(data?.qualifications)?data.qualifications.length:0,
+    endorsements:Array.isArray(data?.endorsements)?data.endorsements.length:0
+  };
+}
+
+function makeFullBackup(){
+  return {
+    app:'HeliLog',
+    format:'helilog-full-backup',
+    backupSchema:1,
+    appVersion:'1.24',
+    exportedAt:new Date().toISOString(),
+    data:JSON.parse(JSON.stringify(S))
+  };
+}
+
+function downloadFullBackup(){
+  let backup=makeFullBackup();
+  let json=JSON.stringify(backup,null,2);
+  let blob=new Blob([json],{type:'application/json;charset=utf-8'});
+  let url=URL.createObjectURL(blob);
+  let a=document.createElement('a');
+  let safeName=String(S.pilot?.name||'Pilot')
+    .trim()
+    .replace(/[^a-z0-9_-]+/gi,'_')
+    .replace(/^_+|_+$/g,'') || 'Pilot';
+  a.href=url;
+  a.download=`HeliLog_Backup_${safeName}_${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+
+  let s=backupSummary(S);
+  let box=document.getElementById('backupRestoreStatus');
+  if(box){
+    box.innerHTML=`<div class="successbox"><b>Backup created.</b> ${s.flights} flights, ${s.aircraft} aircraft, ${s.pilots} pilot profiles, ${s.qualifications} qualifications and ${s.endorsements} endorsements were included.</div>`;
+  }
+}
+
+function extractBackupData(parsed){
+  if(!parsed || typeof parsed!=='object') throw new Error('The selected file does not contain valid HeliLog data.');
+
+  if(parsed.format==='helilog-full-backup'){
+    if(parsed.app!=='HeliLog') throw new Error('This backup is not identified as a HeliLog backup.');
+    if(!parsed.data || typeof parsed.data!=='object') throw new Error('The HeliLog backup has no data section.');
+    return parsed.data;
+  }
+
+  // Also allow a raw HeliLog state object from an earlier prototype/manual backup.
+  if(parsed.pilot && Array.isArray(parsed.flights) && Array.isArray(parsed.aircraft)){
+    return parsed;
+  }
+
+  throw new Error('This is not a recognised HeliLog full-backup file.');
+}
+
+function validateRestoreData(data){
+  let errors=[];
+  if(!data || typeof data!=='object') errors.push('Missing HeliLog data object.');
+  if(!data.pilot || typeof data.pilot!=='object') errors.push('Pilot profile is missing.');
+  if(!Array.isArray(data.flights)) errors.push('Flights list is missing.');
+  if(!Array.isArray(data.aircraft)) errors.push('Aircraft list is missing.');
+
+  if(Array.isArray(data.flights)){
+    let bad=data.flights.find(f=>!f || typeof f!=='object' || !f.id || !f.date || !f.aid);
+    if(bad) errors.push('At least one flight record is incomplete.');
+  }
+  if(Array.isArray(data.aircraft)){
+    let bad=data.aircraft.find(a=>!a || typeof a!=='object' || !a.id || !a.reg || !a.icao);
+    if(bad) errors.push('At least one aircraft record is incomplete.');
+  }
+
+  return errors;
+}
+
+async function handleBackupRestoreFile(ev){
+  let file=ev.target.files?.[0];
+  let box=document.getElementById('backupRestoreStatus');
+  if(!file) return;
+
+  if(box) box.innerHTML='<div class="importsummary">Checking backup file…</div>';
+
+  try{
+    let raw=await file.text();
+    let parsed=JSON.parse(raw);
+    let restoredData=extractBackupData(parsed);
+    let errors=validateRestoreData(restoredData);
+
+    if(errors.length){
+      if(box) box.innerHTML=`<div class="importerrors"><b>Restore cancelled.</b><br>${errors.map(x=>'• '+htmlEscape(x)).join('<br>')}</div>`;
+      ev.target.value='';
+      return;
+    }
+
+    let s=backupSummary(restoredData);
+    if(box){
+      box.innerHTML=`<div class="importsummary"><b>Valid HeliLog backup found.</b><br>${s.flights} flights · ${s.aircraft} aircraft · ${s.pilots} pilot profiles · ${s.qualifications} qualifications · ${s.endorsements} endorsements</div>`;
+    }
+
+    let ok=confirm(
+      `Restore this HeliLog backup?\n\n`+
+      `${s.flights} flights\n`+
+      `${s.aircraft} aircraft\n`+
+      `${s.pilots} pilot profiles\n`+
+      `${s.qualifications} qualifications\n`+
+      `${s.endorsements} endorsements\n\n`+
+      `This will replace the HeliLog data currently stored in this browser.`
+    );
+    if(!ok){
+      if(box) box.innerHTML='<div class="importsummary">Restore cancelled. Your current HeliLog data was not changed.</div>';
+      ev.target.value='';
+      return;
+    }
+
+    // Deep copy before assigning so parsed wrapper metadata cannot remain attached.
+    S=JSON.parse(JSON.stringify(restoredData));
+
+    // Run the existing migrations/normalisation so older backups can be restored into V1.23.
+    ensureV116Data();
+    ensureV121Data();
+    save();
+
+    let finalSummary=backupSummary(S);
+    profile();
+    let restoredBox=document.getElementById('backupRestoreStatus');
+    if(restoredBox){
+      restoredBox.innerHTML=`<div class="successbox"><b>Backup restored successfully.</b> HeliLog now contains ${finalSummary.flights} flights, ${finalSummary.aircraft} aircraft, ${finalSummary.pilots} pilot profiles, ${finalSummary.qualifications} qualifications and ${finalSummary.endorsements} endorsements.</div>`;
+    }
+  }catch(err){
+    if(box){
+      box.innerHTML=`<div class="importerrors"><b>Restore failed.</b><br>${htmlEscape(err?.message||String(err))}</div>`;
+    }
+  }finally{
+    ev.target.value='';
+  }
+}
+
+function editOwnProfile(){
+  app.innerHTML=header('Edit pilot profile','Update the details used throughout HeliLog and in PDF exports',
+    `<button class="btn" onclick="go('profile')">Cancel</button>`)+
+  `<form class="card form" onsubmit="saveOwnProfile(event)">
+    <div class="formgrid">
+      <div class="field"><label>Full name</label><input id="ownName" required value="${htmlEscape(S.pilot.name||'')}"></div>
+      <div class="field"><label>Licence type</label><input id="ownLicenceType" value="${htmlEscape(S.pilot.licenceType||'')}" placeholder="CPL(H)"></div>
+      <div class="field"><label>Licence number</label><input id="ownLicenceNumber" value="${htmlEscape(S.pilot.licenceNumber||'')}" placeholder="Optional"></div>
+      <div class="field"><label>Competent authority</label><input id="ownAuthority" value="${htmlEscape(S.pilot.authority||'')}" placeholder="TKA"></div>
+    </div>
+    <div class="note" style="margin-top:14px">Changing your name also updates flights linked to your account-holder pilot profile. Licence details are automatically used in the exported logbook header.</div>
+    <div class="actions"><button class="btn primary">Save profile</button></div>
+  </form>`;
+}
+
+function saveOwnProfile(e){
+  e.preventDefault();
+  let oldName=String(S.pilot.name||'');
+  let name=$('#ownName').value.trim();
+  let licenceType=$('#ownLicenceType').value.trim();
+  let licenceNumber=$('#ownLicenceNumber').value.trim();
+  let authority=$('#ownAuthority').value.trim();
+  if(!name) return;
+
+  let owner=ownerPerson();
+  S.pilot.name=name;
+  S.pilot.licenceType=licenceType;
+  S.pilot.licenceNumber=licenceNumber;
+  S.pilot.licence=licenceType;
+  S.pilot.authority=authority;
+
+  if(owner){
+    owner.name=name;
+    owner.licence=pilotLicenceDisplay();
+    S.flights.forEach(f=>{
+      if(f.picPersonId===owner.id || (!f.picPersonId && String(f.picName||'').toLowerCase()===oldName.toLowerCase())){
+        f.picPersonId=owner.id;
+        f.picName=name;
+      }
+    });
+  }
+
+  let primary=(S.qualifications||[]).find(q=>q.isPrimary);
+  if(primary){
+    primary.name=licenceType||primary.name;
+    primary.number=licenceNumber;
+  }
+
+  save();
+  profile();
+}
+
+function editMedical(){
+  let m=S.pilot.medical||{};
+  app.innerHTML=header('Edit medical','Store medical certificate information without automatic validity calculations',
+    `<button class="btn" onclick="go('profile')">Cancel</button>`)+
+  `<form class="card form" onsubmit="saveMedical(event)">
+    <div class="formgrid">
+      <div class="field"><label>Medical class</label>
+        <select id="medicalClass">
+          <option value=""${!m.class?' selected':''}>Not set</option>
+          <option value="Class 1"${m.class==='Class 1'?' selected':''}>Class 1</option>
+          <option value="Class 2"${m.class==='Class 2'?' selected':''}>Class 2</option>
+          <option value="LAPL"${m.class==='LAPL'?' selected':''}>LAPL</option>
+          <option value="Other"${m.class==='Other'?' selected':''}>Other</option>
+        </select>
+      </div>
+      <div class="field"><label>Certificate / reference</label><input id="medicalNumber" value="${htmlEscape(m.number||'')}" placeholder="Optional"></div>
+      <div class="field"><label>Issue date</label><input id="medicalIssue" type="date" value="${htmlEscape(m.issueDate||'')}"></div>
+      <div class="field"><label>Valid until</label><input id="medicalValid" type="date" value="${htmlEscape(m.validUntil||'')}"></div>
+      <div class="field"><label>Notes</label><input id="medicalNotes" value="${htmlEscape(m.notes||'')}" placeholder="Optional"></div>
+    </div>
+    <div class="actions"><button class="btn primary">Save medical</button></div>
+  </form>`;
+}
+
+function saveMedical(e){
+  e.preventDefault();
+  S.pilot.medical={
+    class:$('#medicalClass').value,
+    number:$('#medicalNumber').value.trim(),
+    issueDate:$('#medicalIssue').value,
+    validUntil:$('#medicalValid').value,
+    notes:$('#medicalNotes').value.trim()
+  };
+  save();
+  profile();
+}
+
+function qualificationForm(editId=null){
+  editingQualificationId=editId;
+  let q=editId?qualificationById(editId):null;
+  if(editId && !q){profile();return;}
+  q=q||{category:'Type rating',name:'',number:'',issueDate:'',validUntil:'',notes:'',isPrimary:false};
+
+  app.innerHTML=header(editId?'Edit licence / rating':'Add licence / rating',
+    'Store the qualification details exactly as you want them recorded.',
+    `<button class="btn" onclick="go('profile')">Cancel</button>`)+
+  `<form class="card form" onsubmit="saveQualification(event)">
+    <div class="formgrid">
+      <div class="field"><label>Category</label>
+        <select id="qualCategory">
+          ${['Licence','Type rating','Instrument rating','Instructor rating','Other'].map(x=>`<option${q.category===x?' selected':''}>${x}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field"><label>Name</label><input id="qualName" required value="${htmlEscape(q.name||'')}" placeholder="e.g. Cabri G2, IR(H), FI(H)"></div>
+      <div class="field"><label>Licence / rating number</label><input id="qualNumber" value="${htmlEscape(q.number||'')}" placeholder="Optional"></div>
+      <div class="field"><label>Issue date</label><input id="qualIssue" type="date" value="${htmlEscape(q.issueDate||'')}"></div>
+      <div class="field"><label>Valid until</label><input id="qualValid" type="date" value="${htmlEscape(q.validUntil||'')}"></div>
+      <div class="field"><label>Notes / privileges</label><input id="qualNotes" value="${htmlEscape(q.notes||'')}" placeholder="Optional"></div>
+      <div class="field"><label>Primary licence</label>
+        <select id="qualPrimary">
+          <option value="no"${!q.isPrimary?' selected':''}>No</option>
+          <option value="yes"${q.isPrimary?' selected':''}>Yes</option>
+        </select>
+        <div class="mini">Only one qualification can be marked as the primary licence.</div>
+      </div>
+    </div>
+    <div class="actions"><button class="btn primary">${editId?'Save changes':'Add qualification'}</button></div>
+  </form>`;
+}
+
+function saveQualification(e){
+  e.preventDefault();
+  let item={
+    category:$('#qualCategory').value,
+    name:$('#qualName').value.trim(),
+    number:$('#qualNumber').value.trim(),
+    issueDate:$('#qualIssue').value,
+    validUntil:$('#qualValid').value,
+    notes:$('#qualNotes').value.trim(),
+    isPrimary:$('#qualPrimary').value==='yes'
+  };
+  if(!item.name) return;
+
+  if(item.isPrimary){
+    S.qualifications.forEach(q=>q.isPrimary=false);
+  }
+
+  if(editingQualificationId){
+    let q=qualificationById(editingQualificationId);
+    if(!q){profile();return;}
+    Object.assign(q,item);
+  }else{
+    S.qualifications.push({id:'q'+Date.now()+Math.random().toString(36).slice(2,6),...item});
+  }
+
+  if(item.isPrimary){
+    S.pilot.licenceType=item.name;
+    S.pilot.licenceNumber=item.number;
+    S.pilot.licence=item.name;
+    let owner=ownerPerson();
+    if(owner) owner.licence=pilotLicenceDisplay();
+  }
+
+  save();
+  editingQualificationId=null;
+  profile();
+}
+
+function deleteQualification(id){
+  let q=qualificationById(id);
+  if(!q) return;
+  if(!confirm(`Delete ${q.name}? This removes it from your HeliLog profile but does not change any flight records.`)) return;
+  S.qualifications=S.qualifications.filter(x=>x.id!==id);
+  save();
+  profile();
+}
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){closeDeleteModal();closeImportModal();closeExportModal();}
+});
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.timewrap')){
+    document.querySelectorAll('.timepicker.open').forEach(x=>x.classList.remove('open'));
+  }
+});
+function render(){
+  let v=location.hash.slice(1)||'dashboard';
+  try{
+    if(v!=='add') editingFlightId=null;
+    ({dashboard,logbook,add,aircraft,pilots,endorsements,totals,profile,mobilemore}[v]||dashboard)();
+    let moreViews=['mobilemore','aircraft','pilots','endorsements','totals','profile'];
+    document.querySelectorAll('[data-v]').forEach(b=>{
+      let active=b.dataset.v===v || (b.dataset.v==='mobilemore' && moreViews.includes(v));
+      b.classList.toggle('on',active);
+    });
+    setTimeout(updatePWAStatus,0);
+  }catch(e){
+    app.innerHTML=`<div class="card"><h2>HeliLog could not load this screen</h2><p class="muted">${String(e)}</p></div>`;
+  }
+}
+render();
+</script></body></html>
