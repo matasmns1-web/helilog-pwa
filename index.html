@@ -11,12 +11,17 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V1.34 PWA Prototype</title>
+<title>HeliLog V1.35 PWA Prototype</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
 /* Keep normal swiping and scrolling but disable pinch/double-tap page zoom inside installed touch PWAs. */
 html.helilog-no-zoom,html.helilog-no-zoom body{touch-action:pan-x pan-y}
+/* Installed phone/tablet app: flight entry and viewing only; browser retains management tools. */
+html.installed-touch-app .web-only-tool,
+html.installed-touch-app .logbook-filter-controls{display:none!important}
+html.installed-touch-app .dashboard-actions{grid-template-columns:repeat(3,minmax(0,1fr))}
+html.installed-touch-app .logbook-flight-list{margin-top:0}
 button,input,select,textarea{font:inherit}button{cursor:pointer}.layout{display:flex;min-height:100vh}
 aside{width:230px;background:var(--dark);color:white;padding:22px 14px;position:fixed;inset:0 auto 0 0}.brand{font-size:23px;font-weight:800;padding:7px 10px 24px}
 nav button{width:100%;border:0;background:transparent;color:#cbd5e1;text-align:left;padding:11px;border-radius:9px;margin:2px 0}
@@ -234,7 +239,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:11px 9px;
 @media(max-width:850px){.dashboard-actions{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style></head>
 <body><div class="layout">
-<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V1.34</span></div><nav>
+<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V1.35</span></div><nav>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="aircraft">🚁 Aircraft</button><button data-v="pilots">👤 Pilots</button><button data-v="endorsements">✎ Endorsements</button><button data-v="totals">◉ Totals</button><button data-v="profile">○ Profile</button>
 </nav></aside><main id="app"></main>
 <div class="mobile">
@@ -637,6 +642,13 @@ function isAppleMobile(){
   return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
     (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
 }
+function isInstalledTouchApp(){
+  return isStandaloneApp() && isAppleMobile();
+}
+// Detect the installation mode rather than the viewport width: iPad landscape
+// and larger iPhones must still use the simplified installed-app Logbook.
+if(isInstalledTouchApp()) document.documentElement.classList.add('installed-touch-app');
+
 function pwaEnvironment(){
   if(isStandaloneApp()) return {kind:'installed',label:'Installed app',detail:'HeliLog is running in standalone app mode.'};
   if(location.protocol==='file:') return {kind:'file',label:'File mode',detail:'Responsive app works, but install/offline PWA features need HTTPS or localhost.'};
@@ -850,7 +862,7 @@ function dashboard(){
 
   <div class="dashboard-actions desktop-only" style="margin-top:14px">
     <button class="card dashboard-action" onclick="go('add')"><span>＋</span><b>Add flight</b><span class="muted">Create a new logbook entry</span></button>
-    <button class="card dashboard-action" onclick="openImportModal()"><span>⇧</span><b>Import CSV</b><span class="muted">Bring in flight history</span></button>
+    <button class="card dashboard-action web-only-tool" onclick="openImportModal()"><span>⇧</span><b>Import CSV</b><span class="muted">Bring in flight history</span></button>
     <button class="card dashboard-action" onclick="go('endorsements')"><span>✎</span><b>Endorsements</b><span class="muted">Memoranda and signatures</span></button>
     <button class="card dashboard-action" onclick="go('profile')"><span>▣</span><b>Backup</b><span class="muted">Profile → Backup & restore</span></button>
   </div>
@@ -890,15 +902,15 @@ function dashboard(){
 function row(f){let a=ac(f.aid);return `<tr class="click" onclick="flight('${f.id}')"><td>${displayDate(f.date)}</td><td><b>${a?.icao||'—'}</b></td><td>${f.dep} → ${f.arr}</td><td>${fmt(f.mins)}</td><td><span class="tag">${f.role}</span></td></tr>`}
 function logbook(){
   let aircraftOptions=S.aircraft.map(a=>`<option value="${a.id}">${a.icao} — ${a.reg}</option>`).join('');
-  app.innerHTML=header('Logbook','Search and filter your flight records',`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn desktop-only" onclick="openImportModal()">Import CSV</button><button class="btn desktop-only" onclick="openExportModal()">Export</button><button class="btn primary" onclick="go('add')">＋ Add flight</button></div>`)+`
-  <div class="card">
-    <div class="filterbar">
+  app.innerHTML=header('Logbook',isInstalledTouchApp()?'View your flight records':'Search and filter your flight records',`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn desktop-only web-only-tool" onclick="openImportModal()">Import CSV</button><button class="btn desktop-only web-only-tool" onclick="openExportModal()">Export</button><button class="btn primary" onclick="go('add')">＋ Add flight</button></div>`)+`
+  <div class="card logbook-flight-list">
+    <div class="filterbar logbook-filter-controls">
       <div class="filterfield"><label>Search</label><input id="logSearch" type="search" placeholder="Route, PIC, registration, remarks…"></div>
       <div class="filterfield desktop-only"><label>From date</label><input id="filterFrom" type="date"></div>
       <div class="filterfield desktop-only"><label>To date</label><input id="filterTo" type="date"></div>
       <div class="filterfield desktop-only"><label>Aircraft</label><select id="filterAircraft"><option value="">All aircraft</option>${aircraftOptions}</select></div>
     </div>
-    <div class="filterbar second desktop-only">
+    <div class="filterbar second desktop-only logbook-filter-controls">
       <div class="filterfield"><label>Pilot function</label><select id="filterRole"><option value="">All functions</option>${['PIC','CO-PILOT','DUAL','SOLO','SPIC','PICUS'].map(r=>`<option>${r}</option>`).join('')}</select></div>
       <div class="filterfield"><label>Cross-country</label><select id="filterXC"><option value="">All flights</option><option value="yes">XC only</option><option value="no">Non-XC only</option></select></div>
       <div class="filterfield"><label>Night</label><select id="filterNight"><option value="">All flights</option><option value="yes">Night time recorded</option><option value="no">No night time</option></select></div>
@@ -914,7 +926,7 @@ function logbook(){
     <div class="filtermeta">
       <div><span id="resultCount" class="resultcount">0 flights</span> shown</div>
       <div class="filtertotals">
-        <span>Filtered flight time: <b id="filteredTime">0:00</b></span>
+        <span>${isInstalledTouchApp()?'Logbook flight time':'Filtered flight time'}: <b id="filteredTime">0:00</b></span>
         <span id="filteredIFRWrap" style="display:none">Filtered IFR time: <b id="filteredIFRTime">0:00</b></span>
         <span id="filteredNightWrap" style="display:none">Filtered Night time: <b id="filteredNightTime">0:00</b></span>
       </div>
@@ -2744,7 +2756,7 @@ function profile(){
     <div class="install-help" style="margin-top:10px">On iPhone/iPad, open the hosted HeliLog site in Safari, use <b>Share → Add to Home Screen</b>. Full offline PWA support requires HeliLog to be served over HTTPS. Opening this prototype directly as a file still works for testing, but it cannot register the offline service worker.</div>
   </div>
 
-  <div class="note" style="margin-top:16px">Profile, licence, rating and medical information in V1.34 is for record keeping and PDF identification only. Automatic EASA validity, recency and expiry calculations are planned for a later version.</div>`;
+  <div class="note" style="margin-top:16px">Profile, licence, rating and medical information in V1.35 is for record keeping and PDF identification only. Automatic EASA validity, recency and expiry calculations are planned for a later version.</div>`;
   updatePWAStatus();
 }
 
@@ -2764,7 +2776,7 @@ function makeFullBackup(){
     app:'HeliLog',
     format:'helilog-full-backup',
     backupSchema:1,
-    appVersion:'1.34',
+    appVersion:'1.35',
     exportedAt:new Date().toISOString(),
     data:JSON.parse(JSON.stringify(S))
   };
