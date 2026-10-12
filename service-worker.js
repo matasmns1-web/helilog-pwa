@@ -1,8 +1,7 @@
-const CACHE='helilog-v1-24-shell';
+const CACHE='helilog-v1-25-shell';
 const SHELL=[
   './',
   './index.html',
-  './HeliLog_V1_Prototype_v1.24.html',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png',
