@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V1.29 PWA Prototype</title>
+<title>HeliLog V1.30 PWA Prototype</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -229,7 +229,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:11px 9px;
 @media(max-width:850px){.dashboard-actions{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style></head>
 <body><div class="layout">
-<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V1.29</span></div><nav>
+<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V1.30</span></div><nav>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="aircraft">🚁 Aircraft</button><button data-v="pilots">👤 Pilots</button><button data-v="endorsements">✎ Endorsements</button><button data-v="totals">◉ Totals</button><button data-v="profile">○ Profile</button>
 </nav></aside><main id="app"></main>
 <div class="mobile">
@@ -506,6 +506,22 @@ function displayDate(v){return v?htmlEscape(formatDate(v)):'—'}
 function qualificationById(id){return S.qualifications.find(q=>q.id===id)}
 ensureV121Data();
 
+function ensureV130Data(){
+  const defaults={
+    total:0,spSE:0,spME:0,multi:0,
+    pic:0,copilot:0,dual:0,spic:0,picus:0,instructor:0,
+    night:0,ifr:0,
+    toDay:0,toNight:0,ldgDay:0,ldgNight:0
+  };
+  if(!S.broughtForward || typeof S.broughtForward!=='object') S.broughtForward={};
+  Object.entries(defaults).forEach(([k,v])=>{
+    let n=Number(S.broughtForward[k]);
+    S.broughtForward[k]=Number.isFinite(n) && n>=0?n:v;
+  });
+  try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+}
+ensureV130Data();
+
 function ownerPerson(){
   return S.people.find(p=>p.isAccountHolder) ||
     S.people.find(p=>String(p.name||'').toLowerCase()===String(S.pilot.name||'').toLowerCase());
@@ -543,7 +559,42 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function fmt(n){n=Math.max(0,Number(n)||0);return Math.floor(n/60)+':'+String(n%60).padStart(2,'0')}
 function parseHM(v){if(!v)return 0;let p=v.split(':').map(Number);return (p[0]||0)*60+(p[1]||0)}
 function ac(id){return S.aircraft.find(a=>a.id===id)}
-function calcTotals(){return S.flights.reduce((t,f)=>{t.total+=f.mins||0;t.copilot+=f.role==='CO-PILOT'?f.mins:0;t.dual+=f.role==='DUAL'?f.mins:0;t.pic+=['PIC','SOLO','SPIC','PICUS'].includes(f.role)?f.mins:0;t.spic+=f.role==='SPIC'?f.mins:0;t.picus+=f.role==='PICUS'?f.mins:0;t.night+=f.nightMin||0;t.ifr+=f.ifrMin||0;return t},{total:0,pic:0,copilot:0,dual:0,spic:0,picus:0,night:0,ifr:0})}
+function recordedTotals(){
+  return S.flights.reduce((t,f)=>{
+    let mins=Number(f.mins||0);
+    let cfg=configurationTimes(f);
+    t.total+=mins;
+    t.spSE+=cfg.spSE;t.spME+=cfg.spME;t.multi+=cfg.multi;
+    t.copilot+=f.role==='CO-PILOT'?mins:0;
+    t.dual+=f.role==='DUAL'?mins:0;
+    t.pic+=['PIC','SOLO','SPIC','PICUS'].includes(f.role)?mins:0;
+    t.spic+=f.role==='SPIC'?mins:0;
+    t.picus+=f.role==='PICUS'?mins:0;
+    t.instructor+=Number(f.instrMin||0);
+    t.night+=Number(f.nightMin||0);
+    t.ifr+=Number(f.ifrMin||0);
+    t.toDay+=Number(f.takeoffDay||0);
+    t.toNight+=Number(f.takeoffNight||0);
+    t.ldgDay+=Number(f.landingDay||0);
+    t.ldgNight+=Number(f.landingNight||0);
+    return t;
+  },{total:0,spSE:0,spME:0,multi:0,pic:0,copilot:0,dual:0,spic:0,picus:0,instructor:0,night:0,ifr:0,toDay:0,toNight:0,ldgDay:0,ldgNight:0});
+}
+function calcTotals(){
+  let t=recordedTotals(), b=S.broughtForward||{};
+  Object.keys(t).forEach(k=>t[k]+=Number(b[k]||0));
+  return t;
+}
+function broughtForwardInputMinutes(v){return Number(v||0)>0?fmt(Number(v)):'';
+}
+function parseBroughtForwardMinutes(v){
+  let s=String(v||'').trim().replace(',','.');
+  if(!s) return 0;
+  let hm=s.match(/^(\d{1,5}):([0-5]\d)$/);
+  if(hm) return Number(hm[1])*60+Number(hm[2]);
+  if(/^\d+(?:\.\d+)?$/.test(s)) return Math.round(Number(s)*60);
+  return null;
+}
 
 let deferredInstallPrompt=null;
 
@@ -1251,6 +1302,22 @@ function functionTime(f, kind){
   return 0;
 }
 
+function broughtForwardExportTotals(){
+  let b=S.broughtForward||{};
+  return {
+    spSE:Number(b.spSE||0),spME:Number(b.spME||0),multi:Number(b.multi||0),total:Number(b.total||0),
+    toDay:Number(b.toDay||0),toNight:Number(b.toNight||0),ldgDay:Number(b.ldgDay||0),ldgNight:Number(b.ldgNight||0),
+    night:Number(b.night||0),ifr:Number(b.ifr||0),pic:Number(b.pic||0),copilot:Number(b.copilot||0),
+    dual:Number(b.dual||0),instructor:Number(b.instructor||0),std:0
+  };
+}
+function addExportTotals(a,b){
+  let out={};
+  ['spSE','spME','multi','total','toDay','toNight','ldgDay','ldgNight','night','ifr','pic','copilot','dual','instructor','std']
+    .forEach(k=>out[k]=Number(a?.[k]||0)+Number(b?.[k]||0));
+  return out;
+}
+
 function exportPrintableLogbook(){
   let flights=exportFlightsForScope();
   if(!flights.length){alert('There are no flights to export.');return;}
@@ -1362,19 +1429,18 @@ function exportPrintableLogbook(){
     pages.push(flights.slice(i,i+ROWS_PER_PAGE));
   }
 
+  let broughtForward=broughtForwardExportTotals();
   let cumulativeBefore=[];
   let running=[];
   pages.forEach((p,idx)=>{
-    cumulativeBefore[idx]=sumFields(running);
+    cumulativeBefore[idx]=addExportTotals(broughtForward,sumFields(running));
     running=running.concat(p);
   });
-
-  let allTotals=sumFields(flights);
 
   let pageHtml=pages.map((pageFlights,pageIndex)=>{
     let thisPage=sumFields(pageFlights);
     let prev=cumulativeBefore[pageIndex];
-    let cumulative=sumFields(flights.slice(0,(pageIndex*ROWS_PER_PAGE)+pageFlights.length));
+    let cumulative=addExportTotals(broughtForward,sumFields(flights.slice(0,(pageIndex*ROWS_PER_PAGE)+pageFlights.length)));
 
     let blanks='';
     for(let i=pageFlights.length;i<ROWS_PER_PAGE;i++){
@@ -2413,10 +2479,117 @@ function applyEndorsementSignature(id){
   endorsements();
 }
 
-function totals(){let t=calcTotals(),by={};S.flights.forEach(f=>{let k=ac(f.aid)?.icao||'—';by[k]=(by[k]||0)+f.mins});app.innerHTML=header('Totals','Calculated from your recorded flights')+
-`<div class="grid stats">${[['Total',t.total],['PIC',t.pic],['Co-pilot',t.copilot],['Dual',t.dual]].map(x=>`<div class="card"><div class="label">${x[0]}</div><div class="big">${fmt(x[1])}</div></div>`).join('')}</div>
-<div class="grid two" style="margin-top:16px"><div class="card"><div class="head"><h2>By ICAO type</h2></div>${Object.entries(by).map(([k,v])=>`<p><b>${k}</b><span style="float:right">${fmt(v)}</span></p>`).join('')}</div>
-<div class="card"><div class="head"><h2>Additional breakdown</h2></div><p>SPIC <span style="float:right">${fmt(t.spic)}</span></p><p>PICUS <span style="float:right">${fmt(t.picus)}</span></p><p>Night <span style="float:right">${fmt(t.night)}</span></p><p>IFR <span style="float:right">${fmt(t.ifr)}</span></p></div></div>`}
+function totals(){
+  let t=calcTotals(),by={};
+  S.flights.forEach(f=>{let k=ac(f.aid)?.icao||'—';by[k]=(by[k]||0)+Number(f.mins||0)});
+  app.innerHTML=header('Totals','Career totals including your brought-forward paper logbook values',
+    `<button class="btn primary" onclick="editBroughtForwardTotals()">Paper logbook totals</button>`)+
+  `<div class="grid stats">${[['Total',t.total],['PIC',t.pic],['Co-pilot',t.copilot],['Dual',t.dual]].map(x=>`<div class="card"><div class="label">${x[0]}</div><div class="big">${fmt(x[1])}</div></div>`).join('')}</div>
+  <div class="grid two" style="margin-top:16px">
+    <div class="card">
+      <div class="head"><h2>Time configuration</h2></div>
+      <p>Single-pilot SE <span style="float:right"><b>${fmt(t.spSE)}</b></span></p>
+      <p>Single-pilot ME <span style="float:right"><b>${fmt(t.spME)}</b></span></p>
+      <p>Multi-pilot <span style="float:right"><b>${fmt(t.multi)}</b></span></p>
+      <p>Instructor <span style="float:right"><b>${fmt(t.instructor)}</b></span></p>
+    </div>
+    <div class="card">
+      <div class="head"><h2>Additional breakdown</h2></div>
+      <p>SPIC <span style="float:right">${fmt(t.spic)}</span></p>
+      <p>PICUS <span style="float:right">${fmt(t.picus)}</span></p>
+      <p>Night <span style="float:right">${fmt(t.night)}</span></p>
+      <p>IFR <span style="float:right">${fmt(t.ifr)}</span></p>
+    </div>
+  </div>
+  <div class="grid two" style="margin-top:16px">
+    <div class="card">
+      <div class="head"><h2>Take-offs &amp; landings</h2></div>
+      <p>Take-offs day <span style="float:right"><b>${t.toDay}</b></span></p>
+      <p>Take-offs night <span style="float:right"><b>${t.toNight}</b></span></p>
+      <p>Landings day <span style="float:right"><b>${t.ldgDay}</b></span></p>
+      <p>Landings night <span style="float:right"><b>${t.ldgNight}</b></span></p>
+    </div>
+    <div class="card">
+      <div class="head"><h2>By ICAO type</h2></div>
+      ${Object.entries(by).length?Object.entries(by).map(([k,v])=>`<p><b>${k}</b><span style="float:right">${fmt(v)}</span></p>`).join(''):'<div class="muted">No HeliLog flights recorded yet.</div>'}
+      <div class="mini" style="margin-top:10px">Aircraft-type totals cover individual HeliLog flight entries only; brought-forward paper totals are not assigned to an aircraft type.</div>
+    </div>
+  </div>`;
+}
+
+function editBroughtForwardTotals(){
+  let b=S.broughtForward||{};
+  const durationField=(id,label,key)=>`<div class="field"><label>${label}</label><input id="${id}" type="text" inputmode="decimal" placeholder="0:00" value="${broughtForwardInputMinutes(b[key])}"><div class="mini">H:MM, or decimal hours</div></div>`;
+  const countField=(id,label,key)=>`<div class="field"><label>${label}</label><input id="${id}" type="number" min="0" step="1" value="${Number(b[key]||0)||''}" placeholder="0"></div>`;
+
+  app.innerHTML=header('Paper logbook totals','Enter the cumulative totals carried forward from your paper logbook.',
+    `<button class="btn" onclick="go('totals')">Cancel</button>`)+
+  `<form class="card form" onsubmit="saveBroughtForwardTotals(event)">
+    <div class="note">These values are stored separately from individual HeliLog flights. They contribute to your career totals and to <b>TOTAL FROM PREVIOUS PAGES</b> in the paper-style logbook export.</div>
+
+    <div class="section-title">Flight time</div>
+    <div class="formgrid">
+      ${durationField('bfTotal','Total time','total')}
+      ${durationField('bfSpSE','Single-pilot SE','spSE')}
+      ${durationField('bfSpME','Single-pilot ME','spME')}
+      ${durationField('bfMulti','Multi-pilot','multi')}
+      ${durationField('bfPIC','PIC','pic')}
+      ${durationField('bfCopilot','Co-pilot','copilot')}
+      ${durationField('bfDual','Dual','dual')}
+      ${durationField('bfInstructor','Instructor','instructor')}
+      ${durationField('bfSPIC','SPIC','spic')}
+      ${durationField('bfPICUS','PICUS','picus')}
+      ${durationField('bfNight','Night','night')}
+      ${durationField('bfIFR','IFR','ifr')}
+    </div>
+
+    <div class="section-title">Take-offs and landings</div>
+    <div class="formgrid">
+      ${countField('bfToDay','Take-offs day','toDay')}
+      ${countField('bfToNight','Take-offs night','toNight')}
+      ${countField('bfLdgDay','Landings day','ldgDay')}
+      ${countField('bfLdgNight','Landings night','ldgNight')}
+    </div>
+
+    <div id="bfError" class="errorbox"></div>
+    <div class="actions"><button type="button" class="btn" onclick="go('totals')">Cancel</button><button class="btn primary">Save totals</button></div>
+  </form>`;
+}
+
+function saveBroughtForwardTotals(ev){
+  ev.preventDefault();
+  let durationMap={
+    total:'bfTotal',spSE:'bfSpSE',spME:'bfSpME',multi:'bfMulti',
+    pic:'bfPIC',copilot:'bfCopilot',dual:'bfDual',instructor:'bfInstructor',
+    spic:'bfSPIC',picus:'bfPICUS',night:'bfNight',ifr:'bfIFR'
+  };
+  let next={};
+  for(let [key,id] of Object.entries(durationMap)){
+    let value=parseBroughtForwardMinutes(document.getElementById(id).value);
+    if(value===null){
+      let box=document.getElementById('bfError');
+      box.textContent='Please enter flight-time totals as H:MM (for example 139:30) or decimal hours.';
+      box.classList.add('show');
+      return;
+    }
+    next[key]=value;
+  }
+  let countMap={toDay:'bfToDay',toNight:'bfToNight',ldgDay:'bfLdgDay',ldgNight:'bfLdgNight'};
+  for(let [key,id] of Object.entries(countMap)){
+    let raw=document.getElementById(id).value.trim();
+    let value=raw===''?0:Number(raw);
+    if(!Number.isInteger(value) || value<0){
+      let box=document.getElementById('bfError');
+      box.textContent='Take-off and landing totals must be whole numbers of zero or more.';
+      box.classList.add('show');
+      return;
+    }
+    next[key]=value;
+  }
+  S.broughtForward=next;
+  save();
+  totals();
+}
 function profile(){
   editingQualificationId=null;
   let med=S.pilot.medical||{};
@@ -2489,7 +2662,7 @@ function profile(){
     <div class="profilegrid">
       <div>
         <p><b>Full HeliLog backup</b></p>
-        <p class="muted">Includes flights, aircraft, saved pilots, profile, licences/ratings, medical details, endorsements and captured endorsement signatures.</p>
+        <p class="muted">Includes flights, aircraft, saved pilots, profile, licences/ratings, medical details, brought-forward paper logbook totals, endorsements and captured endorsement signatures.</p>
         <button class="btn primary" type="button" onclick="downloadFullBackup()">Download backup</button>
       </div>
       <div>
@@ -2514,7 +2687,7 @@ function profile(){
     <div class="install-help" style="margin-top:10px">On iPhone/iPad, open the hosted HeliLog site in Safari, use <b>Share → Add to Home Screen</b>. Full offline PWA support requires HeliLog to be served over HTTPS. Opening this prototype directly as a file still works for testing, but it cannot register the offline service worker.</div>
   </div>
 
-  <div class="note" style="margin-top:16px">Profile, licence, rating and medical information in V1.29 is for record keeping and PDF identification only. Automatic EASA validity, recency and expiry calculations are planned for a later version.</div>`;
+  <div class="note" style="margin-top:16px">Profile, licence, rating and medical information in V1.30 is for record keeping and PDF identification only. Automatic EASA validity, recency and expiry calculations are planned for a later version.</div>`;
   updatePWAStatus();
 }
 
@@ -2534,7 +2707,7 @@ function makeFullBackup(){
     app:'HeliLog',
     format:'helilog-full-backup',
     backupSchema:1,
-    appVersion:'1.29',
+    appVersion:'1.30',
     exportedAt:new Date().toISOString(),
     data:JSON.parse(JSON.stringify(S))
   };
@@ -2645,6 +2818,7 @@ async function handleBackupRestoreFile(ev){
     // Run the existing migrations/normalisation so older backups can be restored into V1.23.
     ensureV116Data();
     ensureV121Data();
+    ensureV130Data();
     save();
 
     let finalSummary=backupSummary(S);
