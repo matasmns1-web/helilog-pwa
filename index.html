@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V1.25 PWA Prototype</title>
+<title>HeliLog V1.26 PWA Prototype</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -200,9 +200,27 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:11px 9px;
 .pwa-dot.warn{background:#d97706}
 .install-help{font-size:12px;color:var(--muted);line-height:1.45}
 .more-grid{display:grid;gap:12px}
+
+.dashboard-range{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
+.dashboard-range button{min-height:34px;padding:7px 10px;font-size:12px}
+.dashboard-range button.on{background:var(--dark);color:#fff;border-color:var(--dark)}
+.dashboard-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.dashboard-action{text-align:left;min-height:82px;display:flex;flex-direction:column;justify-content:center;gap:4px}
+.dashboard-action b{font-size:14px}
+.reminder-list{display:grid;gap:9px}
+.reminder-item{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)}
+.reminder-item:last-child{border-bottom:0}
+.reminder-days{font-size:12px;font-weight:700;white-space:nowrap}
+.reminder-days.soon{color:#b54708}
+.reminder-days.past{color:#b42318}
+.aircraft-summary{display:grid;gap:8px}
+.aircraft-summary-row{display:flex;justify-content:space-between;gap:12px}
+.endorsement-mini{padding:9px 0;border-bottom:1px solid var(--line)}
+.endorsement-mini:last-child{border-bottom:0}
+@media(max-width:850px){.dashboard-actions{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style></head>
 <body><div class="layout">
-<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V1.25</span></div><nav>
+<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V1.26</span></div><nav>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="aircraft">🚁 Aircraft</button><button data-v="pilots">👤 Pilots</button><button data-v="endorsements">✎ Endorsements</button><button data-v="totals">◉ Totals</button><button data-v="profile">○ Profile</button>
 </nav></aside><main id="app"></main>
 <div class="mobile">
@@ -592,10 +610,119 @@ function compareFlightsNewest(a,b){
   return String(b.createdAt||b.id||'').localeCompare(String(a.createdAt||a.id||''));
 }
 function compareFlightsOldest(a,b){return compareFlightsNewest(b,a)}
-function dashboard(){let t=calcTotals(),fs=[...S.flights].sort(compareFlightsNewest);app.innerHTML=header('Dashboard',`Good afternoon, ${S.pilot.name}`,`<button class="btn primary" onclick="go('add')">＋ Add flight</button>`)+
-`<div class="grid stats">${[['Total flight time',t.total],['PIC',t.pic],['Co-pilot',t.copilot],['Dual',t.dual]].map(x=>`<div class="card"><div class="label">${x[0]}</div><div class="big">${fmt(x[1])}</div></div>`).join('')}</div>
-<div class="grid two" style="margin-top:16px"><div class="card"><div class="head"><h2>Recent flights</h2><button class="btn" onclick="go('logbook')">View all</button></div><div style="overflow:auto"><table><thead><tr><th>Date</th><th>Type</th><th>Route</th><th>Time</th><th>Function</th></tr></thead><tbody>${fs.slice(0,5).map(row).join('')}</tbody></table></div></div>
-<div class="card"><div class="head"><h2>Aircraft</h2><button class="btn" onclick="go('aircraft')">Manage</button></div>${S.aircraft.map(a=>`<p><b>${a.icao}</b> · ${a.reg}<br><span class="muted">${a.manufacturer} ${a.model} ${a.variant}</span></p>`).join('')}</div></div>`}
+function dashboardPeriodFlights(days){
+  if(!days) return [...S.flights];
+  let now=new Date();
+  let cutoff=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  cutoff.setDate(cutoff.getDate()-(days-1));
+  let cutoffStr=cutoff.toISOString().slice(0,10);
+  return S.flights.filter(f=>String(f.date||'')>=cutoffStr);
+}
+function dashboardPeriodTotals(flights){
+  return {
+    total:flights.reduce((n,f)=>n+Number(f.mins||0),0),
+    pic:flights.reduce((n,f)=>n+(['PIC','SOLO','SPIC','PICUS'].includes(f.role)?Number(f.mins||0):0),0),
+    copilot:flights.reduce((n,f)=>n+(f.role==='CO-PILOT'?Number(f.mins||0):0),0),
+    dual:flights.reduce((n,f)=>n+(f.role==='DUAL'?Number(f.mins||0):0),0),
+    night:flights.reduce((n,f)=>n+Number(f.nightMin||0),0),
+    ifr:flights.reduce((n,f)=>n+Number(f.ifrMin||0),0)
+  };
+}
+function daysUntil(dateStr){
+  if(!dateStr) return null;
+  let target=new Date(dateStr+'T00:00:00');
+  if(Number.isNaN(target.getTime())) return null;
+  let now=new Date();
+  let today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  return Math.ceil((target-today)/86400000);
+}
+function dashboardReminders(){
+  let r=[];
+  let med=S.pilot?.medical;
+  if(med?.validUntil) r.push({label:`Medical ${med.class||''}`.trim(),date:med.validUntil,type:'Medical'});
+  (S.qualifications||[]).forEach(q=>{
+    if(q.validUntil) r.push({label:q.name||q.category||'Qualification',date:q.validUntil,type:q.category||'Qualification'});
+  });
+  return r.sort((a,b)=>a.date.localeCompare(b.date));
+}
+function setDashboardRange(days,button){
+  let flights=dashboardPeriodFlights(days).sort(compareFlightsNewest);
+  let t=dashboardPeriodTotals(flights);
+  [['dashTotal',t.total],['dashPIC',t.pic],['dashCopilot',t.copilot],['dashDual',t.dual],['dashNight',t.night],['dashIFR',t.ifr]]
+    .forEach(([id,val])=>{let el=document.getElementById(id);if(el)el.textContent=fmt(val)});
+  let count=document.getElementById('dashFlightCount');if(count)count.textContent=flights.length;
+  document.querySelectorAll('.dashboard-range button').forEach(b=>b.classList.toggle('on',b===button));
+}
+function dashboard(){
+  let fs=[...S.flights].sort(compareFlightsNewest);
+  let t=dashboardPeriodTotals(fs);
+  let reminders=dashboardReminders().slice(0,6);
+  let endorsements=[...(S.endorsements||[])].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,4);
+  let aircraftRows=S.aircraft.map(a=>{
+    let mins=S.flights.filter(f=>f.aid===a.id).reduce((n,f)=>n+Number(f.mins||0),0);
+    return {a,mins};
+  }).sort((a,b)=>b.mins-a.mins);
+
+  app.innerHTML=header('Dashboard',`Welcome back, ${S.pilot.name}`,`<button class="btn primary" onclick="go('add')">＋ Add flight</button>`)+
+  `<div class="card">
+    <div class="head"><div><h2>Flight-time overview</h2><div class="muted"><span id="dashFlightCount">${fs.length}</span> flights in selected period</div></div></div>
+    <div class="dashboard-range">
+      <button class="btn" onclick="setDashboardRange(30,this)">30 days</button>
+      <button class="btn" onclick="setDashboardRange(90,this)">90 days</button>
+      <button class="btn" onclick="setDashboardRange(365,this)">12 months</button>
+      <button class="btn on" onclick="setDashboardRange(null,this)">All time</button>
+    </div>
+    <div class="grid stats">
+      <div class="card"><div class="label">Total</div><div class="big" id="dashTotal">${fmt(t.total)}</div></div>
+      <div class="card"><div class="label">PIC</div><div class="big" id="dashPIC">${fmt(t.pic)}</div></div>
+      <div class="card"><div class="label">Co-pilot</div><div class="big" id="dashCopilot">${fmt(t.copilot)}</div></div>
+      <div class="card"><div class="label">Dual</div><div class="big" id="dashDual">${fmt(t.dual)}</div></div>
+    </div>
+    <div class="grid stats" style="margin-top:10px">
+      <div class="card"><div class="label">Night</div><div class="big" id="dashNight">${fmt(t.night)}</div></div>
+      <div class="card"><div class="label">IFR</div><div class="big" id="dashIFR">${fmt(t.ifr)}</div></div>
+    </div>
+  </div>
+
+  <div class="dashboard-actions" style="margin-top:14px">
+    <button class="card dashboard-action" onclick="go('add')"><span>＋</span><b>Add flight</b><span class="muted">Create a new logbook entry</span></button>
+    <button class="card dashboard-action" onclick="openImportModal()"><span>⇧</span><b>Import CSV</b><span class="muted">Bring in flight history</span></button>
+    <button class="card dashboard-action" onclick="go('endorsements')"><span>✎</span><b>Endorsements</b><span class="muted">Memoranda and signatures</span></button>
+    <button class="card dashboard-action" onclick="go('profile')"><span>▣</span><b>Backup</b><span class="muted">Profile → Backup & restore</span></button>
+  </div>
+
+  <div class="grid two" style="margin-top:16px">
+    <div class="card">
+      <div class="head"><h2>Recent flights</h2><button class="btn" onclick="go('logbook')">View all</button></div>
+      <div style="overflow:auto"><table><thead><tr><th>Date</th><th>Type</th><th>Route</th><th>Time</th><th>Function</th></tr></thead><tbody>${fs.slice(0,6).map(row).join('')}</tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="head"><h2>Upcoming dates</h2><button class="btn" onclick="go('profile')">Profile</button></div>
+      <div class="reminder-list">
+        ${reminders.length?reminders.map(r=>{
+          let d=daysUntil(r.date);
+          let cls=d<0?'past':d<=60?'soon':'';
+          let txt=d<0?`${Math.abs(d)} days past date`:d===0?'Today':`${d} days`;
+          return `<div class="reminder-item"><div><b>${htmlEscape(r.label)}</b><div class="muted">${htmlEscape(r.type)} · ${htmlEscape(r.date)}</div></div><div class="reminder-days ${cls}">${txt}</div></div>`;
+        }).join(''):'<div class="muted">No medical or qualification validity dates recorded.</div>'}
+      </div>
+      <div class="mini" style="margin-top:10px">Date reminders only — HeliLog does not yet determine regulatory validity or recency.</div>
+    </div>
+  </div>
+
+  <div class="grid two" style="margin-top:16px">
+    <div class="card">
+      <div class="head"><h2>Recent endorsements</h2><button class="btn" onclick="go('endorsements')">View all</button></div>
+      ${endorsements.length?endorsements.map(e=>`<div class="endorsement-mini"><b>${htmlEscape(e.title||e.category||'Endorsement')}</b><div class="muted">${htmlEscape(e.date||'—')} · ${e.signatureData?'Signed':'Unsigned'}</div></div>`).join(''):'<div class="muted">No endorsements recorded yet.</div>'}
+    </div>
+    <div class="card">
+      <div class="head"><h2>Aircraft time</h2><button class="btn" onclick="go('aircraft')">Manage</button></div>
+      <div class="aircraft-summary">
+        ${aircraftRows.map(x=>`<div class="aircraft-summary-row"><span><b>${htmlEscape(x.a.icao||'—')}</b> · ${htmlEscape(x.a.reg||'—')}</span><b>${fmt(x.mins)}</b></div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
 function row(f){let a=ac(f.aid);return `<tr class="click" onclick="flight('${f.id}')"><td>${f.date}</td><td><b>${a?.icao||'—'}</b></td><td>${f.dep} → ${f.arr}</td><td>${fmt(f.mins)}</td><td><span class="tag">${f.role}</span></td></tr>`}
 function logbook(){
   let aircraftOptions=S.aircraft.map(a=>`<option value="${a.id}">${a.icao} — ${a.reg}</option>`).join('');
@@ -2288,7 +2415,7 @@ function profile(){
     <div class="install-help" style="margin-top:10px">On iPhone/iPad, open the hosted HeliLog site in Safari, use <b>Share → Add to Home Screen</b>. Full offline PWA support requires HeliLog to be served over HTTPS. Opening this prototype directly as a file still works for testing, but it cannot register the offline service worker.</div>
   </div>
 
-  <div class="note" style="margin-top:16px">Profile, licence, rating and medical information in V1.25 is for record keeping and PDF identification only. Automatic EASA validity, recency and expiry calculations are planned for a later version.</div>`;
+  <div class="note" style="margin-top:16px">Profile, licence, rating and medical information in V1.26 is for record keeping and PDF identification only. Automatic EASA validity, recency and expiry calculations are planned for a later version.</div>`;
   updatePWAStatus();
 }
 
@@ -2308,7 +2435,7 @@ function makeFullBackup(){
     app:'HeliLog',
     format:'helilog-full-backup',
     backupSchema:1,
-    appVersion:'1.25',
+    appVersion:'1.26',
     exportedAt:new Date().toISOString(),
     data:JSON.parse(JSON.stringify(S))
   };
