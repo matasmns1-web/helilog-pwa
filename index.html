@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V1.28 PWA Prototype</title>
+<title>HeliLog V1.29 PWA Prototype</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -28,6 +28,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:11px 9px;
 .field label{font-size:13px;font-weight:700;display:block;margin-bottom:6px}.field input,.field select,.field textarea{width:100%;border:1px solid #d5dae0;border-radius:9px;padding:10px;background:#fff}.field textarea{min-height:90px}
 .inline{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .timewrap{position:relative}.timewrap input[type=text]{padding-right:44px}
+.uppercase-input{text-transform:uppercase}
 .timebtn{position:absolute;right:5px;top:5px;width:34px;height:34px;border:0;background:transparent;border-radius:7px;font-size:18px}
 .timebtn:hover{background:#eef2f7}
 .time-input-invalid{border-color:#d92d20!important;box-shadow:0 0 0 2px rgba(217,45,32,.08)}
@@ -228,7 +229,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:11px 9px;
 @media(max-width:850px){.dashboard-actions{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style></head>
 <body><div class="layout">
-<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V1.28</span></div><nav>
+<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V1.29</span></div><nav>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="aircraft">🚁 Aircraft</button><button data-v="pilots">👤 Pilots</button><button data-v="endorsements">✎ Endorsements</button><button data-v="totals">◉ Totals</button><button data-v="profile">○ Profile</button>
 </nav></aside><main id="app"></main>
 <div class="mobile">
@@ -618,7 +619,55 @@ if('serviceWorker' in navigator && (location.protocol==='https:' || location.hos
 }
 
 function header(title,sub,action=''){return `<div class="top"><div><h1>${title}</h1><div class="sub">${sub||''}</div></div>${action}</div>`}
-function go(v){location.hash=v;render()} document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>go(b.dataset.v));window.onhashchange=render;
+
+let flightFormDirty=false;
+let restoringFlightHistory=false;
+
+function hasUnsavedFlightChanges(){
+  return flightFormDirty && !!document.getElementById('flightForm');
+}
+function confirmLeaveFlightForm(){
+  if(!hasUnsavedFlightChanges()) return true;
+  return window.confirm('You have unsaved flight changes. Leave this page and discard them?');
+}
+function clearFlightFormGuard(){
+  flightFormDirty=false;
+}
+function markFlightFormDirty(){
+  if(document.getElementById('flightForm')) flightFormDirty=true;
+}
+function cancelFlightForm(returnFlightId=''){
+  if(!confirmLeaveFlightForm()) return;
+  clearFlightFormGuard();
+  if(returnFlightId) flight(returnFlightId);
+  else go('dashboard');
+}
+function go(v){
+  if(!confirmLeaveFlightForm()) return;
+  clearFlightFormGuard();
+  if(location.hash==='#'+v) render();
+  else location.hash=v;
+}
+function handleHeliLogHashChange(){
+  if(restoringFlightHistory){
+    restoringFlightHistory=false;
+    return;
+  }
+  if(hasUnsavedFlightChanges() && !confirmLeaveFlightForm()){
+    restoringFlightHistory=true;
+    history.forward();
+    return;
+  }
+  clearFlightFormGuard();
+  render();
+}
+document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>go(b.dataset.v));
+window.onhashchange=handleHeliLogHashChange;
+window.addEventListener('beforeunload',e=>{
+  if(!hasUnsavedFlightChanges()) return;
+  e.preventDefault();
+  e.returnValue='';
+});
 
 function mobilemore(){
   app.innerHTML=header('More','Aircraft, pilot profiles, endorsements and your profile')+
@@ -1514,7 +1563,7 @@ let editing=!!existing;
 app.innerHTML=header(
   editing?'Edit flight':'Add flight',
   editing?'Update the existing flight record':'Structured around your paper logbook',
-  `<button class="btn" onclick="${editing?`flight('${existing.id}')`:`go('dashboard')`}">Cancel</button>`
+  `<button class="btn" onclick="cancelFlightForm('${editing?existing.id:''}')">Cancel</button>`
 )+`<form id="flightForm" class="card form" novalidate>
 <div id="formError" class="errorbox"></div>
 ${editing?`<div class="editnotice">You are editing an existing V1 record. Formal correction history and post-certification audit controls will be introduced in V2.</div>`:''}
@@ -1524,7 +1573,7 @@ ${editing?`<div class="editnotice">You are editing an existing V1 record. Formal
   <div class="field"><label>Date</label><input id="date" type="date"></div>
   <div class="field"><label>Aircraft</label><select id="aid">${S.aircraft.map(a=>`<option value="${a.id}">${a.icao} — ${a.reg}</option>`).join('')}</select></div>
 
-  <div class="field"><label>Departure place</label><input id="dep" maxlength="4"></div>
+  <div class="field"><label>Departure place</label><input id="dep" class="uppercase-input" maxlength="4" autocapitalize="characters" autocorrect="off" spellcheck="false" oninput="uppercasePlaceInput(this)"></div>
   <div class="field"><label>Departure time (24h)</label>
     <div class="timewrap">
       <input id="off" type="text" inputmode="numeric" maxlength="5" autocomplete="off">
@@ -1543,7 +1592,7 @@ ${editing?`<div class="editnotice">You are editing an existing V1 record. Formal
     <div id="offError" class="field-error">Enter a valid 24-hour time.</div>
   </div>
 
-  <div class="field"><label>Arrival place</label><input id="arr" maxlength="4"></div>
+  <div class="field"><label>Arrival place</label><input id="arr" class="uppercase-input" maxlength="4" autocapitalize="characters" autocorrect="off" spellcheck="false" oninput="uppercasePlaceInput(this)"></div>
   <div class="field"><label>Arrival time (24h)</label>
     <div class="timewrap">
       <input id="on" type="text" inputmode="numeric" maxlength="5" autocomplete="off">
@@ -1620,7 +1669,7 @@ ${editing?`<div class="editnotice">You are editing an existing V1 record. Formal
 </details>
 
 <div class="field"><label>Remarks and endorsements</label><textarea id="remarks"></textarea></div>
-<div class="actions"><button type="button" class="btn" onclick="${editing?`flight('${existing.id}')`:`go('dashboard')`}">Cancel</button><button type="button" id="saveFlightBtn" class="btn primary" onclick="saveFlight()">${editing?'Save changes':'Save flight'}</button></div>
+<div class="actions"><button type="button" class="btn" onclick="cancelFlightForm('${editing?existing.id:''}')">Cancel</button><button type="button" id="saveFlightBtn" class="btn primary" onclick="saveFlight()">${editing?'Save changes':'Save flight'}</button></div>
 </form>`;
 
 populateTimePicker('offHour','offMinute');
@@ -1671,6 +1720,21 @@ $('#toNight').oninput=()=>{ if(!nightLandingOverridden) $('#ldgNight').value=$('
 $('#aid').onchange=updateAircraftEngineInfo;
 updateAircraftEngineInfo();
 roleChanged();
+
+let flightForm=document.getElementById('flightForm');
+if(flightForm){
+  flightForm.addEventListener('input',markFlightFormDirty);
+  flightForm.addEventListener('change',markFlightFormDirty);
+}
+flightFormDirty=false;
+}
+function uppercasePlaceInput(el){
+  let start=el.selectionStart, end=el.selectionEnd;
+  let upper=String(el.value||'').toUpperCase();
+  if(el.value!==upper){
+    el.value=upper;
+    try{el.setSelectionRange(start,end)}catch(e){}
+  }
 }
 function editFlight(id){add(id);}
 function populateTimePicker(hourId, minuteId){
@@ -1751,6 +1815,7 @@ function applyTimePicker(pickerId, fieldId, hourId, minuteId){
   clearTimeError(fieldId);
   closeTimePicker(pickerId);
   calc();
+  markFlightFormDirty();
 }
 
 function calc(){
@@ -1861,6 +1926,7 @@ function saveFlight(){
   else S.flights.push(f);
   editingFlightId=null;
   save();
+  clearFlightFormGuard();
   flight(f.id);
 }
 function flight(id){editingFlightId=null;let f=S.flights.find(x=>x.id===id),a=ac(f.aid);app.innerHTML=header('Flight details',`${formatDate(f.date)} · ${a.icao}`,`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="go('logbook')">← Logbook</button><button class="btn primary" onclick="editFlight('${id}')">Edit flight</button><button class="btn dangerbtn" onclick="openDeleteModal('${id}')">Delete flight</button></div>`)+`<div class="card">
@@ -2448,7 +2514,7 @@ function profile(){
     <div class="install-help" style="margin-top:10px">On iPhone/iPad, open the hosted HeliLog site in Safari, use <b>Share → Add to Home Screen</b>. Full offline PWA support requires HeliLog to be served over HTTPS. Opening this prototype directly as a file still works for testing, but it cannot register the offline service worker.</div>
   </div>
 
-  <div class="note" style="margin-top:16px">Profile, licence, rating and medical information in V1.28 is for record keeping and PDF identification only. Automatic EASA validity, recency and expiry calculations are planned for a later version.</div>`;
+  <div class="note" style="margin-top:16px">Profile, licence, rating and medical information in V1.29 is for record keeping and PDF identification only. Automatic EASA validity, recency and expiry calculations are planned for a later version.</div>`;
   updatePWAStatus();
 }
 
@@ -2468,7 +2534,7 @@ function makeFullBackup(){
     app:'HeliLog',
     format:'helilog-full-backup',
     backupSchema:1,
-    appVersion:'1.28',
+    appVersion:'1.29',
     exportedAt:new Date().toISOString(),
     data:JSON.parse(JSON.stringify(S))
   };
