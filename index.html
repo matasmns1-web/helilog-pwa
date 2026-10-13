@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V1.37 PWA Prototype</title>
+<title>HeliLog V1.38 PWA Prototype</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -240,7 +240,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:11px 9px;
 @media(max-width:850px){.dashboard-actions{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style></head>
 <body><div class="layout">
-<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V1.37</span></div><nav>
+<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V1.38</span></div><nav>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="aircraft">🚁 Aircraft</button><button data-v="pilots">👤 Pilots</button><button data-v="endorsements">✎ Endorsements</button><button data-v="printarchive">▤ Print archive</button><button data-v="totals">◉ Totals</button><button data-v="profile">○ Profile</button>
 </nav></aside><main id="app"></main>
 <div class="mobile">
@@ -1546,7 +1546,11 @@ function exportPrintableLogbook(options={}){
 
     let blanks='';
     for(let i=pageFlights.length;i<ROWS_PER_PAGE;i++){
-      blanks+=`<tr class="blank-row">${'<td></td>'.repeat(26)}</tr>`;
+      // Block spare places only in new archive batches, never in flexible exports.
+      // Old confirmed archives keep their original format when reprinted.
+      blanks+=options.archiveBatch && options.blockUnusedRows===true
+        ? `<tr class="blank-row unused-row">${'<td>—</td>'.repeat(25)}<td class="unused-note">— UNUSED —</td></tr>`
+        : `<tr class="blank-row">${'<td></td>'.repeat(26)}</tr>`;
     }
 
     return `<section class="logbook-page">
@@ -1652,6 +1656,11 @@ function exportPrintableLogbook(options={}){
       .flight-row td,.blank-row td{height:7.6mm;font-size:7px;line-height:1.05}
       .flight-row td:first-child{white-space:nowrap;font-size:6.8px}
       .blank-row td{height:7.6mm}
+      .unused-row td{
+        background:repeating-linear-gradient(135deg,#fafafa 0px,#fafafa 8px,#e1e1e1 8px,#e1e1e1 9px);
+        color:#555;font-size:8px;font-weight:700;white-space:nowrap;
+      }
+      .unused-row td.unused-note{font-size:6.8px;letter-spacing:.05em;white-space:nowrap}
       .num{font-variant-numeric:tabular-nums}
       .type{font-weight:700}
       .pic-name{font-size:6.7px!important}
@@ -1727,6 +1736,7 @@ function exportPrintableLogbook(options={}){
 
 
 let pendingArchivePreview=null;
+let selectedArchivePageCount=null; // null means print all available pages
 
 // A fresh HeliLog installation ships with example flights. Never certify those
 // as actual flying. Match against unchanged seeded values, not merely IDs.
@@ -1758,7 +1768,12 @@ function nextArchiveDraft(){
   const batches=archivedBatches();
   const previous=batches[batches.length-1];
   const stored=archivedFlightIds();
-  const flights=S.flights.filter(f=>!stored.has(f.id)).sort(compareFlightsOldest)
+  const pendingFlights=S.flights.filter(f=>!stored.has(f.id)).sort(compareFlightsOldest);
+  const availablePages=Math.ceil(pendingFlights.length/LOGBOOK_ROWS_PER_PAGE);
+  const selectedPages=selectedArchivePageCount===null
+    ? availablePages
+    : Math.min(availablePages,Math.max(1,selectedArchivePageCount));
+  const flights=pendingFlights.slice(0,selectedPages*LOGBOOK_ROWS_PER_PAGE)
     .map(f=>JSON.parse(JSON.stringify(f)));
   const firstPage=previous?previous.firstPage+previous.pageCount:S.printArchive.firstPage;
   const seq=previous?previous.seq+1:1;
@@ -1773,12 +1788,21 @@ function nextArchiveDraft(){
   return {
     id:'HL-'+String(seq).padStart(3,'0'),seq,
     firstPage,pageCount,flightIds:flights.map(f=>f.id),flights,aircraft,pilot,
+    availablePages,totalUnarchived:pendingFlights.length,remainingFlights:pendingFlights.length-flights.length,
+    unusedRowsBlocked:true,
     openingTotals,flightTotals,closingTotals,
     paperReference:S.printArchive.paperReference,
     lastFlightDate:flights.length?flights[flights.length-1].date:lastDate,
     lateCount:lateFlights.length,
     demoCount:flights.filter(isUnchangedDemoFlight).length
   };
+}
+function setArchivePageCount(value){
+  const n=Number(value);
+  if(!Number.isSafeInteger(n)||n<1)return;
+  selectedArchivePageCount=n;
+  pendingArchivePreview=null; // A preview must match exactly the selected flight set.
+  printarchive();
 }
 function archiveRange(d){
   return d.pageCount>1?'Pages '+d.firstPage+'–'+(d.firstPage+d.pageCount-1):'Page '+d.firstPage;
@@ -1826,7 +1850,8 @@ function previewNextArchive(){
   // Preview opens a printable PDF. This DOES NOT mark any flight as printed.
   const opened=exportPrintableLogbook({
     flights:draft.flights,openingTotals:draft.openingTotals,firstPage:draft.firstPage,
-    archiveBatch:draft.id,aircraft:draft.aircraft,pilot:draft.pilot
+    archiveBatch:draft.id,aircraft:draft.aircraft,pilot:draft.pilot,
+    blockUnusedRows:draft.unusedRowsBlocked
   });
   if(opened){
     pendingArchivePreview=JSON.stringify(draft);
@@ -1880,6 +1905,7 @@ function confirmPrintedArchive(){
     return;
   }
   pendingArchivePreview=null;
+  selectedArchivePageCount=null; // next batch defaults to all remaining pages
   printarchive();
 }
 function reprintArchiveBatch(seq){
@@ -1887,7 +1913,8 @@ function reprintArchiveBatch(seq){
   if(!b)return;
   exportPrintableLogbook({
     flights:b.flights,aircraft:b.aircraft,pilot:b.pilot,
-    openingTotals:b.openingTotals,firstPage:b.firstPage,archiveBatch:b.id
+    openingTotals:b.openingTotals,firstPage:b.firstPage,archiveBatch:b.id,
+    blockUnusedRows:b.unusedRowsBlocked===true
   });
 }
 function printarchive(){
@@ -1918,6 +1945,23 @@ function printarchive(){
       <div class="mini" style="margin-top:10px">By default, HeliLog starts a new printed volume at Page 1 and carries forward the imported totals from your earlier paper logbook. Keep the original handwritten logbook. Print archives and confirmation records live in this browser and are included in Full Backup.</div>
     </div>
     ${archiveSummaryMarkup(draft)}
+    ${canPrint?`<div class="card" style="margin-top:14px">
+      <div class="head"><h2>Pages to print now</h2></div>
+      <div class="field" style="max-width:330px">
+        <label>Number of pages</label>
+        <select id="archivePageCount" onchange="setArchivePageCount(this.value)">
+          ${Array.from({length:draft.availablePages},(_,i)=>{
+            const pages=i+1;
+            return `<option value="${pages}"${pages===draft.pageCount?' selected':''}>${pages} ${pages===1?'page':'pages'}</option>`;
+          }).join('')}
+        </select>
+      </div>
+      <p class="mini" style="margin-top:10px">
+        ${draft.flights.length} of ${draft.totalUnarchived} unarchived flights will be printed in chronological order.
+        ${draft.remainingFlights?`The remaining <b>${draft.remainingFlights}</b> flight${draft.remainingFlights===1?'':'s'} will stay unarchived for your next printing batch.`:'All pending flights are included.'}
+        You can also print a partly filled final page; any unused rows will be crossed out with dashes and marked UNUSED.
+      </p>
+    </div>`:''}
     ${draft.demoCount?`<div class="note" style="margin-top:14px;border-color:#b42318">
        <b>Example flights detected:</b> ${draft.demoCount} unchanged demonstration entries are present in this print batch.
        Do not sign these as genuine flight records. You may preview the layout, but archive confirmation is blocked until they are removed.
@@ -3137,7 +3181,7 @@ function profile(){
     <div class="install-help" style="margin-top:10px">On iPhone/iPad, open the hosted HeliLog site in Safari, use <b>Share → Add to Home Screen</b>. Full offline PWA support requires HeliLog to be served over HTTPS. Opening this prototype directly as a file still works for testing, but it cannot register the offline service worker.</div>
   </div>
 
-  <div class="note" style="margin-top:16px">Profile, licence, rating and medical information in V1.37 is for record keeping and PDF identification only. Automatic EASA validity, recency and expiry calculations are planned for a later version.</div>`;
+  <div class="note" style="margin-top:16px">Profile, licence, rating and medical information in V1.38 is for record keeping and PDF identification only. Automatic EASA validity, recency and expiry calculations are planned for a later version.</div>`;
   updatePWAStatus();
 }
 
@@ -3157,7 +3201,7 @@ function makeFullBackup(){
     app:'HeliLog',
     format:'helilog-full-backup',
     backupSchema:1,
-    appVersion:'1.37',
+    appVersion:'1.38',
     exportedAt:new Date().toISOString(),
     data:JSON.parse(JSON.stringify(S))
   };
