@@ -1046,7 +1046,7 @@ function getFilteredFlights(){
   return [...S.flights].filter(f=>{
     let a=ac(f.aid);
     let searchable=[
-      f.date,f.dep,f.arr,f.off,f.on,f.picName,f.role,f.remarks,
+      f.date,f.dep,f.arr,f.off,f.on,f.picName,f.role,flightRemarksForDisplay(f),
       a?.icao,a?.reg,a?.manufacturer,a?.model,a?.variant
     ].filter(Boolean).join(' ').toLowerCase();
 
@@ -1158,6 +1158,10 @@ function inspectHeliLogData(data){
       const n=Number(f[field]||0);
       if(!Number.isSafeInteger(n)||n<0)errors.push('Flight '+label+' has invalid '+field+'.');
     }
+    const opsCheck=validSpecialOps(f.specialOps,mins);
+    if(!opsCheck.valid)errors.push('Flight '+label+': '+opsCheck.error);
+    if(opsCheck.valid && Number(opsCheck.ops.NVIS||0)>Number(f.nightMin||0))
+      warnings.push('Flight '+label+' has NVIS time greater than recorded night flight time.');
     const sig=flightFingerprintForRecord(f,data);
     if(sig){
       if(seenSignatures.has(sig))warnings.push('Possible duplicate flights: '+seenSignatures.get(sig)+' and '+f.id+' ('+f.date+').');
@@ -1199,6 +1203,9 @@ function inspectHeliLogData(data){
         const live=data.flights.find(f=>f.id===id);
         if(!live){errors.push('Archived flight '+id+' is missing from the electronic logbook.');continue;}
         const copy=b.flights[i];
+        if(JSON.stringify(live.specialOps||{})!==JSON.stringify(copy.specialOps||{})){
+          warnings.push('Archived flight '+id+' differs from its printed specialised operations.');
+        }
         for(const key of ['date','aid','dep','off','arr','on','mins','role','picName','nightMin','ifrMin','takeoffDay','takeoffNight','landingDay','landingNight','remarks']){
           if(String(live[key]??'')!==String(copy[key]??'')){
             warnings.push('Archived flight '+id+' differs from its saved printed copy ('+key+').');
@@ -3187,6 +3194,24 @@ function totals(){
       ${by.length?by.map(([k,v])=>`<p><b>${htmlEscape(k)}</b><span style="float:right">${fmt(v)}</span></p>`).join(''):'<div class="muted">No aircraft-type hours recorded yet.</div>'}
       <div class="mini" style="margin-top:10px">Includes previous hours entered by ICAO type and HeliLog flight entries. Paper hours without a type breakdown are included only in overall totals.</div>
     </div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <div class="head"><h2>Specialised helicopter operations experience</h2></div>
+    <div class="mini" style="margin-bottom:12px">Shows logged participation and activity hours for employment applications. Categories may overlap and do not add to total flight time. Previous paper hours have not been allocated to these categories.</div>
+    ${opsTotals.length?`<div style="overflow-x:auto"><table>
+      <thead><tr><th>Operation</th><th>Flights</th><th>Hours</th><th>By ICAO type</th></tr></thead>
+      <tbody>${opsTotals.map(op=>{
+        const byType=new Map();
+        S.flights.filter(f=>Object.prototype.hasOwnProperty.call(f.specialOps||{},op.code)).forEach(f=>{
+          const type=ac(f.aid)?.icao||'—';
+          byType.set(type,(byType.get(type)||0)+Number(f.specialOps[op.code]||0));
+        });
+        return `<tr><td><b>${htmlEscape(op.code)}</b><div class="mini">${htmlEscape(op.label)}</div></td>
+          <td>${op.flights}</td><td><b>${fmt(op.minutes)}</b></td>
+          <td>${[...byType.entries()].map(([type,mins])=>`${htmlEscape(type)} ${fmt(mins)}`).join(' · ')}</td></tr>`;
+      }).join('')}</tbody></table></div>`:
+      '<div class="muted">No specialised operations have been recorded yet. Add them under More details when entering a flight.</div>'}
+    <div class="mini" style="margin-top:12px">For example, VRLL and HESLO 2 may describe overlapping portions of the same flight. Their category totals must not be added together.</div>
   </div>`;
 }
 
@@ -3426,7 +3451,7 @@ function profile(){
     <div class="profilegrid">
       <div>
         <p><b>Full HeliLog backup</b></p>
-        <p class="muted">Includes flights, aircraft, saved pilots, ratings, imported paper totals, print archive snapshots, endorsements and signatures. New JSON backups include a SHA-256 integrity checksum.</p>
+        <p class="muted">Includes flights, aircraft, pilots, specialised-operation hours, imported totals, print archive snapshots, endorsements and signatures. JSON backups include a SHA-256 checksum.</p>
         <button class="btn primary" type="button" onclick="downloadFullBackup()">Download backup</button>
       </div>
       <div>
