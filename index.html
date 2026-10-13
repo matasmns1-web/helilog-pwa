@@ -340,7 +340,16 @@ const seed={pilot:{name:'Matas',licence:'CPL(H)',authority:'TKA'},aircraft:[
 {id:'f117',date:'2026-07-28',aid:'a1',dep:'EYVI',arr:'EYVI',off:'06:50',on:'07:45',mins:55,role:'PIC',picName:'Matas',nightMin:0,ifrMin:0,takeoffDay:5,takeoffNight:0,landingDay:5,landingNight:0,crossCountry:false,remarks:'Circuits and confined area practice'},
 {id:'f118',date:'2026-07-22',aid:'a3',dep:'EYVI',arr:'EYVI',off:'18:10',on:'19:00',mins:50,role:'DUAL',picName:'Anna Pilot',nightMin:0,ifrMin:0,takeoffDay:3,takeoffNight:0,landingDay:3,landingNight:0,crossCountry:false,remarks:'R44 handling'}
 ]}; 
-let S; try{S=JSON.parse(localStorage.getItem(KEY)||'null')||seed}catch(e){S=seed}
+let S;
+try{S=JSON.parse(localStorage.getItem(KEY)||'null')||seed;}
+catch(e){
+  // Never overwrite corrupt stored records with the demo seed.
+  const root=document.getElementById('app');
+  if(root)root.innerHTML='<div class="card"><h2>Stored HeliLog data cannot be read</h2>'+
+    '<p>Your existing browser data has NOT been reset or overwritten. Do not clear site storage. '+
+    'Restore from a known-good backup only after preserving the original browser data.</p></div>';
+  throw new Error('HeliLog stopped to protect unreadable stored data: '+String(e.message||e));
+}
 const $=s=>document.querySelector(s), app=$('#app');
 
 function normalizeEngineConfig(v){
@@ -1129,6 +1138,12 @@ function inspectHeliLogData(data){
       if(b.flightIds.length!==b.flights.length)errors.push('Archive '+b.id+' has mismatched flight counts.');
       if(b.pageCount!==Math.ceil(b.flights.length/LOGBOOK_ROWS_PER_PAGE))
         errors.push('Archive '+b.id+' has an invalid page count.');
+      const calculated=sumLogbookFields(b.flights,Array.isArray(b.aircraft)?b.aircraft:data.aircraft);
+      const expectedClosing=addExportTotals(b.openingTotals,calculated);
+      for(const field of ['total','spSE','spME','multi','pic','copilot','dual','instructor','night','ifr','toDay','toNight','ldgDay','ldgNight','std']){
+        if(Number(expectedClosing[field]||0)!==Number(b.closingTotals[field]||0))
+          errors.push('Archive '+b.id+' closing '+field+' does not match its printed flights.');
+      }
       if(previous){
         if(b.firstPage!==previous.firstPage+previous.pageCount)errors.push('Archive page numbering is discontinuous at '+b.id+'.');
         for(const field of ['total','pic','dual','copilot','spSE','spME','multi','night','ifr','toDay','toNight','ldgDay','ldgNight']){
