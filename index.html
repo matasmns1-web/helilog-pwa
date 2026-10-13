@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V1.42 PWA Prototype</title>
+<title>HeliLog V1.43 PWA Prototype</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -255,7 +255,7 @@ html.helilog-test-mode .brand::after{
 }
 </style></head>
 <body><div class="layout">
-<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V1.42</span></div><nav>
+<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V1.43</span></div><nav>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="aircraft">🚁 Aircraft</button><button data-v="pilots">👤 Pilots</button><button data-v="endorsements">✎ Endorsements</button><button data-v="printarchive">▤ Print archive</button><button data-v="profile">○ Profile</button><button data-v="testmode">⚗ Test Mode</button>
 </nav></aside><main id="app"></main>
 <div class="mobile">
@@ -662,6 +662,7 @@ function ensureV137Data(){
   if(!Array.isArray(p.batches)) p.batches=[];
   if(!Number.isSafeInteger(p.firstPage) || p.firstPage<1) p.firstPage=1;
   if(typeof p.paperReference!=='string') p.paperReference='';
+  if(!Array.isArray(p.corrections))p.corrections=[];
   try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
 }
 ensureV137Data();
@@ -2016,6 +2017,11 @@ function exportPrintableLogbook(options={}){
       </table>
 
       <div class="page-footer">
+        ${options.correctionsApplied?.length?`<div style="font-size:7px;font-weight:700;margin-bottom:2px">
+        CORRECTIONS CARRIED FORWARD: ${htmlEscape(options.correctionsApplied.join(', '))} —
+        flight-time adjustment ${signedHours(Number(options.openingCorrectionsDelta?.total||0))}.
+        Signed correction addendum(s) must be retained with the paper logbook.
+        </div>`:''}
         <div class="certification">
           ${TEST_MODE?'TEST MODE — FICTIONAL FLIGHTS AND SIMULATOR SESSIONS. NOT AN OFFICIAL LOGBOOK.':
           'I certify that the entries on this page are a true record of the flights shown above.'}
@@ -2152,6 +2158,52 @@ function removeUnchangedDemoFlights(){
 }
 
 function archivedBatches(){return S.printArchive?.batches||[]}
+function archiveCorrections(data=S){
+  return Array.isArray(data.printArchive?.corrections)?data.printArchive.corrections:[];
+}
+function confirmedCorrections(data=S){
+  return archiveCorrections(data).filter(c=>c.confirmedAt);
+}
+function pendingCorrectionFor(id){
+  return archiveCorrections().find(c=>c.flightId===id&&!c.confirmedAt);
+}
+function archiveBatchForFlight(id){
+  const b=archivedBatches().find(x=>x.flightIds?.includes(id));
+  if(!b)return null;
+  const pos=b.flightIds.indexOf(id);
+  return {batch:b,entry:pos+1,page:b.firstPage+Math.floor(pos/LOGBOOK_ROWS_PER_PAGE),row:(pos%LOGBOOK_ROWS_PER_PAGE)+1};
+}
+function effectiveFlight(f,data=S){
+  if(!f)return f;
+  const recent=confirmedCorrections(data).filter(c=>c.flightId===f.id).at(-1);
+  return recent?recent.after:f;
+}
+function effectiveFlights(data=S){return data.flights.map(f=>effectiveFlight(f,data));}
+function correctionFieldTotals(f,aircraftSnapshot){
+  return sumLogbookFields([f],aircraftSnapshot);
+}
+function correctionDelta(c,aircraftSnapshot=S.aircraft){
+  const before=correctionFieldTotals(c.before,aircraftSnapshot);
+  const after=correctionFieldTotals(c.after,aircraftSnapshot);
+  const result={};
+  for(const k of Object.keys(before))result[k]=(after[k]||0)-(before[k]||0);
+  return result;
+}
+function sumCorrectionDeltas(items,aircraftSnapshot=S.aircraft){
+  const out={};
+  for(const c of items){
+    const delta=correctionDelta(c,aircraftSnapshot);
+    for(const [k,v] of Object.entries(delta))out[k]=(out[k]||0)+v;
+  }
+  return out;
+}
+function signedHours(n){
+  return (n<0?'−':n>0?'+':'')+fmt(Math.abs(n));
+}
+function unappliedCorrections(batches=archivedBatches()){
+  const applied=new Set(batches.flatMap(b=>b.correctionsApplied||[]));
+  return confirmedCorrections().filter(c=>!applied.has(c.id));
+}
 function archivedFlightIds(){
   return new Set(archivedBatches().flatMap(b=>Array.isArray(b.flightIds)?b.flightIds:[]));
 }
@@ -2178,7 +2230,10 @@ function nextArchiveDraft(){
     .filter(f=>flights.some(other=>!isSimulatorSession(other)&&other.date===f.date))
     .map(f=>f.date)).size;
   const aircraft=JSON.parse(JSON.stringify(S.aircraft));
-  const openingTotals=previous?JSON.parse(JSON.stringify(previous.closingTotals)):broughtForwardExportTotals();
+  const pendingCorrections=unappliedCorrections(batches);
+  const openingCorrectionsDelta=sumCorrectionDeltas(pendingCorrections);
+  const baseOpening=previous?JSON.parse(JSON.stringify(previous.closingTotals)):broughtForwardExportTotals();
+  const openingTotals=addExportTotals(baseOpening,openingCorrectionsDelta);
   const pageCount=Math.ceil(flights.length/LOGBOOK_ROWS_PER_PAGE);
   const flightTotals=sumLogbookFields(flights,aircraft);
   const closingTotals=addExportTotals(openingTotals,flightTotals);
@@ -2188,6 +2243,8 @@ function nextArchiveDraft(){
     firstPage,pageCount,flightIds:flights.map(f=>f.id),flights,aircraft,pilot,
     availablePages,totalUnarchived:pendingFlights.length,remainingFlights:pendingFlights.length-flights.length,
     unusedRowsBlocked:true,
+    correctionsApplied:pendingCorrections.map(c=>c.id),
+    openingCorrectionsDelta,
     openingTotals,flightTotals,closingTotals,
     paperReference:S.printArchive.paperReference,
     lastFlightDate:flights.length?flights[flights.length-1].date:lastDate,
@@ -2251,7 +2308,9 @@ function previewNextArchive(){
   const opened=exportPrintableLogbook({
     flights:draft.flights,openingTotals:draft.openingTotals,firstPage:draft.firstPage,
     archiveBatch:draft.id,aircraft:draft.aircraft,pilot:draft.pilot,
-    blockUnusedRows:draft.unusedRowsBlocked
+    blockUnusedRows:draft.unusedRowsBlocked,
+    correctionsApplied:draft.correctionsApplied,
+    openingCorrectionsDelta:draft.openingCorrectionsDelta
   });
   if(opened){
     pendingArchivePreview=JSON.stringify(draft);
@@ -2315,7 +2374,9 @@ function reprintArchiveBatch(seq){
   exportPrintableLogbook({
     flights:b.flights,aircraft:b.aircraft,pilot:b.pilot,
     openingTotals:b.openingTotals,firstPage:b.firstPage,archiveBatch:b.id,
-    blockUnusedRows:b.unusedRowsBlocked===true
+    blockUnusedRows:b.unusedRowsBlocked===true,
+    correctionsApplied:b.correctionsApplied||[],
+    openingCorrectionsDelta:b.openingCorrectionsDelta||{}
   });
 }
 function printarchive(){
@@ -3819,7 +3880,7 @@ function profile(){
     <div class="install-help" style="margin-top:10px">On iPhone/iPad, open the hosted HeliLog site in Safari, use <b>Share → Add to Home Screen</b>. Full offline PWA support requires HeliLog to be served over HTTPS. Opening this prototype directly as a file still works for testing, but it cannot register the offline service worker.</div>
   </div>
 
-  <div class="note" style="margin-top:16px">Profile, licence, rating and medical information in V1.42 is for record keeping and PDF identification only. Automatic EASA validity, recency and expiry calculations are planned for a later version.</div>`;
+  <div class="note" style="margin-top:16px">Profile, licence, rating and medical information in V1.43 is for record keeping and PDF identification only. Automatic EASA validity, recency and expiry calculations are planned for a later version.</div>`;
   updatePWAStatus();
 }
 
@@ -3835,7 +3896,7 @@ function freshLogbookData(from,forTest=false){
     people:[{id:'p_owner',name:pilotName,isAccountHolder:true,role:'Account holder',licence:'',notes:''}],
     aircraft:[],flights:[],qualifications:[],endorsements:[],
     broughtForward:{},broughtForwardByType:[],broughtForwardImported:false,broughtForwardImportedAt:'',
-    printArchive:{firstPage:1,paperReference:forTest?'TEST ONLY — not a real paper logbook':'',batches:[]}
+    printArchive:{firstPage:1,paperReference:forTest?'TEST ONLY — not a real paper logbook':'',batches:[],corrections:[]}
   };
 }
 function makeSandboxData(){
@@ -4045,7 +4106,7 @@ async function makeFullBackup(){
     app:'HeliLog',
     format:'helilog-full-backup',
     backupSchema:2,
-    appVersion:'1.42',
+    appVersion:'1.43',
     exportedAt:new Date().toISOString(),
     environment:TEST_MODE?'test':'production',
     integrity:{algorithm:'SHA-256',sha256:await sha256Hex(JSON.stringify(data))},
