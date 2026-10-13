@@ -2535,14 +2535,17 @@ function printarchive(){
 function isSimulatorSession(f){return f?.entryType==='simulator';}
 function simulatorDeviceLabel(f){return [f.simCategory,f.simDevice,f.simQualification?'('+f.simQualification+')':''].filter(Boolean).join(' ');}
 function addSimulator(editId=null){
-  if(editId && isArchivedFlight(editId)){alert('Archived simulator sessions are read-only.');return;}
+  if(editId && isArchivedFlight(editId)&&correctingArchivedId!==editId){
+    alert('Use the archived correction workflow from the session details.');return;
+  }
   editingFlightId=editId||null;
-  const old=editId?S.flights.find(f=>f.id===editId):null;
+  const old=editId?effectiveFlight(S.flights.find(f=>f.id===editId)):null;
   if(editId && !isSimulatorSession(old))return;
   app.innerHTML=header(old?'Edit simulator session':'Add simulator session',
     'A synthetic training device session is not a helicopter flight.',
     `<button class="btn" onclick="cancelFlightForm('${old?.id||''}')">Cancel</button>`)+
     `<form class="card form" id="flightForm" novalidate><div id="formError" class="errorbox"></div>
+       ${correctingArchivedId===editId?`<div class="note"><b>Correction to signed simulator record</b>: original print page stays unchanged. A separate addendum is required.</div>`:''}
        ${!old?`<div class="choice-row" style="margin-bottom:16px"><button class="btn" type="button" onclick="if(confirmLeaveFlightForm()){clearFlightFormGuard();add()}">Helicopter flight</button><button class="btn primary" type="button">Simulator session ✓</button></div>`:''}
        <div class="section-title">Synthetic training device session</div>
        <div class="formgrid">
@@ -2558,8 +2561,9 @@ function addSimulator(editId=null){
        <div class="field" style="margin-top:12px"><label>Exercise / proficiency check / remarks</label>
          <textarea id="simRemarks" placeholder="e.g. IR(H) procedures, proficiency check, revalidation">${htmlEscape(old?.remarks||'')}</textarea></div>
        <div class="note">Only the Synthetic Training Devices Session and Remarks columns are filled on paper. Departure, arrival, aircraft flight time, PIC time and take-offs/landings remain blank.</div>
+       ${correctingArchivedId===editId?`<div class="field"><label>Reason for correction (required)</label><textarea id="correctionReason" placeholder="Explain the correction and evidence" required></textarea></div>`:''}
        <div class="actions"><button class="btn" type="button" onclick="cancelFlightForm('${old?.id||''}')">Cancel</button>
-         <button class="btn primary" type="button" onclick="saveSimulatorSession()">${old?'Save session':'Save simulator session'}</button></div>
+         <button class="btn primary" type="button" onclick="saveSimulatorSession()">${correctingArchivedId===editId?'Propose correction':old?'Save session':'Save simulator session'}</button></div>
      </form>`;
   const form=document.getElementById('flightForm');
   form.addEventListener('input',markFlightFormDirty);
@@ -2567,7 +2571,9 @@ function addSimulator(editId=null){
   flightFormDirty=false;
 }
 function saveSimulatorSession(){
-  if(editingFlightId&&isArchivedFlight(editingFlightId)){alert('Archived simulator sessions cannot be edited.');return;}
+  if(editingFlightId&&isArchivedFlight(editingFlightId)&&correctingArchivedId!==editingFlightId){
+    alert('Archived simulator sessions require an addendum.');return;
+  }
   clearFormError();
   const date=readEuropeanDate('simDate',true),category=$('#simCategory').value,device=$('#simDevice').value.trim(),
     qualification=$('#simQualification').value.trim(),remarks=$('#simRemarks').value.trim();
@@ -2585,6 +2591,8 @@ function saveSimulatorSession(){
     takeoffDay:0,takeoffNight:0,landingDay:0,landingNight:0,crossCountry:false,specialOps:{},remarks,
     createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()
   };
+  if(correctingArchivedId===editingFlightId&&isArchivedFlight(editingFlightId))
+    return recordArchiveCorrection(editingFlightId,entry,$('#correctionReason').value);
   if(old)S.flights[S.flights.findIndex(f=>f.id===old.id)]=entry;else S.flights.push(entry);
   if(!save())return;
   const id=entry.id;editingFlightId=null;clearFlightFormGuard();flight(id);
@@ -2606,12 +2614,11 @@ function simulatorDetails(id){
      <p class="mini">Printed only in Synthetic Training Devices and Remarks columns. Does not add to actual helicopter flight time.</p></div>`;
 }
 function add(editId=null){
-if(editId && isArchivedFlight(editId)){
-  alert('This flight is already included in a confirmed, signed paper-logbook batch. It is read-only to preserve the archived pages. Corrections will require an amendment or replacement-page workflow.');
-  return;
+if(editId && isArchivedFlight(editId)&&correctingArchivedId!==editId){
+  alert('This flight is in a signed batch. Use Propose correction.');return;
 }
 editingFlightId=editId||null;
-let existing=editingFlightId?S.flights.find(f=>f.id===editingFlightId):null;
+let existing=editingFlightId?effectiveFlight(S.flights.find(f=>f.id===editingFlightId)):null;
 if(editingFlightId && !existing){editingFlightId=null; return go('logbook');}
 let editing=!!existing;
 app.innerHTML=header(
@@ -2620,7 +2627,7 @@ app.innerHTML=header(
   `<button class="btn" onclick="cancelFlightForm('${editing?existing.id:''}')">Cancel</button>`
 )+`<form id="flightForm" class="card form" novalidate>
 <div id="formError" class="errorbox"></div>
-${editing?`<div class="editnotice">You are editing an existing V1 record. Formal correction history and post-certification audit controls will be introduced in V2.</div>`:''}
+${correctingArchivedId===editId?`<div class="note"><b>Archived correction</b>: the signed page stays unchanged. Revised values only take effect after you print, sign and confirm a correction addendum.</div>`:editing?`<div class="editnotice">Editing an unarchived flight.</div>`:''}
 
 ${!editing?`<div class="choice-row" style="margin-bottom:16px">
    <button class="btn primary" type="button">Helicopter flight ✓</button>
@@ -2749,7 +2756,8 @@ ${!editing?`<div class="choice-row" style="margin-bottom:16px">
 </details>
 
 <div class="field"><label>Remarks and endorsements</label><textarea id="remarks"></textarea></div>
-<div class="actions"><button type="button" class="btn" onclick="cancelFlightForm('${editing?existing.id:''}')">Cancel</button><button type="button" id="saveFlightBtn" class="btn primary" onclick="saveFlight()">${editing?'Save changes':'Save flight'}</button></div>
+${correctingArchivedId===editId?`<div class="field"><label>Reason for correction (required)</label><textarea id="correctionReason" placeholder="What was incorrect and why?" required></textarea></div>`:''}
+<div class="actions"><button type="button" class="btn" onclick="cancelFlightForm('${editing?existing.id:''}')">Cancel</button><button type="button" id="saveFlightBtn" class="btn primary" onclick="saveFlight()">${correctingArchivedId===editId?'Propose correction':editing?'Save changes':'Save flight'}</button></div>
 </form>`;
 
 populateTimePicker('offHour','offMinute');
@@ -2889,10 +2897,7 @@ function uppercasePlaceInput(el){
   }
 }
 function editFlight(id){
-  if(isArchivedFlight(id)){
-    alert('This flight belongs to a confirmed print archive and cannot be edited silently. A traceable correction workflow is planned.');
-    return;
-  }
+  if(isArchivedFlight(id))return startArchivedCorrection(id);
   const entry=S.flights.find(f=>f.id===id);
   if(isSimulatorSession(entry))addSimulator(id);
   else add(id);
@@ -3020,9 +3025,8 @@ function clearFormError(){
   if(box){box.textContent='';box.classList.remove('show');}
 }
 function saveFlight(){
-  if(editingFlightId && isArchivedFlight(editingFlightId)){
-    alert('This flight has already been archived and is read-only.');
-    return;
+  if(editingFlightId && isArchivedFlight(editingFlightId)&&correctingArchivedId!==editingFlightId){
+    alert('This archived flight requires a correction addendum.');return;
   }
   clearFormError();
 
@@ -3099,6 +3103,8 @@ function saveFlight(){
     const duplicate=S.flights.find(other=>other.id!==f.id && flightFingerprintForRecord(other)===signature);
     if(duplicate)return showFormError('A flight with the same aircraft, date, route and departure/arrival times already exists. Check your logbook before saving.');
   }
+  if(correctingArchivedId===editingFlightId&&isArchivedFlight(editingFlightId))
+    return recordArchiveCorrection(editingFlightId,f,$('#correctionReason').value);
   if(existingIndex>=0) S.flights[existingIndex]=f;
   else S.flights.push(f);
   if(!save())return;
