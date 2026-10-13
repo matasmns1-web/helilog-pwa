@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V1.39 PWA Prototype</title>
+<title>HeliLog V1.40 PWA Prototype</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -240,7 +240,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:11px 9px;
 @media(max-width:850px){.dashboard-actions{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style></head>
 <body><div class="layout">
-<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V1.39</span></div><nav>
+<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V1.40</span></div><nav>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="aircraft">🚁 Aircraft</button><button data-v="pilots">👤 Pilots</button><button data-v="endorsements">✎ Endorsements</button><button data-v="printarchive">▤ Print archive</button><button data-v="totals">◉ Totals</button><button data-v="profile">○ Profile</button>
 </nav></aside><main id="app"></main>
 <div class="mobile">
@@ -654,6 +654,46 @@ function combinedTotalsByType(){
     by.set(icao,(by.get(icao)||0)+Number(f.mins||0));
   });
   return [...by.entries()].filter(([,mins])=>mins>0).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
+}
+const SPECIAL_OPS=[
+  {code:'VRLL',label:'VRLL — Vertical-reference long-line'},
+  {code:'HESLO1',label:'HESLO 1 — Short-line external load (up to 20 m)'},
+  {code:'HESLO2',label:'HESLO 2 — Long-line external load (over 20 m)'},
+  {code:'HESLO3',label:'HESLO 3 — Specialised external load'},
+  {code:'HESLO4',label:'HESLO 4 — Advanced external load'},
+  {code:'HEC',label:'HEC — Human external cargo'},
+  {code:'NVIS',label:'NVG / NVIS — Night-vision operations'},
+  {code:'HHO',label:'HHO — Helicopter hoist operations'},
+  {code:'OFFSHORE',label:'Offshore operations'},
+  {code:'FIRE',label:'Aerial firefighting / water bucket'},
+  {code:'MOUNTAIN',label:'Mountain operations'},
+  {code:'SURVEY',label:'Aerial survey / patrol'}
+];
+const SPECIAL_OP_KEYS=new Set(SPECIAL_OPS.map(op=>op.code));
+function validSpecialOps(ops,total){
+  if(ops===undefined || ops===null)return {valid:true,ops:{}};
+  if(!ops || typeof ops!=='object' || Array.isArray(ops))return {valid:false,error:'Special operations must be an object.'};
+  const result={};
+  for(const [code,mins] of Object.entries(ops)){
+    if(!SPECIAL_OP_KEYS.has(code))return {valid:false,error:'Unknown operation code '+code+'.'};
+    if(!Number.isSafeInteger(mins) || mins<0 || mins>total)return {valid:false,error:code+' time cannot exceed flight time.'};
+    result[code]=mins;
+  }
+  return {valid:true,ops:result};
+}
+function specialOpsAnnotation(f){
+  const ops=f?.specialOps||{};
+  const codes=SPECIAL_OPS.filter(op=>Object.prototype.hasOwnProperty.call(ops,op.code)).map(op=>op.code);
+  return codes.length?'OPS: '+codes.join(', '):'';
+}
+function flightRemarksForDisplay(f){
+  return [String(f?.remarks||'').trim(),specialOpsAnnotation(f)].filter(Boolean).join(' | ');
+}
+function specialisedTotals(){
+  return SPECIAL_OPS.map(op=>{
+    const flights=S.flights.filter(f=>Object.prototype.hasOwnProperty.call(f.specialOps||{},op.code));
+    return {...op,flights:flights.length,minutes:flights.reduce((n,f)=>n+Number(f.specialOps[op.code]||0),0)};
+  }).filter(e=>e.flights);
 }
 function broughtForwardInputMinutes(v){return Number(v||0)>0?fmt(Number(v)):'';
 }
@@ -2260,6 +2300,22 @@ ${editing?`<div class="editnotice">You are editing an existing V1 record. Formal
     <div class="field"><label>Synthetic training device type</label><input id="stdType"></div>
     <div class="field"><label>Synthetic session time (minutes)</label><input id="stdMin" type="number" min="0" value="0"></div>
   </div>
+  <div class="section-title">Specialised helicopter operations</div>
+  <div class="mini">Tick an operation performed during this flight to reveal its duration in H:MM. These hours are experience breakdowns and do not increase your total flight time.</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:10px;margin-top:12px">
+    ${SPECIAL_OPS.map(op=>`<div style="border:1px solid var(--line);border-radius:9px;padding:10px">
+      <label style="display:flex;gap:8px;align-items:start;cursor:pointer">
+        <input id="specialCheck_${op.code}" type="checkbox" onchange="toggleSpecialOp('${op.code}')">
+        <span>${htmlEscape(op.label)}</span>
+      </label>
+      <div id="specialWrap_${op.code}" style="display:none;margin-top:9px">
+        <label for="specialTime_${op.code}" class="mini">Operation time (H:MM)</label>
+        <input id="specialTime_${op.code}" type="text" inputmode="decimal" placeholder="0:00" value="0:00" oninput="updateSpecialOpsPreview()">
+      </div>
+    </div>`).join('')}
+  </div>
+  <div class="mini" style="margin-top:10px">Ticked activities with unknown duration may remain 0:00; they count as a flight but not as credited hours. Activities can overlap.</div>
+  <div id="specialOpsPreview" class="mini" style="margin-top:8px"></div>
 </details>
 
 <div class="field"><label>Remarks and endorsements</label><textarea id="remarks"></textarea></div>
@@ -2294,11 +2350,20 @@ if(existing){
   $('#stdMin').value=existing.stdMin||0;
   $('#crossCountry').checked=!!existing.crossCountry;
   $('#remarks').value=existing.remarks||'';
-  if((existing.instrMin||0)>0 || (existing.stdType||'') || (existing.stdMin||0)>0) $('#moreDetails').open=true;
+  SPECIAL_OPS.forEach(op=>{
+    if(Object.prototype.hasOwnProperty.call(existing.specialOps||{},op.code)){
+      $('#specialCheck_'+op.code).checked=true;
+      $('#specialTime_'+op.code).value=fmt(existing.specialOps[op.code]);
+      toggleSpecialOp(op.code);
+    }
+  });
+  if((existing.instrMin||0)>0 || (existing.stdType||'') || (existing.stdMin||0)>0 ||
+    Object.keys(existing.specialOps||{}).length) $('#moreDetails').open=true;
 }else{
   $('#date').value=new Date().toISOString().slice(0,10);
 }
 
+updateSpecialOpsPreview();
 $('#off').onblur=()=>validateTimeField('off');
 $('#on').onblur=()=>validateTimeField('on');
 $('#off').oninput=()=>{clearTimeError('off');calc();};
@@ -2321,6 +2386,39 @@ if(flightForm){
   flightForm.addEventListener('change',markFlightFormDirty);
 }
 flightFormDirty=false;
+}
+function toggleSpecialOp(code){
+  const checked=document.getElementById('specialCheck_'+code)?.checked;
+  const wrap=document.getElementById('specialWrap_'+code);
+  if(wrap)wrap.style.display=checked?'block':'none';
+  if(!checked){
+    const field=document.getElementById('specialTime_'+code);
+    if(field)field.value='0:00';
+  }
+  updateSpecialOpsPreview();
+}
+function updateSpecialOpsPreview(){
+  const el=document.getElementById('specialOpsPreview');
+  if(!el)return;
+  const codes=SPECIAL_OPS.filter(op=>document.getElementById('specialCheck_'+op.code)?.checked).map(op=>op.code);
+  el.textContent=codes.length?'Automatic remark: OPS: '+codes.join(', '):'No specialised operation codes selected.';
+}
+function collectSpecialOps(totalMinutes){
+  const ops={};
+  for(const op of SPECIAL_OPS){
+    if(!document.getElementById('specialCheck_'+op.code)?.checked)continue;
+    const input=document.getElementById('specialTime_'+op.code);
+    const minutes=parseBroughtForwardMinutes(input.value);
+    if(minutes===null || minutes<0 || minutes>totalMinutes){
+      $('#moreDetails').open=true;
+      input.classList.add('time-input-invalid');
+      showFormError(op.code+' time must be H:MM or decimal hours and cannot exceed total flight time.');
+      input.focus();return null;
+    }
+    input.classList.remove('time-input-invalid');
+    ops[op.code]=minutes;
+  }
+  return ops;
 }
 function uppercasePlaceInput(el){
   let start=el.selectionStart, end=el.selectionEnd;
@@ -2484,6 +2582,8 @@ function saveFlight(){
   if(night>m) return showFormError('Night time cannot be greater than total flight time.');
   if(ifr>m) return showFormError('IFR time cannot be greater than total flight time.');
 
+  const specialOps=collectSpecialOps(m);
+  if(specialOps===null)return;
   let pilotConfig=document.querySelector('input[name="pilotConfig"]:checked')?.value||'single';
 
   let role=$('#role').value;
@@ -2521,6 +2621,7 @@ function saveFlight(){
     stdType:$('#stdType').value.trim(),
     stdMin:Number($('#stdMin').value||0),
     crossCountry:$('#crossCountry').checked,
+    specialOps,
     remarks:$('#remarks').value.trim(),
     createdAt:original?.createdAt||new Date().toISOString(),
     updatedAt:new Date().toISOString()
@@ -2543,7 +2644,10 @@ function flight(id){editingFlightId=null;let f=S.flights.find(x=>x.id===id),a=ac
 <h2 style="margin-top:22px">${f.dep} ${f.off||''} → ${f.arr} ${f.on||''}</h2>
 <div class="kpi-grid"><div class="card"><div class="label">Total time</div><div class="big">${fmt(f.mins)}</div></div><div class="card"><div class="label">Pilot function</div><div class="big" style="font-size:20px">${f.role}</div></div><div class="card"><div class="label">Night</div><div class="big">${fmt(f.nightMin||0)}</div></div><div class="card"><div class="label">IFR</div><div class="big">${fmt(f.ifrMin||0)}</div></div></div>
 <div class="formgrid" style="margin-top:18px"><div><b>Name of PIC</b><div class="muted">${f.picName||'—'}</div></div><div><b>Engine configuration</b><div class="muted">✓ ${engineCode(a)==='ME'?'Multi-engine (ME)':'Single-engine (SE)'}</div></div><div><b>Pilot configuration</b><div class="muted">${flightPilotConfig(f)==='multi'?'Multi-pilot':'Single-pilot'}</div></div><div><b>Configuration time</b><div class="muted">${(()=>{let c=configurationTimes(f);return c.multi?`Multi-pilot ${fmt(c.multi)}`:c.spME?`Single-pilot ME ${fmt(c.spME)}`:`Single-pilot SE ${fmt(c.spSE)}`})()}</div></div><div><b>Take-offs</b><div class="muted">Day ${f.takeoffDay||0} · Night ${f.takeoffNight||0}</div></div><div><b>Landings</b><div class="muted">Day ${f.landingDay||0} · Night ${f.landingNight||0}</div></div><div><b>Cross-country</b><div class="muted">${f.crossCountry?'Yes':'No'}</div></div></div>
-<p><b>Remarks / endorsements</b><br><span class="muted">${f.remarks||'—'}</span></p></div>`}
+<p><b>Remarks / endorsements</b><br><span class="muted">${htmlEscape(flightRemarksForDisplay(f)||'—')}</span></p>
+${Object.keys(f.specialOps||{}).length?`<div class="card" style="margin-top:16px"><h3>Specialised helicopter operations</h3>
+${SPECIAL_OPS.filter(op=>Object.prototype.hasOwnProperty.call(f.specialOps||{},op.code)).map(op=>`<div class="profileline"><div class="k">${htmlEscape(op.label)}</div><b>${fmt(f.specialOps[op.code])}</b></div>`).join('')}
+<div class="mini">Breakdown only — no additional flight-time credit.</div></div>`:''}</div>`}
 
 function openDeleteModal(id){
   if(isArchivedFlight(id)){
@@ -3346,7 +3450,7 @@ function profile(){
     <div class="install-help" style="margin-top:10px">On iPhone/iPad, open the hosted HeliLog site in Safari, use <b>Share → Add to Home Screen</b>. Full offline PWA support requires HeliLog to be served over HTTPS. Opening this prototype directly as a file still works for testing, but it cannot register the offline service worker.</div>
   </div>
 
-  <div class="note" style="margin-top:16px">Profile, licence, rating and medical information in V1.39 is for record keeping and PDF identification only. Automatic EASA validity, recency and expiry calculations are planned for a later version.</div>`;
+  <div class="note" style="margin-top:16px">Profile, licence, rating and medical information in V1.40 is for record keeping and PDF identification only. Automatic EASA validity, recency and expiry calculations are planned for a later version.</div>`;
   updatePWAStatus();
 }
 
@@ -3374,7 +3478,7 @@ async function makeFullBackup(){
     app:'HeliLog',
     format:'helilog-full-backup',
     backupSchema:2,
-    appVersion:'1.39',
+    appVersion:'1.40',
     exportedAt:new Date().toISOString(),
     integrity:{algorithm:'SHA-256',sha256:await sha256Hex(JSON.stringify(data))},
     data
