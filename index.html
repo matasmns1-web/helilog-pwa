@@ -373,7 +373,9 @@ catch(e){
   const root=document.getElementById('app');
   if(root)root.innerHTML='<div class="card"><h2>Stored HeliLog data cannot be read</h2>'+
     '<p>Your existing browser data has NOT been reset or overwritten. Do not clear site storage. '+
-    'Restore from a known-good backup only after preserving the original browser data.</p></div>';
+    'Restore from a known-good backup only after preserving the original browser data.</p>'+
+    (TEST_MODE?'<button class="btn" onclick="localStorage.removeItem(\'helilog_v142_mode\');location.reload()">Return to main logbook safely</button>':'')+
+    '</div>';
   throw new Error('HeliLog stopped to protect unreadable stored data: '+String(e.message||e));
 }
 const $=s=>document.querySelector(s), app=$('#app');
@@ -2015,7 +2017,8 @@ function exportPrintableLogbook(options={}){
 
       <div class="page-footer">
         <div class="certification">
-          I certify that the entries on this page are a true record of the flights shown above.
+          ${TEST_MODE?'TEST MODE — FICTIONAL FLIGHTS AND SIMULATOR SESSIONS. NOT AN OFFICIAL LOGBOOK.':
+          'I certify that the entries on this page are a true record of the flights shown above.'}
         </div>
       </div>
     </section>`;
