@@ -1033,7 +1033,7 @@ function dashboard(){
   let reminders=dashboardReminders().slice(0,6);
   let endorsements=[...(S.endorsements||[])].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,4);
   let aircraftRows=S.aircraft.map(a=>{
-    let mins=S.flights.filter(f=>f.aid===a.id).reduce((n,f)=>n+Number(f.mins||0),0);
+    let mins=effectiveFlights().filter(f=>f.aid===a.id).reduce((n,f)=>n+Number(f.mins||0),0);
     return {a,mins};
   }).sort((a,b)=>b.mins-a.mins);
 
@@ -1650,7 +1650,7 @@ async function handleCSVFile(e){
       preview.innerHTML=''; return;
     }
 
-    const existingKeys=new Set(S.flights.map(f=>flightFingerprintForRecord(f)).filter(Boolean));
+    const existingKeys=new Set([...S.flights,...effectiveFlights()].map(f=>flightFingerprintForRecord(f)).filter(Boolean));
     const fileKeys=new Set();
     let skippedExisting=0,skippedWithinFile=0;
     const newRows=parsed.filter(item=>{
@@ -1674,7 +1674,7 @@ async function handleCSVFile(e){
 
 function confirmCSVImport(){
   if(!pendingImport?.length) return;
-  const keys=new Set(S.flights.map(f=>flightFingerprintForRecord(f)).filter(Boolean));
+  const keys=new Set([...S.flights,...effectiveFlights()].map(f=>flightFingerprintForRecord(f)).filter(Boolean));
   const additions=pendingImport.filter(item=>{
     const k=flightFingerprintForImport(item);
     if(k&&keys.has(k))return false;
@@ -3354,7 +3354,7 @@ function aircraft(){
   editingAircraftId=null;
   app.innerHTML=header('Aircraft','ICAO type designator is the primary logbook identifier',`<button class="btn primary" onclick="newAircraft()">＋ Add aircraft</button>`)+
   `<div class="grid aircraft">${S.aircraft.map(a=>{
-    let usedFlights=S.flights.filter(f=>f.aid===a.id);
+    let usedFlights=effectiveFlights().filter(f=>f.aid===a.id);
     let m=usedFlights.reduce((n,f)=>n+Number(f.mins||0),0);
     return `<div class="card">
       <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
