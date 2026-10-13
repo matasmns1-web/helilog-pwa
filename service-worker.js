@@ -1,4 +1,4 @@
-const CACHE='helilog-v1-40-shell';
+const CACHE='helilog-v1-41-shell';
 const SHELL=[
   './',
   './index.html',
