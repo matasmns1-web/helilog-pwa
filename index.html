@@ -2478,6 +2478,12 @@ function confirmPrintedArchive(){
     return;
   }
   if(!draft.flights.length)return;
+  const pendingCorrections=archiveCorrections().filter(c=>!c.confirmedAt);
+  if(pendingCorrections.length){
+    alert('There are '+pendingCorrections.length+' unsigned archive correction addendum(s). Confirm them after printing and signing, or discard the pending proposals, before confirming another paper logbook batch.');
+    printarchive();
+    return;
+  }
   if(draft.demoCount){
     alert('This batch still includes '+draft.demoCount+' unchanged demonstration flight(s). Remove them from your logbook before confirming an official signed paper archive.');
     return;
@@ -2592,8 +2598,7 @@ function confirmCorrectionAddendum(id){
     'Confirmed corrections cannot be edited or deleted in HeliLog.'))return;
   c.confirmedAt=new Date().toISOString();
   try{
-    const raw=JSON.stringify(S);
-    localStorage.setItem(KEY,raw);
+    verifiedEnvironmentWrite(KEY,S);
     const confirmed=JSON.parse(localStorage.getItem(KEY)||'{}').printArchive?.corrections?.find(x=>x.id===id);
     if(!confirmed||confirmed.confirmedAt!==c.confirmedAt)throw new Error('Saved correction was not verified.');
   }catch(e){
@@ -2665,6 +2670,9 @@ function printarchive(){
        Do not sign these as genuine flight records. You may preview the layout, but archive confirmation is blocked until they are removed.
        <div style="margin-top:10px"><button class="btn" onclick="removeUnchangedDemoFlights()">Remove unchanged demo flights</button></div>
      </div>`:''}
+    ${archiveCorrections().some(c=>!c.confirmedAt)?`<div class="note" style="margin-top:14px;border-color:#dd9b2b">
+      <b>Unresolved archive correction:</b> Confirm or discard each pending correction addendum before signing a new print batch. Printing previews is still possible.
+    </div>`:''}
     ${draft.lateCount?`<div class="note" style="margin-top:14px;border-color:#dd9b2b"><b>Late entries:</b> ${draft.lateCount} unarchived flight(s) are older than the last archived flight. They will appear in this later batch, not between already signed pages. Check and annotate them before printing.</div>`:''}
     ${draft.ambiguousSimulatorDays?`<div class="note" style="margin-top:14px"><b>Same-date simulator sessions:</b> ${draft.ambiguousSimulatorDays} day(s) include both simulator and flight entries. Simulator sessions have no recorded start time and are placed after timed flights on the same date. Please review the entry order before confirming these paper pages.</div>`:''}
     <div class="card" style="margin-top:16px">
