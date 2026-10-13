@@ -1113,9 +1113,10 @@ const IMPORT_HEADERS=[
   'pilot_configuration','total_time',
   'pilot_function','pic_name','takeoffs_day','takeoffs_night',
   'landings_day','landings_night','night_time','ifr_time',
-  'cross_country','remarks','special_ops'
+  'cross_country','remarks','special_ops',
+  'entry_type','sim_category','sim_device','sim_qualification','sim_session_time'
 ];
-const OPTIONAL_IMPORT_HEADERS=['engine_configuration','pilot_configuration','special_ops'];
+const OPTIONAL_IMPORT_HEADERS=['engine_configuration','pilot_configuration','special_ops','entry_type','sim_category','sim_device','sim_qualification','sim_session_time'];
 const LEGACY_CONFIG_HEADERS=['single_pilot_se_time','single_pilot_me_time','multi_pilot_time'];
 
 // A conservative identity test: same date, aircraft registration, route and both
@@ -1148,6 +1149,13 @@ function inspectHeliLogData(data){
     if(flightIds.has(f.id))errors.push('Duplicate flight record ID: '+f.id);
     flightIds.add(f.id);
     const label=String(f.date||'?')+' / '+String(f.id);
+    if(isSimulatorSession(f)){
+      if(!parseExternalDate(f.date))errors.push('Simulator '+label+' has an invalid date.');
+      if(!String(f.simDevice||'').trim())errors.push('Simulator '+label+' has no device/type.');
+      if(!Number.isSafeInteger(f.stdMin)||f.stdMin<=0)errors.push('Simulator '+label+' has an invalid session time.');
+      if(Number(f.mins||0)!==0)errors.push('Simulator '+label+' must have zero actual flight time.');
+      continue;
+    }
     if(!aircraftIds.has(f.aid))errors.push('Flight '+label+' references an unknown aircraft.');
     if(!parseExternalDate(f.date))errors.push('Flight '+label+' has an invalid date.');
     if(!importClock(f.off)||!importClock(f.on))errors.push('Flight '+label+' has invalid departure/arrival time.');
@@ -1194,7 +1202,7 @@ function inspectHeliLogData(data){
       }
       if(previous){
         if(b.firstPage!==previous.firstPage+previous.pageCount)errors.push('Archive page numbering is discontinuous at '+b.id+'.');
-        for(const field of ['total','pic','dual','copilot','spSE','spME','multi','night','ifr','toDay','toNight','ldgDay','ldgNight']){
+        for(const field of ['total','pic','dual','copilot','spSE','spME','multi','night','ifr','toDay','toNight','ldgDay','ldgNight','std']){
           if(Number(b.openingTotals[field]||0)!==Number(previous.closingTotals[field]||0))
             errors.push('Archive '+b.id+' has mismatched carried-forward '+field+' totals.');
         }
@@ -1207,6 +1215,14 @@ function inspectHeliLogData(data){
         const live=data.flights.find(f=>f.id===id);
         if(!live){errors.push('Archived flight '+id+' is missing from the electronic logbook.');continue;}
         const copy=b.flights[i];
+        if(isSimulatorSession(live) || isSimulatorSession(copy)){
+          for(const key of ['entryType','date','simCategory','simDevice','simQualification','stdType','stdMin','remarks']){
+            if(String(live[key]??'')!==String(copy[key]??'')){
+              warnings.push('Archived simulator '+id+' differs from its saved printed copy ('+key+').');
+              break;
+            }
+          }
+        }
         if(JSON.stringify(live.specialOps||{})!==JSON.stringify(copy.specialOps||{})){
           warnings.push('Archived flight '+id+' differs from its printed specialised operations.');
         }
@@ -1305,7 +1321,7 @@ function csvEscape(v){
 function downloadImportTemplate(){
   let sample=[
     IMPORT_HEADERS,
-    ['02-10-2026','G2CA','LY-XYZ','Guimbal','Cabri','G2','SE','EYVI','0935','EYKA','1055','single-pilot','1:20','PIC','Matas','1','0','1','0','0:00','0:00','yes','Example cross-country flight','{}']
+    ['02-10-2026','G2CA','LY-XYZ','Guimbal','Cabri','G2','SE','EYVI','0935','EYKA','1055','single-pilot','1:20','PIC','Matas','1','0','1','0','0:00','0:00','yes','Example cross-country flight','{}','flight','','','','']
   ];
   let csv=sample.map(r=>r.map(csvEscape).join(',')).join('\r\n');
   let b=new Blob([csv],{type:'text/csv;charset=utf-8'});
@@ -1340,6 +1356,22 @@ async function handleCSVFile(e){
     rows.slice(1).forEach((r,n)=>{
       let rowNo=n+2;
       let get=h=>idx[h]===undefined?'':String(r[idx[h]]??'').trim();
+      const entryType=get('entry_type').toLowerCase();
+      if(entryType==='simulator'){
+        const date=parseExternalDate(get('date'));
+        const duration=parseDuration(get('sim_session_time'));
+        const category=get('sim_category')||'Other';
+        const device=get('sim_device');
+        const qualification=get('sim_qualification');
+        if(!date)errors.push('Row '+rowNo+': simulator session date must be DD-MM-YYYY.');
+        if(!device)errors.push('Row '+rowNo+': simulator device/type is required.');
+        if(duration===null||!Number.isSafeInteger(duration)||duration<=0)
+          errors.push('Row '+rowNo+': simulator session duration is invalid.');
+        parsed.push({entryType:'simulator',date,simCategory:category,simDevice:device,
+          simQualification:qualification,stdMin:duration,remarks:get('remarks')});
+        return;
+      }
+      if(entryType && entryType!=='flight')errors.push('Row '+rowNo+': entry_type must be flight or simulator.');
       let dateRaw=get('date');
       let date=parseExternalDate(dateRaw);
       let off=importClock(get('departure_time')), on=importClock(get('arrival_time'));
@@ -1442,7 +1474,7 @@ async function handleCSVFile(e){
     status.innerHTML=`<div class="${newRows.length?'successbox':'importerrors'}"><b>${newRows.length} new flights ready to import.</b>
       ${skippedExisting||skippedWithinFile?`<br>${skippedExisting} duplicates already in HeliLog and ${skippedWithinFile} duplicate rows within this CSV were skipped.`:''}
       ${newRows.length?'':'<br>Nothing new to import.'}</div>`;
-    preview.innerHTML=`<div class="importpreview"><table><thead><tr><th>Date</th><th>Type</th><th>Engine</th><th>Route</th><th>Total</th><th>Pilot config.</th><th>Function</th><th>XC</th></tr></thead><tbody>${newRows.slice(0,8).map(f=>`<tr><td>${displayDate(f.date)}</td><td><b>${f.aircraft.icao}</b></td><td>${engineCode(f.aircraft)}</td><td>${f.dep} → ${f.arr}</td><td>${fmt(f.mins)}</td><td>${f.pilotConfig==='multi'?'Multi-pilot':'Single-pilot'}</td><td>${f.role}</td><td>${f.crossCountry?'✓':'—'}</td></tr>`).join('')}</tbody></table></div>${newRows.length>8?`<div class="mini" style="margin-top:6px">Showing first 8 of ${newRows.length} new flights.</div>`:''}`;
+    preview.innerHTML=`<div class="importpreview"><table><thead><tr><th>Date</th><th>Type</th><th>Engine</th><th>Route</th><th>Total</th><th>Pilot config.</th><th>Function</th><th>XC</th></tr></thead><tbody>${newRows.slice(0,8).map(f=>`<tr><td>${displayDate(f.date)}</td><td><b>${f.entryType==='simulator'?'SIM':f.aircraft.icao}</b></td><td>${f.entryType==='simulator'?'—':engineCode(f.aircraft)}</td><td>${f.entryType==='simulator'?htmlEscape(f.simDevice):f.dep+' → '+f.arr}</td><td>${fmt(f.entryType==='simulator'?f.stdMin:f.mins)}</td><td>${f.entryType==='simulator'?'—':f.pilotConfig==='multi'?'Multi-pilot':'Single-pilot'}</td><td>${f.entryType==='simulator'?'SIM':f.role}</td><td>${f.crossCountry?'✓':'—'}</td></tr>`).join('')}</tbody></table></div>${newRows.length>8?`<div class="mini" style="margin-top:6px">Showing first 8 of ${newRows.length} new flights.</div>`:''}`;
     document.getElementById('confirmImportBtn').disabled=!newRows.length;
   }catch(err){
     status.innerHTML=`<div class="importerrors">Could not read this CSV: ${String(err)}</div>`;
@@ -1464,6 +1496,19 @@ function confirmCSVImport(){
   }
   let aircraftAdded=0;
   additions.forEach(item=>{
+    if(item.entryType==='simulator'){
+      S.flights.push({
+        id:'sim'+Date.now()+Math.random().toString(36).slice(2,8),
+        entryType:'simulator',date:item.date,
+        simCategory:item.simCategory,simDevice:item.simDevice,simQualification:item.simQualification,
+        stdType:[item.simCategory,item.simDevice,item.simQualification?'('+item.simQualification+')':''].filter(Boolean).join(' '),
+        stdMin:item.stdMin,mins:0,aid:'',dep:'',off:'',arr:'',on:'',role:'',picName:'',
+        nightMin:0,ifrMin:0,takeoffDay:0,takeoffNight:0,landingDay:0,landingNight:0,
+        crossCountry:false,specialOps:{},remarks:item.remarks,
+        createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()
+      });
+      return;
+    }
     let a=S.aircraft.find(x=>x.reg.toUpperCase()===item.aircraft.reg && x.icao.toUpperCase()===item.aircraft.icao);
     if(!a){
       a={
@@ -1543,6 +1588,14 @@ function exportLogbookCSV(){
 
   let rows=[IMPORT_HEADERS];
   flights.forEach(f=>{
+    if(isSimulatorSession(f)){
+      const cells={date:formatDate(f.date),remarks:f.remarks||'',special_ops:'{}',
+        entry_type:'simulator',sim_category:f.simCategory||'Other',
+        sim_device:f.simDevice||'',sim_qualification:f.simQualification||'',
+        sim_session_time:durationForExport(f.stdMin)};
+      rows.push(IMPORT_HEADERS.map(k=>cells[k]??''));
+      return;
+    }
     let a=ac(f.aid)||{};
     rows.push([
       formatDate(f.date),
@@ -1568,7 +1621,8 @@ function exportLogbookCSV(){
       durationForExport(f.ifrMin),
       f.crossCountry?'yes':'no',
       f.remarks||'',
-      JSON.stringify(f.specialOps||{})
+      JSON.stringify(f.specialOps||{}),
+      'flight','','','',''
     ]);
   });
 
