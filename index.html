@@ -1126,11 +1126,22 @@ function flightFingerprint(date,registration,departure,off,arrival,on){
   const parts=[date,registration,departure,off,arrival,on].map(clean);
   return parts.every(Boolean)?parts.join('|'):'';
 }
+function simulatorFingerprint(date,category,device,qualification,minutes,remarks){
+  const clean=v=>String(v??'').trim().toUpperCase().replace(/\s+/g,' ');
+  if(!date||!device||!Number.isSafeInteger(Number(minutes))||Number(minutes)<=0)return '';
+  return ['SIM',date,category,device,qualification,minutes,remarks].map(clean).join('|');
+}
 function flightFingerprintForRecord(f,data=S){
+  if(isSimulatorSession(f)){
+    return simulatorFingerprint(f.date,f.simCategory,f.simDevice,f.simQualification,f.stdMin,f.remarks);
+  }
   const a=(data.aircraft||[]).find(x=>x.id===f.aid);
   return flightFingerprint(f.date,a?.reg,f.dep,f.off,f.arr,f.on);
 }
 function flightFingerprintForImport(f){
+  if(f.entryType==='simulator'){
+    return simulatorFingerprint(f.date,f.simCategory,f.simDevice,f.simQualification,f.stdMin,f.remarks);
+  }
   return flightFingerprint(f.date,f.aircraft?.reg,f.dep,f.off,f.arr,f.on);
 }
 
@@ -1150,6 +1161,11 @@ function inspectHeliLogData(data){
     flightIds.add(f.id);
     const label=String(f.date||'?')+' / '+String(f.id);
     if(isSimulatorSession(f)){
+      const simKey=flightFingerprintForRecord(f,data);
+      if(simKey){
+        if(seenSignatures.has(simKey))warnings.push('Possible duplicate simulator sessions: '+seenSignatures.get(simKey)+' and '+f.id+' ('+f.date+').');
+        else seenSignatures.set(simKey,f.id);
+      }
       if(!parseExternalDate(f.date))errors.push('Simulator '+label+' has an invalid date.');
       if(!String(f.simDevice||'').trim())errors.push('Simulator '+label+' has no device/type.');
       if(!Number.isSafeInteger(f.stdMin)||f.stdMin<=0)errors.push('Simulator '+label+' has an invalid session time.');
@@ -2159,7 +2175,8 @@ function confirmPrintedArchive(){
     : '';
   const agree=confirm(
     'Confirm '+draft.id+' — '+archiveRange(draft)+'?\n\n'+
-    draft.flights.length+' flights · '+fmt(draft.flightTotals.total)+' this batch\n'+
+    draft.flights.length+' entries · '+fmt(draft.flightTotals.total)+' actual flight time · '+
+    fmt(draft.flightTotals.std)+' simulator/STD time\n'+
     'Opening '+fmt(draft.openingTotals.total)+' → Closing '+fmt(draft.closingTotals.total)+
     lateNotice+'\nOnly confirm if you have printed, checked and signed the pages. Archived flights will become read-only. This action cannot be undone within HeliLog.'
   );
@@ -2234,7 +2251,7 @@ function printarchive(){
         </select>
       </div>
       <p class="mini" style="margin-top:10px">
-        ${draft.flights.length} of ${draft.totalUnarchived} unarchived flights will be printed in chronological order.
+        ${draft.flights.length} of ${draft.totalUnarchived} unarchived logbook entries will be printed in chronological order.
         ${draft.remainingFlights?`The remaining <b>${draft.remainingFlights}</b> flight${draft.remainingFlights===1?'':'s'} will stay unarchived for your next printing batch.`:'All pending flights are included.'}
         You can also print a partly filled final page; any unused rows will be crossed out with dashes and marked UNUSED.
       </p>
@@ -2261,7 +2278,7 @@ function printarchive(){
       ${batches.length?[...batches].reverse().map(b=>`
         <div class="archive-entry" style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--line);padding:12px 0">
           <div><b>${htmlEscape(b.id)} · ${htmlEscape(archiveRange(b))}</b>
-            <div class="mini">${b.flightIds.length} flights · Printed ${formatDateTime(b.confirmedAt)} · Closing ${fmt(b.closingTotals.total)}</div>
+            <div class="mini">${b.flightIds.length} entries · Printed ${formatDateTime(b.confirmedAt)} · Flight time ${fmt(b.closingTotals.total)} · STD ${fmt(b.closingTotals.std)}</div>
             <div class="mini">Opening ${fmt(b.openingTotals.total)} · This batch ${fmt(b.flightTotals.total)}</div>
           </div>
           <button class="btn" onclick="reprintArchiveBatch(${b.seq})">Reprint exact batch</button>
