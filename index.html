@@ -1367,7 +1367,7 @@ async function handleCSVFile(e){
     status.innerHTML=`<div class="${newRows.length?'successbox':'importerrors'}"><b>${newRows.length} new flights ready to import.</b>
       ${skippedExisting||skippedWithinFile?`<br>${skippedExisting} duplicates already in HeliLog and ${skippedWithinFile} duplicate rows within this CSV were skipped.`:''}
       ${newRows.length?'':'<br>Nothing new to import.'}</div>`;
-    preview.innerHTML=`<div class="importpreview"><table><thead><tr><th>Date</th><th>Type</th><th>Engine</th><th>Route</th><th>Total</th><th>Pilot config.</th><th>Function</th><th>XC</th></tr></thead><tbody>${newRows.slice(0,8).map(f=>`<tr><td>${displayDate(f.date)}</td><td><b>${f.aircraft.icao}</b></td><td>${engineCode(f.aircraft)}</td><td>${f.dep} → ${f.arr}</td><td>${fmt(f.mins)}</td><td>${f.pilotConfig==='multi'?'Multi-pilot':'Single-pilot'}</td><td>${f.role}</td><td>${f.crossCountry?'✓':'—'}</td></tr>`).join('')}</tbody></table></div>${parsed.length>8?`<div class="mini" style="margin-top:6px">Showing first 8 of ${parsed.length} flights.</div>`:''}`;
+    preview.innerHTML=`<div class="importpreview"><table><thead><tr><th>Date</th><th>Type</th><th>Engine</th><th>Route</th><th>Total</th><th>Pilot config.</th><th>Function</th><th>XC</th></tr></thead><tbody>${newRows.slice(0,8).map(f=>`<tr><td>${displayDate(f.date)}</td><td><b>${f.aircraft.icao}</b></td><td>${engineCode(f.aircraft)}</td><td>${f.dep} → ${f.arr}</td><td>${fmt(f.mins)}</td><td>${f.pilotConfig==='multi'?'Multi-pilot':'Single-pilot'}</td><td>${f.role}</td><td>${f.crossCountry?'✓':'—'}</td></tr>`).join('')}</tbody></table></div>${newRows.length>8?`<div class="mini" style="margin-top:6px">Showing first 8 of ${newRows.length} new flights.</div>`:''}`;
     document.getElementById('confirmImportBtn').disabled=!newRows.length;
   }catch(err){
     status.innerHTML=`<div class="importerrors">Could not read this CSV: ${String(err)}</div>`;
@@ -3297,12 +3297,12 @@ function profile(){
     <div class="profilegrid">
       <div>
         <p><b>Full HeliLog backup</b></p>
-        <p class="muted">Includes flights, aircraft, saved pilots, profile, licences/ratings, medical details, imported paper totals, print archive batches and snapshots, endorsements and signatures.</p>
+        <p class="muted">Includes flights, aircraft, saved pilots, ratings, imported paper totals, print archive snapshots, endorsements and signatures. New JSON backups include a SHA-256 integrity checksum.</p>
         <button class="btn primary" type="button" onclick="downloadFullBackup()">Download backup</button>
       </div>
       <div>
         <p><b>Restore from backup</b></p>
-        <p class="muted">Restoring replaces the HeliLog data currently stored in this browser. The selected file is checked before anything is changed.</p>
+        <p class="muted">Select a backup to verify it first. Before restoring, HeliLog requires you to download a safety copy of this browser's current data. Older checksum-free HeliLog backups remain supported.</p>
         <input id="restoreBackupInput" type="file" accept=".json,application/json" style="display:none" onchange="handleBackupRestoreFile(event)">
         <button class="btn" type="button" onclick="document.getElementById('restoreBackupInput').click()">Choose backup file</button>
       </div>
@@ -3346,141 +3346,183 @@ function backupSummary(data){
   };
 }
 
-function makeFullBackup(){
+
+async function sha256Hex(text){
+  if(!globalThis.crypto?.subtle)throw new Error('SHA-256 verification requires the secure hosted HeliLog website (HTTPS).');
+  const raw=new TextEncoder().encode(text);
+  const digest=await crypto.subtle.digest('SHA-256',raw);
+  return [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function makeFullBackup(){
+  const data=JSON.parse(JSON.stringify(S));
   return {
     app:'HeliLog',
     format:'helilog-full-backup',
-    backupSchema:1,
+    backupSchema:2,
     appVersion:'1.39',
     exportedAt:new Date().toISOString(),
-    data:JSON.parse(JSON.stringify(S))
+    integrity:{algorithm:'SHA-256',sha256:await sha256Hex(JSON.stringify(data))},
+    data
   };
 }
-
-function downloadFullBackup(){
-  let backup=makeFullBackup();
-  let json=JSON.stringify(backup,null,2);
-  let blob=new Blob([json],{type:'application/json;charset=utf-8'});
-  let url=URL.createObjectURL(blob);
-  let a=document.createElement('a');
-  let safeName=String(S.pilot?.name||'Pilot')
-    .trim()
-    .replace(/[^a-z0-9_-]+/gi,'_')
-    .replace(/^_+|_+$/g,'') || 'Pilot';
+function offerBackupFile(backup,prefix='HeliLog_Backup'){
+  const json=JSON.stringify(backup,null,2);
+  const blob=new Blob([json],{type:'application/json;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const safeName=String(S.pilot?.name||'Pilot').trim()
+    .replace(/[^a-z0-9_-]+/gi,'_').replace(/^_+|_+$/g,'')||'Pilot';
   a.href=url;
-  a.download=`HeliLog_Backup_${safeName}_${formatDate(new Date().toISOString().slice(0,10))}.json`;
+  a.download=prefix+'_'+safeName+'_'+formatDate(new Date().toISOString().slice(0,10))+'.json';
   document.body.appendChild(a);
   a.click();
   a.remove();
-  URL.revokeObjectURL(url);
-
-  let s=backupSummary(S);
-  let box=document.getElementById('backupRestoreStatus');
-  if(box){
-    box.innerHTML=`<div class="successbox"><b>Backup created.</b> ${s.flights} flights, ${s.aircraft} aircraft, ${s.pilots} pilot profiles, ${s.qualifications} qualifications and ${s.endorsements} endorsements were included.</div>`;
-  }
+  setTimeout(()=>URL.revokeObjectURL(url),30000);
 }
-
+async function downloadFullBackup(){
+  try{
+    const backup=await makeFullBackup();
+    offerBackupFile(backup);
+    const info=backupSummary(S);
+    const box=document.getElementById('backupRestoreStatus');
+    if(box){
+      box.innerHTML='<div class="successbox"><b>Backup prepared.</b> The JSON download contains a SHA-256 checksum and '+
+        info.flights+' flights, '+info.aircraft+' aircraft and '+(S.printArchive?.batches?.length||0)+
+        ' archived print batches. Verify the download is saved somewhere safe, preferably outside this device.</div>';
+    }
+  }catch(e){alert('Could not create a verified backup: '+String(e.message||e));}
+}
 function extractBackupData(parsed){
-  if(!parsed || typeof parsed!=='object') throw new Error('The selected file does not contain valid HeliLog data.');
-
+  if(!parsed || typeof parsed!=='object')throw new Error('The selected file does not contain valid HeliLog data.');
   if(parsed.format==='helilog-full-backup'){
-    if(parsed.app!=='HeliLog') throw new Error('This backup is not identified as a HeliLog backup.');
-    if(!parsed.data || typeof parsed.data!=='object') throw new Error('The HeliLog backup has no data section.');
+    if(parsed.app!=='HeliLog')throw new Error('This backup is not identified as HeliLog.');
+    if(!parsed.data || typeof parsed.data!=='object')throw new Error('The backup has no data section.');
     return parsed.data;
   }
-
-  // Also allow a raw HeliLog state object from an earlier prototype/manual backup.
-  if(parsed.pilot && Array.isArray(parsed.flights) && Array.isArray(parsed.aircraft)){
-    return parsed;
-  }
-
+  if(parsed.pilot && Array.isArray(parsed.flights) && Array.isArray(parsed.aircraft))return parsed;
   throw new Error('This is not a recognised HeliLog full-backup file.');
 }
-
 function validateRestoreData(data){
-  let errors=[];
-  if(!data || typeof data!=='object') errors.push('Missing HeliLog data object.');
-  if(!data.pilot || typeof data.pilot!=='object') errors.push('Pilot profile is missing.');
-  if(!Array.isArray(data.flights)) errors.push('Flights list is missing.');
-  if(!Array.isArray(data.aircraft)) errors.push('Aircraft list is missing.');
-
-  if(Array.isArray(data.flights)){
-    let bad=data.flights.find(f=>!f || typeof f!=='object' || !f.id || !f.date || !f.aid);
-    if(bad) errors.push('At least one flight record is incomplete.');
-  }
-  if(Array.isArray(data.aircraft)){
-    let bad=data.aircraft.find(a=>!a || typeof a!=='object' || !a.id || !a.reg || !a.icao);
-    if(bad) errors.push('At least one aircraft record is incomplete.');
-  }
-
+  const errors=[];
+  if(!data || typeof data!=='object')return ['Missing HeliLog data object.'];
+  if(!data.pilot || typeof data.pilot!=='object')errors.push('Pilot profile is missing.');
+  if(!Array.isArray(data.flights))errors.push('Flights list is missing.');
+  if(!Array.isArray(data.aircraft))errors.push('Aircraft list is missing.');
+  if(errors.length)return errors;
+  errors.push(...inspectHeliLogData(data).errors);
   return errors;
 }
 
-async function handleBackupRestoreFile(ev){
-  let file=ev.target.files?.[0];
-  let box=document.getElementById('backupRestoreStatus');
-  if(!file) return;
+let pendingRestoreCandidate=null;
+let restoreSafetyDownloaded=false;
 
-  if(box) box.innerHTML='<div class="importsummary">Checking backup file…</div>';
+async function handleBackupRestoreFile(ev){
+  const file=ev.target.files?.[0];
+  const box=document.getElementById('backupRestoreStatus');
+  pendingRestoreCandidate=null;
+  restoreSafetyDownloaded=false;
+  if(!file)return;
+  if(box)box.innerHTML='<div class="importsummary">Checking file structure and checksum…</div>';
+  try{
+    const parsed=JSON.parse(await file.text());
+    const data=extractBackupData(parsed);
+    let verification='Legacy backup without a checksum — structure checked, but original file integrity cannot be verified.';
+    if(parsed.format==='helilog-full-backup' && Number(parsed.backupSchema)>=2 && !parsed.integrity){
+      throw new Error('A modern HeliLog backup is missing its required checksum.');
+    }
+    if(parsed.integrity){
+      if(parsed.integrity.algorithm!=='SHA-256' || !/^[0-9a-f]{64}$/i.test(parsed.integrity.sha256||'')){
+        throw new Error('The backup contains invalid SHA-256 checksum metadata.');
+      }
+      const actual=await sha256Hex(JSON.stringify(data));
+      if(actual.toLowerCase()!==String(parsed.integrity.sha256).toLowerCase()){
+        throw new Error('The backup checksum does not match. This file was altered or damaged and cannot be restored.');
+      }
+      verification='SHA-256 checksum verified successfully.';
+    }
+    const errors=validateRestoreData(data);
+    if(errors.length){
+      if(box)box.innerHTML='<div class="importerrors"><b>Restore blocked: '+errors.length+' record errors.</b><br>'+
+        errors.slice(0,20).map(e=>'• '+htmlEscape(e)).join('<br>')+
+        (errors.length>20?'<br>…and '+(errors.length-20)+' more.':'')+'</div>';
+      return;
+    }
+    const info=backupSummary(data);
+    const warnings=inspectHeliLogData(data).warnings;
+    pendingRestoreCandidate=JSON.parse(JSON.stringify(data));
+    if(box){
+      box.innerHTML='<div class="importsummary"><b>Backup ready for restore.</b><br>'+
+        htmlEscape(verification)+'<br>'+
+        info.flights+' flights · '+info.aircraft+' aircraft · '+(data.printArchive?.batches?.length||0)+' print archive batches'+
+        (warnings.length?'<br>'+warnings.length+' consistency warning(s). Review with Data integrity check after restoring.':'')+
+        '</div><p class="muted">Step 1: download and retain a safety backup of your current HeliLog data. Step 2: restore the selected file. Nothing has been replaced yet.</p>'+
+        '<div style="display:flex;flex-wrap:wrap;gap:9px">'+
+        '<button class="btn primary" type="button" onclick="downloadPreRestoreSafetyBackup()">1. Download safety backup</button>'+
+        '<button id="restoreCheckedBtn" class="btn" type="button" onclick="restoreCheckedBackup()" disabled>2. Restore selected backup</button></div>'+
+        '<div id="restoreStepStatus" class="mini" style="margin-top:10px"></div>';
+    }
+  }catch(e){
+    pendingRestoreCandidate=null;
+    if(box)box.innerHTML='<div class="importerrors"><b>Restore rejected.</b><br>'+
+      htmlEscape(e.message||String(e))+'</div>';
+  }finally{
+    ev.target.value='';
+  }
+}
+async function downloadPreRestoreSafetyBackup(){
+  if(!pendingRestoreCandidate)return;
+  try{
+    const copy=await makeFullBackup();
+    offerBackupFile(copy,'HeliLog_SAFETY_Before_Restore');
+    restoreSafetyDownloaded=true;
+    const button=document.getElementById('restoreCheckedBtn');
+    if(button)button.disabled=false;
+    const status=document.getElementById('restoreStepStatus');
+    if(status)status.textContent='Safety backup download requested. Confirm it is saved and readable before you continue.';
+  }catch(e){alert('Could not prepare safety backup. Restore is blocked: '+String(e.message||e));}
+}
+function restoreCheckedBackup(){
+  if(!pendingRestoreCandidate || !restoreSafetyDownloaded){
+    alert('Download the safety backup before restoring.');return;
+  }
+  const newData=JSON.parse(JSON.stringify(pendingRestoreCandidate));
+  const oldData=S,oldRaw=localStorage.getItem(KEY);
+  const info=backupSummary(newData);
+  if(!confirm('Restore the selected backup with '+info.flights+' flights and '+
+     (newData.printArchive?.batches?.length||0)+' print batches?\n\n'+
+     'This REPLACES all data in this browser. Check that your safety backup actually downloaded and is stored safely.'))return;
 
   try{
-    let raw=await file.text();
-    let parsed=JSON.parse(raw);
-    let restoredData=extractBackupData(parsed);
-    let errors=validateRestoreData(restoredData);
-
-    if(errors.length){
-      if(box) box.innerHTML=`<div class="importerrors"><b>Restore cancelled.</b><br>${errors.map(x=>'• '+htmlEscape(x)).join('<br>')}</div>`;
-      ev.target.value='';
-      return;
-    }
-
-    let s=backupSummary(restoredData);
-    if(box){
-      box.innerHTML=`<div class="importsummary"><b>Valid HeliLog backup found.</b><br>${s.flights} flights · ${s.aircraft} aircraft · ${s.pilots} pilot profiles · ${s.qualifications} qualifications · ${s.endorsements} endorsements</div>`;
-    }
-
-    let ok=confirm(
-      `Restore this HeliLog backup?\n\n`+
-      `${s.flights} flights\n`+
-      `${s.aircraft} aircraft\n`+
-      `${s.pilots} pilot profiles\n`+
-      `${s.qualifications} qualifications\n`+
-      `${s.endorsements} endorsements\n\n`+
-      `This will replace the HeliLog data currently stored in this browser.`
-    );
-    if(!ok){
-      if(box) box.innerHTML='<div class="importsummary">Restore cancelled. Your current HeliLog data was not changed.</div>';
-      ev.target.value='';
-      return;
-    }
-
-    // Deep copy before assigning so parsed wrapper metadata cannot remain attached.
-    S=JSON.parse(JSON.stringify(restoredData));
-
-    // Run the existing migrations/normalisation so older backups can be restored into the current HeliLog version.
+    S=newData;
+    // Older versions migrate in-place. The original state and localStorage bytes
+    // are retained for rollback if any migration or final persistence fails.
     ensureV116Data();
     ensureV121Data();
     ensureV130Data();
     ensureV131Data();
     ensureV136Data();
     ensureV137Data();
-    save();
-
-    let finalSummary=backupSummary(S);
-    profile();
-    let restoredBox=document.getElementById('backupRestoreStatus');
-    if(restoredBox){
-      restoredBox.innerHTML=`<div class="successbox"><b>Backup restored successfully.</b> HeliLog now contains ${finalSummary.flights} flights, ${finalSummary.aircraft} aircraft, ${finalSummary.pilots} pilot profiles, ${finalSummary.qualifications} qualifications and ${finalSummary.endorsements} endorsements.</div>`;
-    }
+    const persisted=JSON.stringify(S);
+    localStorage.setItem(KEY,persisted);
+    if(localStorage.getItem(KEY)!==persisted)throw new Error('Saved data could not be verified.');
   }catch(err){
-    if(box){
-      box.innerHTML=`<div class="importerrors"><b>Restore failed.</b><br>${htmlEscape(err?.message||String(err))}</div>`;
+    S=oldData;
+    try{
+      if(oldRaw===null)localStorage.removeItem(KEY);
+      else localStorage.setItem(KEY,oldRaw);
+    }catch(rollbackErr){
+      alert('CRITICAL: Restore failed and browser storage could not be rolled back. Keep your safety backup. '+rollbackErr);
     }
-  }finally{
-    ev.target.value='';
+    alert('Restore failed. Existing in-memory data was retained. '+String(err.message||err));
+    profile();
+    return;
   }
+  pendingRestoreCandidate=null;
+  restoreSafetyDownloaded=false;
+  profile();
+  const box=document.getElementById('backupRestoreStatus');
+  if(box)box.innerHTML='<div class="successbox"><b>Backup restored and saved successfully.</b> '+info.flights+
+    ' flights and '+(S.printArchive?.batches?.length||0)+' print archive batches are now available. Keep the pre-restore safety backup.</div>';
 }
 
 function editOwnProfile(){
