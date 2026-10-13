@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V1.38 PWA Prototype</title>
+<title>HeliLog V1.39 PWA Prototype</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -240,7 +240,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:11px 9px;
 @media(max-width:850px){.dashboard-actions{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style></head>
 <body><div class="layout">
-<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V1.38</span></div><nav>
+<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V1.39</span></div><nav>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="aircraft">🚁 Aircraft</button><button data-v="pilots">👤 Pilots</button><button data-v="endorsements">✎ Endorsements</button><button data-v="printarchive">▤ Print archive</button><button data-v="totals">◉ Totals</button><button data-v="profile">○ Profile</button>
 </nav></aside><main id="app"></main>
 <div class="mobile">
@@ -596,7 +596,14 @@ let editingAircraftId=null;
 let editingPersonId=null;
 let editingQualificationId=null;
 let editingEndorsementId=null;
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function save(){
+  try{localStorage.setItem(KEY,JSON.stringify(S));return true;}
+  catch(e){
+    console.error('HeliLog could not save changes:',e);
+    alert('HeliLog could not save changes to this device. The browser storage may be full or unavailable. Export a Full Backup and check browser storage before continuing.');
+    return false;
+  }
+}
 function fmt(n){n=Math.max(0,Number(n)||0);return Math.floor(n/60)+':'+String(n%60).padStart(2,'0')}
 function parseHM(v){if(!v)return 0;let p=v.split(':').map(Number);return (p[0]||0)*60+(p[1]||0)}
 function ac(id){return S.aircraft.find(a=>a.id===id)}
@@ -1058,6 +1065,111 @@ const IMPORT_HEADERS=[
 const OPTIONAL_IMPORT_HEADERS=['engine_configuration','pilot_configuration'];
 const LEGACY_CONFIG_HEADERS=['single_pilot_se_time','single_pilot_me_time','multi_pilot_time'];
 
+// A conservative identity test: same date, aircraft registration, route and both
+// times. Similar flights with different times are never removed automatically.
+function flightFingerprint(date,registration,departure,off,arrival,on){
+  const clean=v=>String(v||'').trim().toUpperCase().replace(/\s+/g,'');
+  const parts=[date,registration,departure,off,arrival,on].map(clean);
+  return parts.every(Boolean)?parts.join('|'):'';
+}
+function flightFingerprintForRecord(f,data=S){
+  const a=(data.aircraft||[]).find(x=>x.id===f.aid);
+  return flightFingerprint(f.date,a?.reg,f.dep,f.off,f.arr,f.on);
+}
+function flightFingerprintForImport(f){
+  return flightFingerprint(f.date,f.aircraft?.reg,f.dep,f.off,f.arr,f.on);
+}
+
+function inspectHeliLogData(data){
+  const errors=[],warnings=[];
+  if(!data || typeof data!=='object')return {errors:['Data is not an object.'],warnings};
+  if(!Array.isArray(data.flights) || !Array.isArray(data.aircraft))return {errors:['Flight or aircraft list is missing.'],warnings};
+  const flightIds=new Set(),aircraftIds=new Set(),seenSignatures=new Map();
+  for(const a of data.aircraft){
+    if(!a || !a.id || !a.reg || !a.icao){errors.push('An aircraft record is incomplete.');continue;}
+    if(aircraftIds.has(a.id))errors.push('Duplicate aircraft record ID: '+a.id);
+    aircraftIds.add(a.id);
+  }
+  for(const f of data.flights){
+    if(!f || !f.id){errors.push('A flight record is missing its ID.');continue;}
+    if(flightIds.has(f.id))errors.push('Duplicate flight record ID: '+f.id);
+    flightIds.add(f.id);
+    const label=String(f.date||'?')+' / '+String(f.id);
+    if(!aircraftIds.has(f.aid))errors.push('Flight '+label+' references an unknown aircraft.');
+    if(!parseExternalDate(f.date))errors.push('Flight '+label+' has an invalid date.');
+    if(!importClock(f.off)||!importClock(f.on))errors.push('Flight '+label+' has invalid departure/arrival time.');
+    const mins=Number(f.mins);
+    if(!Number.isSafeInteger(mins)||mins<=0)errors.push('Flight '+label+' has invalid total time.');
+    for(const field of ['nightMin','ifrMin','instrMin']){
+      let n=Number(f[field]||0);
+      if(!Number.isSafeInteger(n)||n<0||(Number.isFinite(mins)&&n>mins))
+        errors.push('Flight '+label+' has invalid '+field+'.');
+    }
+    for(const field of ['takeoffDay','takeoffNight','landingDay','landingNight']){
+      const n=Number(f[field]||0);
+      if(!Number.isSafeInteger(n)||n<0)errors.push('Flight '+label+' has invalid '+field+'.');
+    }
+    const sig=flightFingerprintForRecord(f,data);
+    if(sig){
+      if(seenSignatures.has(sig))warnings.push('Possible duplicate flights: '+seenSignatures.get(sig)+' and '+f.id+' ('+f.date+').');
+      else seenSignatures.set(sig,f.id);
+    }
+  }
+  const batches=data.printArchive?.batches;
+  if(batches!==undefined&&!Array.isArray(batches)){
+    errors.push('Print archive batches are malformed.');
+  }else if(Array.isArray(batches)){
+    const archivedIDs=new Set();
+    let previous=null;
+    for(const b of batches){
+      if(!b||!Array.isArray(b.flightIds)||!Array.isArray(b.flights)||!b.openingTotals||!b.closingTotals||
+         !Number.isSafeInteger(b.firstPage)||!Number.isSafeInteger(b.pageCount)||b.pageCount<1){
+        errors.push('An archived print batch is incomplete.');continue;
+      }
+      if(b.flightIds.length!==b.flights.length)errors.push('Archive '+b.id+' has mismatched flight counts.');
+      if(b.pageCount!==Math.ceil(b.flights.length/LOGBOOK_ROWS_PER_PAGE))
+        errors.push('Archive '+b.id+' has an invalid page count.');
+      if(previous){
+        if(b.firstPage!==previous.firstPage+previous.pageCount)errors.push('Archive page numbering is discontinuous at '+b.id+'.');
+        for(const field of ['total','pic','dual','copilot','spSE','spME','multi','night','ifr','toDay','toNight','ldgDay','ldgNight']){
+          if(Number(b.openingTotals[field]||0)!==Number(previous.closingTotals[field]||0))
+            errors.push('Archive '+b.id+' has mismatched carried-forward '+field+' totals.');
+        }
+      }
+      for(let i=0;i<b.flightIds.length;i++){
+        const id=b.flightIds[i];
+        if(archivedIDs.has(id))errors.push('Flight '+id+' appears in multiple print batches.');
+        archivedIDs.add(id);
+        if(b.flights[i]?.id!==id)errors.push('Archived flight snapshot does not match flight ID '+id+'.');
+        const live=data.flights.find(f=>f.id===id);
+        if(!live){errors.push('Archived flight '+id+' is missing from the electronic logbook.');continue;}
+        const copy=b.flights[i];
+        for(const key of ['date','aid','dep','off','arr','on','mins','role','picName','nightMin','ifrMin','takeoffDay','takeoffNight','landingDay','landingNight','remarks']){
+          if(String(live[key]??'')!==String(copy[key]??'')){
+            warnings.push('Archived flight '+id+' differs from its saved printed copy ('+key+').');
+            break;
+          }
+        }
+      }
+      previous=b;
+    }
+  }
+  return {errors,warnings};
+}
+
+function showIntegrityCheck(){
+  const box=document.getElementById('integrityCheckResult');
+  if(!box)return;
+  const report=inspectHeliLogData(S);
+  const renderItems=items=>items.slice(0,20).map(v=>'<div style="margin-top:5px">• '+htmlEscape(v)+'</div>').join('')+
+    (items.length>20?'<div class="mini">…and '+(items.length-20)+' more issues.</div>':'');
+  box.innerHTML='<div class="'+(report.errors.length?'importerrors':report.warnings.length?'note':'successbox')+'">'+
+    '<b>'+report.errors.length+' errors · '+report.warnings.length+' warnings</b>'+
+    (!report.errors.length&&!report.warnings.length?'<p>No structural issues or exact duplicate flights detected.</p>':'')+
+    renderItems(report.errors)+renderItems(report.warnings)+
+    '<div class="mini" style="margin-top:8px">This is a record-consistency check, not regulatory certification or verification that a flight actually occurred.</div></div>';
+}
+
 function openImportModal(){
   pendingImport=null;
   document.getElementById('csvFileInput').value='';
@@ -1240,10 +1352,23 @@ async function handleCSVFile(e){
       preview.innerHTML=''; return;
     }
 
-    pendingImport=parsed;
-    status.innerHTML=`<div class="successbox"><b>${parsed.length} flights are ready to import.</b> No validation errors found.</div>`;
-    preview.innerHTML=`<div class="importpreview"><table><thead><tr><th>Date</th><th>Type</th><th>Engine</th><th>Route</th><th>Total</th><th>Pilot config.</th><th>Function</th><th>XC</th></tr></thead><tbody>${parsed.slice(0,8).map(f=>`<tr><td>${displayDate(f.date)}</td><td><b>${f.aircraft.icao}</b></td><td>${engineCode(f.aircraft)}</td><td>${f.dep} → ${f.arr}</td><td>${fmt(f.mins)}</td><td>${f.pilotConfig==='multi'?'Multi-pilot':'Single-pilot'}</td><td>${f.role}</td><td>${f.crossCountry?'✓':'—'}</td></tr>`).join('')}</tbody></table></div>${parsed.length>8?`<div class="mini" style="margin-top:6px">Showing first 8 of ${parsed.length} flights.</div>`:''}`;
-    document.getElementById('confirmImportBtn').disabled=false;
+    const existingKeys=new Set(S.flights.map(f=>flightFingerprintForRecord(f)).filter(Boolean));
+    const fileKeys=new Set();
+    let skippedExisting=0,skippedWithinFile=0;
+    const newRows=parsed.filter(item=>{
+      const key=flightFingerprintForImport(item);
+      if(!key)return true;
+      if(existingKeys.has(key)){skippedExisting++;return false;}
+      if(fileKeys.has(key)){skippedWithinFile++;return false;}
+      fileKeys.add(key);
+      return true;
+    });
+    pendingImport=newRows.length?newRows:null;
+    status.innerHTML=`<div class="${newRows.length?'successbox':'importerrors'}"><b>${newRows.length} new flights ready to import.</b>
+      ${skippedExisting||skippedWithinFile?`<br>${skippedExisting} duplicates already in HeliLog and ${skippedWithinFile} duplicate rows within this CSV were skipped.`:''}
+      ${newRows.length?'':'<br>Nothing new to import.'}</div>`;
+    preview.innerHTML=`<div class="importpreview"><table><thead><tr><th>Date</th><th>Type</th><th>Engine</th><th>Route</th><th>Total</th><th>Pilot config.</th><th>Function</th><th>XC</th></tr></thead><tbody>${newRows.slice(0,8).map(f=>`<tr><td>${displayDate(f.date)}</td><td><b>${f.aircraft.icao}</b></td><td>${engineCode(f.aircraft)}</td><td>${f.dep} → ${f.arr}</td><td>${fmt(f.mins)}</td><td>${f.pilotConfig==='multi'?'Multi-pilot':'Single-pilot'}</td><td>${f.role}</td><td>${f.crossCountry?'✓':'—'}</td></tr>`).join('')}</tbody></table></div>${parsed.length>8?`<div class="mini" style="margin-top:6px">Showing first 8 of ${parsed.length} flights.</div>`:''}`;
+    document.getElementById('confirmImportBtn').disabled=!newRows.length;
   }catch(err){
     status.innerHTML=`<div class="importerrors">Could not read this CSV: ${String(err)}</div>`;
   }
@@ -1251,8 +1376,19 @@ async function handleCSVFile(e){
 
 function confirmCSVImport(){
   if(!pendingImport?.length) return;
+  const keys=new Set(S.flights.map(f=>flightFingerprintForRecord(f)).filter(Boolean));
+  const additions=pendingImport.filter(item=>{
+    const k=flightFingerprintForImport(item);
+    if(k&&keys.has(k))return false;
+    if(k)keys.add(k);
+    return true;
+  });
+  if(!additions.length){
+    alert('There are no new flights to import. All matching records already exist.');
+    return;
+  }
   let aircraftAdded=0;
-  pendingImport.forEach(item=>{
+  additions.forEach(item=>{
     let a=S.aircraft.find(x=>x.reg.toUpperCase()===item.aircraft.reg && x.icao.toUpperCase()===item.aircraft.icao);
     if(!a){
       a={
@@ -1282,8 +1418,8 @@ function confirmCSVImport(){
       createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()
     });
   });
-  let count=pendingImport.length;
-  save();
+  let count=additions.length;
+  if(!save())return;
   pendingImport=null;
   document.getElementById('importModal').classList.remove('open');
   logbook();
@@ -2375,10 +2511,15 @@ function saveFlight(){
     updatedAt:new Date().toISOString()
   };
 
+  const signature=flightFingerprintForRecord(f);
+  if(signature){
+    const duplicate=S.flights.find(other=>other.id!==f.id && flightFingerprintForRecord(other)===signature);
+    if(duplicate)return showFormError('A flight with the same aircraft, date, route and departure/arrival times already exists. Check your logbook before saving.');
+  }
   if(existingIndex>=0) S.flights[existingIndex]=f;
   else S.flights.push(f);
+  if(!save())return;
   editingFlightId=null;
-  save();
   clearFlightFormGuard();
   flight(f.id);
 }
@@ -3169,6 +3310,15 @@ function profile(){
     <div id="backupRestoreStatus" style="margin-top:12px"></div>
   </div>
 
+  <div class="card" style="margin-top:16px">
+    <div class="head">
+      <div><h2>Data integrity check</h2>
+      <div class="muted">Review duplicate flights, invalid values and continuity of confirmed print archives.</div></div>
+      <button class="btn" type="button" onclick="showIntegrityCheck()">Run check</button>
+    </div>
+    <div id="integrityCheckResult" class="mini">No records will be changed by the check.</div>
+  </div>
+
   <div class="card desktop-only" style="margin-top:16px">
     <div class="head">
       <div>
@@ -3181,7 +3331,7 @@ function profile(){
     <div class="install-help" style="margin-top:10px">On iPhone/iPad, open the hosted HeliLog site in Safari, use <b>Share → Add to Home Screen</b>. Full offline PWA support requires HeliLog to be served over HTTPS. Opening this prototype directly as a file still works for testing, but it cannot register the offline service worker.</div>
   </div>
 
-  <div class="note" style="margin-top:16px">Profile, licence, rating and medical information in V1.38 is for record keeping and PDF identification only. Automatic EASA validity, recency and expiry calculations are planned for a later version.</div>`;
+  <div class="note" style="margin-top:16px">Profile, licence, rating and medical information in V1.39 is for record keeping and PDF identification only. Automatic EASA validity, recency and expiry calculations are planned for a later version.</div>`;
   updatePWAStatus();
 }
 
@@ -3201,7 +3351,7 @@ function makeFullBackup(){
     app:'HeliLog',
     format:'helilog-full-backup',
     backupSchema:1,
-    appVersion:'1.38',
+    appVersion:'1.39',
     exportedAt:new Date().toISOString(),
     data:JSON.parse(JSON.stringify(S))
   };
