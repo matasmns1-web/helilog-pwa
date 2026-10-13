@@ -19,7 +19,8 @@
 html.helilog-no-zoom,html.helilog-no-zoom body{touch-action:pan-x pan-y}
 /* Installed phone/tablet app: flight entry and viewing only; browser retains management tools. */
 html.installed-touch-app .web-only-tool,
-html.installed-touch-app .logbook-filter-controls{display:none!important}
+html.installed-touch-app .logbook-filter-controls,
+html.installed-touch-app nav button[data-v="printarchive"]{display:none!important}
 html.installed-touch-app .dashboard-actions{grid-template-columns:repeat(3,minmax(0,1fr))}
 html.installed-touch-app .logbook-flight-list{margin-top:0}
 button,input,select,textarea{font:inherit}button{cursor:pointer}.layout{display:flex;min-height:100vh}
@@ -1555,9 +1556,9 @@ function exportPrintableLogbook(options={}){
           <div class="subtitle">HeliLog — EASA-style flight record export</div>
         </div>
         <div class="pilotblock">
-          <div><b>Pilot:</b> ${htmlEscape(archivePilot?.name||S.pilot.name||'')}</div>
-          <div><b>Licence:</b> ${htmlEscape(archivePilot?.licence||pilotLicenceDisplay()||'—')}</div>
-          <div><b>Authority:</b> ${htmlEscape(archivePilot?.authority||S.pilot.authority||'—')}</div>
+          <div><b>Pilot:</b> ${htmlEscape(archivePilot?archivePilot.name:(S.pilot.name||''))}</div>
+          <div><b>Licence:</b> ${htmlEscape(archivePilot?archivePilot.licence:(pilotLicenceDisplay()||'—'))}</div>
+          <div><b>Authority:</b> ${htmlEscape(archivePilot?archivePilot.authority:(S.pilot.authority||'—'))}</div>
           <div><b>Page:</b> ${options.archiveBatch?Number(options.firstPage)+pageIndex:pageIndex+1}${options.archiveBatch?' · Batch '+htmlEscape(options.archiveBatch):' / '+pages.length}</div>
         </div>
       </div>
@@ -1829,20 +1830,33 @@ function confirmPrintedArchive(){
   }
   if(!draft.flights.length)return;
   const lateNotice=draft.lateCount
-    ? '\\nWARNING: '+draft.lateCount+' new flight(s) have dates before the previous archived batch. Verify their placement and annotate them as late entries.\\n'
+    ? '\nWARNING: '+draft.lateCount+' new flight(s) have dates before the previous archived batch. Verify their placement and annotate them as late entries.\n'
     : '';
   const agree=confirm(
-    'Confirm '+draft.id+' — '+archiveRange(draft)+'?\\n\\n'+
-    draft.flights.length+' flights · '+fmt(draft.flightTotals.total)+' this batch\\n'+
+    'Confirm '+draft.id+' — '+archiveRange(draft)+'?\n\n'+
+    draft.flights.length+' flights · '+fmt(draft.flightTotals.total)+' this batch\n'+
     'Opening '+fmt(draft.openingTotals.total)+' → Closing '+fmt(draft.closingTotals.total)+
-    lateNotice+'\\nOnly confirm if you have printed, checked and signed the pages. Archived flights will become read-only. This action cannot be undone within HeliLog.'
+    lateNotice+'\nOnly confirm if you have printed, checked and signed the pages. Archived flights will become read-only. This action cannot be undone within HeliLog.'
   );
   if(!agree)return;
   const finalBatch=JSON.parse(JSON.stringify(draft));
   finalBatch.confirmedAt=new Date().toISOString();
   S.printArchive.batches.push(finalBatch);
+  // Archive records are more sensitive than ordinary UI changes. Confirm that
+  // the browser actually persisted them; never report success after a quota failure.
+  try{
+    localStorage.setItem(KEY,JSON.stringify(S));
+    const stored=JSON.parse(localStorage.getItem(KEY)||'{}');
+    const confirmed=stored.printArchive?.batches?.at(-1);
+    if(!confirmed || confirmed.id!==finalBatch.id || confirmed.confirmedAt!==finalBatch.confirmedAt){
+      throw new Error('The saved archive could not be verified.');
+    }
+  }catch(e){
+    S.printArchive.batches.pop();
+    alert('Could not save the confirmed print archive. Your pages have NOT been marked archived. Export a full backup and check available browser storage before trying again. '+String(e.message||e));
+    return;
+  }
   pendingArchivePreview=null;
-  save();
   printarchive();
 }
 function reprintArchiveBatch(seq){
@@ -2516,6 +2530,7 @@ function savePerson(e){
     let oldName=p.name;
     p.name=name;p.role=role;p.licence=licence;p.notes=notes;
     S.flights.forEach(f=>{
+      if(isArchivedFlight(f.id)) return;
       if(f.picPersonId===p.id || (!f.picPersonId && String(f.picName||'').toLowerCase()===oldName.toLowerCase())){
         f.picPersonId=p.id;
         f.picName=name;
@@ -3281,6 +3296,7 @@ function saveOwnProfile(e){
     owner.name=name;
     owner.licence=pilotLicenceDisplay();
     S.flights.forEach(f=>{
+      if(isArchivedFlight(f.id)) return;
       if(f.picPersonId===owner.id || (!f.picPersonId && String(f.picName||'').toLowerCase()===oldName.toLowerCase())){
         f.picPersonId=owner.id;
         f.picName=name;
