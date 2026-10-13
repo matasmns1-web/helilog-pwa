@@ -2320,6 +2320,9 @@ function correctionHistoryMarkup(id){
   </div>`;
 }
 function startArchivedCorrection(id){
+  if(isInstalledTouchApp()){
+    alert('Archived corrections require a printed and signed addendum. Open HeliLog on your desktop to complete them. Your original archived entry remains protected.');return;
+  }
   if(!isArchivedFlight(id))return;
   if(pendingCorrectionFor(id)){go('printarchive');return;}
   correctingArchivedId=id;
@@ -3812,7 +3815,8 @@ function totals(){
   let t=calcTotals(),by=combinedTotalsByType(),opsTotals=specialisedTotals();
   const simSessions=effectiveFlights().filter(isSimulatorSession),simMinutes=simSessions.reduce((n,f)=>n+Number(f.stdMin||0),0);
   app.innerHTML=header('Totals','Your combined career totals')+
-  `<div class="grid stats">${[['Total',t.total],['PIC',t.pic],['Co-pilot',t.copilot],['Dual',t.dual]].map(x=>`<div class="card"><div class="label">${x[0]}</div><div class="big">${fmt(x[1])}</div></div>`).join('')}</div>
+  `${confirmedCorrections().length?`<div class="note" style="margin-bottom:14px">Includes ${confirmedCorrections().length} confirmed archived-entry correction addendum(s). Original signed print batches remain unchanged; any revised carried-forward paper totals are documented in subsequent batches.</div>`:''}
+  <div class="grid stats">${[['Total',t.total],['PIC',t.pic],['Co-pilot',t.copilot],['Dual',t.dual]].map(x=>`<div class="card"><div class="label">${x[0]}</div><div class="big">${fmt(x[1])}</div></div>`).join('')}</div>
   <div class="grid two" style="margin-top:16px">
     <div class="card">
       <div class="head"><h2>Time configuration</h2></div>
