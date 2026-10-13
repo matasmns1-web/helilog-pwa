@@ -1077,8 +1077,8 @@ function logbook(){
   <div class="card logbook-flight-list">
     <div class="filterbar logbook-filter-controls">
       <div class="filterfield"><label>Search</label><input id="logSearch" type="search" placeholder="Route, PIC, registration, remarks…"></div>
-      <div class="filterfield desktop-only"><label>From date</label><input id="filterFrom" type="date"></div>
-      <div class="filterfield desktop-only"><label>To date</label><input id="filterTo" type="date"></div>
+      <div class="filterfield desktop-only"><label>From date</label>${europeanDateField('filterFrom')}</div>
+      <div class="filterfield desktop-only"><label>To date</label>${europeanDateField('filterTo')}</div>
       <div class="filterfield desktop-only"><label>Aircraft</label><select id="filterAircraft"><option value="">All aircraft</option>${aircraftOptions}</select></div>
     </div>
     <div class="filterbar second desktop-only logbook-filter-controls">
@@ -1107,15 +1107,15 @@ function logbook(){
 
   ['logSearch','filterFrom','filterTo','filterAircraft','filterRole','filterXC','filterNight','filterIFR'].forEach(id=>{
     let el=document.getElementById(id);
-    el.addEventListener(id==='logSearch'?'input':'change',applyLogbookFilters);
+    el.addEventListener(['logSearch','filterFrom','filterTo'].includes(id)?'input':'change',applyLogbookFilters);
   });
   applyLogbookFilters();
 }
 
 function getFilteredFlights(){
   let q=(document.getElementById('logSearch')?.value||'').trim().toLowerCase();
-  let from=document.getElementById('filterFrom')?.value||'';
-  let to=document.getElementById('filterTo')?.value||'';
+  let from=readEuropeanDate('filterFrom')||'';
+  let to=readEuropeanDate('filterTo')||'';
   let aircraftId=document.getElementById('filterAircraft')?.value||'';
   let role=document.getElementById('filterRole')?.value||'';
   let xc=document.getElementById('filterXC')?.value||'';
@@ -2385,7 +2385,7 @@ function addSimulator(editId=null){
        ${!old?`<div class="choice-row" style="margin-bottom:16px"><button class="btn" type="button" onclick="if(confirmLeaveFlightForm()){clearFlightFormGuard();add()}">Helicopter flight</button><button class="btn primary" type="button">Simulator session ✓</button></div>`:''}
        <div class="section-title">Synthetic training device session</div>
        <div class="formgrid">
-         <div class="field"><label>Session date</label><input type="date" id="simDate" value="${htmlEscape(old?.date||new Date().toISOString().slice(0,10))}"></div>
+         <div class="field"><label>Session date</label>${europeanDateField('simDate',old?.date||new Date().toISOString().slice(0,10),true)}</div>
          <div class="field"><label>Device category</label><select id="simCategory">
            ${['FNPT I','FNPT II','FTD','FFS','FS','Other'].map(c=>`<option value="${c}"${(old?.simCategory||'FNPT II')===c?' selected':''}>${c}</option>`).join('')}
          </select></div>
@@ -2408,10 +2408,10 @@ function addSimulator(editId=null){
 function saveSimulatorSession(){
   if(editingFlightId&&isArchivedFlight(editingFlightId)){alert('Archived simulator sessions cannot be edited.');return;}
   clearFormError();
-  const date=$('#simDate').value,category=$('#simCategory').value,device=$('#simDevice').value.trim(),
+  const date=readEuropeanDate('simDate',true),category=$('#simCategory').value,device=$('#simDevice').value.trim(),
     qualification=$('#simQualification').value.trim(),remarks=$('#simRemarks').value.trim();
   const time=parseBroughtForwardMinutes($('#simDuration').value);
-  if(!parseExternalDate(date))return showFormError('Select a valid simulator session date.');
+  if(!date)return showFormError('Enter a valid simulator session date in DD-MM-YYYY format.');
   if(!device && !category.startsWith('FNPT'))return showFormError('Enter the simulator device or aircraft type (required for FS/FFS/FTD).');
   if(time===null||!Number.isSafeInteger(time)||time<=0)return showFormError('Enter positive simulator time in H:MM format.');
   const old=editingFlightId?S.flights.find(f=>f.id===editingFlightId):null;
@@ -2467,7 +2467,7 @@ ${!editing?`<div class="choice-row" style="margin-bottom:16px">
  </div>`:''}
 <div class="section-title">Flight identification</div>
 <div class="formgrid">
-  <div class="field"><label>Date</label><input id="date" type="date"></div>
+  <div class="field"><label>Date</label>${europeanDateField('date','',true)}</div>
   <div class="field"><label>Aircraft</label><select id="aid">${S.aircraft.map(a=>`<option value="${a.id}">${a.icao} — ${a.reg}</option>`).join('')}</select></div>
 
   <div class="field"><label>Departure place</label><input id="dep" class="uppercase-input" maxlength="4" autocapitalize="characters" autocorrect="off" spellcheck="false" oninput="uppercasePlaceInput(this)"></div>
@@ -2595,7 +2595,7 @@ populateTimePicker('offHour','offMinute');
 populateTimePicker('onHour','onMinute');
 
 if(existing){
-  $('#date').value=existing.date||'';
+  $('#date').value=formatDate(existing.date||'');
   $('#aid').value=existing.aid||S.aircraft[0]?.id||'';
   $('#dep').value=existing.dep||'';
   $('#arr').value=existing.arr||'';
@@ -2633,7 +2633,7 @@ if(existing){
   });
   if($('#instructorCheck').checked || Object.keys(existing.specialOps||{}).length) $('#moreDetails').open=true;
 }else{
-  $('#date').value=new Date().toISOString().slice(0,10);
+  $('#date').value=formatDate(new Date().toISOString().slice(0,10));
 }
 
 updateSpecialOpsPreview();
@@ -2865,7 +2865,7 @@ function saveFlight(){
   }
   clearFormError();
 
-  if(!$('#date').value) return showFormError('Please select the flight date.');
+  if(readEuropeanDate('date',true)===null)return showFormError('Enter a valid flight date in DD-MM-YYYY format.');
   if(!$('#aid').value) return showFormError('Please select an aircraft.');
   if(!$('#dep').value.trim() || !$('#arr').value.trim()) return showFormError('Please enter both departure and arrival places.');
 
@@ -2903,7 +2903,7 @@ function saveFlight(){
   let original=existingIndex>=0?S.flights[existingIndex]:null;
   let f={
     id:original?original.id:'f'+Date.now(),
-    date:$('#date').value,
+    date:readEuropeanDate('date',true),
     aid:$('#aid').value,
     dep:$('#dep').value.trim().toUpperCase(),
     arr:$('#arr').value.trim().toUpperCase(),
@@ -3261,7 +3261,7 @@ function endorsementForm(editId=null){
   `<form class="card form" onsubmit="saveEndorsement(event)">
     ${e.signatureData?`<div class="note" style="margin-bottom:16px"><b>This endorsement is currently signed.</b><br>Saving edits will remove the existing signature and require the endorsement to be signed again.</div>`:''}
     <div class="formgrid">
-      <div class="field"><label>Date</label><input id="endorseDate" type="date" required value="${htmlEscape(e.date||'')}"></div>
+      <div class="field"><label>Date</label>${europeanDateField('endorseDate',e.date,true)}</div>
       <div class="field"><label>Category</label>
         <select id="endorseCategory">
           ${['Skill test','Proficiency check / revalidation','Type rating endorsement','Licence endorsement','Training completion','Other'].map(x=>`<option${e.category===x?' selected':''}>${x}</option>`).join('')}
@@ -3299,14 +3299,15 @@ function endorsementForm(editId=null){
 
 function saveEndorsement(ev){
   ev.preventDefault();
-  let date=$('#endorseDate').value;
+  let date=readEuropeanDate('endorseDate',true);
   let category=$('#endorseCategory').value;
   let title=$('#endorseTitle').value.trim();
   let location=$('#endorseLocation').value.trim();
   let qualificationId=$('#endorseQualification').value;
   let signatoryPersonId=$('#endorseSigner').value;
   let body=$('#endorseText').value.trim();
-  if(!date||!title||!signatoryPersonId||!body) return;
+  if(!date){alert('Enter a valid endorsement date in DD-MM-YYYY format.');return;}
+  if(!title||!signatoryPersonId||!body)return;
 
   let item={
     date,category,title,location,qualificationId,signatoryPersonId,text:body
@@ -4047,8 +4048,8 @@ function editMedical(){
         </select>
       </div>
       <div class="field"><label>Certificate / reference</label><input id="medicalNumber" value="${htmlEscape(m.number||'')}" placeholder="Optional"></div>
-      <div class="field"><label>Issue date</label><input id="medicalIssue" type="date" value="${htmlEscape(m.issueDate||'')}"></div>
-      <div class="field"><label>Valid until</label><input id="medicalValid" type="date" value="${htmlEscape(m.validUntil||'')}"></div>
+      <div class="field"><label>Issue date</label>${europeanDateField('medicalIssue',m.issueDate)}</div>
+      <div class="field"><label>Valid until</label>${europeanDateField('medicalValid',m.validUntil)}</div>
       <div class="field"><label>Notes</label><input id="medicalNotes" value="${htmlEscape(m.notes||'')}" placeholder="Optional"></div>
     </div>
     <div class="actions"><button class="btn primary">Save medical</button></div>
@@ -4057,11 +4058,13 @@ function editMedical(){
 
 function saveMedical(e){
   e.preventDefault();
+  const issueDate=readEuropeanDate('medicalIssue'),validUntil=readEuropeanDate('medicalValid');
+  if(issueDate===null||validUntil===null){alert('Please use DD-MM-YYYY for medical dates.');return;}
   S.pilot.medical={
     class:$('#medicalClass').value,
     number:$('#medicalNumber').value.trim(),
-    issueDate:$('#medicalIssue').value,
-    validUntil:$('#medicalValid').value,
+    issueDate,
+    validUntil,
     notes:$('#medicalNotes').value.trim()
   };
   save();
@@ -4086,8 +4089,8 @@ function qualificationForm(editId=null){
       </div>
       <div class="field"><label>Name</label><input id="qualName" required value="${htmlEscape(q.name||'')}" placeholder="e.g. Cabri G2, IR(H), FI(H)"></div>
       <div class="field"><label>Licence / rating number</label><input id="qualNumber" value="${htmlEscape(q.number||'')}" placeholder="Optional"></div>
-      <div class="field"><label>Issue date</label><input id="qualIssue" type="date" value="${htmlEscape(q.issueDate||'')}"></div>
-      <div class="field"><label>Valid until</label><input id="qualValid" type="date" value="${htmlEscape(q.validUntil||'')}"></div>
+      <div class="field"><label>Issue date</label>${europeanDateField('qualIssue',q.issueDate)}</div>
+      <div class="field"><label>Valid until</label>${europeanDateField('qualValid',q.validUntil)}</div>
       <div class="field"><label>Notes / privileges</label><input id="qualNotes" value="${htmlEscape(q.notes||'')}" placeholder="Optional"></div>
       <div class="field"><label>Primary licence</label>
         <select id="qualPrimary">
@@ -4103,12 +4106,14 @@ function qualificationForm(editId=null){
 
 function saveQualification(e){
   e.preventDefault();
+  const issueDate=readEuropeanDate('qualIssue'),validUntil=readEuropeanDate('qualValid');
+  if(issueDate===null||validUntil===null){alert('Please use DD-MM-YYYY for licence and rating dates.');return;}
   let item={
     category:$('#qualCategory').value,
     name:$('#qualName').value.trim(),
     number:$('#qualNumber').value.trim(),
-    issueDate:$('#qualIssue').value,
-    validUntil:$('#qualValid').value,
+    issueDate,
+    validUntil,
     notes:$('#qualNotes').value.trim(),
     isPrimary:$('#qualPrimary').value==='yes'
   };
