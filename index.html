@@ -694,6 +694,7 @@ function ensurePersonForName(name){
 }
 
 let editingFlightId=null;
+let correctingArchivedId=null;
 let pendingDeleteFlightId=null;
 let pendingImport=null;
 let editingAircraftId=null;
@@ -920,12 +921,14 @@ function markFlightFormDirty(){
 }
 function cancelFlightForm(returnFlightId=''){
   if(!confirmLeaveFlightForm()) return;
+  correctingArchivedId=null;
   clearFlightFormGuard();
   if(returnFlightId) flight(returnFlightId);
   else go('dashboard');
 }
 function go(v){
   if(!confirmLeaveFlightForm()) return;
+  correctingArchivedId=null;
   clearFlightFormGuard();
   if(location.hash==='#'+v) render();
   else location.hash=v;
@@ -2203,6 +2206,78 @@ function signedHours(n){
 function unappliedCorrections(batches=archivedBatches()){
   const applied=new Set(batches.flatMap(b=>b.correctionsApplied||[]));
   return confirmedCorrections().filter(c=>!applied.has(c.id));
+}
+function correctionDifferences(before,after){
+  const fields=isSimulatorSession(before)?
+    ['date','simCategory','simDevice','simQualification','stdMin','remarks']:
+    ['date','aid','dep','off','arr','on','mins','role','picName','pilotConfig','nightMin','ifrMin',
+     'takeoffDay','takeoffNight','landingDay','landingNight','instrMin','crossCountry','remarks','specialOps'];
+  const labels={
+    date:'Date',aid:'Aircraft',dep:'Departure',off:'Departure time',arr:'Arrival',on:'Arrival time',
+    mins:'Flight time',role:'Pilot function',picName:'PIC name',pilotConfig:'Pilot configuration',
+    nightMin:'Night time',ifrMin:'IFR time',takeoffDay:'Day take-offs',takeoffNight:'Night take-offs',
+    landingDay:'Day landings',landingNight:'Night landings',instrMin:'Instructor time',
+    crossCountry:'Cross-country',remarks:'Remarks',specialOps:'Specialised operations',
+    simCategory:'Simulator category',simDevice:'Simulator type',
+    simQualification:'Device qualification',stdMin:'Simulator session time'
+  };
+  const timeFields=new Set(['mins','nightMin','ifrMin','instrMin','stdMin']);
+  const value=(record,k)=>{
+    if(k==='date')return formatDate(record[k]||'');
+    if(k==='specialOps')return Object.entries(record[k]||{}).map(([x,n])=>x+' '+fmt(n)).join(', ')||'None';
+    if(timeFields.has(k))return fmt(record[k]||0);
+    if(k==='crossCountry')return record[k]?'Yes':'No';
+    return String(record[k]??'');
+  };
+  const canonical=(f,k)=>k==='specialOps'?JSON.stringify(Object.entries(f[k]||{}).sort((a,b)=>a[0].localeCompare(b[0]))):JSON.stringify(f[k]??null);
+  return fields.filter(k=>canonical(before,k)!==canonical(after,k))
+    .map(k=>({key:k,label:labels[k]||k,before:value(before,k),after:value(after,k)}));
+}
+function correctionHistoryMarkup(id){
+  if(!isArchivedFlight(id))return '';
+  const source=archiveBatchForFlight(id);
+  const arr=archiveCorrections().filter(c=>c.flightId===id);
+  return `<div class="card" style="margin-top:16px">
+    <div class="head"><h2>Signed print archive & corrections</h2></div>
+    <p>Original: <b>${htmlEscape(source?.batch.id||'—')} · Page ${source?.page||'—'} · Row ${source?.row||'—'}</b></p>
+    <p class="muted">The original signed page remains immutable. A corrected version takes effect only after its separate addendum is confirmed printed and signed.</p>
+    <button class="btn primary" onclick="startArchivedCorrection('${id}')">
+      ${pendingCorrectionFor(id)?'Review pending correction':'Propose a correction'}</button>
+    ${arr.map(c=>`<div style="border-top:1px solid var(--line);padding:10px 0;margin-top:10px">
+      <b>${htmlEscape(c.id)}</b> · ${c.confirmedAt?'Confirmed '+htmlEscape(formatDateTime(c.confirmedAt)):'Pending printed addendum'}
+      <div class="mini">${htmlEscape(c.reason)}</div>
+      <button class="btn" onclick="printCorrectionAddendum('${c.id}')">Print/reprint addendum</button>
+    </div>`).join('')}
+  </div>`;
+}
+function startArchivedCorrection(id){
+  if(!isArchivedFlight(id))return;
+  if(pendingCorrectionFor(id)){go('printarchive');return;}
+  correctingArchivedId=id;
+  const f=effectiveFlight(S.flights.find(x=>x.id===id));
+  if(isSimulatorSession(f))addSimulator(id);
+  else add(id);
+}
+function recordArchiveCorrection(id,after,reason){
+  if(!isArchivedFlight(id)||correctingArchivedId!==id)
+    return showFormError('The entry is not in correction mode.');
+  if(pendingCorrectionFor(id))return showFormError('An unconfirmed correction already exists for this entry.');
+  const source=archiveBatchForFlight(id);
+  if(!source)return showFormError('Original archive entry could not be found.');
+  const before=JSON.parse(JSON.stringify(effectiveFlight(S.flights.find(x=>x.id===id))));
+  const proposed=JSON.parse(JSON.stringify(after));
+  const changes=correctionDifferences(before,proposed);
+  if(!changes.length)return showFormError('No values were changed.');
+  if(!String(reason||'').trim())return showFormError('Please explain the reason for the correction.');
+  const item={
+    id:'COR-'+Date.now()+'-'+Math.random().toString(36).slice(2,6).toUpperCase(),
+    flightId:id,sourceBatch:source.batch.id,sourcePage:source.page,sourceRow:source.row,
+    before,after:proposed,reason:String(reason).trim(),createdAt:new Date().toISOString(),confirmedAt:''
+  };
+  S.printArchive.corrections.push(item);
+  if(!save()){S.printArchive.corrections.pop();return;}
+  correctingArchivedId=null;editingFlightId=null;clearFlightFormGuard();
+  go('printarchive');
 }
 function archivedFlightIds(){
   return new Set(archivedBatches().flatMap(b=>Array.isArray(b.flightIds)?b.flightIds:[]));
