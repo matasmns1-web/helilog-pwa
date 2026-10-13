@@ -2598,20 +2598,21 @@ function saveSimulatorSession(){
   const id=entry.id;editingFlightId=null;clearFlightFormGuard();flight(id);
 }
 function simulatorDetails(id){
-  const f=S.flights.find(x=>x.id===id);
+  const f=effectiveFlight(S.flights.find(x=>x.id===id));
   if(!isSimulatorSession(f))return go('logbook');
   editingFlightId=null;
   app.innerHTML=header('Simulator session',formatDate(f.date)+' · '+htmlEscape(f.simCategory),
   `<div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="btn" onclick="go('logbook')">← Logbook</button>
-    <button class="btn primary" onclick="editFlight('${f.id}')">Edit session</button>
-    <button class="btn dangerbtn" onclick="openDeleteModal('${f.id}')">Delete session</button></div>`)+
+    <button class="btn primary" onclick="editFlight('${f.id}')">${isArchivedFlight(f.id)?'Propose correction':'Edit session'}</button>
+    ${!isArchivedFlight(f.id)?`<button class="btn dangerbtn" onclick="openDeleteModal('${f.id}')">Delete session</button>`:''}</div>`)+
     `<div class="card"><h2>${htmlEscape(simulatorDeviceLabel(f))}</h2>
      <div class="grid stats">
        <div class="card"><div class="label">Simulator session</div><div class="big">${fmt(f.stdMin)}</div></div>
        <div class="card"><div class="label">Actual flight time</div><div class="big">0:00</div></div>
      </div><p><b>Exercise / remarks</b></p><p>${htmlEscape(f.remarks||'—')}</p>
-     <p class="mini">Printed only in Synthetic Training Devices and Remarks columns. Does not add to actual helicopter flight time.</p></div>`;
+     <p class="mini">Printed only in Synthetic Training Devices and Remarks columns. Does not add to actual helicopter flight time.</p></div>`+
+    correctionHistoryMarkup(id);
 }
 function add(editId=null){
 if(editId && isArchivedFlight(editId)&&correctingArchivedId!==editId){
@@ -3112,7 +3113,7 @@ function saveFlight(){
   clearFlightFormGuard();
   flight(f.id);
 }
-function flight(id){const entry=S.flights.find(x=>x.id===id);if(isSimulatorSession(entry))return simulatorDetails(id);editingFlightId=null;let f=entry,a=ac(f.aid);app.innerHTML=header('Flight details',`${formatDate(f.date)} · ${a.icao}`,`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="go('logbook')">← Logbook</button><button class="btn primary" onclick="editFlight('${id}')">Edit flight</button><button class="btn dangerbtn" onclick="openDeleteModal('${id}')">Delete flight</button></div>`)+`<div class="card">
+function flight(id){const entry=effectiveFlight(S.flights.find(x=>x.id===id));if(isSimulatorSession(entry))return simulatorDetails(id);editingFlightId=null;let f=entry,a=ac(f.aid);app.innerHTML=header('Flight details',`${formatDate(f.date)} · ${a.icao}`,`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="go('logbook')">← Logbook</button><button class="btn primary" onclick="editFlight('${id}')">${isArchivedFlight(id)?'Propose correction':'Edit flight'}</button>${!isArchivedFlight(id)?`<button class="btn dangerbtn" onclick="openDeleteModal('${id}')">Delete flight</button>`:''}</div>`)+`<div class="card">
 <div class="icao">${a.icao}</div><div class="muted">${a.reg} · ${a.manufacturer} ${a.model} ${a.variant}</div>
 <h2 style="margin-top:22px">${f.dep} ${f.off||''} → ${f.arr} ${f.on||''}</h2>
 <div class="kpi-grid"><div class="card"><div class="label">Total time</div><div class="big">${fmt(f.mins)}</div></div><div class="card"><div class="label">Pilot function</div><div class="big" style="font-size:20px">${f.role}</div></div><div class="card"><div class="label">Night</div><div class="big">${fmt(f.nightMin||0)}</div></div><div class="card"><div class="label">IFR</div><div class="big">${fmt(f.ifrMin||0)}</div></div></div>
@@ -3120,7 +3121,8 @@ function flight(id){const entry=S.flights.find(x=>x.id===id);if(isSimulatorSessi
 <p><b>Remarks / endorsements</b><br><span class="muted">${htmlEscape(flightRemarksForDisplay(f)||'—')}</span></p>
 ${Object.keys(f.specialOps||{}).length?`<div class="card" style="margin-top:16px"><h3>Specialised helicopter operations</h3>
 ${SPECIAL_OPS.filter(op=>Object.prototype.hasOwnProperty.call(f.specialOps||{},op.code)).map(op=>`<div class="profileline"><div class="k">${htmlEscape(op.label)}</div><b>${fmt(f.specialOps[op.code])}</b></div>`).join('')}
-<div class="mini">Breakdown only — no additional flight-time credit.</div></div>`:''}</div>`}
+<div class="mini">Breakdown only — no additional flight-time credit.</div></div>`:''}</div>`+
+  correctionHistoryMarkup(id)}
 
 function openDeleteModal(id){
   if(isArchivedFlight(id)){
