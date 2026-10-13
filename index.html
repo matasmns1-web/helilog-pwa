@@ -1948,7 +1948,7 @@ function exportPrintableLogbook(options={}){
       <div class="page-header">
         <div class="titleblock">
           <div class="title">PILOT LOG BOOK</div>
-          <div class="subtitle">HeliLog — EASA-style flight record export</div>
+          <div class="subtitle">${TEST_MODE?'TEST MODE — FICTIONAL RECORDS — NOT FOR OFFICIAL USE':'HeliLog — EASA-style flight record export'}</div>
         </div>
         <div class="pilotblock">
           <div><b>Pilot:</b> ${htmlEscape(archivePilot?archivePilot.name:(S.pilot.name||''))}</div>
@@ -2025,7 +2025,7 @@ function exportPrintableLogbook(options={}){
   <html>
   <head>
     <meta charset="utf-8">
-    <title>HeliLog Pilot Log Book</title>
+    <title>${TEST_MODE?'TEST MODE — ':''}HeliLog Pilot Log Book</title>
     <style>
       @page{size:A4 landscape;margin:12mm}
       *{box-sizing:border-box}
@@ -3821,6 +3821,204 @@ function profile(){
 }
 
 
+
+function freshLogbookData(from,forTest=false){
+  const pilotName=forTest?'HeliLog Test Pilot':String(from?.pilot?.name||'Pilot').trim()||'Pilot';
+  const authority=forTest?'TEST ONLY':String(from?.pilot?.authority||'');
+  return {
+    cleanStart:true,
+    pilot:{name:pilotName,licence:'',licenceType:'',licenceNumber:'',authority,
+      medical:{class:'',number:'',issueDate:'',validUntil:'',notes:''}},
+    people:[{id:'p_owner',name:pilotName,isAccountHolder:true,role:'Account holder',licence:'',notes:''}],
+    aircraft:[],flights:[],qualifications:[],endorsements:[],
+    broughtForward:{},broughtForwardByType:[],broughtForwardImported:false,broughtForwardImportedAt:'',
+    printArchive:{firstPage:1,paperReference:forTest?'TEST ONLY — not a real paper logbook':'',batches:[]}
+  };
+}
+function makeSandboxData(){
+  const data=freshLogbookData(null,true);
+  data.aircraft=JSON.parse(JSON.stringify(seed.aircraft));
+  data.people.push({id:'test_instructor',name:'Training Instructor (TEST)',role:'Instructor',licence:'TEST ONLY',notes:'Fictional'});
+  data.people.push({id:'test_captain',name:'Test Captain',role:'Pilot',licence:'TEST ONLY',notes:'Fictional'});
+  const routes=['EYVI','EYKA','EYPA','EYSA','EYPN','EYMO','EYKL'];
+  const roles=['PIC','PIC','SOLO','DUAL','PICUS','CO-PILOT','SPIC'];
+  for(let i=0;i<48;i++){
+    const day=new Date(Date.UTC(2026,5,8+i*2)).toISOString().slice(0,10);
+    if(i===13||i===34){
+      const simCategory=i===13?'FNPT II':'FFS';
+      const simDevice=i===13?'':'H135';
+      data.flights.push({
+        id:'sandbox_sim_'+String(i+1).padStart(2,'0'),
+        entryType:'simulator',date:day,simCategory,simDevice,simQualification:'TEST-'+(i+1),
+        stdType:[simCategory,simDevice,'(TEST-'+(i+1)+')'].filter(Boolean).join(' '),
+        stdMin:i===13?135:250,mins:0,aid:'',dep:'',off:'',arr:'',on:'',role:'',picName:'',
+        takeoffDay:0,takeoffNight:0,landingDay:0,landingNight:0,nightMin:0,ifrMin:0,
+        crossCountry:false,specialOps:{},remarks:'TEST DATA ONLY — fictional simulator proficiency session'
+      });
+      continue;
+    }
+    const role=roles[i%roles.length],night=i%11===0;
+    const minutes=45+(i%9)*10;
+    const starting=night?19*60+(i%3)*20:8*60+(i%8)*35;
+    const clock=t=>String(Math.floor(t/60)%24).padStart(2,'0')+':'+String(t%60).padStart(2,'0');
+    const aid=['a1','a2','a3','a_ec135_demo'][i%4];
+    const dep=routes[i%routes.length],arr=i%4===0?dep:routes[(i+2)%routes.length];
+    const nightMinutes=night?minutes:0;
+    const specialOps=i%9===0?{VRLL:Math.min(minutes,35),HESLO2:Math.min(minutes,35)}:
+      night?{NVIS:Math.min(minutes,40)}:
+      i%14===0?{HEC:Math.min(minutes,25)}:{};
+    const instructor=role==='DUAL'?Math.min(40,minutes):0;
+    data.flights.push({
+      id:'sandbox_flight_'+String(i+1).padStart(2,'0'),
+      date:day,aid,dep,arr,off:clock(starting),on:clock(starting+minutes),
+      mins:minutes,role,
+      picName:['PIC','SOLO'].includes(role)?data.pilot.name:'Training Instructor (TEST)',
+      picPersonId:['PIC','SOLO'].includes(role)?'p_owner':'test_instructor',
+      pilotConfig:aid==='a_ec135_demo'&&i%3===0?'multi':'single',
+      nightMin:nightMinutes,ifrMin:i%7===0?Math.min(minutes,30):0,
+      takeoffDay:night?0:i%5===0?2:1,takeoffNight:night?2:0,
+      landingDay:night?0:i%5===0?2:1,landingNight:night?2:0,
+      crossCountry:dep!==arr,instrMin:instructor,instructorSelected:instructor>0,
+      stdType:'',stdMin:0,specialOps,
+      remarks:'TEST DATA ONLY — fabricated flight #'+String(i+1)
+    });
+  }
+  return data;
+}
+// Write a new environment atomically without changing the other environment.
+// On failed persistence, the previous saved bytes are restored where possible.
+function verifiedEnvironmentWrite(key,data){
+  const old=localStorage.getItem(key);
+  const serialized=JSON.stringify(data);
+  try{
+    localStorage.setItem(key,serialized);
+    if(localStorage.getItem(key)!==serialized)throw new Error('Stored bytes could not be verified.');
+  }catch(e){
+    try{if(old===null)localStorage.removeItem(key);else localStorage.setItem(key,old);}catch(x){}
+    throw e;
+  }
+}
+function enterTestMode(){
+  if(TEST_MODE)return;
+  try{
+    const existing=localStorage.getItem(SANDBOX_KEY);
+    if(existing===null)verifiedEnvironmentWrite(SANDBOX_KEY,makeSandboxData());
+    else{
+      const data=JSON.parse(existing);
+      if(!data||!data.pilot||!Array.isArray(data.flights)||!Array.isArray(data.aircraft))
+        throw new Error('An existing test sandbox cannot be read. Do not overwrite it; use a safety backup.');
+    }
+    localStorage.setItem(MODE_KEY,'test');
+    window.location.reload();
+  }catch(e){alert('Could not enter Test Mode. Main logbook is unchanged. '+String(e.message||e));}
+}
+function exitTestMode(){
+  if(!TEST_MODE)return;
+  try{
+    localStorage.removeItem(MODE_KEY);
+    if(localStorage.getItem(MODE_KEY)==='test')throw new Error('Mode flag did not clear.');
+    window.location.reload();
+  }catch(e){alert('Could not leave Test Mode: '+String(e.message||e));}
+}
+function resetSandbox(withSamples){
+  if(!TEST_MODE||KEY!==SANDBOX_KEY)return;
+  const action=withSamples?'REBUILD with 48 fictional entries':'CLEAR to an empty sandbox';
+  if(!confirm('This will '+action+' and permanently replace only the TEST sandbox records, including all confirmed TEST print archive batches.\n\nYour MAIN logbook is NOT affected. Continue?'))return;
+  try{
+    const data=withSamples?makeSandboxData():freshLogbookData(null,true);
+    verifiedEnvironmentWrite(SANDBOX_KEY,data);
+    window.location.reload();
+  }catch(e){alert('Could not reset sandbox. Existing data was retained if storage rollback succeeded. '+String(e.message||e));}
+}
+let cleanStartBackupFingerprint=null;
+async function prepareLiveCleanStart(){
+  if(TEST_MODE)return;
+  try{
+    const before=JSON.stringify(S);
+    const backup=await makeFullBackup();
+    if(JSON.stringify(S)!==before)throw new Error('Logbook changed while preparing the safety backup. Try again.');
+    offerBackupFile(backup,'HeliLog_MAIN_SAFETY_Before_Clean_Start');
+    cleanStartBackupFingerprint=before;
+    const button=document.getElementById('confirmLiveCleanStart');
+    if(button)button.disabled=false;
+    const status=document.getElementById('cleanStartStatus');
+    if(status)status.innerHTML='<div class="note"><b>Safety backup download requested.</b> Open the downloaded JSON and verify it was saved before continuing. The next step replaces the MAIN logbook only after two further confirmations.</div>';
+  }catch(e){
+    cleanStartBackupFingerprint=null;
+    alert('Could not prepare a safety backup. Clean start is blocked. '+String(e.message||e));
+  }
+}
+function confirmLiveCleanStart(){
+  if(TEST_MODE || KEY!==LIVE_KEY || !cleanStartBackupFingerprint)return;
+  if(JSON.stringify(S)!==cleanStartBackupFingerprint){
+    cleanStartBackupFingerprint=null;
+    alert('The main logbook changed after the safety backup. Download a new backup before resetting.');return;
+  }
+  const words=prompt('DANGER: This will erase MAIN flight records, aircraft, qualifications, previous totals, endorsements and signed print archive history in THIS browser.\n\nVerify your safety backup is saved and readable.\n\nType RESET LIVE LOGBOOK to continue:');
+  if(words!=='RESET LIVE LOGBOOK')return;
+  if(!confirm('Final confirmation: replace the MAIN logbook with a new empty logbook?\n\nOnly your pilot name and authority will be retained. Test sandbox data stays separate.'))return;
+  if(JSON.stringify(S)!==cleanStartBackupFingerprint){
+    cleanStartBackupFingerprint=null;
+    alert('Data changed while confirming. Reset cancelled.');return;
+  }
+  try{
+    const empty=freshLogbookData(S,false);
+    verifiedEnvironmentWrite(LIVE_KEY,empty);
+    cleanStartBackupFingerprint=null;
+    window.location.reload();
+  }catch(e){alert('MAIN reset FAILED: previous data was not intentionally changed. Keep your backup. '+String(e.message||e));}
+}
+function testmode(){
+  const sandboxPresent=localStorage.getItem(SANDBOX_KEY)!==null;
+  const batches=S.printArchive?.batches?.length||0;
+  app.innerHTML=header('Test Mode & safe reset',
+    'A separate browser-local sandbox for experimenting with flight logging and paper archives.',
+    `<button class="btn" onclick="go('dashboard')">← Dashboard</button>`)+
+    `<div class="card">
+      <div class="head"><h2>Current environment: ${TEST_MODE?'⚗ TEST SANDBOX':'MAIN LOGBOOK'}</h2></div>
+      <p>${TEST_MODE?
+        'You are using a separately stored fictional logbook. All entries, imports, totals, archive previews, confirmations and restores on this screen belong to the sandbox only.':
+        'Your current flights and print archives remain in the main browser logbook. Entering Test Mode switches to a separate stored dataset without copying or altering them.'}</p>
+      <div class="grid stats">
+        <div class="card"><div class="label">Entries here</div><div class="big">${S.flights.length}</div></div>
+        <div class="card"><div class="label">Simulator sessions</div><div class="big">${S.flights.filter(isSimulatorSession).length}</div></div>
+        <div class="card"><div class="label">Confirmed print batches</div><div class="big">${batches}</div></div>
+      </div>
+      <div class="actions">
+        ${TEST_MODE?
+          '<button class="btn primary" type="button" onclick="exitTestMode()">Return to main logbook</button>':
+          '<button class="btn primary" type="button" onclick="enterTestMode()">⚗ Enter Test Mode</button>'}
+      </div>
+      <div class="mini">Each environment uses a different localStorage key on this device. An installed PWA and a desktop browser may have independent storage. This is not cloud sync.</div>
+    </div>
+    ${TEST_MODE?`
+    <div class="card" style="margin-top:16px">
+      <div class="head"><h2>Manage sandbox records</h2></div>
+      <p>The sample generator creates <b>48 fictional entries</b> (46 flights and 2 simulator sessions) across four A4 logbook pages, with varied ICAO types, PIC functions, night/IFR time, instructor time and specialised operations. The fourth page has 6 entries.</p>
+      <div class="actions">
+        <button class="btn primary" type="button" onclick="resetSandbox(true)">Rebuild 48 test entries</button>
+        <button class="btn dangerbtn" type="button" onclick="resetSandbox(false)">Clear test sandbox</button>
+        <button class="btn" type="button" onclick="go('printarchive')">Test print archive →</button>
+      </div>
+      <div class="note">Rebuild and Clear delete TEST archive history and test entries only. The main logbook is not accessible while Test Mode is active. Download a test backup first if you want to retain sandbox work.</div>
+    </div>`:`
+    <div class="card" style="margin-top:16px">
+      <div class="head"><h2>Test sandbox</h2></div>
+      <p>${sandboxPresent?'Existing sandbox saved. Enter Test Mode to resume previous test flights and archive history.':'No sandbox created yet. The first visit generates 48 fictional entries automatically.'}</p>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <div class="head"><h2>Clean production start</h2></div>
+      <p class="muted">Only use this when you are ready to replace all MAIN records in this browser. This removes flights, archived batches, imported paper totals, aircraft, endorsements and ratings, but retains your pilot name and competent authority.</p>
+      <p class="mini">Nothing will be reset by downloading the safety copy. HeliLog will also require an exact typed phrase and a final confirmation. An existing test sandbox is not removed.</p>
+      <div class="actions">
+        <button class="btn" type="button" onclick="prepareLiveCleanStart()">1. Download mandatory MAIN backup</button>
+        <button id="confirmLiveCleanStart" class="btn dangerbtn" type="button" onclick="confirmLiveCleanStart()" ${cleanStartBackupFingerprint?'':'disabled'}>2. Initialise empty MAIN logbook</button>
+      </div>
+      <div id="cleanStartStatus" class="mini"></div>
+    </div>`}
+    <div class="note" style="margin-top:16px">TEST DATA MUST NOT be used as a genuine pilot logbook. Sandbox archives are not official flying records, even when signed in a print preview.</div>`;
+}
+
 function backupSummary(data){
   return {
     flights:Array.isArray(data?.flights)?data.flights.length:0,
@@ -3846,6 +4044,7 @@ async function makeFullBackup(){
     backupSchema:2,
     appVersion:'1.42',
     exportedAt:new Date().toISOString(),
+    environment:TEST_MODE?'test':'production',
     integrity:{algorithm:'SHA-256',sha256:await sha256Hex(JSON.stringify(data))},
     data
   };
@@ -3911,6 +4110,9 @@ async function handleBackupRestoreFile(ev){
   try{
     const parsed=JSON.parse(await file.text());
     const data=extractBackupData(parsed);
+    if(parsed.environment && parsed.environment!==(TEST_MODE?'test':'production')){
+      throw new Error('This is a '+parsed.environment+' backup. Switch to the matching Test/Main environment before restoring. No records were replaced.');
+    }
     let verification='Legacy backup without a checksum — structure checked, but original file integrity cannot be verified.';
     if(parsed.format==='helilog-full-backup' && Number(parsed.backupSchema)>=2 && !parsed.integrity){
       throw new Error('A modern HeliLog backup is missing its required checksum.');
