@@ -2353,6 +2353,7 @@ function archiveSummaryMarkup(d){
       <p>Simulator in this batch <span style="float:right"><b>${fmt(d.flightTotals.std)}</b></span></p>
       <p>Closing total <span style="float:right"><b>${fmt(d.closingTotals.total)}</b></span></p>
       <div class="mini">PIC ${fmt(d.closingTotals.pic)} · Dual ${fmt(d.closingTotals.dual)} · Night ${fmt(d.closingTotals.night)} · IFR ${fmt(d.closingTotals.ifr)}</div>
+      ${d.correctionsApplied?.length?`<div class="note">Signed correction addenda carried into this batch: ${htmlEscape(d.correctionsApplied.join(', '))}; flight-time adjustment ${signedHours(d.openingCorrectionsDelta?.total||0)}. Original earlier pages remain unchanged.</div>`:''}
     </div>
     <div class="card">
       <h3 style="margin-top:0">Paper logbook continuity</h3>
@@ -2454,6 +2455,96 @@ function reprintArchiveBatch(seq){
     openingCorrectionsDelta:b.openingCorrectionsDelta||{}
   });
 }
+
+let pendingCorrectionPrint=null;
+function printCorrectionAddendum(id){
+  const c=archiveCorrections().find(x=>x.id===id);
+  if(!c)return;
+  const edits=correctionDifferences(c.before,c.after);
+  const delta=correctionDelta(c);
+  const rows=edits.map(x=>`<tr><td>${htmlEscape(x.label)}</td><td>${htmlEscape(x.before)||'—'}</td><td>${htmlEscape(x.after)||'—'}</td></tr>`).join('');
+  const categories=[
+    ['Actual flight time','total'],['PIC','pic'],['Co-pilot','copilot'],['Dual','dual'],
+    ['Single-pilot SE','spSE'],['Single-pilot ME','spME'],['Multi-pilot','multi'],
+    ['Night','night'],['IFR','ifr'],['Instructor','instructor'],['Simulator','std'],
+    ['Take-offs day','toDay'],['Take-offs night','toNight'],
+    ['Landings day','ldgDay'],['Landings night','ldgNight']
+  ];
+  const deltaRows=categories.filter(([,k])=>delta[k])
+    .map(([name,k])=>`<tr><td>${htmlEscape(name)}</td><td>${k.startsWith('to')||k.startsWith('ldg')?(delta[k]>0?'+':'')+delta[k]:signedHours(delta[k])}</td></tr>`).join('');
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>HeliLog ${htmlEscape(c.id)} correction addendum</title>
+  <style>@page{size:A4 portrait;margin:15mm}
+  body{font:12px/1.4 Arial,Helvetica,sans-serif;color:#111;margin:0}
+  h1{font-size:21px;margin-bottom:3px}h2{font-size:15px;margin-top:22px}
+  .small{font-size:10px;color:#555}table{width:100%;border-collapse:collapse;margin-top:8px}
+  th,td{border:1px solid #999;padding:6px 9px;text-align:left;vertical-align:top}
+  th{background:#eee}td{overflow-wrap:anywhere}.alert{border:2px solid #222;padding:10px;margin:18px 0}
+  .signature{margin-top:40px;display:flex;gap:25px}.signature>div{flex:1;border-top:1px solid #333;padding-top:4px}
+  .toolbar{padding:8px;margin-bottom:15px;background:#eee}
+  @media print{.toolbar{display:none}body{margin:0}}
+  </style></head><body>
+  <div class="toolbar"><button onclick="window.print()">Print / Save as PDF</button></div>
+  <h1>${TEST_MODE?'TEST ONLY — ':''}HeliLog Correction Addendum</h1>
+  <div class="small">Append-only amendment record, NOT a replacement of the original signed page</div>
+  <div class="alert"><b>Correction ID:</b> ${htmlEscape(c.id)}<br>
+    <b>Original source:</b> ${htmlEscape(c.sourceBatch)} — Page ${c.sourcePage}, row ${c.sourceRow}<br>
+    <b>Flight/session ID:</b> ${htmlEscape(c.flightId)}<br>
+    <b>Created:</b> ${htmlEscape(formatDateTime(c.createdAt))}<br>
+    <b>Status:</b> ${c.confirmedAt?'Confirmed '+htmlEscape(formatDateTime(c.confirmedAt)):'PENDING — NOT YET CONFIRMED'}<br>
+    <b>Pilot:</b> ${htmlEscape(S.pilot.name||'')}
+  </div>
+  <h2>Reason for correction</h2><p>${htmlEscape(c.reason)}</p>
+  <h2>Original versus revised entry</h2>
+  <table><thead><tr><th>Field</th><th>As originally recorded</th><th>Revised value</th></tr></thead>
+  <tbody>${rows}</tbody></table>
+  <h2>Change in cumulative totals</h2>
+  ${deltaRows?`<table><thead><tr><th>Category</th><th>Adjustment</th></tr></thead><tbody>${deltaRows}</tbody></table>`:
+  '<p>No change to numerical totals.</p>'}
+  <p class="small">Retain this signed addendum with the original archived page. Corrections are carried into the next newly printed logbook batch without altering earlier signed totals or page numbers. Authority-specific amendment acceptance has not been verified.</p>
+  ${TEST_MODE?'<p><b>TEST MODE — FICTIONAL DATA. NOT AN OFFICIAL LOGBOOK RECORD.</b></p>':''}
+  <div class="signature"><div>Pilot signature</div><div>Date (DD-MM-YYYY)</div></div>
+  </body></html>`;
+  const w=window.open('','_blank');
+  if(!w){alert('Your browser blocked the correction print preview. Allow pop-ups for HeliLog, then retry.');return;}
+  w.document.open();w.document.write(html);w.document.close();w.focus();
+  pendingCorrectionPrint=JSON.stringify(c);
+  printarchive();
+}
+function confirmCorrectionAddendum(id){
+  const c=archiveCorrections().find(x=>x.id===id);
+  if(!c||c.confirmedAt)return;
+  if(pendingCorrectionPrint!==JSON.stringify(c)){
+    alert('Preview the current correction addendum first, then check and sign it.');return;
+  }
+  if(!confirm('Confirm that correction '+c.id+' was PRINTED, CHECKED and SIGNED?\n\n'+
+    'The original signed archive page will remain unchanged.\n'+
+    'The revised entry will affect electronic totals and future paper carried-forward totals.\n'+
+    'Confirmed corrections cannot be edited or deleted in HeliLog.'))return;
+  c.confirmedAt=new Date().toISOString();
+  try{
+    const raw=JSON.stringify(S);
+    localStorage.setItem(KEY,raw);
+    const confirmed=JSON.parse(localStorage.getItem(KEY)||'{}').printArchive?.corrections?.find(x=>x.id===id);
+    if(!confirmed||confirmed.confirmedAt!==c.confirmedAt)throw new Error('Saved correction was not verified.');
+  }catch(e){
+    c.confirmedAt='';
+    alert('Correction confirmation could not be saved. It remains pending. '+String(e.message||e));
+    return;
+  }
+  pendingCorrectionPrint=null;
+  pendingArchivePreview=null;
+  selectedArchivePageCount=null;
+  printarchive();
+}
+function discardPendingCorrection(id){
+  const list=archiveCorrections();
+  const index=list.findIndex(x=>x.id===id&&!x.confirmedAt);
+  if(index<0)return;
+  if(!confirm('Discard pending correction '+id+'? The original archived flight remains unchanged.'))return;
+  const item=list.splice(index,1)[0];
+  if(!save()){list.splice(index,0,item);return;}
+  pendingCorrectionPrint=null;printarchive();
+}
 function printarchive(){
   if(isInstalledTouchApp()){go('dashboard');return;}
   const batches=archivedBatches();
@@ -2518,6 +2609,25 @@ function printarchive(){
       <div id="archivePreviewStatus" style="margin-top:10px"></div>
     </div>
     <div class="card" style="margin-top:16px">
+      <div class="head"><h2>Archived-entry correction addenda</h2></div>
+      <p class="mini">Original pages remain unaltered. Proposed corrections do not affect totals until the addendum is printed, checked, signed and confirmed here.</p>
+      ${archiveCorrections().length?[...archiveCorrections()].reverse().map(c=>{
+        const d=correctionDelta(c);
+        const ready=pendingCorrectionPrint===JSON.stringify(c);
+        return `<div style="border-top:1px solid var(--line);padding:12px 0">
+          <div><b>${htmlEscape(c.id)}</b> — ${htmlEscape(c.sourceBatch)} · Page ${c.sourcePage}, row ${c.sourceRow}</div>
+          <div class="mini">${htmlEscape(c.reason)} · ${c.confirmedAt?'Confirmed '+htmlEscape(formatDateTime(c.confirmedAt)):'PENDING'} · Flight time ${signedHours(d.total||0)} · Simulator ${signedHours(d.std||0)}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">
+            <button class="btn" onclick="printCorrectionAddendum('${c.id}')">${c.confirmedAt?'Reprint exact addendum':'Preview / Print addendum'}</button>
+            ${!c.confirmedAt?`<button class="btn primary" ${ready?'':'disabled'} onclick="confirmCorrectionAddendum('${c.id}')">Confirm printed & signed</button>
+            <button class="btn dangerbtn" onclick="discardPendingCorrection('${c.id}')">Discard proposal</button>`:''}
+            <button class="btn" onclick="flight('${c.flightId}')">View entry</button>
+          </div>
+        </div>`;
+      }).join(''):'<div class="muted">No corrections recorded. Open an archived flight or simulator session to propose a correction.</div>'}
+      ${unappliedCorrections().length?`<div class="note">There are ${unappliedCorrections().length} confirmed correction(s) not yet carried into a new printed batch. The next batch will show their adjustments. Keep the signed addenda with the paper logbook.</div>`:''}
+    </div>
+    <div class="card" style="margin-top:16px">
       <div class="head"><h2>Confirmed print history</h2></div>
       ${batches.length?[...batches].reverse().map(b=>`
         <div class="archive-entry" style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--line);padding:12px 0">
@@ -2529,7 +2639,7 @@ function printarchive(){
         </div>`).join(''):
         '<p class="muted">No confirmed batches yet. Previewing or saving a PDF does not mark flights as archived.</p>'}
     </div>
-    <div class="note" style="margin-top:16px"><b>Important:</b> This is a local record of manually confirmed paper printouts, not proof that a printer completed a job or that the CAA approved the logbook. Keep the signed pages and full JSON backups. Confirm acceptance and countersignature requirements with your licensing authority. Corrections to confirmed pages require a separate traceable amendment workflow.</div>`;
+    <div class="note" style="margin-top:16px"><b>Important:</b> This is a local record of manually confirmed paper printouts, not proof that a printer completed a job or that the CAA approved the logbook. Keep the signed pages and full JSON backups. Confirm acceptance and countersignature requirements with your licensing authority. V1.43 corrections use a separate signed addendum; the original print batch is immutable. This does not certify compliance with your aviation authority's correction procedures.</div>`;
 }
 
 function isSimulatorSession(f){return f?.entryType==='simulator';}
