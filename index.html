@@ -1302,11 +1302,60 @@ function inspectHeliLogData(data){
       else seenSignatures.set(sig,f.id);
     }
   }
+  const corrections=data.printArchive?.corrections||[];
   const batches=data.printArchive?.batches;
+  if(!Array.isArray(corrections)){
+    errors.push('Archive correction ledger is malformed.');
+  }else{
+    const correctionIDs=new Set(),lastConfirmed=new Map();
+    for(const c of corrections){
+      if(!c||!c.id||!c.flightId||!c.before||!c.after||!c.reason||!c.createdAt){
+        errors.push('An archive correction record is incomplete.');continue;
+      }
+      if(correctionIDs.has(c.id))errors.push('Duplicate correction ID: '+c.id);
+      correctionIDs.add(c.id);
+      const archivedBatch=Array.isArray(batches)?batches.find(b=>b.id===c.sourceBatch):null;
+      const index=archivedBatch?.flightIds?.indexOf(c.flightId)??-1;
+      if(index<0)errors.push('Correction '+c.id+' does not reference an archived entry.');
+      else if(c.sourcePage!==archivedBatch.firstPage+Math.floor(index/LOGBOOK_ROWS_PER_PAGE)
+          ||c.sourceRow!==(index%LOGBOOK_ROWS_PER_PAGE)+1)
+        errors.push('Correction '+c.id+' has an invalid source page or row.');
+      if(c.before.id!==c.flightId||c.after.id!==c.flightId)
+        errors.push('Correction '+c.id+' has mismatched record IDs.');
+      if(isSimulatorSession(c.before)!==isSimulatorSession(c.after))
+        errors.push('Correction '+c.id+' cannot convert a flight into a simulator or vice versa.');
+      if(!correctionDifferences(c.before,c.after).length)
+        errors.push('Correction '+c.id+' has no changed fields.');
+      if(c.confirmedAt){
+        const prior=lastConfirmed.get(c.flightId)||
+          archivedBatch?.flights?.[index];
+        if(prior&&correctionDifferences(prior,c.before).length)
+          errors.push('Correction '+c.id+' does not chain from the previous confirmed value.');
+        lastConfirmed.set(c.flightId,c.after);
+      }else warnings.push('Pending unsigned correction addendum: '+c.id+'.');
+      const revised=c.after;
+      if(!parseExternalDate(revised.date))errors.push('Correction '+c.id+' has an invalid revised date.');
+      if(isSimulatorSession(revised)){
+        if(!Number.isSafeInteger(revised.stdMin)||revised.stdMin<=0)
+          errors.push('Correction '+c.id+' has invalid simulator time.');
+      }else{
+        const mins=Number(revised.mins);
+        if(!Number.isSafeInteger(mins)||mins<=0)
+          errors.push('Correction '+c.id+' has invalid revised flight time.');
+        for(const field of ['nightMin','ifrMin','instrMin']){
+          const n=Number(revised[field]||0);
+          if(!Number.isSafeInteger(n)||n<0||n>mins)
+            errors.push('Correction '+c.id+' has invalid '+field+'.');
+        }
+        const opsCheck=validSpecialOps(revised.specialOps,mins);
+        if(!opsCheck.valid)errors.push('Correction '+c.id+': '+opsCheck.error);
+      }
+    }
+  }
   if(batches!==undefined&&!Array.isArray(batches)){
     errors.push('Print archive batches are malformed.');
   }else if(Array.isArray(batches)){
-    const archivedIDs=new Set();
+    const archivedIDs=new Set(),appliedIDs=new Set();
     let previous=null;
     for(const b of batches){
       if(!b||!Array.isArray(b.flightIds)||!Array.isArray(b.flights)||!b.openingTotals||!b.closingTotals||
@@ -1322,10 +1371,27 @@ function inspectHeliLogData(data){
         if(Number(expectedClosing[field]||0)!==Number(b.closingTotals[field]||0))
           errors.push('Archive '+b.id+' closing '+field+' does not match its printed flights.');
       }
+      const ids=b.correctionsApplied||[];
+      if(!Array.isArray(ids))errors.push('Archive '+b.id+' correction references are malformed.');
+      const items=Array.isArray(ids)?ids.map(id=>corrections.find(c=>c.id===id)).filter(Boolean):[];
+      if(Array.isArray(ids)){
+        for(const id of ids){
+          if(appliedIDs.has(id))errors.push('Correction '+id+' was carried into multiple archive batches.');
+          appliedIDs.add(id);
+          const c=corrections.find(x=>x.id===id);
+          if(!c?.confirmedAt)errors.push('Archive '+b.id+' includes an unconfirmed or missing correction '+id+'.');
+        }
+      }
+      const expectedAdjustment=sumCorrectionDeltas(items,data.aircraft);
+      for(const field of ['total','pic','dual','copilot','spSE','spME','multi','night','ifr','instructor','toDay','toNight','ldgDay','ldgNight','std']){
+        if(Number(b.openingCorrectionsDelta?.[field]||0)!==Number(expectedAdjustment[field]||0))
+          errors.push('Archive '+b.id+' correction adjustment '+field+' is inconsistent.');
+      }
       if(previous){
         if(b.firstPage!==previous.firstPage+previous.pageCount)errors.push('Archive page numbering is discontinuous at '+b.id+'.');
-        for(const field of ['total','pic','dual','copilot','spSE','spME','multi','night','ifr','toDay','toNight','ldgDay','ldgNight','std']){
-          if(Number(b.openingTotals[field]||0)!==Number(previous.closingTotals[field]||0))
+        const expectedOpening=addExportTotals(previous.closingTotals,expectedAdjustment);
+        for(const field of ['total','pic','dual','copilot','spSE','spME','multi','night','ifr','instructor','toDay','toNight','ldgDay','ldgNight','std']){
+          if(Number(b.openingTotals[field]||0)!==Number(expectedOpening[field]||0))
             errors.push('Archive '+b.id+' has mismatched carried-forward '+field+' totals.');
         }
       }
@@ -2272,6 +2338,7 @@ function recordArchiveCorrection(id,after,reason){
   const item={
     id:'COR-'+Date.now()+'-'+Math.random().toString(36).slice(2,6).toUpperCase(),
     flightId:id,sourceBatch:source.batch.id,sourcePage:source.page,sourceRow:source.row,
+    pilot:JSON.parse(JSON.stringify(source.batch.pilot||{name:S.pilot.name||''})),
     before,after:proposed,reason:String(reason).trim(),createdAt:new Date().toISOString(),confirmedAt:''
   };
   S.printArchive.corrections.push(item);
@@ -2490,8 +2557,8 @@ function printCorrectionAddendum(id){
     <b>Original source:</b> ${htmlEscape(c.sourceBatch)} — Page ${c.sourcePage}, row ${c.sourceRow}<br>
     <b>Flight/session ID:</b> ${htmlEscape(c.flightId)}<br>
     <b>Created:</b> ${htmlEscape(formatDateTime(c.createdAt))}<br>
-    <b>Status:</b> ${c.confirmedAt?'Confirmed '+htmlEscape(formatDateTime(c.confirmedAt)):'PENDING — NOT YET CONFIRMED'}<br>
-    <b>Pilot:</b> ${htmlEscape(S.pilot.name||'')}
+    <b>Document:</b> Correction addendum to be signed and retained<br>
+    <b>Pilot:</b> ${htmlEscape(c.pilot?.name||'')}
   </div>
   <h2>Reason for correction</h2><p>${htmlEscape(c.reason)}</p>
   <h2>Original versus revised entry</h2>
