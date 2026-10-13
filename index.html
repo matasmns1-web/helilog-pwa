@@ -1728,6 +1728,24 @@ function exportPrintableLogbook(options={}){
 
 let pendingArchivePreview=null;
 
+// A fresh HeliLog installation ships with example flights. Never certify those
+// as actual flying. Match against unchanged seeded values, not merely IDs.
+function isUnchangedDemoFlight(f){
+  const sample=seed.flights.find(x=>x.id===f.id);
+  return !!sample &&
+    ['date','aid','dep','arr','off','on','mins','role'].every(k=>String(f[k]??'')===String(sample[k]??''));
+}
+function removeUnchangedDemoFlights(){
+  const ids=new Set(S.flights.filter(f=>isUnchangedDemoFlight(f)&&!isArchivedFlight(f.id)).map(f=>f.id));
+  if(!ids.size)return;
+  const ok=confirm('Delete '+ids.size+' unchanged HeliLog demonstration flight(s)?\\n\\nThese were example entries supplied with the prototype, not real flight records. Only entries still matching the original examples will be deleted. Create a full backup first if you might want them later.');
+  if(!ok)return;
+  S.flights=S.flights.filter(f=>!ids.has(f.id));
+  pendingArchivePreview=null;
+  save();
+  printarchive();
+}
+
 function archivedBatches(){return S.printArchive?.batches||[]}
 function archivedFlightIds(){
   return new Set(archivedBatches().flatMap(b=>Array.isArray(b.flightIds)?b.flightIds:[]));
@@ -1758,7 +1776,8 @@ function nextArchiveDraft(){
     openingTotals,flightTotals,closingTotals,
     paperReference:S.printArchive.paperReference,
     lastFlightDate:flights.length?flights[flights.length-1].date:lastDate,
-    lateCount:lateFlights.length
+    lateCount:lateFlights.length,
+    demoCount:flights.filter(isUnchangedDemoFlight).length
   };
 }
 function archiveRange(d){
@@ -1829,6 +1848,10 @@ function confirmPrintedArchive(){
     return;
   }
   if(!draft.flights.length)return;
+  if(draft.demoCount){
+    alert('This batch still includes '+draft.demoCount+' unchanged demonstration flight(s). Remove them from your logbook before confirming an official signed paper archive.');
+    return;
+  }
   const lateNotice=draft.lateCount
     ? '\nWARNING: '+draft.lateCount+' new flight(s) have dates before the previous archived batch. Verify their placement and annotate them as late entries.\n'
     : '';
@@ -1895,6 +1918,11 @@ function printarchive(){
       <div class="mini" style="margin-top:10px">By default, HeliLog starts a new printed volume at Page 1 and carries forward the imported totals from your earlier paper logbook. Keep the original handwritten logbook. Print archives and confirmation records live in this browser and are included in Full Backup.</div>
     </div>
     ${archiveSummaryMarkup(draft)}
+    ${draft.demoCount?`<div class="note" style="margin-top:14px;border-color:#b42318">
+       <b>Example flights detected:</b> ${draft.demoCount} unchanged demonstration entries are present in this print batch.
+       Do not sign these as genuine flight records. You may preview the layout, but archive confirmation is blocked until they are removed.
+       <div style="margin-top:10px"><button class="btn" onclick="removeUnchangedDemoFlights()">Remove unchanged demo flights</button></div>
+     </div>`:''}
     ${draft.lateCount?`<div class="note" style="margin-top:14px;border-color:#dd9b2b"><b>Late entries:</b> ${draft.lateCount} unarchived flight(s) are older than the last archived flight. They will appear in this later batch, not between already signed pages. Check and annotate them before printing.</div>`:''}
     <div class="card" style="margin-top:16px">
       <div class="head"><h2>Next print batch</h2></div>
