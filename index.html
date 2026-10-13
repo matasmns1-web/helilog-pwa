@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V1.40 PWA Prototype</title>
+<title>HeliLog V1.41 PWA Prototype</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -240,7 +240,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:11px 9px;
 @media(max-width:850px){.dashboard-actions{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style></head>
 <body><div class="layout">
-<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V1.40</span></div><nav>
+<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V1.41</span></div><nav>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="aircraft">🚁 Aircraft</button><button data-v="pilots">👤 Pilots</button><button data-v="endorsements">✎ Endorsements</button><button data-v="printarchive">▤ Print archive</button><button data-v="totals">◉ Totals</button><button data-v="profile">○ Profile</button>
 </nav></aside><main id="app"></main>
 <div class="mobile">
@@ -2202,6 +2202,79 @@ function printarchive(){
     <div class="note" style="margin-top:16px"><b>Important:</b> This is a local record of manually confirmed paper printouts, not proof that a printer completed a job or that the CAA approved the logbook. Keep the signed pages and full JSON backups. Confirm acceptance and countersignature requirements with your licensing authority. Corrections to confirmed pages require a separate traceable amendment workflow.</div>`;
 }
 
+function isSimulatorSession(f){return f?.entryType==='simulator';}
+function simulatorDeviceLabel(f){return [f.simCategory,f.simDevice,f.simQualification?'('+f.simQualification+')':''].filter(Boolean).join(' ');}
+function addSimulator(editId=null){
+  if(editId && isArchivedFlight(editId)){alert('Archived simulator sessions are read-only.');return;}
+  editingFlightId=editId||null;
+  const old=editId?S.flights.find(f=>f.id===editId):null;
+  if(editId && !isSimulatorSession(old))return;
+  app.innerHTML=header(old?'Edit simulator session':'Add simulator session',
+    'A synthetic training device session is not a helicopter flight.',
+    `<button class="btn" onclick="cancelFlightForm('${old?.id||''}')">Cancel</button>`)+
+    `<form class="card form" id="flightForm" novalidate><div id="formError" class="errorbox"></div>
+       ${!old?`<div class="choice-row" style="margin-bottom:16px"><button class="btn" type="button" onclick="if(confirmLeaveFlightForm()){clearFlightFormGuard();add()}">Helicopter flight</button><button class="btn primary" type="button">Simulator session ✓</button></div>`:''}
+       <div class="section-title">Synthetic training device session</div>
+       <div class="formgrid">
+         <div class="field"><label>Session date</label><input type="date" id="simDate" value="${htmlEscape(old?.date||new Date().toISOString().slice(0,10))}"></div>
+         <div class="field"><label>Device category</label><select id="simCategory">
+           ${['FNPT I','FNPT II','FTD','FFS','FS','Other'].map(c=>`<option value="${c}"${(old?.simCategory||'FNPT II')===c?' selected':''}>${c}</option>`).join('')}
+         </select></div>
+         <div class="field"><label>Device / aircraft type</label><input id="simDevice" maxlength="90" placeholder="e.g. H135, AW139, B747-400" value="${htmlEscape(old?.simDevice||'')}"></div>
+         <div class="field"><label>Device qualification / ID (optional)</label><input id="simQualification" maxlength="60" placeholder="e.g. Q1234" value="${htmlEscape(old?.simQualification||'')}"></div>
+         <div class="field"><label>Total time of session (H:MM)</label><input id="simDuration" inputmode="decimal" placeholder="2:30" value="${old?fmt(old.stdMin||0):''}">
+           <div class="mini">Include associated pre- and after-flight checks, per the paper-logbook instructions.</div></div>
+       </div>
+       <div class="field" style="margin-top:12px"><label>Exercise / proficiency check / remarks</label>
+         <textarea id="simRemarks" placeholder="e.g. IR(H) procedures, proficiency check, revalidation">${htmlEscape(old?.remarks||'')}</textarea></div>
+       <div class="note">Only the Synthetic Training Devices Session and Remarks columns are filled on paper. Departure, arrival, aircraft flight time, PIC time and take-offs/landings remain blank.</div>
+       <div class="actions"><button class="btn" type="button" onclick="cancelFlightForm('${old?.id||''}')">Cancel</button>
+         <button class="btn primary" type="button" onclick="saveSimulatorSession()">${old?'Save session':'Save simulator session'}</button></div>
+     </form>`;
+  const form=document.getElementById('flightForm');
+  form.addEventListener('input',markFlightFormDirty);
+  form.addEventListener('change',markFlightFormDirty);
+  flightFormDirty=false;
+}
+function saveSimulatorSession(){
+  if(editingFlightId&&isArchivedFlight(editingFlightId)){alert('Archived simulator sessions cannot be edited.');return;}
+  clearFormError();
+  const date=$('#simDate').value,category=$('#simCategory').value,device=$('#simDevice').value.trim(),
+    qualification=$('#simQualification').value.trim(),remarks=$('#simRemarks').value.trim();
+  const time=parseBroughtForwardMinutes($('#simDuration').value);
+  if(!parseExternalDate(date))return showFormError('Select a valid simulator session date.');
+  if(!device)return showFormError('Enter the simulator device or aircraft type.');
+  if(time===null||!Number.isSafeInteger(time)||time<=0)return showFormError('Enter positive simulator time in H:MM format.');
+  const old=editingFlightId?S.flights.find(f=>f.id===editingFlightId):null;
+  if(editingFlightId&&!isSimulatorSession(old))return showFormError('Cannot convert a flight into a simulator session.');
+  const entry={
+    id:old?.id||'sim'+Date.now()+Math.random().toString(36).slice(2,8),
+    entryType:'simulator',date,simCategory:category,simDevice:device,simQualification:qualification,
+    stdType:[category,device,qualification?'('+qualification+')':''].filter(Boolean).join(' '),stdMin:time,
+    mins:0,aid:'',dep:'',off:'',arr:'',on:'',role:'',picName:'',nightMin:0,ifrMin:0,
+    takeoffDay:0,takeoffNight:0,landingDay:0,landingNight:0,crossCountry:false,specialOps:{},remarks,
+    createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()
+  };
+  if(old)S.flights[S.flights.findIndex(f=>f.id===old.id)]=entry;else S.flights.push(entry);
+  if(!save())return;
+  const id=entry.id;editingFlightId=null;clearFlightFormGuard();flight(id);
+}
+function simulatorDetails(id){
+  const f=S.flights.find(x=>x.id===id);
+  if(!isSimulatorSession(f))return go('logbook');
+  editingFlightId=null;
+  app.innerHTML=header('Simulator session',formatDate(f.date)+' · '+htmlEscape(f.simCategory),
+  `<div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn" onclick="go('logbook')">← Logbook</button>
+    <button class="btn primary" onclick="editFlight('${f.id}')">Edit session</button>
+    <button class="btn dangerbtn" onclick="openDeleteModal('${f.id}')">Delete session</button></div>`)+
+    `<div class="card"><h2>${htmlEscape(simulatorDeviceLabel(f))}</h2>
+     <div class="grid stats">
+       <div class="card"><div class="label">Simulator session</div><div class="big">${fmt(f.stdMin)}</div></div>
+       <div class="card"><div class="label">Actual flight time</div><div class="big">0:00</div></div>
+     </div><p><b>Exercise / remarks</b></p><p>${htmlEscape(f.remarks||'—')}</p>
+     <p class="mini">Printed only in Synthetic Training Devices and Remarks columns. Does not add to actual helicopter flight time.</p></div>`;
+}
 function add(editId=null){
 if(editId && isArchivedFlight(editId)){
   alert('This flight is already included in a confirmed, signed paper-logbook batch. It is read-only to preserve the archived pages. Corrections will require an amendment or replacement-page workflow.');
@@ -2219,6 +2292,10 @@ app.innerHTML=header(
 <div id="formError" class="errorbox"></div>
 ${editing?`<div class="editnotice">You are editing an existing V1 record. Formal correction history and post-certification audit controls will be introduced in V2.</div>`:''}
 
+${!editing?`<div class="choice-row" style="margin-bottom:16px">
+   <button class="btn primary" type="button">Helicopter flight ✓</button>
+   <button class="btn" type="button" onclick="if(confirmLeaveFlightForm()){clearFlightFormGuard();addSimulator()}">Simulator session</button>
+ </div>`:''}
 <div class="section-title">Flight identification</div>
 <div class="formgrid">
   <div class="field"><label>Date</label><input id="date" type="date"></div>
@@ -2450,7 +2527,9 @@ function editFlight(id){
     alert('This flight belongs to a confirmed print archive and cannot be edited silently. A traceable correction workflow is planned.');
     return;
   }
-  add(id);
+  const entry=S.flights.find(f=>f.id===id);
+  if(isSimulatorSession(entry))addSimulator(id);
+  else add(id);
 }
 function populateTimePicker(hourId, minuteId){
   let h=document.getElementById(hourId), m=document.getElementById(minuteId);
@@ -2656,7 +2735,7 @@ function saveFlight(){
   clearFlightFormGuard();
   flight(f.id);
 }
-function flight(id){editingFlightId=null;let f=S.flights.find(x=>x.id===id),a=ac(f.aid);app.innerHTML=header('Flight details',`${formatDate(f.date)} · ${a.icao}`,`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="go('logbook')">← Logbook</button><button class="btn primary" onclick="editFlight('${id}')">Edit flight</button><button class="btn dangerbtn" onclick="openDeleteModal('${id}')">Delete flight</button></div>`)+`<div class="card">
+function flight(id){const entry=S.flights.find(x=>x.id===id);if(isSimulatorSession(entry))return simulatorDetails(id);editingFlightId=null;let f=entry,a=ac(f.aid);app.innerHTML=header('Flight details',`${formatDate(f.date)} · ${a.icao}`,`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="go('logbook')">← Logbook</button><button class="btn primary" onclick="editFlight('${id}')">Edit flight</button><button class="btn dangerbtn" onclick="openDeleteModal('${id}')">Delete flight</button></div>`)+`<div class="card">
 <div class="icao">${a.icao}</div><div class="muted">${a.reg} · ${a.manufacturer} ${a.model} ${a.variant}</div>
 <h2 style="margin-top:22px">${f.dep} ${f.off||''} → ${f.arr} ${f.on||''}</h2>
 <div class="kpi-grid"><div class="card"><div class="label">Total time</div><div class="big">${fmt(f.mins)}</div></div><div class="card"><div class="label">Pilot function</div><div class="big" style="font-size:20px">${f.role}</div></div><div class="card"><div class="label">Night</div><div class="big">${fmt(f.nightMin||0)}</div></div><div class="card"><div class="label">IFR</div><div class="big">${fmt(f.ifrMin||0)}</div></div></div>
@@ -2677,7 +2756,7 @@ function openDeleteModal(id){
   let a=ac(f.aid);
   let modal=document.getElementById('deleteModal');
   let textEl=document.getElementById('deleteText');
-  textEl.textContent=`Delete ${formatDate(f.date)} · ${a?.icao||'aircraft'} · ${f.dep} → ${f.arr} · ${fmt(f.mins)}? This removes the flight from the V1 prototype.`;
+  textEl.textContent=isSimulatorSession(f)?`Delete simulator session ${formatDate(f.date)} · ${simulatorDeviceLabel(f)} · ${fmt(f.stdMin)}?`:`Delete ${formatDate(f.date)} · ${a?.icao||'aircraft'} · ${f.dep} → ${f.arr} · ${fmt(f.mins)}? This removes the flight from the V1 prototype.`;
   modal.classList.add('open');
 }
 function closeDeleteModal(){
@@ -3485,7 +3564,7 @@ function profile(){
     <div class="install-help" style="margin-top:10px">On iPhone/iPad, open the hosted HeliLog site in Safari, use <b>Share → Add to Home Screen</b>. Full offline PWA support requires HeliLog to be served over HTTPS. Opening this prototype directly as a file still works for testing, but it cannot register the offline service worker.</div>
   </div>
 
-  <div class="note" style="margin-top:16px">Profile, licence, rating and medical information in V1.40 is for record keeping and PDF identification only. Automatic EASA validity, recency and expiry calculations are planned for a later version.</div>`;
+  <div class="note" style="margin-top:16px">Profile, licence, rating and medical information in V1.41 is for record keeping and PDF identification only. Automatic EASA validity, recency and expiry calculations are planned for a later version.</div>`;
   updatePWAStatus();
 }
 
@@ -3513,7 +3592,7 @@ async function makeFullBackup(){
     app:'HeliLog',
     format:'helilog-full-backup',
     backupSchema:2,
-    appVersion:'1.40',
+    appVersion:'1.41',
     exportedAt:new Date().toISOString(),
     integrity:{algorithm:'SHA-256',sha256:await sha256Hex(JSON.stringify(data))},
     data
