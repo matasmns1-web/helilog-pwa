@@ -1302,9 +1302,10 @@ function inspectHeliLogData(data){
       else seenSignatures.set(sig,f.id);
     }
   }
-  const corrections=data.printArchive?.corrections||[];
+  const rawCorrections=data.printArchive?.corrections;
+  const corrections=Array.isArray(rawCorrections)?rawCorrections:[];
   const batches=data.printArchive?.batches;
-  if(!Array.isArray(corrections)){
+  if(rawCorrections!==undefined&&!Array.isArray(rawCorrections)){
     errors.push('Archive correction ledger is malformed.');
   }else{
     const correctionIDs=new Set(),lastConfirmed=new Map();
@@ -1338,6 +1339,8 @@ function inspectHeliLogData(data){
       if(isSimulatorSession(revised)){
         if(!Number.isSafeInteger(revised.stdMin)||revised.stdMin<=0)
           errors.push('Correction '+c.id+' has invalid simulator time.');
+        if(!String(revised.simDevice||'').trim()&&!String(revised.simCategory||'').startsWith('FNPT'))
+          errors.push('Correction '+c.id+' lacks its simulator device/type.');
       }else{
         const mins=Number(revised.mins);
         if(!Number.isSafeInteger(mins)||mins<=0)
