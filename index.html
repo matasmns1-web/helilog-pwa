@@ -1109,9 +1109,9 @@ const IMPORT_HEADERS=[
   'pilot_configuration','total_time',
   'pilot_function','pic_name','takeoffs_day','takeoffs_night',
   'landings_day','landings_night','night_time','ifr_time',
-  'cross_country','remarks'
+  'cross_country','remarks','special_ops'
 ];
-const OPTIONAL_IMPORT_HEADERS=['engine_configuration','pilot_configuration'];
+const OPTIONAL_IMPORT_HEADERS=['engine_configuration','pilot_configuration','special_ops'];
 const LEGACY_CONFIG_HEADERS=['single_pilot_se_time','single_pilot_me_time','multi_pilot_time'];
 
 // A conservative identity test: same date, aircraft registration, route and both
@@ -1294,7 +1294,7 @@ function csvEscape(v){
 function downloadImportTemplate(){
   let sample=[
     IMPORT_HEADERS,
-    ['02-10-2026','G2CA','LY-XYZ','Guimbal','Cabri','G2','SE','EYVI','0935','EYKA','1055','single-pilot','1:20','PIC','Matas','1','0','1','0','0:00','0:00','yes','Example cross-country flight']
+    ['02-10-2026','G2CA','LY-XYZ','Guimbal','Cabri','G2','SE','EYVI','0935','EYKA','1055','single-pilot','1:20','PIC','Matas','1','0','1','0','0:00','0:00','yes','Example cross-country flight','{}']
   ];
   let csv=sample.map(r=>r.map(csvEscape).join(',')).join('\r\n');
   let b=new Blob([csv],{type:'text/csv;charset=utf-8'});
@@ -1337,6 +1337,15 @@ async function handleCSVFile(e){
       let legacyMulti=parseDuration(get('multi_pilot_time'));
       let total=parseDuration(get('total_time')), night=parseDuration(get('night_time')), ifr=parseDuration(get('ifr_time'));
       let xc=parseBoolean(get('cross_country'));
+      let specialOps={};
+      if(get('special_ops')){
+        try{
+          const data=JSON.parse(get('special_ops'));
+          const checked=validSpecialOps(data,total);
+          if(!checked.valid)errors.push('Row '+rowNo+': '+checked.error);
+          else specialOps=checked.ops;
+        }catch(e){errors.push('Row '+rowNo+': invalid special_ops JSON.');}
+      }
       let role=get('pilot_function').toUpperCase();
 
       let engineRaw=get('engine_configuration').toLowerCase();
@@ -1398,7 +1407,7 @@ async function handleCSVFile(e){
         landingDay:Number(get('landings_day')||0),
         landingNight:Number(get('landings_night')||0),
         nightMin:night,ifrMin:ifr,crossCountry:xc,
-        remarks:get('remarks')
+        specialOps,remarks:get('remarks')
       });
     });
 
@@ -1468,7 +1477,7 @@ function confirmCSVImport(){
       nightMin:item.nightMin,ifrMin:item.ifrMin,
       takeoffDay:item.takeoffDay,takeoffNight:item.takeoffNight,
       landingDay:item.landingDay,landingNight:item.landingNight,
-      crossCountry:item.crossCountry,remarks:item.remarks,
+      crossCountry:item.crossCountry,remarks:item.remarks,specialOps:item.specialOps||{},
       instrMin:0,stdType:'',stdMin:0,
       createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()
     });
@@ -1547,7 +1556,8 @@ function exportLogbookCSV(){
       durationForExport(f.nightMin),
       durationForExport(f.ifrMin),
       f.crossCountry?'yes':'no',
-      f.remarks||''
+      f.remarks||'',
+      JSON.stringify(f.specialOps||{})
     ]);
   });
 
@@ -1713,7 +1723,7 @@ function exportPrintableLogbook(options={}){
       <td>${htmlEscape(f.stdType||'')}</td>
       <td class="num">${Number(f.stdMin||0)>0?fmt(f.stdMin):''}</td>
 
-      <td class="remarks">${htmlEscape(f.remarks||'')}</td>
+      <td class="remarks">${htmlEscape(flightRemarksForDisplay(f))}</td>
     </tr>`;
   }
 
@@ -3145,7 +3155,7 @@ function applyEndorsementSignature(id){
 }
 
 function totals(){
-  let t=calcTotals(),by=combinedTotalsByType();
+  let t=calcTotals(),by=combinedTotalsByType(),opsTotals=specialisedTotals();
   app.innerHTML=header('Totals','Your combined career totals')+
   `<div class="grid stats">${[['Total',t.total],['PIC',t.pic],['Co-pilot',t.copilot],['Dual',t.dual]].map(x=>`<div class="card"><div class="label">${x[0]}</div><div class="big">${fmt(x[1])}</div></div>`).join('')}</div>
   <div class="grid two" style="margin-top:16px">
