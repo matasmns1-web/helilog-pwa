@@ -1128,7 +1128,7 @@ function flightFingerprint(date,registration,departure,off,arrival,on){
 }
 function simulatorFingerprint(date,category,device,qualification,minutes,remarks){
   const clean=v=>String(v??'').trim().toUpperCase().replace(/\s+/g,' ');
-  if(!date||!device||!Number.isSafeInteger(Number(minutes))||Number(minutes)<=0)return '';
+  if(!date||(!device&&!category)||!Number.isSafeInteger(Number(minutes))||Number(minutes)<=0)return '';
   return ['SIM',date,category,device,qualification,minutes,remarks].map(clean).join('|');
 }
 function flightFingerprintForRecord(f,data=S){
@@ -1167,7 +1167,7 @@ function inspectHeliLogData(data){
         else seenSignatures.set(simKey,f.id);
       }
       if(!parseExternalDate(f.date))errors.push('Simulator '+label+' has an invalid date.');
-      if(!String(f.simDevice||'').trim())errors.push('Simulator '+label+' has no device/type.');
+      if(!String(f.simDevice||'').trim()&&!String(f.simCategory||'').startsWith('FNPT'))errors.push('Simulator '+label+' has no device/type.');
       if(!Number.isSafeInteger(f.stdMin)||f.stdMin<=0)errors.push('Simulator '+label+' has an invalid session time.');
       if(Number(f.mins||0)!==0)errors.push('Simulator '+label+' must have zero actual flight time.');
       continue;
@@ -1380,7 +1380,7 @@ async function handleCSVFile(e){
         const device=get('sim_device');
         const qualification=get('sim_qualification');
         if(!date)errors.push('Row '+rowNo+': simulator session date must be DD-MM-YYYY.');
-        if(!device)errors.push('Row '+rowNo+': simulator device/type is required.');
+        if(!device && !category.startsWith('FNPT'))errors.push('Row '+rowNo+': simulator device/type is required for FS/FFS/FTD.');
         if(duration===null||!Number.isSafeInteger(duration)||duration<=0)
           errors.push('Row '+rowNo+': simulator session duration is invalid.');
         parsed.push({entryType:'simulator',date,simCategory:category,simDevice:device,
@@ -2306,7 +2306,7 @@ function addSimulator(editId=null){
          <div class="field"><label>Device category</label><select id="simCategory">
            ${['FNPT I','FNPT II','FTD','FFS','FS','Other'].map(c=>`<option value="${c}"${(old?.simCategory||'FNPT II')===c?' selected':''}>${c}</option>`).join('')}
          </select></div>
-         <div class="field"><label>Device / aircraft type</label><input id="simDevice" maxlength="90" placeholder="e.g. H135, AW139, B747-400" value="${htmlEscape(old?.simDevice||'')}"></div>
+         <div class="field"><label>Device / aircraft type (required for FS/FFS/FTD)</label><input id="simDevice" maxlength="90" placeholder="e.g. H135, AW139, B747-400" value="${htmlEscape(old?.simDevice||'')}"></div>
          <div class="field"><label>Device qualification / ID (optional)</label><input id="simQualification" maxlength="60" placeholder="e.g. Q1234" value="${htmlEscape(old?.simQualification||'')}"></div>
          <div class="field"><label>Total time of session (H:MM)</label><input id="simDuration" inputmode="decimal" placeholder="2:30" value="${old?fmt(old.stdMin||0):''}">
            <div class="mini">Include associated pre- and after-flight checks, per the paper-logbook instructions.</div></div>
@@ -2329,7 +2329,7 @@ function saveSimulatorSession(){
     qualification=$('#simQualification').value.trim(),remarks=$('#simRemarks').value.trim();
   const time=parseBroughtForwardMinutes($('#simDuration').value);
   if(!parseExternalDate(date))return showFormError('Select a valid simulator session date.');
-  if(!device)return showFormError('Enter the simulator device or aircraft type.');
+  if(!device && !category.startsWith('FNPT'))return showFormError('Enter the simulator device or aircraft type (required for FS/FFS/FTD).');
   if(time===null||!Number.isSafeInteger(time)||time<=0)return showFormError('Enter positive simulator time in H:MM format.');
   const old=editingFlightId?S.flights.find(f=>f.id===editingFlightId):null;
   if(editingFlightId&&!isSimulatorSession(old))return showFormError('Cannot convert a flight into a simulator session.');
