@@ -879,12 +879,12 @@ function compareFlightsNewest(a,b){
 }
 function compareFlightsOldest(a,b){return compareFlightsNewest(b,a)}
 function dashboardPeriodFlights(days){
-  if(!days) return [...S.flights];
+  if(!days) return S.flights.filter(f=>!isSimulatorSession(f));
   let now=new Date();
   let cutoff=new Date(now.getFullYear(),now.getMonth(),now.getDate());
   cutoff.setDate(cutoff.getDate()-(days-1));
   let cutoffStr=cutoff.toISOString().slice(0,10);
-  return S.flights.filter(f=>String(f.date||'')>=cutoffStr);
+  return S.flights.filter(f=>!isSimulatorSession(f)&&String(f.date||'')>=cutoffStr);
 }
 function dashboardPeriodTotals(flights){
   return {
@@ -922,7 +922,7 @@ function setDashboardRange(days,button){
   document.querySelectorAll('.dashboard-range button').forEach(b=>b.classList.toggle('on',b===button));
 }
 function dashboard(){
-  let fs=[...S.flights].sort(compareFlightsNewest);
+  let fs=S.flights.filter(f=>!isSimulatorSession(f)).sort(compareFlightsNewest);
   let t=calcTotals();
   let reminders=dashboardReminders().slice(0,6);
   let endorsements=[...(S.endorsements||[])].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,4);
@@ -992,7 +992,7 @@ function dashboard(){
     </div>
   </div>`;
 }
-function row(f){let a=ac(f.aid);return `<tr class="click" onclick="flight('${f.id}')"><td>${displayDate(f.date)}</td><td><b>${a?.icao||'—'}</b></td><td>${f.dep} → ${f.arr}</td><td>${fmt(f.mins)}</td><td><span class="tag">${f.role}</span></td></tr>`}
+function row(f){let a=ac(f.aid);return `<tr class="click" onclick="flight('${f.id}')"><td>${displayDate(f.date)}</td><td><b>${isSimulatorSession(f)?'SIM':a?.icao||'—'}</b></td><td>${isSimulatorSession(f)?htmlEscape(f.stdType):f.dep+' → '+f.arr}</td><td>${fmt(isSimulatorSession(f)?f.stdMin:f.mins)}</td><td><span class="tag">${isSimulatorSession(f)?'SIM':f.role}</span></td></tr>`}
 function logbook(){
   let aircraftOptions=S.aircraft.map(a=>`<option value="${a.id}">${a.icao} — ${a.reg}</option>`).join('');
   app.innerHTML=header('Logbook',isInstalledTouchApp()?'View your flight records':'Search and filter your flight records',`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn desktop-only web-only-tool" onclick="openImportModal()">Import CSV</button><button class="btn desktop-only web-only-tool" onclick="openExportModal()">Export</button><button class="btn primary" onclick="go('add')">＋ Add flight</button></div>`)+`
@@ -1020,6 +1020,7 @@ function logbook(){
       <div><span id="resultCount" class="resultcount">0 flights</span> shown</div>
       <div class="filtertotals">
         <span>${isInstalledTouchApp()?'Logbook flight time':'Filtered flight time'}: <b id="filteredTime">0:00</b></span>
+        <span>Simulator: <b id="filteredSimulatorTime">0:00</b></span>
         <span id="filteredIFRWrap" style="display:none">Filtered IFR time: <b id="filteredIFRTime">0:00</b></span>
         <span id="filteredNightWrap" style="display:none">Filtered Night time: <b id="filteredNightTime">0:00</b></span>
       </div>
@@ -1046,7 +1047,7 @@ function getFilteredFlights(){
   return [...S.flights].filter(f=>{
     let a=ac(f.aid);
     let searchable=[
-      f.date,f.dep,f.arr,f.off,f.on,f.picName,f.role,flightRemarksForDisplay(f),
+      f.date,f.dep,f.arr,f.off,f.on,f.picName,f.role,f.simCategory,f.simDevice,f.simQualification,f.stdType,flightRemarksForDisplay(f),
       a?.icao,a?.reg,a?.manufacturer,a?.model,a?.variant
     ].filter(Boolean).join(' ').toLowerCase();
 
@@ -1072,9 +1073,10 @@ function applyLogbookFilters(){
   body.innerHTML=flights.length?flights.map(f=>{
     let a=ac(f.aid);
     return `<tr class="click" onclick="flight('${f.id}')">
-      <td>${displayDate(f.date)}</td><td><b>${a?.icao||'—'}</b></td><td>${a?.reg||'—'}</td>
-      <td>${f.dep} ${f.off||''}</td><td>${f.arr} ${f.on||''}</td><td>${fmt(f.mins)}</td>
-      <td>${f.picName||'—'}</td><td><span class="tag">${f.role}</span></td>
+      <td>${displayDate(f.date)}</td><td><b>${isSimulatorSession(f)?'SIM':a?.icao||'—'}</b></td><td>${isSimulatorSession(f)?htmlEscape(f.simCategory||'—'):a?.reg||'—'}</td>
+      <td>${isSimulatorSession(f)?htmlEscape(f.stdType||simulatorDeviceLabel(f)):f.dep+' '+(f.off||'')}</td>
+      <td>${isSimulatorSession(f)?'—':f.arr+' '+(f.on||'')}</td><td>${fmt(isSimulatorSession(f)?f.stdMin:f.mins)}</td>
+      <td>${isSimulatorSession(f)?'—':f.picName||'—'}</td><td><span class="tag">${isSimulatorSession(f)?'SIM':f.role}</span></td>
       <td>${fmt(f.nightMin||0)}</td><td>${fmt(f.ifrMin||0)}</td><td>${f.crossCountry?'✓':'—'}</td>
     </tr>`;
   }).join(''):`<tr><td colspan="11" style="text-align:center;padding:28px;color:var(--muted)">No flights match the current filters.</td></tr>`;
@@ -1083,7 +1085,9 @@ function applyLogbookFilters(){
   let ifrTotal=flights.reduce((n,f)=>n+(Number(f.ifrMin)||0),0);
   let nightTotal=flights.reduce((n,f)=>n+(Number(f.nightMin)||0),0);
 
-  document.getElementById('resultCount').textContent=`${flights.length} flight${flights.length===1?'':'s'}`;
+  const simTotal=flights.filter(isSimulatorSession).reduce((n,f)=>n+Number(f.stdMin||0),0);
+  document.getElementById('resultCount').textContent=`${flights.length} entr${flights.length===1?'y':'ies'}`;
+  document.getElementById('filteredSimulatorTime').textContent=fmt(simTotal);
   document.getElementById('filteredTime').textContent=fmt(total);
   document.getElementById('filteredIFRTime').textContent=fmt(ifrTotal);
   document.getElementById('filteredNightTime').textContent=fmt(nightTotal);
@@ -1691,6 +1695,15 @@ function exportPrintableLogbook(options={}){
   }
 
   function flightRow(f){
+    if(isSimulatorSession(f)){
+      return `<tr class="flight-row simulator-row">
+        ${'<td></td>'.repeat(22)}
+        <td>${displayDate(f.date)}</td>
+        <td class="sim-device-cell">${htmlEscape(f.stdType||simulatorDeviceLabel(f))}</td>
+        <td class="num">${fmt(f.stdMin||0)}</td>
+        <td class="remarks">${htmlEscape(f.remarks||'')}</td>
+      </tr>`;
+    }
     let a=aircraftFor(f.aid)||{};
     let picVal=functionTime(f,'pic');
     let copVal=functionTime(f,'copilot');
@@ -1864,6 +1877,7 @@ function exportPrintableLogbook(options={}){
       .flight-row td,.blank-row td{height:7.6mm;font-size:7px;line-height:1.05}
       .flight-row td:first-child{white-space:nowrap;font-size:6.8px}
       .blank-row td{height:7.6mm}
+      .simulator-row .sim-device-cell{font-size:6px;white-space:normal;overflow-wrap:anywhere;line-height:1.05}
       .unused-row td{
         background:repeating-linear-gradient(135deg,#fafafa 0px,#fafafa 8px,#e1e1e1 8px,#e1e1e1 9px);
         color:#555;font-size:8px;font-weight:700;white-space:nowrap;
@@ -2019,7 +2033,7 @@ function archiveSummaryMarkup(d){
   return `<div class="grid stats">
     <div class="card"><div class="label">Batch</div><div class="big" style="font-size:20px">${htmlEscape(d.id)}</div></div>
     <div class="card"><div class="label">Next page</div><div class="big">${d.firstPage}</div></div>
-    <div class="card"><div class="label">New flights</div><div class="big">${d.flights.length}</div></div>
+    <div class="card"><div class="label">New entries</div><div class="big">${d.flights.length}</div></div>
     <div class="card"><div class="label">Pages to print</div><div class="big">${d.pageCount}</div></div>
   </div>
   <div class="grid two" style="margin-top:14px">
@@ -2027,6 +2041,7 @@ function archiveSummaryMarkup(d){
       <h3 style="margin-top:0">Running totals</h3>
       <p>Previous pages <span style="float:right"><b>${fmt(d.openingTotals.total)}</b></span></p>
       <p>This batch <span style="float:right"><b>${fmt(d.flightTotals.total)}</b></span></p>
+      <p>Simulator in this batch <span style="float:right"><b>${fmt(d.flightTotals.std)}</b></span></p>
       <p>Closing total <span style="float:right"><b>${fmt(d.closingTotals.total)}</b></span></p>
       <div class="mini">PIC ${fmt(d.closingTotals.pic)} · Dual ${fmt(d.closingTotals.dual)} · Night ${fmt(d.closingTotals.night)} · IFR ${fmt(d.closingTotals.ifr)}</div>
     </div>
@@ -3242,6 +3257,7 @@ function applyEndorsementSignature(id){
 
 function totals(){
   let t=calcTotals(),by=combinedTotalsByType(),opsTotals=specialisedTotals();
+  const simSessions=S.flights.filter(isSimulatorSession),simMinutes=simSessions.reduce((n,f)=>n+Number(f.stdMin||0),0);
   app.innerHTML=header('Totals','Your combined career totals')+
   `<div class="grid stats">${[['Total',t.total],['PIC',t.pic],['Co-pilot',t.copilot],['Dual',t.dual]].map(x=>`<div class="card"><div class="label">${x[0]}</div><div class="big">${fmt(x[1])}</div></div>`).join('')}</div>
   <div class="grid two" style="margin-top:16px">
@@ -3259,6 +3275,15 @@ function totals(){
       <p>Night <span style="float:right">${fmt(t.night)}</span></p>
       <p>IFR <span style="float:right">${fmt(t.ifr)}</span></p>
     </div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <div class="head"><h2>Simulator / synthetic training device experience</h2></div>
+    <div class="grid stats">
+      <div class="card"><div class="label">Dedicated simulator sessions</div><div class="big">${simSessions.length}</div></div>
+      <div class="card"><div class="label">Simulator session time</div><div class="big">${fmt(simMinutes)}</div></div>
+      <div class="card"><div class="label">Total STD time recorded</div><div class="big">${fmt(S.flights.reduce((n,f)=>n+Number(f.stdMin||0),0))}</div></div>
+    </div>
+    <div class="mini" style="margin-top:8px">Synthetic training time is shown separately and never added to Total, PIC, Dual or Night flight time.</div>
   </div>
   <div class="grid two" style="margin-top:16px">
     <div class="card">
