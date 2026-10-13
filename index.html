@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V1.41.3 PWA Prototype</title>
+<title>HeliLog V1.42 PWA Prototype</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -243,10 +243,20 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:11px 9px;
 .helilog-date-icon{position:absolute;right:15px;top:50%;transform:translateY(-50%);font-size:18px;color:#48556b;pointer-events:none}
 .helilog-native-picker{position:absolute;top:0;right:0;width:48px;height:100%;border:0!important;padding:0;opacity:0;cursor:pointer;z-index:2}
 .helilog-native-picker::-webkit-calendar-picker-indicator{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+html.helilog-test-mode main::before{
+  content:"⚗ TEST MODE — FICTIONAL DATA · NOT YOUR MAIN LOGBOOK";
+  display:block;position:sticky;top:0;z-index:40;background:#ffefb5;color:#513600;
+  padding:12px 16px;margin-bottom:12px;border:1px solid #d8ae32;
+  border-radius:8px;font-size:13px;font-weight:800;letter-spacing:.03em;text-align:center
+}
+html.helilog-test-mode aside{border-right:4px solid #e6a816}
+html.helilog-test-mode .brand::after{
+  content:"TEST SANDBOX";display:block;color:#f8d56e;font-size:11px;letter-spacing:.08em;margin-top:5px
+}
 </style></head>
 <body><div class="layout">
-<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V1.41.3</span></div><nav>
-<button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="aircraft">🚁 Aircraft</button><button data-v="pilots">👤 Pilots</button><button data-v="endorsements">✎ Endorsements</button><button data-v="printarchive">▤ Print archive</button><button data-v="profile">○ Profile</button>
+<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V1.42</span></div><nav>
+<button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="aircraft">🚁 Aircraft</button><button data-v="pilots">👤 Pilots</button><button data-v="endorsements">✎ Endorsements</button><button data-v="printarchive">▤ Print archive</button><button data-v="profile">○ Profile</button><button data-v="testmode">⚗ Test Mode</button>
 </nav></aside><main id="app"></main>
 <div class="mobile">
   <button data-v="dashboard"><span class="navicon">⌂</span><span>Home</span></button>
@@ -317,7 +327,14 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:11px 9px;
   </div>
 </div>
 <script>
-const KEY='helilog_v111';
+const LIVE_KEY='helilog_v111'; // Existing live logbook key: never rename.
+const SANDBOX_KEY='helilog_v142_sandbox';
+const MODE_KEY='helilog_v142_mode';
+const TEST_MODE=localStorage.getItem(MODE_KEY)==='test';
+const KEY=TEST_MODE?SANDBOX_KEY:LIVE_KEY;
+// All existing logbook saves, migrations, imports and archive snapshots use KEY.
+// Test and live records therefore reside in distinct browser-storage entries.
+document.documentElement.classList.toggle('helilog-test-mode',TEST_MODE);
 const seed={pilot:{name:'Matas',licence:'CPL(H)',authority:'TKA'},aircraft:[
 {id:'a1',reg:'LY-ABC',manufacturer:'Guimbal',model:'Cabri',variant:'G2',icao:'G2CA',engine:'Single engine'},
 {id:'a2',reg:'LY-H125',manufacturer:'Airbus',model:'H125',variant:'',icao:'AS50',engine:'Single engine'},
@@ -346,7 +363,11 @@ const seed={pilot:{name:'Matas',licence:'CPL(H)',authority:'TKA'},aircraft:[
 {id:'f118',date:'2026-07-22',aid:'a3',dep:'EYVI',arr:'EYVI',off:'18:10',on:'19:00',mins:50,role:'DUAL',picName:'Anna Pilot',nightMin:0,ifrMin:0,takeoffDay:3,takeoffNight:0,landingDay:3,landingNight:0,crossCountry:false,remarks:'R44 handling'}
 ]}; 
 let S;
-try{S=JSON.parse(localStorage.getItem(KEY)||'null')||seed;}
+try{
+  const stored=localStorage.getItem(KEY);
+  if(TEST_MODE&&!stored)throw new Error('The test sandbox is missing. Exit Test Mode via the sandbox settings; main logbook data has not been modified.');
+  S=JSON.parse(stored||'null')||seed;
+}
 catch(e){
   // Never overwrite corrupt stored records with the demo seed.
   const root=document.getElementById('app');
@@ -383,7 +404,7 @@ function ensureV116Data(){
   if(!Array.isArray(S.people)) S.people=[];
 
   S.aircraft.forEach(a=>a.engine=normalizeEngineConfig(a.engine));
-  if(!S.aircraft.some(a=>String(a.icao||'').toUpperCase()==='EC35')){
+  if(!S.cleanStart && !S.aircraft.some(a=>String(a.icao||'').toUpperCase()==='EC35')){
     S.aircraft.push({id:'a_ec135_demo',reg:'LY-EC1',manufacturer:'Airbus Helicopters',model:'EC135',variant:'',icao:'EC35',engine:'Multi engine'});
   }
 
@@ -935,6 +956,7 @@ function mobilemore(){
     <button class="card more-link" onclick="go('endorsements')"><span>✎</span><b>Endorsements</b><span class="muted">Memoranda and signatures</span></button>
     <button class="card more-link" onclick="go('totals')"><span>◉</span><b>Totals</b><span class="muted">Flight-time breakdown</span></button>
     <button class="card more-link" onclick="go('profile')"><span>○</span><b>Profile</b><span class="muted">Licence, medical and backup</span></button>
+    <button class="card more-link" onclick="go('testmode')"><span>⚗</span><b>Test Mode</b><span class="muted">Separate sandbox and safe reset</span></button>
     <button class="card more-link" onclick="installHeliLog()"><span>▣</span><b>Install HeliLog</b><span class="muted">Home-screen / PWA setup</span></button>
   </div>
   <div id="mobilePWAStatus" class="card" style="margin-top:14px"></div>`;
@@ -1009,7 +1031,7 @@ function dashboard(){
     return {a,mins};
   }).sort((a,b)=>b.mins-a.mins);
 
-  app.innerHTML=header('Dashboard',`Welcome back, ${S.pilot.name}`,`<button class="btn primary" onclick="go('add')">＋ Add flight</button>`)+
+  app.innerHTML=header('Dashboard',`Welcome back, ${S.pilot.name}`,`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" onclick="go('add')">＋ Add flight</button><button class="btn" onclick="go('testmode')">⚗ ${TEST_MODE?'Test Mode settings':'Open Test Mode'}</button></div>`)+
   `<div class="card">
     <div class="head"><div><h2>Flight-time overview</h2><div class="muted"><span id="dashFlightCount">${fs.length}</span> flights in selected period</div></div></div>
     <div class="dashboard-range">
@@ -3773,6 +3795,15 @@ function profile(){
     <div id="integrityCheckResult" class="mini">No records will be changed by the check.</div>
   </div>
 
+  <div class="card" style="margin-top:16px">
+    <div class="head">
+      <div><h2>Test Mode &amp; safe reset</h2>
+      <div class="muted">Use a separate test logbook without modifying your main flight records.</div></div>
+      <button class="btn" type="button" onclick="go('testmode')">⚗ Manage Test Mode</button>
+    </div>
+    <div class="mini">Current environment: <b>${TEST_MODE?'TEST SANDBOX':'MAIN LOGBOOK'}</b>. This browser stores each environment separately.</div>
+  </div>
+
   <div class="card desktop-only" style="margin-top:16px">
     <div class="head">
       <div>
@@ -3785,7 +3816,7 @@ function profile(){
     <div class="install-help" style="margin-top:10px">On iPhone/iPad, open the hosted HeliLog site in Safari, use <b>Share → Add to Home Screen</b>. Full offline PWA support requires HeliLog to be served over HTTPS. Opening this prototype directly as a file still works for testing, but it cannot register the offline service worker.</div>
   </div>
 
-  <div class="note" style="margin-top:16px">Profile, licence, rating and medical information in V1.41.3 is for record keeping and PDF identification only. Automatic EASA validity, recency and expiry calculations are planned for a later version.</div>`;
+  <div class="note" style="margin-top:16px">Profile, licence, rating and medical information in V1.42 is for record keeping and PDF identification only. Automatic EASA validity, recency and expiry calculations are planned for a later version.</div>`;
   updatePWAStatus();
 }
 
@@ -3813,7 +3844,7 @@ async function makeFullBackup(){
     app:'HeliLog',
     format:'helilog-full-backup',
     backupSchema:2,
-    appVersion:'1.41.3',
+    appVersion:'1.42',
     exportedAt:new Date().toISOString(),
     integrity:{algorithm:'SHA-256',sha256:await sha256Hex(JSON.stringify(data))},
     data
@@ -4179,8 +4210,8 @@ function render(){
   let v=location.hash.slice(1)||'dashboard';
   try{
     if(v!=='add') editingFlightId=null;
-    ({dashboard,logbook,add,aircraft,pilots,endorsements,printarchive,totals,profile,mobilemore}[v]||dashboard)();
-    let moreViews=['mobilemore','aircraft','pilots','endorsements','totals','profile'];
+    ({dashboard,logbook,add,aircraft,pilots,endorsements,printarchive,totals,profile,testmode,mobilemore}[v]||dashboard)();
+    let moreViews=['mobilemore','aircraft','pilots','endorsements','totals','profile','testmode'];
     document.querySelectorAll('[data-v]').forEach(b=>{
       let active=b.dataset.v===v || (b.dataset.v==='mobilemore' && moreViews.includes(v));
       b.classList.toggle('on',active);
