@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V1.36 PWA Prototype</title>
+<title>HeliLog V1.36.1 PWA Prototype</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -239,7 +239,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:11px 9px;
 @media(max-width:850px){.dashboard-actions{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style></head>
 <body><div class="layout">
-<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V1.36</span></div><nav>
+<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V1.36.1</span></div><nav>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="aircraft">🚁 Aircraft</button><button data-v="pilots">👤 Pilots</button><button data-v="endorsements">✎ Endorsements</button><button data-v="totals">◉ Totals</button><button data-v="profile">○ Profile</button>
 </nav></aside><main id="app"></main>
 <div class="mobile">
@@ -1598,29 +1598,30 @@ function exportPrintableLogbook(){
     <meta charset="utf-8">
     <title>HeliLog Pilot Log Book</title>
     <style>
-      @page{size:A4 landscape;margin:7mm}
+      @page{size:A4 landscape;margin:12mm}
       *{box-sizing:border-box}
       body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#111;background:#fff}
       .toolbar{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid #bbb;position:sticky;top:0;background:#fff;z-index:20}
       .toolbar strong{font-size:14px}
       .toolbar button{font-size:13px;padding:8px 12px}
-      .logbook-page{page-break-after:always;min-height:190mm;padding:0}
+      .logbook-page{page-break-after:always;min-height:0;padding:0;break-inside:avoid;page-break-inside:avoid}
       .logbook-page:last-child{page-break-after:auto}
       .page-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:5px}
       .title{font-weight:800;font-size:16px;letter-spacing:.06em}
       .subtitle{font-size:8px;color:#555;margin-top:2px}
       .pilotblock{font-size:8px;display:grid;grid-template-columns:auto auto;column-gap:14px;row-gap:2px;text-align:left}
-      table{border-collapse:collapse;width:100%;table-layout:fixed}
+      table{border-collapse:collapse;width:100%;max-width:100%;table-layout:fixed}
       .logbook-table th,.logbook-table td{border:1px solid #222;padding:2px 2px;text-align:center;vertical-align:middle}
-      .logbook-table th{font-size:6.6px;font-weight:700;line-height:1.05;background:#f2f2f2}
+      .logbook-table th{font-size:6.6px;font-weight:700;line-height:1.05;background:#f2f2f2;overflow-wrap:break-word}
       .group-row th{background:#e8e8e8;font-size:6.7px}
       .subgroup-row th{background:#f5f5f5}
       .flight-row td,.blank-row td{height:7.6mm;font-size:7px;line-height:1.05}
+      .flight-row td:first-child{white-space:nowrap;font-size:6.8px}
       .blank-row td{height:7.6mm}
       .num{font-variant-numeric:tabular-nums}
       .type{font-weight:700}
       .pic-name{font-size:6.7px!important}
-      .remarks{text-align:left!important;padding-left:3px!important;font-size:6.5px!important}
+      .remarks{text-align:left!important;padding-left:3px!important;font-size:6.5px!important;overflow-wrap:anywhere}
       .totals-row td{height:5.3mm;font-size:6.8px;font-weight:700;background:#f8f8f8}
       .totals-label{text-align:right!important;padding-right:5px!important}
       .page-footer{margin-top:4px;font-size:7.5px}
@@ -1647,21 +1648,21 @@ function exportPrintableLogbook(){
         background:#fff
       }
 
-      .c-date{width:7.5mm}
-      .c-place{width:8mm}
-      .c-time{width:7.5mm}
-      .c-type{width:8mm}
-      .c-reg{width:8mm}
-      .c-sp{width:6mm}
-      .c-mp{width:6.5mm}
-      .c-total{width:7.5mm}
-      .c-picname{width:14mm}
-      .c-small{width:5.8mm}
-      .c-func{width:7mm}
-      .c-fstd-date{width:8mm}
-      .c-fstd-type{width:8mm}
-      .c-fstd-time{width:7mm}
-      .c-remarks{width:23mm}
+      .c-date{width:17mm}
+      .c-place{width:9.5mm}
+      .c-time{width:8.2mm}
+      .c-type{width:10.5mm}
+      .c-reg{width:12mm}
+      .c-sp{width:8mm}
+      .c-mp{width:9mm}
+      .c-total{width:10mm}
+      .c-picname{width:21mm}
+      .c-small{width:6.7mm}
+      .c-func{width:8mm}
+      .c-fstd-date{width:9mm}
+      .c-fstd-type{width:9mm}
+      .c-fstd-time{width:9mm}
+      .c-remarks{width:42mm}
 
       @media print{
         .toolbar{display:none}
@@ -2840,7 +2841,7 @@ function profile(){
     <div class="install-help" style="margin-top:10px">On iPhone/iPad, open the hosted HeliLog site in Safari, use <b>Share → Add to Home Screen</b>. Full offline PWA support requires HeliLog to be served over HTTPS. Opening this prototype directly as a file still works for testing, but it cannot register the offline service worker.</div>
   </div>
 
-  <div class="note" style="margin-top:16px">Profile, licence, rating and medical information in V1.36 is for record keeping and PDF identification only. Automatic EASA validity, recency and expiry calculations are planned for a later version.</div>`;
+  <div class="note" style="margin-top:16px">Profile, licence, rating and medical information in V1.36.1 is for record keeping and PDF identification only. Automatic EASA validity, recency and expiry calculations are planned for a later version.</div>`;
   updatePWAStatus();
 }
 
@@ -2860,7 +2861,7 @@ function makeFullBackup(){
     app:'HeliLog',
     format:'helilog-full-backup',
     backupSchema:1,
-    appVersion:'1.36',
+    appVersion:'1.36.1',
     exportedAt:new Date().toISOString(),
     data:JSON.parse(JSON.stringify(S))
   };
