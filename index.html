@@ -1260,6 +1260,26 @@ function flightFingerprintForImport(f){
   return flightFingerprint(f.date,f.aircraft?.reg,f.dep,f.off,f.arr,f.on);
 }
 
+function reconstructArchivedOpening(data,previous,batches){
+  const out={...previous.closingTotals};
+  if(['single','engineSE','engineME'].every(k=>Number.isFinite(out[k])))return out;
+  const bf=data.broughtForward||{};
+  let totals={
+    single:Number(bf.single??(Number(bf.spSE||0)+Number(bf.spME||0))),
+    engineSE:Number(bf.engineSE??bf.spSE??0),
+    engineME:Number(bf.engineME??bf.spME??0)
+  };
+  for(const b of batches){
+    const x=sumLogbookFields(b.flights||[],b.aircraft||data.aircraft);
+    totals=addExportTotals(totals,x);
+    const applied=(data.printArchive?.corrections||[]).filter(c=>c.confirmedAt&&(b.correctionsApplied||[]).includes(c.id));
+    totals=addExportTotals(totals,sumCorrectionDeltas(applied,data.aircraft));
+  }
+  for(const k of ['single','engineSE','engineME']){
+    if(!Number.isFinite(out[k]))out[k]=totals[k]||0;
+  }
+  return out;
+}
 function inspectHeliLogData(data){
   const errors=[],warnings=[];
   if(!data || typeof data!=='object')return {errors:['Data is not an object.'],warnings};
@@ -1379,7 +1399,9 @@ function inspectHeliLogData(data){
         errors.push('Archive '+b.id+' has an invalid page count.');
       const calculated=sumLogbookFields(b.flights,Array.isArray(b.aircraft)?b.aircraft:data.aircraft);
       const expectedClosing=addExportTotals(b.openingTotals,calculated);
-      for(const field of ['total','spSE','spME','multi','pic','copilot','dual','instructor','night','ifr','toDay','toNight','ldgDay','ldgNight','std']){
+      const archiveFields=['total','spSE','spME','multi','pic','copilot','dual','instructor','night','ifr','toDay','toNight','ldgDay','ldgNight','std'];
+      if(b.paperLayoutVersion===2)archiveFields.push('single','engineSE','engineME');
+      for(const field of archiveFields){
         if(Number(expectedClosing[field]||0)!==Number(b.closingTotals[field]||0))
           errors.push('Archive '+b.id+' closing '+field+' does not match its printed flights.');
       }
@@ -1401,8 +1423,15 @@ function inspectHeliLogData(data){
       }
       if(previous){
         if(b.firstPage!==previous.firstPage+previous.pageCount)errors.push('Archive page numbering is discontinuous at '+b.id+'.');
-        const expectedOpening=addExportTotals(previous.closingTotals,expectedAdjustment);
-        for(const field of ['total','pic','dual','copilot','spSE','spME','multi','night','ifr','instructor','toDay','toNight','ldgDay','ldgNight','std']){
+        // Old confirmed batches may not contain independent engine totals.
+        // Reconstruct only those new fields; preserve all old signed totals.
+        const priorBatches=batches.slice(0,batches.indexOf(b));
+        const expectedBase=b.paperLayoutVersion===2?
+          reconstructArchivedOpening(data,previous,priorBatches):previous.closingTotals;
+        const expectedOpening=addExportTotals(expectedBase,expectedAdjustment);
+        const forwardFields=['total','pic','dual','copilot','spSE','spME','multi','night','ifr','instructor','toDay','toNight','ldgDay','ldgNight','std'];
+        if(b.paperLayoutVersion===2)forwardFields.push('single','engineSE','engineME');
+        for(const field of forwardFields){
           if(Number(b.openingTotals[field]||0)!==Number(expectedOpening[field]||0))
             errors.push('Archive '+b.id+' has mismatched carried-forward '+field+' totals.');
         }
@@ -2396,6 +2425,28 @@ function isArchivedFlight(id){return archivedFlightIds().has(id)}
 function archivedFlightIdsForAircraft(aid){
   return archivedBatches().some(b=>Array.isArray(b.flights)&&b.flights.some(f=>f.aid===aid));
 }
+// Recover the new independent engine/pilot totals when a new-layout
+// archive follows a batch signed in the historical three-column format.
+// The old signed closing totals remain authoritative for existing fields.
+function newLayoutOpeningFromHistory(previous,batches){
+  const base=previous?JSON.parse(JSON.stringify(previous.closingTotals)):broughtForwardExportTotals();
+  if(!previous||['single','engineSE','engineME'].every(k=>Number.isFinite(base[k])))return base;
+  let computed=broughtForwardExportTotals();
+  for(const batch of batches){
+    computed=addExportTotals(computed,sumLogbookFields(batch.flights||[],batch.aircraft||S.aircraft));
+    const applied=archiveCorrections().filter(c=>(batch.correctionsApplied||[]).includes(c.id)&&c.confirmedAt);
+    computed=addExportTotals(computed,sumCorrectionDeltas(applied));
+  }
+  for(const field of ['single','engineSE','engineME']){
+    if(!Number.isFinite(base[field]))base[field]=computed[field]||0;
+  }
+  return base;
+}
+function previousEngineUnallocated(){
+  const b=S.broughtForward||{};
+  if(Number.isFinite(b.engineSE)&&Number.isFinite(b.engineME))return 0;
+  return Math.max(0,Number(b.total||0)-Number(b.spSE||0)-Number(b.spME||0));
+}
 function nextArchiveDraft(){
   const batches=archivedBatches();
   const previous=batches[batches.length-1];
@@ -2417,7 +2468,7 @@ function nextArchiveDraft(){
   const aircraft=JSON.parse(JSON.stringify(S.aircraft));
   const pendingCorrections=unappliedCorrections(batches);
   const openingCorrectionsDelta=sumCorrectionDeltas(pendingCorrections);
-  const baseOpening=previous?JSON.parse(JSON.stringify(previous.closingTotals)):broughtForwardExportTotals();
+  const baseOpening=newLayoutOpeningFromHistory(previous,batches);
   const openingTotals=addExportTotals(baseOpening,openingCorrectionsDelta);
   const pageCount=Math.ceil(flights.length/LOGBOOK_ROWS_PER_PAGE);
   const flightTotals=sumLogbookFields(flights,aircraft);
@@ -2425,6 +2476,8 @@ function nextArchiveDraft(){
   const pilot={name:S.pilot.name||'',licence:pilotLicenceDisplay(),authority:S.pilot.authority||''};
   return {
     id:'HL-'+String(seq).padStart(3,'0'),seq,
+    paperLayoutVersion:2,
+    unclassifiedPriorEngineMinutes:previousEngineUnallocated(),
     firstPage,pageCount,flightIds:flights.map(f=>f.id),flights,aircraft,pilot,
     availablePages,totalUnarchived:pendingFlights.length,remainingFlights:pendingFlights.length-flights.length,
     unusedRowsBlocked:true,
@@ -2463,6 +2516,7 @@ function archiveSummaryMarkup(d){
       <p>Simulator in this batch <span style="float:right"><b>${fmt(d.flightTotals.std)}</b></span></p>
       <p>Closing total <span style="float:right"><b>${fmt(d.closingTotals.total)}</b></span></p>
       <div class="mini">PIC ${fmt(d.closingTotals.pic)} · Dual ${fmt(d.closingTotals.dual)} · Night ${fmt(d.closingTotals.night)} · IFR ${fmt(d.closingTotals.ifr)}</div>
+      <div class="mini">SE ${fmt(d.closingTotals.engineSE)} · ME ${fmt(d.closingTotals.engineME)} · Single-pilot ${fmt(d.closingTotals.single)} · Multi-pilot ${fmt(d.closingTotals.multi)}</div>
       ${d.correctionsApplied?.length?`<div class="note">Signed correction addenda carried into this batch: ${htmlEscape(d.correctionsApplied.join(', '))}; flight-time adjustment ${signedHours(d.openingCorrectionsDelta?.total||0)}. Original earlier pages remain unchanged.</div>`:''}
     </div>
     <div class="card">
@@ -2496,7 +2550,9 @@ function previewNextArchive(){
     archiveBatch:draft.id,aircraft:draft.aircraft,pilot:draft.pilot,
     blockUnusedRows:draft.unusedRowsBlocked,
     correctionsApplied:draft.correctionsApplied,
-    openingCorrectionsDelta:draft.openingCorrectionsDelta
+    openingCorrectionsDelta:draft.openingCorrectionsDelta,
+    paperLayoutVersion:draft.paperLayoutVersion,
+    unclassifiedPriorEngineMinutes:draft.unclassifiedPriorEngineMinutes
   });
   if(opened){
     pendingArchivePreview=JSON.stringify(draft);
@@ -2568,7 +2624,9 @@ function reprintArchiveBatch(seq){
     openingTotals:b.openingTotals,firstPage:b.firstPage,archiveBatch:b.id,
     blockUnusedRows:b.unusedRowsBlocked===true,
     correctionsApplied:b.correctionsApplied||[],
-    openingCorrectionsDelta:b.openingCorrectionsDelta||{}
+    openingCorrectionsDelta:b.openingCorrectionsDelta||{},
+    paperLayoutVersion:b.paperLayoutVersion===2?2:1,
+    unclassifiedPriorEngineMinutes:b.unclassifiedPriorEngineMinutes||0
   });
 }
 
