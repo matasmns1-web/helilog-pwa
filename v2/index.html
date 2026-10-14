@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101c31">
-<title>HeliLog V2.0 Alpha 2 — Aircraft & Flights</title>
+<title>HeliLog V2 Alpha — V1 interface preview</title>
 <style>
 :root{color-scheme:light;--navy:#17233a;--blue:#1e3a65;--text:#1b293e;--muted:#65758a;--line:#dce3ec;--surface:#fff;--bg:#f1f4f8;--accent:#1d4c8d;--red:#a51e32;--green:#0c6651}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,Arial,sans-serif}
@@ -30,23 +30,31 @@ a{color:var(--accent)}.footer{color:var(--muted);font-size:12px;margin-top:32px}
 @media(max-width:560px){.formgrid{grid-template-columns:1fr}.card{padding:16px}h1{font-size:23px}.itemhead{display:block}.itemhead .actions{margin-top:10px}}
 .time-selectors{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:7px}.time-selectors label{font-size:11px;color:var(--muted);font-weight:600}.time-selectors label span{display:block;margin-bottom:3px}.time-selectors select{padding:7px 9px;max-width:130px}.hintlink{color:var(--accent);font-weight:650}.invalid{border:2px solid #b42318!important;background:#fff7f8!important} .error-text{font-size:12px;color:#ad1f36;font-weight:650;min-height:16px} .summarybox{background:#ebf4ff;border:1px solid #aec7e6;padding:13px;border-radius:8px;margin:7px 0 15px} .statrow{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding:7px 0}.statrow:last-child{border-bottom:0} .checkline{display:flex;gap:8px;align-items:center;margin-bottom:12px} .checkline input{height:17px;width:17px} 
 </style>
+<link rel="stylesheet" href="./v1-layout.css">
 </head>
 <body>
 <div class="layout">
  <aside class="sidebar">
-  <div class="brand">🚁 HeliLog <small>V2.0 ALPHA 2 · TEST ONLY</small></div>
+  <div class="brand">🚁 HeliLog <small>V2 ALPHA · TEST MODE</small></div>
   <nav aria-label="Development pages">
-   <button type="button" data-nav="overview" class="active">Overview</button>
-   <button type="button" data-nav="aircraft">Aircraft</button>
-   <button type="button" data-nav="flights">Flights</button>
-   <button type="button" data-nav="flight-totals">Flight totals</button>
-   <button type="button" data-nav="endorsements">Endorsements</button>
-   <button type="button" data-nav="archive">Print archive</button>
-   <button type="button" data-nav="people">Pilot profiles</button>
-   <button type="button" data-nav="settings">Testing &amp; backup</button>
+   <button type="button" data-nav="overview" class="active">▣ Dashboard</button>
+   <button type="button" data-nav="flights">▤ Logbook</button>
+   <button type="button" data-nav="flight-totals">◉ Totals</button>
+   <button type="button" data-nav="aircraft">🚁 Aircraft</button>
+   <button type="button" data-nav="people">👤 Pilots</button>
+   <button type="button" data-nav="endorsements">✎ Endorsements</button>
+   <button type="button" data-nav="archive">▤ Print archive</button>
+   <button type="button" data-nav="settings">○ Testing &amp; backup</button>
   </nav>
   <div class="bottom">Separate V2 sandbox. This is not the production HeliLog application and is not an approved logbook or electronic signature system.</div>
  </aside>
+ <nav class="mobile-nav" aria-label="Mobile navigation">
+   <button type="button" data-nav="overview" class="active"><span class="navicon">▣</span>Home</button>
+   <button type="button" data-nav="flights"><span class="navicon">▤</span>Logbook</button>
+   <button type="button" data-action="new-flight"><span class="navicon">＋</span>Add flight</button>
+   <button type="button" data-nav="flight-totals"><span class="navicon">◉</span>Totals</button>
+   <button type="button" data-nav="more"><span class="navicon">☷</span>More</button>
+ </nav>
  <main class="content" id="app" aria-live="polite"><div class="card">Loading the V2 development workspace…</div></main>
 </div>
 <script src="./domain.js"></script>
