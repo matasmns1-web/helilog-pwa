@@ -1,6 +1,6 @@
 # HeliLog V2 — Complete V1.43.2 Interface Preview
 
-**Status:** V2 alpha interface parity candidate; awaiting desktop/iPad testing.
+**Status:** V2.1 testing release; full V1 interface restored and browser-only endorsement archiving. iPad/desktop acceptance testing remains required.
 **Testing URL after deployment:** https://helilog-v2-test.onrender.com
 **Stable V1:** https://helilog-pwa.onrender.com remains unchanged.
 
@@ -42,6 +42,16 @@ The new V2 landing page uses three new browser keys:
 - helilog_v2_complete_test_mode
 
 The previous modular V2 Alpha still works at **/alpha.html**, using its original separate helilog_v2_dev_workspace key. Records from the two test workspaces are **not automatically migrated or displayed together**. Neither workspace deletes the other's records. The stable V1.43.2 site is on another Render origin and remains unchanged.
+
+## V2.1 — Installed app versus web browser
+
+**Installed iPhone/iPad or other PWA:** Create, review and sign endorsements. The signature is saved locally and the status becomes **Signed · Awaiting web archive**. Once an original is archived, the app can show **Archived · Page N** if the archive information is available in that installation. No endorsement print, archive-confirmation or signed correction actions appear or run in standalone mode (including old direct archive links). Flight printing also remains browser-only.
+
+**Web browser:** Display the same signed/archived statuses and all paper-print functions. The browser can create/confirm endorsement page batches, reprint originals and sign/print correction addenda. The endorsement archive is accessible through the existing Print Archive page.
+
+**Until V2 cloud sync is delivered:** Installed PWA and browser/device storage must not be assumed to share records. Signing an endorsement in the installed app **does not automatically make it available on desktop**. For an interim manual transfer, export a full JSON backup from the app's Profile and restore it in the target browser, after backing up any existing test records in the browser first. Restoring replaces the target browser's current test workspace; it is not a merge or synchronization service.
+
+The installed app shows a success notification only after the signature has been saved to that device. If storage is unavailable, the in-memory signature is rolled back rather than falsely marking it saved.
 
 ## Before cloud integration
 
