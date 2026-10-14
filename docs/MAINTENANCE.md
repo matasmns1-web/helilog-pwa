@@ -1,6 +1,6 @@
 # HeliLog — Developer & Maintenance Guide
 
-**Baseline:** HeliLog V1.43.1 (14 October 2026)  
+**Baseline:** HeliLog V1.43.2 (14 October 2026)  
 **Source repository:** https://github.com/matasmns1-web/helilog-pwa  
 **Production website:** https://helilog-pwa.onrender.com  
 **Hosting dashboard:** https://dashboard.render.com/static/srv-db6b6lnlot8c739i6kl0  
@@ -186,7 +186,7 @@ State object `S` includes at least:
 
 ### Print archive — extremely sensitive
 
-**Print-layout compatibility:** New V1.43.1 paper batches store `paperLayoutVersion: 2` and print 27 columns, including SE/ME checkmark cells and separate Single-/Multi-pilot hours. Batches confirmed before this change have no version marker and are reprinted with the legacy 26-column layout. Never retroactively change the layout of signed batches. New-layout totals store `engineSE`, `engineME`, `single`, `multi` independently; legacy `spSE`/`spME` fields are retained for archival continuity.
+**Print-layout compatibility:** New V1.43.1 paper batches store `paperLayoutVersion: 2` and print 27 columns, including SE/ME checkmark cells and separate Single-/Multi-pilot hours. Batches confirmed before this change have no version marker and are reprinted with the legacy 26-column layout. Never retroactively change the layout of signed batches. New-layout totals store `engineSE`, `engineME`, `single`, `multi` independently; legacy `spSE`/`spME` fields are retained for archival continuity. Since V1.43.2, new print previews and batches omit the redundant engine/pilot breakdown line below the table. New confirmed batches store `paperFooterVersion: 2`; older V1.43.1 batches lacking that marker still reprint with their original summary footer. This setting affects presentation only, not flight/total data.
 
 Confirmed paper batches are persisted in `S.printArchive.batches` with copied flight data, aircraft/pilot snapshots, opening/closing totals, page numbers and record IDs. They are intended to be frozen. `LOGBOOK_ROWS_PER_PAGE = 14`; printing uses **A4 landscape with 12 mm margins**. A batch is confirmed only after manual printing/checking/signing; the software cannot prove that a printer printed a page.
 
