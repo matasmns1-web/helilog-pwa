@@ -20,7 +20,7 @@
 3. Review and apply the migration file: supabase/migrations/20261014000000_helilog_v22_foundation.sql
 4. Validate Row Level Security with TWO fictional accounts plus an unsigned/anonymous client. Confirm each pilot can only see their own records; anonymous users cannot read/write; and signed/archived records cannot be rewritten.
 5. Invite your own test email via Supabase Authentication. Do not share your password with ChatGPT or commit credentials to GitHub.
-6. Update v2/cloud-config.js with ONLY the public Supabase URL and publishable key, set authEnabled to true, and keep environment as test and inviteOnly as true. NEVER use a service_role key, sb_secret key or database password: a static frontend is publicly visible.
+6. Update v2/cloud-config.js with ONLY the public Supabase URL and sb_publishable_ key, set authEnabled to true, and keep environment as test and inviteOnly as true. NEVER use a service_role key, sb_secret key or database password: a static frontend is publicly visible.
 7. Test private login and profile creation from the Cloud account page on the V2 test website. Signing in does not transfer locally saved flights.
 8. Invite a second fictional user to verify record isolation before adding more people.
 
