@@ -1,13 +1,14 @@
 /* HeliLog V2 alpha: standalone endorsement workflow, no V1 writes. */
 (function(){
 "use strict";
-const D=window.HeliLogV2Domain, Store=window.HeliLogV2Storage, Print=window.HeliLogV2Print;
+const D=window.HeliLogV2Domain, Store=window.HeliLogV2Storage, Print=window.HeliLogV2Print, Flight=window.HeliLogV2Flights;
 const app=document.getElementById("app");
-if(!D||!Store||!Print){app.textContent="V2 scripts are unavailable; check the development files.";return;}
-const repo=Store.createRepository(window.localStorage,D);
+if(!D||!Store||!Print||!Flight){app.textContent="V2 scripts are unavailable; check the development files.";return;}
+const repo=Store.createRepository(window.localStorage,D,Flight.validateState);
 let state=null, page="overview", editingId="", signingId="", signingProposal=null;
 let pendingBatch=null, batchPreviewOpened=false, pendingAmendment=null, amendmentPreviewOpened=false;
 let flash="", signatureDirty=false, signCanvas=null;
+let editingAircraftId="",editingFlightId="",manualLandingDay=false,manualLandingNight=false;
 const esc=Print.escapeHTML, now=()=>new Date().toISOString();
 const uid=prefix=>prefix+"-"+(typeof crypto!=="undefined"&&crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random().toString(36).slice(2,10));
 const showDate=s=>/^\d{4}-\d{2}-\d{2}$/.test(String(s))?s.slice(8)+"-"+s.slice(5,7)+"-"+s.slice(0,4):String(s||"");
@@ -54,6 +55,11 @@ function render(){
  if(flash){html+=banner(flash,/not completed|Invalid|error|failed|unavailable|blocked/i.test(flash)?"warning":"success");flash="";}
  if(page==="overview")html+=overview();
  else if(page==="people")html+=peopleView();
+ else if(page==="aircraft")html+=aircraftView();
+ else if(page==="aircraft-editor")html+=aircraftEditorView();
+ else if(page==="flights")html+=flightsView();
+ else if(page==="flight-editor")html+=flightEditorView();
+ else if(page==="flight-totals")html+=flightTotalsView();
  else if(page==="endorsements")html+=endorsementsView();
  else if(page==="editor")html+=editorView(false);
  else if(page==="amend")html+=editorView(true);
@@ -83,6 +89,186 @@ function overview(){
  '<div class="card"><h2>Flight logbook</h2><p>The V2 flight-entry and totals modules will follow. Existing V1 flight functionality remains on the stable production website.</p>'+
  '<a href="https://helilog-pwa.onrender.com" target="_blank" rel="noopener noreferrer">Open stable HeliLog V1.43.2</a></div>';
 }
+
+function fmtTime(n){return Flight.fmtMinutes(n);}
+function aircraftLabel(a){return a.registration+" · "+a.icao+(a.model?" · "+a.model:"");}
+function aircraftView(){
+ const list=[...state.aircraft].sort((a,b)=>a.registration.localeCompare(b.registration));
+ return head("Aircraft","Register helicopters using ICAO aircraft type designators. SE/ME engine type is independent of single/multi-pilot operation.",
+ button("new-aircraft","+ Add aircraft","primary"))+
+ '<div class="card"><h2>Saved aircraft ('+list.length+')</h2>'+
+ (list.length?list.map(a=>'<div class="item"><div class="itemhead"><div>'+
+ '<span class="itemtitle">'+esc(a.registration)+'</span> <span class="badge">'+esc(a.icao)+'</span>'+
+ '<div class="details">'+esc([a.manufacturer,a.model,a.variant].filter(Boolean).join(" ")||"Unspecified model")+
+ ' · '+(a.engine==="ME"?"Multi-engine":"Single-engine")+'</div></div>'+
+ '<div class="actions">'+button("edit-aircraft","Edit","small",a.id)+
+ button("delete-aircraft","Delete","small danger",a.id)+'</div></div>'+
+ '</div>').join(""):'<p class="muted">No aircraft recorded yet. Add one before creating a flight.</p>')+'</div>';
+}
+function aircraftEditorView(){
+ const a=editingAircraftId?Flight.getAircraft(state,editingAircraftId):null;
+ return head(a?"Edit aircraft":"Add aircraft","Use the ICAO aircraft type designator in the logbook.",
+ button("nav-aircraft","← Aircraft"))+
+ '<div class="card"><form id="aircraft-form"><div class="formgrid">'+
+ field("Registration","registration",a?.registration||"",18,true)+
+ field("ICAO type designator (e.g. G2CA)","icao",a?.icao||"",8,true)+
+ field("Manufacturer","manufacturer",a?.manufacturer||"",100,false)+
+ field("Model","model",a?.model||"",100,false)+
+ field("Variant","variant",a?.variant||"",100,false)+
+ '<div class="field"><label for="engine">Engine configuration</label><select id="engine" name="engine">'+
+ '<option value="SE"'+(a?.engine!=="ME"?' selected':'')+'>Single-engine (SE)</option>'+
+ '<option value="ME"'+(a?.engine==="ME"?' selected':'')+'>Multi-engine (ME)</option></select></div></div>'+
+ '<p class="hint">Flights keep a snapshot of engine category, registration, and ICAO type from the time they are entered.</p>'+
+ '<div class="actions"><button type="submit" class="btn primary">'+(a?"Save aircraft":"Add aircraft")+'</button>'+
+ button("nav-aircraft","Cancel")+'</div></form></div>';
+}
+function flightsView(){
+ const flights=[...state.flights].sort((a,b)=>b.date.localeCompare(a.date)||b.off.localeCompare(a.off));
+ return head("Flight logbook","V2 flight entries are test-only. Archive printing and archived-flight corrections will be added in a later milestone.",
+ button("new-flight","+ Add Flight","primary"))+
+ (state.aircraft.length===0?banner("Add an aircraft before logging your first flight.","warning"):"")+
+ '<div class="card"><h2>Flights ('+flights.length+')</h2>'+
+ (flights.length?flights.map(f=>{
+ const a=f.aircraftSnapshot||{};
+ return '<div class="item"><div class="itemhead"><div>'+
+ '<div class="itemtitle">'+esc(showDate(f.date))+' · '+esc(a.registration||"Unknown aircraft")+
+ ' <span class="badge">'+esc(a.icao||"—")+'</span></div>'+
+ '<div class="details">'+esc(f.dep)+' → '+esc(f.arr)+' · '+esc(f.off)+'–'+esc(f.on)+
+ ' · <b>'+fmtTime(f.durationMin)+'</b> · '+esc(f.role)+
+ ' · '+(f.pilotConfig==="multi"?"Multi-pilot":"Single-pilot")+
+ ' · '+(a.engine==="ME"?"ME":"SE")+(f.crossCountry?" · Cross-country":"")+'</div>'+
+ '</div><div class="actions">'+button("edit-flight","Edit","small",f.id)+
+ button("delete-flight","Delete","small danger",f.id)+'</div></div>'+
+ (f.remarks?'<div class="bodytext">'+esc(f.remarks)+'</div>':"")+
+ '</div>';
+ }).join(""):'<p class="muted">No flights yet. Add a test flight to begin.</p>')+'</div>';
+}
+function flightTotalsView(){
+ const t=Flight.totals(state);
+ const items=[["Total",t.total],["PIC (PIC + SOLO + SPIC + PICUS)",t.pic],
+  ["Co-pilot",t.copilot],["Dual",t.dual],
+  ["SPIC",t.spic],["PICUS",t.picus],
+  ["Single-engine",t.engineSE],["Multi-engine",t.engineME],
+  ["Single-pilot",t.single],["Multi-pilot",t.multi],
+  ["Cross-country",t.crossCountry],["Night",t.night],
+  ["IFR",t.ifr],["Instructor",t.instructor]];
+ return head("Flight time totals","Calculated from the saved test flights. Pilot-function grouping is a prototype convention, not a regulatory credit determination.")+
+ '<div class="grid">'+[["Total",t.total],["PIC",t.pic],["Dual",t.dual]].map(x=>'<div class="card"><div class="hint">'+esc(x[0])+
+ '</div><div class="stat">'+fmtTime(x[1])+'</div></div>').join("")+'</div>'+
+ '<div class="card"><h2>Breakdown</h2>'+
+ items.map(([name,n])=>'<div class="statrow"><span>'+esc(name)+'</span><b>'+fmtTime(n)+'</b></div>').join("")+
+ '<div class="statrow"><span>Flights</span><b>'+t.flightCount+'</b></div>'+
+ '<div class="statrow"><span>Day / night take-offs</span><b>'+t.takeoffDay+' / '+t.takeoffNight+'</b></div>'+
+ '<div class="statrow"><span>Day / night landings</span><b>'+t.landingDay+' / '+t.landingNight+'</b></div></div>';
+}
+function flightField(label,name,val,options={}){
+ const {max=25,required=false,type="text",min="",step="1"}=options;
+ return '<div class="field"><label for="'+name+'">'+esc(label)+'</label>'+
+ '<input id="'+name+'" name="'+name+'" type="'+type+'" '+
+ (type==="number"?'min="'+(min||"0")+'" step="'+step+'" inputmode="numeric"':'maxlength="'+max+'"')+
+ ' value="'+esc(val??"")+'"'+(required?' required':'')+
+ (name==="off"||name==="on"?' inputmode="numeric" autocomplete="off" placeholder="HHmm or HH:mm" data-time-field="1"':'')+
+ '><div class="error-text" id="'+name+'-error"></div></div>';
+}
+function flightEditorView(){
+ const f=editingFlightId?Flight.getFlight(state,editingFlightId):null;
+ const owner=Flight.accountHolder(state);
+ const defaults={date:parseDate(currentDate()),aircraftId:state.aircraft[0]?.id||"",
+  dep:"",arr:"",off:"",on:"",role:"PIC",picPersonId:"",pilotConfig:"single",
+  ifrMin:0,nightMin:0,instructorMin:0,takeoffDay:1,takeoffNight:0,
+  landingDay:1,landingNight:0,crossCountry:false,remarks:""};
+ const v=f||defaults;
+ const isSelf=v.role==="PIC"||v.role==="SOLO";
+ return head(f?"Edit flight":"Add Flight","All flight records here are for testing only. Times use 24-hour HHmm or HH:mm and support overnight flights.",
+ button("nav-flights","← Logbook"))+
+ (!owner?banner("Set your own pilot profile as Account Holder under Pilot Profiles to log PIC or SOLO.","warning"):"")+
+ '<div class="card"><form id="flight-form"><div class="formgrid">'+
+ flightField("Date (DD-MM-YYYY)","date",showDate(v.date),{required:true,max:10})+
+ '<div class="field"><label for="aircraftId">Aircraft</label><select id="aircraftId" name="aircraftId" required>'+
+ '<option value="">Select aircraft</option>'+
+ state.aircraft.map(a=>'<option value="'+esc(a.id)+'"'+(v.aircraftId===a.id?' selected':'')+'>'+esc(aircraftLabel(a))+'</option>').join("")+
+ '</select></div>'+
+ flightField("Departure aerodrome / location","dep",v.dep,{required:true,max:15})+
+ flightField("Arrival aerodrome / location","arr",v.arr,{required:true,max:15})+
+ flightField("Off-block / Departure time (24h)","off",v.off,{required:true,max:5})+
+ flightField("On-block / Arrival time (24h)","on",v.on,{required:true,max:5})+
+ '<div class="field"><label for="role">Pilot function</label><select id="role" name="role">'+
+ Flight.ROLES.map(role=>'<option value="'+role+'"'+(role===v.role?' selected':'')+'>'+role+'</option>').join("")+
+ '</select></div>'+
+ '<div class="field"><label for="picPersonId">Commander / Name of PIC</label>'+
+ '<select id="picPersonId" name="picPersonId"'+(isSelf?' disabled':'')+'>'+
+ '<option value="">Select commander</option>'+
+ state.people.filter(p=>!owner||p.id!==owner.id).map(p=>'<option value="'+esc(p.id)+'"'+(p.id===v.picPersonId?' selected':'')+'>'+esc(p.name)+'</option>').join("")+
+ '</select><div class="hint" id="pic-help">'+(isSelf?'PIC/SOLO: '+esc(owner?.name||"Account holder missing")+' (automatic)':
+ 'SPIC, PICUS, DUAL and CO-PILOT require a different commander')+'</div></div>'+
+ '<div class="field"><label for="pilotConfig">Pilot configuration</label><select id="pilotConfig" name="pilotConfig">'+
+ '<option value="single"'+(v.pilotConfig==="single"?' selected':'')+'>Single-pilot</option>'+
+ '<option value="multi"'+(v.pilotConfig==="multi"?' selected':'')+'>Multi-pilot</option>'+
+ '</select><div class="hint">Independent of aircraft SE/ME engine category.</div></div></div>'+
+ '<div class="summarybox" id="flight-time-summary">Enter both times to calculate total flight duration.</div>'+
+ '<div class="formgrid">'+
+ flightField("IFR minutes","ifrMin",v.ifrMin,{type:"number",min:"0"})+
+ flightField("Night minutes","nightMin",v.nightMin,{type:"number",min:"0"})+
+ flightField("Instructor minutes","instructorMin",v.instructorMin,{type:"number",min:"0"})+
+ '<div class="field"><label>Cross-country</label><label class="checkline"><input type="checkbox" id="crossCountry" name="crossCountry"'+(v.crossCountry?' checked':'')+'> Mark as cross-country flight</label></div>'+
+ flightField("Day take-offs","takeoffDay",v.takeoffDay,{type:"number",min:"0"})+
+ flightField("Day landings","landingDay",v.landingDay,{type:"number",min:"0"})+
+ flightField("Night take-offs","takeoffNight",v.takeoffNight,{type:"number",min:"0"})+
+ flightField("Night landings","landingNight",v.landingNight,{type:"number",min:"0"})+
+ '</div><p class="hint">Landings initially mirror take-offs. You can change either landing count manually.</p>'+
+ '<div class="field"><label for="remarks">Remarks</label><textarea id="remarks" name="remarks" maxlength="2000">'+esc(v.remarks||"")+'</textarea></div>'+
+ '<div class="notice warning" id="flight-form-error" style="display:none"></div>'+
+ '<div class="actions"><button type="submit" class="btn primary">'+(f?"Save flight changes":"Save flight")+'</button>'+
+ button("nav-flights","Cancel")+'</div></form></div>';
+}
+function numberField(form,name){
+ const str=String(form.elements.namedItem(name)?.value||"").trim();
+ if(!/^\d+$/.test(str))throw Error(name+" must be a non-negative integer.");
+ return Number(str);
+}
+function flightFormValues(form){
+ const val=name=>String(form.elements.namedItem(name)?.value||"").trim();
+ return {date:parseDate(val("date")),aircraftId:val("aircraftId"),
+  dep:val("dep"),arr:val("arr"),off:Flight.timeValue(val("off")),on:Flight.timeValue(val("on")),
+  role:val("role"),picPersonId:val("picPersonId"),
+  pilotConfig:val("pilotConfig"),ifrMin:numberField(form,"ifrMin"),nightMin:numberField(form,"nightMin"),
+  instructorMin:numberField(form,"instructorMin"),takeoffDay:numberField(form,"takeoffDay"),
+  takeoffNight:numberField(form,"takeoffNight"),landingDay:numberField(form,"landingDay"),
+  landingNight:numberField(form,"landingNight"),
+  crossCountry:!!form.elements.namedItem("crossCountry")?.checked,remarks:val("remarks")};
+}
+function previewFlightDuration(){
+ const form=document.getElementById("flight-form");if(!form)return;
+ const off=form.elements.namedItem("off")?.value||"",on=form.elements.namedItem("on")?.value||"";
+ const panel=document.getElementById("flight-time-summary");
+ try{
+  const mins=Flight.elapsed(off,on);
+  if(panel)panel.textContent="Calculated flight time: "+fmtTime(mins)+
+   (Flight.timeValue(on)<Flight.timeValue(off)?" · Arrives following day":"");
+ }catch{if(panel)panel.textContent="Enter valid departure and arrival times to calculate flight duration.";}
+}
+function checkTimeInput(input){
+ const raw=String(input.value||"").replace(/\D/g,"").slice(0,4);
+ // Accept exactly 4 numeric digits and auto-format to HH:mm.
+ if(raw.length===4&&/^\d{4}$/.test(raw))input.value=raw.slice(0,2)+":"+raw.slice(2);
+ else if(/^[0-9:]*$/.test(input.value)&&raw.length<=4&&input.value.indexOf(":")===-1)input.value=raw;
+ const ok=!input.value.trim()||/^([01]\d|2[0-3]):?[0-5]\d$/.test(input.value.trim());
+ input.classList.toggle("invalid",!ok);
+ input.setAttribute("aria-invalid",ok?"false":"true");
+ const error=document.getElementById(input.name+"-error");
+ if(error)error.textContent=ok?"":"Use HHmm or HH:mm in 24-hour format.";
+ return ok;
+}
+function updateRoleSelect(){
+ const form=document.getElementById("flight-form");if(!form)return;
+ const role=form.elements.namedItem("role")?.value,pic=form.elements.namedItem("picPersonId");
+ const owner=Flight.accountHolder(state),self=role==="PIC"||role==="SOLO";
+ if(pic){pic.disabled=self;if(self)pic.value="";}
+ const help=document.getElementById("pic-help");
+ if(help)help.textContent=self?"PIC/SOLO: "+(owner?.name||"Set Account Holder in Pilot Profiles")+" (automatic)":
+ "SPIC, PICUS, DUAL and CO-PILOT require a different commander.";
+}
+
 function peopleView(){
  return head("Pilot profiles","Add fictional test instructors and examiners for signing endorsements.")+
  '<div class="card"><h2>Add instructor / examiner</h2><form id="person-form">'+
