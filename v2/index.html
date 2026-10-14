@@ -2742,7 +2742,7 @@ function discardPendingCorrection(id){
   pendingCorrectionPrint=null;printarchive();
 }
 function printarchive(){
-  if(isInstalledTouchApp()){go('dashboard');return;}
+  if(isStandaloneApp()){go('dashboard');return;}
   const batches=archivedBatches();
   const draft=nextArchiveDraft();
   const previewReady=!!pendingArchivePreview && pendingArchivePreview===JSON.stringify(draft);
@@ -3687,7 +3687,7 @@ function v2EndorsementStatusHelp(e){
  }
  return '<div class="mini" style="margin-top:8px">'+
  (isStandaloneApp()?
- 'Signed and saved in this installed app. Open HeliLog in a web browser to print and archive it. Automatic transfer to another device is not yet available; the record stays in this installation until cloud sync is implemented.':
+ 'Signed and saved in this installed app, awaiting web archiving. Records are not automatically shared with other devices yet.':
  'Signed and saved in this browser. Awaiting printing and archive confirmation in Print Archive → Endorsements.')+
  '</div>';
 }
@@ -3700,7 +3700,7 @@ function endorsements(){
     `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="go('pilots')">Manage pilots</button><button class="btn primary" onclick="endorsementForm()">＋ Add endorsement</button></div>`)+
   `<div class="card">
     <div class="note" style="margin-bottom:14px">${isStandaloneApp()?
-      'Create, sign and review endorsements in the app. Signed records remain on this device until cloud sync is implemented; printing and archiving are web-only.':
+      'Create, sign and review endorsements in the app. Records stay on this device; printing and archiving are web-only. Until cloud sync is ready, moving an endorsement to another device requires exporting a Full Backup from Profile and restoring it in the browser.':
       'Signed endorsements are locked. Use Print Archive → Endorsements to print, archive or correct them.'}</div>
     ${v2EndorsementNotice?'<div class="note" role="status" style="margin-bottom:14px">'+htmlEscape(v2EndorsementNotice)+'</div>':''}
     <div class="endorsement-list">
