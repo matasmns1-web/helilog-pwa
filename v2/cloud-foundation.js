@@ -19,8 +19,10 @@
   try{url=new URL(c.supabaseUrl);}catch{throw Error("Cloud project URL is invalid.");}
   if(url.protocol!=="https:"||url.username||url.password||url.pathname!=="/"&&url.pathname!==""||url.search||url.hash)throw Error("Use a secure Supabase project base URL.");
   const key=String(c.publishableKey);
-  if(key.length<20 || /\s/.test(key)||key.startsWith("sb_secret_")||key.includes("service_role")||key.includes("postgres://"))
-   throw Error("Do not put a secret or service_role key into a public HeliLog website.");
+  // Require modern publishable keys. A legacy JWT-shaped service_role key
+  // can otherwise be misclassified as anon and accidentally exposed.
+  if(!/^sb_publishable_[A-Za-z0-9_-]{12,}$/.test(key))
+   throw Error("Only a Supabase sb_publishable_ key is allowed; never use a secret, legacy JWT or service_role key in the public site.");
   return true;
  }
  function snapshot(){
