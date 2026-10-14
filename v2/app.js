@@ -312,7 +312,8 @@ function timePickerMarkup(name,val){
   const str=String(i).padStart(2,"0");
   return '<option value="'+str+'"'+(str===selected?' selected':'')+'>'+str+'</option>';
  }).join("");
- return '<div class="time-selectors"><label><span>Hour (24h)</span><select name="'+name+'-hour" data-time-picker="'+name+'">'+options(23,hh)+'</select></label>'+
+ return '<button type="button" class="time-toggle" data-action="toggle-time-picker" data-id="'+name+'" aria-label="Choose '+name+' time" aria-expanded="false" title="Choose time in 24-hour format">◷</button>'+
+ '<div class="time-selectors" id="'+name+'-time-picker" hidden><label><span>Hour (24h)</span><select name="'+name+'-hour" data-time-picker="'+name+'">'+options(23,hh)+'</select></label>'+
  '<label><span>Minute</span><select name="'+name+'-minute" data-time-picker="'+name+'">'+options(59,mm)+'</select></label></div>';
 }
 }
@@ -614,6 +615,15 @@ function setupSignaturePad(){
 }
 function handleClick(action,id){
  switch(action){
+  case "toggle-time-picker":{
+   const panel=document.getElementById(id+"-time-picker");
+   if(panel){
+    panel.hidden=!panel.hidden;
+    const toggle=document.querySelector('[data-action="toggle-time-picker"][data-id="'+id+'"]');
+    if(toggle)toggle.setAttribute("aria-expanded",String(!panel.hidden));
+   }
+   return;
+  }
   case "nav-settings":go("settings");return;
   case "dashboard-range":
    dashboardDays=id==="all"?null:Number(id);
@@ -769,6 +779,10 @@ document.addEventListener("change",event=>{
   if(input&&h!==""&&m!==""){
    input.value=h+":"+m;
    checkTimeInput(input);previewFlightDuration();
+   const popup=document.getElementById(key+"-time-picker");
+   if(popup)popup.hidden=true;
+   const trigger=document.querySelector('[data-action="toggle-time-picker"][data-id="'+key+'"]');
+   if(trigger)trigger.setAttribute("aria-expanded","false");
   }
  }
 });
