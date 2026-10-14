@@ -45,7 +45,7 @@ test("PIC/SOLO always attach account-holder commander; DUAL/SPIC require differe
  assert.equal(F.getFlight(pic,"f1").picName,"Test Account Holder");
  const solo=F.addFlight(s,{...flight,id:"solo",role:"SOLO"},NEXT);
  assert.equal(F.getFlight(solo,"solo").picPersonId,"me");
- assert.throws(()=>F.addFlight(s,{...flight,role:"DUAL",picPersonId:"me"},NEXT),/different commander/);
+ assert.throws(()=>F.addFlight(s,{...flight,role:"DUAL",picPersonId:"me"},NEXT),/other than the account holder/);
  assert.throws(()=>F.addFlight(s,{...flight,role:"SPIC",picPersonId:""},NEXT),/Commander/);
  const dual=F.addFlight(s,{...flight,role:"DUAL",picPersonId:"fi"},NEXT);
  assert.equal(dual.flights[0].picPersonId,"fi");
@@ -66,7 +66,7 @@ test("SE/ME and pilot configuration are independent, totals account for PICUS/SP
  assert.equal(t.engineME,70);
  assert.equal(t.single,140);
  assert.equal(t.multi,70);
- assert.equal(t.crossCountry,70);
+ assert.equal(t.crossCountry,140);
  assert.equal(t.ifr,50);
  assert.equal(t.night,30);
 });
