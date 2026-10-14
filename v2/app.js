@@ -614,6 +614,13 @@ function setupSignaturePad(){
 }
 function handleClick(action,id){
  switch(action){
+  case "nav-settings":go("settings");return;
+  case "dashboard-range":
+   dashboardDays=id==="all"?null:Number(id);
+   render();return;
+  case "reset-flight-filters":
+   logFilters={search:"",role:"",aircraft:"",xc:"",night:"",ifr:""};
+   render();return;
   case "nav-aircraft":go("aircraft");return;
   case "nav-flights":go("flights");return;
   case "nav-flight-totals":go("flight-totals");return;
@@ -728,6 +735,11 @@ document.addEventListener("click",event=>{
 });
 document.addEventListener("input",event=>{
  const el=event.target;
+ if(el?.dataset?.flightFilter==="search"){
+  logFilters.search=String(el.value||"");
+  updateFlightResults();
+  return;
+ }
  if(!document.getElementById("flight-form"))return;
  if(el.matches?.('[data-time-field]')){checkTimeInput(el);previewFlightDuration();}
  if(el.name==="landingDay")manualLandingDay=true;
@@ -740,6 +752,12 @@ document.addEventListener("input",event=>{
  }
 });
 document.addEventListener("change",event=>{
+ const filter=event.target?.dataset?.flightFilter;
+ if(filter&&filter!=="search"&&Object.prototype.hasOwnProperty.call(logFilters,filter)){
+  logFilters[filter]=String(event.target.value||"");
+  updateFlightResults();
+  return;
+ }
  if(event.target?.name==="role")updateRoleSelect();
  const key=event.target?.dataset?.timePicker;
  if(key==="off"||key==="on"){
