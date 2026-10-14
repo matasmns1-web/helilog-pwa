@@ -1,6 +1,6 @@
 # HeliLog — Developer & Maintenance Guide
 
-**Baseline:** HeliLog V1.43 (13 October 2026)  
+**Baseline:** HeliLog V1.43.1 (14 October 2026)  
 **Source repository:** https://github.com/matasmns1-web/helilog-pwa  
 **Production website:** https://helilog-pwa.onrender.com  
 **Hosting dashboard:** https://dashboard.render.com/static/srv-db6b6lnlot8c739i6kl0  
@@ -118,7 +118,7 @@ A working site does not prove local data was preserved; use application-level ba
 2. Create a separate Git branch. Make a small, understandable change; do not simultaneously rewrite the data model, archive rules and UI.
 3. Check console and syntax. Test the requested feature and run the full checklist in [RELEASE-CHECKLIST.md](RELEASE-CHECKLIST.md).
 4. Update **all applicable visible/app version references** in `index.html` (browser title, app header, backup `appVersion`, informational copy as appropriate).
-5. For a code/UI release, bump the `CACHE` identifier in `service-worker.js`, currently `helilog-v1-43-shell`. Do **not** rename the storage keys to bump a version.
+5. For a code/UI release, bump the `CACHE` identifier in `service-worker.js`, currently `helilog-v1-43-1-shell`. Do **not** rename the storage keys to bump a version.
 6. Review the diff to confirm no passwords, personal flight data, JSON backups or copied production localStorage bytes were committed. GitHub is currently a **public** repository.
 7. Commit and merge/push to `main`, then verify Render deploy status and commit SHA.
 8. Reload the live app; verify the version, create/edit a fictional record in Test Mode, check Totals and Print Archive, and confirm the main dataset is still present.
@@ -176,7 +176,7 @@ State object `S` includes at least:
 
 **Dates:** internal `YYYY-MM-DD` ISO date strings; visible/editable user dates in `DD-MM-YYYY`. **Times:** 24-hour clock; durations/totals are stored as **integer minutes**, shown to pilots as `H:MM`. Preserve these units; never treat `1:30` as 1.30 decimal hours.
 
-**Aircraft:** record ICAO aircraft type designators (e.g. `G2CA` for Cabri G2), not just a marketing model name. Single-/multi-engine and single-/multi-pilot are separate concepts; see `engineCode()` and `configurationTimes()`.
+**Aircraft:** record ICAO aircraft type designators (e.g. `G2CA` for Cabri G2), not just a marketing model name. Single-/multi-engine and single-/multi-pilot are **independent** concepts; see `engineCode()` and `configurationTimes()`. Since V1.43.1, the paper print uses **four configuration cells**: SE ✓, ME ✓, Single-pilot hours, Multi-pilot hours. The aircraft sets the engine checkmark automatically; the flight's pilot configuration determines which hour cell is filled. Totals separately show SE/ME and Single-/Multi-pilot time. Earlier paper opening balances may not fully identify engine type for previously recorded multi-pilot hours; do not invent missing split.
 
 **Pilot functions:** current headline PIC calculation includes PIC, SOLO, SPIC and PICUS. Co-pilot and Dual are separately reported. This is an *implemented convention*, not independently validated regulatory credit. Keep SPIC and PICUS traceability. Instructor, Night, IFR and specialised operations are breakdowns within total flight time; do not add them to total again.
 
@@ -185,6 +185,8 @@ State object `S` includes at least:
 **Validation:** `inspectHeliLogData()` checks IDs, dates, time ranges, duplicate indicators, archive continuity and correction chaining. Do not ignore integrity-check errors to force an import or restore.
 
 ### Print archive — extremely sensitive
+
+**Print-layout compatibility:** New V1.43.1 paper batches store `paperLayoutVersion: 2` and print 27 columns, including SE/ME checkmark cells and separate Single-/Multi-pilot hours. Batches confirmed before this change have no version marker and are reprinted with the legacy 26-column layout. Never retroactively change the layout of signed batches. New-layout totals store `engineSE`, `engineME`, `single`, `multi` independently; legacy `spSE`/`spME` fields are retained for archival continuity.
 
 Confirmed paper batches are persisted in `S.printArchive.batches` with copied flight data, aircraft/pilot snapshots, opening/closing totals, page numbers and record IDs. They are intended to be frozen. `LOGBOOK_ROWS_PER_PAGE = 14`; printing uses **A4 landscape with 12 mm margins**. A batch is confirmed only after manual printing/checking/signing; the software cannot prove that a printer printed a page.
 
