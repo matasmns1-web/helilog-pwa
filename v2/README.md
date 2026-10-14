@@ -1,6 +1,6 @@
 # HeliLog V2 — Development Foundation
 
-**Status:** V2.0 Alpha 2 — aircraft profiles, pilot account-holder selection, Add Flight and preliminary flight totals implemented alongside the endorsement archive. The production website remains V1.43.2.
+**Status:** V2.0 Alpha 3 — V1.43.2 interface restoration plus aircraft profiles, Add Flight, preliminary totals and endorsement archives. The production website remains V1.43.2.
 
 **Branch:** v2/development
 
@@ -71,6 +71,20 @@ The standalone V2 testing interface now supports:
 The existing V2 storage key and schema continue unchanged, so your previously saved endorsement test records and archives should remain available in the same browser. As before, all data on the V2 test site is **local to the current browser/device**, not synchronized.
 
 The flight printing/archiving and simulator entry workflows are **not yet** in the V2 interface; use V1 for comparison only.
+
+## V1-style interface restoration (Alpha 3)
+
+Based on direct user testing, the first V2 visual layout was less usable than V1.43.2. The **V1.43.2 interface is the reference design for V2**, rather than the original generic alpha layout.
+
+- Restored the familiar dark fixed desktop sidebar (Dashboard, Logbook, Totals, Aircraft, Pilots, Endorsements, Print archive, Test settings).
+- Restored a compact bottom navigation for phones and iPad-sized viewports, with **Home / Logbook / Add flight / Totals / More**.
+- Dashboard now shows the V1-style **Flight-time overview** with time-range selectors, the four headline totals and Night/IFR metrics; quick actions, recent flights, upcoming dates placeholder, recent endorsements and aircraft time.
+- Totals now has the four V1 headline cards (**Total / PIC / Co-pilot / Dual**) and familiar panels for **SE/ME**, **single/multi-pilot**, **additional breakdown**, **simulator**, **takeoffs and landings**, **by ICAO type** and **specialised helicopter operations**. Unsupported V2 sections are clearly labelled, rather than presenting invented values.
+- Logbook uses a compact table and working search, aircraft, pilot-function, cross-country, Night and IFR filters, with **filtered total plus Night/IFR time when filtered**.
+- Aircraft uses a card grid with ICAO designators, SE/ME and recorded time.
+- Add Flight has a compact popup 24-hour HH/MM picker, while typed HHmm / HH:mm remains supported.
+
+**No V1 source files, live site, storage keys, or existing V2 endorsement archives were changed** by the redesign. This is a UI alignment milestone, not yet a complete V1 feature port. Test the desktop and iPad/mobile layouts for readability and form behavior.
 
 ## Not yet implemented
 
