@@ -103,7 +103,8 @@
   const picPersonId=isSelf?(original&&original.role===role?original.picPersonId:owner?.id):text(values.picPersonId,"Commander",90);
   const commander=state.people.find(p=>p.id===picPersonId);
   need(!!commander,"Selected commander does not exist");
-  if(!isSelf&&!original)need(!owner||commander.id!==owner.id,"For this pilot function, the commander must be someone other than the account holder");
+  if(!isSelf&&(!original||original.role!==role||original.picPersonId!==picPersonId))
+   need(!owner||commander.id!==owner.id,"For this pilot function, the commander must be someone other than the account holder");
   const pilotConfig=values.pilotConfig;
   need(pilotConfig==="single"||pilotConfig==="multi","Pilot configuration must be single or multi");
   const off=timeValue(values.off),on=timeValue(values.on),durationMin=elapsed(off,on);
