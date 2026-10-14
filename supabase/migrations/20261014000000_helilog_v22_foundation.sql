@@ -164,7 +164,10 @@ begin
  ) then
   raise exception 'Archived record cannot be changed or deleted; use an addendum';
  end if;
- return case when TG_OP = 'DELETE' then old else new end;
+ if TG_OP = 'DELETE' then
+  return old;
+ end if;
+ return new;
 end;
 $$;
 drop trigger if exists helilog_record_guard on public.helilog_records;
