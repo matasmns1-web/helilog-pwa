@@ -64,7 +64,11 @@ function boot(){
    pointer.pointerdown({preventDefault(){},clientX:25,clientY:30,pointerId:1});
    pointer.pointerup();
  };
- return {current,click,navigate,submit,draw,printed,app,records,context};
+ const filter=(name,value)=>{
+   const target={dataset:{flightFilter:name},value,name:"filter-"+name};
+   events[name==="search"?"input":"change"]({target});
+ };
+ return {current,click,navigate,submit,draw,filter,printed,app,records,context};
 }
 
 test("UI: creates, signs, previews and archives an endorsement, then signs a correction",()=>{
@@ -181,4 +185,47 @@ test("UI: an invalid time does not create a flight",()=>{
  });
  assert.equal(ui.current().flights.length,0);
  assert.match(ui.app.innerHTML,/Add Flight/);
+});
+
+
+test("UI: V1-style dashboard, totals sections and Logbook filters remain functional",()=>{
+ const ui=boot();
+ assert.match(ui.app.innerHTML,/Flight-time overview/);
+ assert.match(ui.app.innerHTML,/Recent flights/);
+ assert.match(ui.app.innerHTML,/Upcoming dates/);
+ assert.match(ui.app.innerHTML,/Aircraft time/);
+ assert.match(ui.app.innerHTML,/30 days/);
+ ui.click("dashboard-range","30");
+ assert.match(ui.app.innerHTML,/dashboard-range/);
+
+ ui.navigate("people");
+ ui.submit("person-form",{name:"Example Pilot"});
+ ui.click("set-owner",ui.current().people[0].id);
+ ui.navigate("aircraft");ui.click("new-aircraft");
+ ui.submit("aircraft-form",{registration:"LY-TEST",icao:"G2CA",engine:"SE"});
+ const aid=ui.current().aircraft[0].id;
+ ui.navigate("flights");ui.click("new-flight");
+ ui.submit("flight-form",{
+  date:"14-10-2026",aircraftId:aid,dep:"EYVI",arr:"EYKA",off:"0935",on:"10:45",
+  role:"PIC",pilotConfig:"single",ifrMin:"20",nightMin:"0",instructorMin:"0",
+  takeoffDay:"1",landingDay:"1",takeoffNight:"0",landingNight:"0",crossCountry:true
+ });
+ ui.navigate("flights");
+ assert.match(ui.app.innerHTML,/filter-search/);
+ assert.match(ui.app.innerHTML,/EYVI/);
+ ui.filter("xc","false");
+ ui.navigate("flights");
+ assert.doesNotMatch(ui.app.innerHTML,/<td>EYVI<\/td>/);
+ assert.match(ui.app.innerHTML,/0 of 1 flights/);
+ ui.click("reset-flight-filters");
+ assert.match(ui.app.innerHTML,/1 of 1 flights/);
+ ui.navigate("flight-totals");
+ for(const section of [
+  "Aircraft engine experience","Pilot configuration time","Additional breakdown",
+  "Simulator / synthetic training device experience","Take-offs &amp; landings",
+  "By ICAO type","Specialised helicopter operations experience"
+ ])assert.ok(ui.app.innerHTML.includes(section),section);
+ for(const label of ["Total","PIC","Co-pilot","Dual"]){
+  assert.match(ui.app.innerHTML,new RegExp('class="label">'+label+'</div>'));
+ }
 });
