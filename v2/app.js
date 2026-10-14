@@ -572,11 +572,54 @@ document.addEventListener("click",event=>{
  const el=event.target.closest("[data-action]");
  if(el)safeRun(()=>handleClick(el.dataset.action,el.dataset.id||""));
 });
+document.addEventListener("input",event=>{
+ const el=event.target;
+ if(!document.getElementById("flight-form"))return;
+ if(el.matches?.('[data-time-field]')){checkTimeInput(el);previewFlightDuration();}
+ if(el.name==="landingDay")manualLandingDay=true;
+ if(el.name==="landingNight")manualLandingNight=true;
+ if(el.name==="takeoffDay"&&!manualLandingDay){
+  const landing=document.getElementById("landingDay");if(landing)landing.value=el.value;
+ }
+ if(el.name==="takeoffNight"&&!manualLandingNight){
+  const landing=document.getElementById("landingNight");if(landing)landing.value=el.value;
+ }
+});
+document.addEventListener("change",event=>{
+ if(event.target?.name==="role")updateRoleSelect();
+});
 document.addEventListener("submit",event=>{
  const form=event.target;
  if(!form.matches("form"))return;
  event.preventDefault();
  safeRun(()=>{
+  if(form.id==="aircraft-form"){
+   const val=name=>String(form.elements.namedItem(name)?.value||"").trim();
+   const data={registration:val("registration"),icao:val("icao"),manufacturer:val("manufacturer"),
+    model:val("model"),variant:val("variant"),engine:val("engine")};
+   commit(editingAircraftId?
+    Flight.editAircraft(state,editingAircraftId,data,now()):
+    Flight.addAircraft(state,{...data,id:uid("aircraft")},now()));
+   editingAircraftId="";setNotice("Aircraft saved.");go("aircraft");return;
+  }
+  if(form.id==="flight-form"){
+   try{
+    const fields=flightFormValues(form);
+    const next=editingFlightId?
+     Flight.editFlight(state,editingFlightId,fields,now()):
+     Flight.addFlight(state,{...fields,id:uid("flight")},now());
+    commit(next);editingFlightId="";setNotice("Test flight saved.");go("flights");
+   }catch(e){
+    const area=document.getElementById("flight-form-error");
+    if(area){area.textContent=String(e.message||e);area.style.display="block";}
+    for(const name of ["off","on"]){
+     const input=document.getElementById(name);
+     if(input)checkTimeInput(input);
+    }
+    // Invalid flight fields remain in place so the pilot can correct them.
+   }
+   return;
+  }
   if(form.id==="person-form"){
    const name=form.elements.namedItem("name").value.trim(),licence=form.elements.namedItem("licence").value.trim();
    commit(D.addPerson(state,{id:uid("pilot"),name,licence},now()));
