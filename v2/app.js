@@ -211,21 +211,43 @@ function flightsView(){
 }
 function flightTotalsView(){
  const t=Flight.totals(state);
- const items=[["Total",t.total],["PIC (PIC + SOLO + SPIC + PICUS)",t.pic],
-  ["Co-pilot",t.copilot],["Dual",t.dual],
-  ["SPIC",t.spic],["PICUS",t.picus],
-  ["Single-engine",t.engineSE],["Multi-engine",t.engineME],
-  ["Single-pilot",t.single],["Multi-pilot",t.multi],
-  ["Cross-country",t.crossCountry],["Night",t.night],
-  ["IFR",t.ifr],["Instructor",t.instructor]];
- return head("Flight time totals","Calculated from the saved test flights. Pilot-function grouping is a prototype convention, not a regulatory credit determination.")+
- '<div class="grid">'+[["Total",t.total],["PIC",t.pic],["Dual",t.dual]].map(x=>'<div class="card"><div class="hint">'+esc(x[0])+
- '</div><div class="stat">'+fmtTime(x[1])+'</div></div>').join("")+'</div>'+
- '<div class="card"><h2>Breakdown</h2>'+
- items.map(([name,n])=>'<div class="statrow"><span>'+esc(name)+'</span><b>'+fmtTime(n)+'</b></div>').join("")+
- '<div class="statrow"><span>Flights</span><b>'+t.flightCount+'</b></div>'+
- '<div class="statrow"><span>Day / night take-offs</span><b>'+t.takeoffDay+' / '+t.takeoffNight+'</b></div>'+
- '<div class="statrow"><span>Day / night landings</span><b>'+t.landingDay+' / '+t.landingNight+'</b></div></div>';
+ const types=new Map();
+ for(const f of state.flights){
+  const key=f.aircraftSnapshot?.icao||"—";
+  types.set(key,(types.get(key)||0)+f.durationMin);
+ }
+ const metric=(label,value)=>'<div class="card"><div class="label">'+label+'</div><div class="big">'+fmtTime(value)+'</div></div>';
+ const row=(label,value,asCount=false)=>'<p class="detail-line"><span>'+label+'</span><strong>'+
+ (asCount?String(value):fmtTime(value))+'</strong></p>';
+ return head("Totals","Your combined career totals · V2 test flights")+
+ '<div class="grid stats" style="margin-bottom:16px">'+
+ metric("Total",t.total)+metric("PIC",t.pic)+metric("Co-pilot",t.copilot)+metric("Dual",t.dual)+
+ '</div>'+
+ '<div class="grid two" style="margin-bottom:16px">'+
+ '<div class="card"><div class="head"><h2>Aircraft engine experience</h2></div>'+
+ row("Single-engine (SE)",t.engineSE)+row("Multi-engine (ME)",t.engineME)+'</div>'+
+ '<div class="card"><div class="head"><h2>Pilot configuration time</h2></div>'+
+ row("Single-pilot",t.single)+row("Multi-pilot",t.multi)+row("Instructor",t.instructor)+'</div>'+
+ '<div class="card"><div class="head"><h2>Additional breakdown</h2></div>'+
+ row("SPIC",t.spic)+row("PICUS",t.picus)+row("Night",t.night)+row("IFR",t.ifr)+
+ row("Cross-country",t.crossCountry)+'</div></div>'+
+ '<div class="card" style="margin-bottom:16px"><div class="head"><h2>Simulator / synthetic training device experience</h2></div>'+
+ '<div class="grid stats">'+
+ '<div class="card"><div class="label">Dedicated simulator sessions</div><div class="big">—</div></div>'+
+ '<div class="card"><div class="label">Simulator session time</div><div class="big">—</div></div>'+
+ '<div class="card"><div class="label">Total STD time recorded</div><div class="big">—</div></div></div>'+
+ '<div class="section-note" style="margin-top:8px">Simulator recording is not implemented in V2 yet. Synthetic training time will remain separate from flight totals.</div></div>'+
+ '<div class="grid two" style="margin-bottom:16px"><div class="card"><div class="head"><h2>Take-offs &amp; landings</h2></div>'+
+ row("Take-offs day",t.takeoffDay,true)+row("Take-offs night",t.takeoffNight,true)+
+ row("Landings day",t.landingDay,true)+row("Landings night",t.landingNight,true)+'</div>'+
+ '<div class="card"><div class="head"><h2>By ICAO type</h2></div>'+
+ ([...types].length?[...types.entries()].sort((a,b)=>b[1]-a[1]).map(([type,minutes])=>
+ row('<b>'+esc(type)+'</b>',minutes)).join(""):
+ '<div class="muted">No aircraft-type hours recorded yet.</div>')+
+ '<div class="section-note" style="margin-top:10px">Based on each flight’s original aircraft snapshot.</div></div></div>'+
+ '<div class="card"><div class="head"><h2>Specialised helicopter operations experience</h2></div>'+
+ '<div class="section-note">Specialised operations categories (including HESLO and VRLL) are planned for V2. They will be calculated separately without adding overlapping time to total flight time.</div></div>'+
+ '<p class="footer">PIC total currently includes PIC, SOLO, SPIC and PICUS as a prototype display convention. Regulatory credit must be verified separately.</p>';
 }
 function flightField(label,name,val,options={}){
  const {max=25,required=false,type="text",min="",step="1"}=options;
