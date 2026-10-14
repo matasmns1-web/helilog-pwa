@@ -11,7 +11,7 @@
 window.HeliLogCloudConfig = Object.freeze({
   supabaseUrl: "https://cabfifnsxpaalgsyicbo.supabase.co",
   publishableKey: "sb_publishable_kemdvt9X-20WU3-G-gtnDg_LJxbN9JW",
-  authEnabled: false,
+  authEnabled: true,
   environment: "test",
   inviteOnly: true
 });
