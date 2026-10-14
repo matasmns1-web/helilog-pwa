@@ -2150,6 +2150,7 @@ function exportPrintableLogbook(options={}){
           ENGINE TIME — SE ${fmt(cumulative.engineSE||0)} · ME ${fmt(cumulative.engineME||0)}
           &nbsp;&nbsp; | &nbsp;&nbsp; PILOT TIME — SINGLE ${fmt(cumulative.single||0)} · MULTI ${fmt(cumulative.multi||0)}
           ${options.unclassifiedPriorEngineMinutes>0?` · Prior paper engine type not allocated: ${fmt(options.unclassifiedPriorEngineMinutes)}`:''}
+          ${options.unclassifiedPriorPilotMinutes>0?` · Prior paper SP/MP time not allocated: ${fmt(options.unclassifiedPriorPilotMinutes)}`:''}
         </div>`:''}
         ${options.correctionsApplied?.length?`<div style="font-size:7px;font-weight:700;margin-bottom:2px">
         CORRECTIONS CARRIED FORWARD: ${htmlEscape(options.correctionsApplied.join(', '))} —
@@ -2444,8 +2445,14 @@ function newLayoutOpeningFromHistory(previous,batches){
 }
 function previousEngineUnallocated(){
   const b=S.broughtForward||{};
-  if(Number.isFinite(b.engineSE)&&Number.isFinite(b.engineME))return 0;
-  return Math.max(0,Number(b.total||0)-Number(b.spSE||0)-Number(b.spME||0));
+  const se=Number(b.engineSE??b.spSE??0);
+  const me=Number(b.engineME??b.spME??0);
+  return Math.max(0,Number(b.total||0)-se-me);
+}
+function previousPilotUnallocated(){
+  const b=S.broughtForward||{};
+  const single=Number(b.single??(Number(b.spSE||0)+Number(b.spME||0)));
+  return Math.max(0,Number(b.total||0)-single-Number(b.multi||0));
 }
 function nextArchiveDraft(){
   const batches=archivedBatches();
@@ -2478,6 +2485,7 @@ function nextArchiveDraft(){
     id:'HL-'+String(seq).padStart(3,'0'),seq,
     paperLayoutVersion:2,
     unclassifiedPriorEngineMinutes:previousEngineUnallocated(),
+    unclassifiedPriorPilotMinutes:previousPilotUnallocated(),
     firstPage,pageCount,flightIds:flights.map(f=>f.id),flights,aircraft,pilot,
     availablePages,totalUnarchived:pendingFlights.length,remainingFlights:pendingFlights.length-flights.length,
     unusedRowsBlocked:true,
@@ -2552,7 +2560,8 @@ function previewNextArchive(){
     correctionsApplied:draft.correctionsApplied,
     openingCorrectionsDelta:draft.openingCorrectionsDelta,
     paperLayoutVersion:draft.paperLayoutVersion,
-    unclassifiedPriorEngineMinutes:draft.unclassifiedPriorEngineMinutes
+    unclassifiedPriorEngineMinutes:draft.unclassifiedPriorEngineMinutes,
+    unclassifiedPriorPilotMinutes:draft.unclassifiedPriorPilotMinutes
   });
   if(opened){
     pendingArchivePreview=JSON.stringify(draft);
@@ -2626,7 +2635,8 @@ function reprintArchiveBatch(seq){
     correctionsApplied:b.correctionsApplied||[],
     openingCorrectionsDelta:b.openingCorrectionsDelta||{},
     paperLayoutVersion:b.paperLayoutVersion===2?2:1,
-    unclassifiedPriorEngineMinutes:b.unclassifiedPriorEngineMinutes||0
+    unclassifiedPriorEngineMinutes:b.unclassifiedPriorEngineMinutes||0,
+    unclassifiedPriorPilotMinutes:b.unclassifiedPriorPilotMinutes||0
   });
 }
 
@@ -3917,14 +3927,14 @@ function totals(){
       <div class="head"><h2>Aircraft engine experience</h2></div>
       <p>Single-engine (SE) <span style="float:right"><b>${fmt(t.engineSE)}</b></span></p>
       <p>Multi-engine (ME) <span style="float:right"><b>${fmt(t.engineME)}</b></span></p>
-      ${Number(S.broughtForward?.total||0)>0 &&
-         S.broughtForward?.engineSE===undefined && S.broughtForward?.engineME===undefined ?
-         `<div class="mini">Earlier paper totals: engine type is not assigned for ${fmt(Math.max(0,Number(S.broughtForward.total||0)-Number(S.broughtForward.spSE||0)-Number(S.broughtForward.spME||0)))}. Edit the previous-logbook totals before your first archive batch to provide an exact SE/ME breakdown.</div>`:''}
+      ${previousEngineUnallocated()>0?
+         `<div class="mini">Previous paper flight time not allocated to SE/ME: ${fmt(previousEngineUnallocated())}. Enter the missing engine split in previous-logbook totals before your first archive batch, if known.</div>`:''}
     </div>
     <div class="card">
       <div class="head"><h2>Pilot configuration time</h2></div>
       <p>Single-pilot <span style="float:right"><b>${fmt(t.single)}</b></span></p>
       <p>Multi-pilot <span style="float:right"><b>${fmt(t.multi)}</b></span></p>
+      ${previousPilotUnallocated()>0?`<div class="mini">Previous paper time not allocated to Single-/Multi-pilot: ${fmt(previousPilotUnallocated())}.</div>`:''}
       <p>Instructor <span style="float:right"><b>${fmt(t.instructor)}</b></span></p>
     </div>
     <div class="card">
@@ -3995,6 +4005,7 @@ function editBroughtForwardTotals(){
     <div class="note">${correcting?'<b>Correction mode.</b> These values have already been imported. Saving will replace the original brought-forward totals.':'This is intended as a <b>one-time setup import</b>.'} The values stay separate from individual HeliLog flights, contribute to career totals, and populate <b>TOTAL FROM PREVIOUS PAGES</b> in the paper-style logbook export.</div>
 
     <div class="section-title">Flight time</div>
+    <div class="mini" style="margin-bottom:10px">Engine type and pilot configuration are independent: SE + ME should equal your total flight time, and Single-pilot + Multi-pilot should separately equal the same total. The two groups must not be added together. If old paper records do not provide every category, HeliLog will indicate the unallocated difference.</div>
     <div class="formgrid">
       ${durationField('bfTotal','Total time','total')}
       ${durationField('bfEngineSE','Single-engine (SE) total','engineSE')}
@@ -4072,6 +4083,13 @@ function saveBroughtForwardTotals(ev){
       return;
     }
     next[key]=value;
+  }
+  if(next.engineSE+next.engineME>next.total || next.single+next.multi>next.total){
+    const error=document.getElementById('bfError');
+    error.textContent='The SE+ME total and Single-pilot+Multi-pilot total must not exceed the overall total flight time. Each is a separate breakdown of the same hours.';
+    error.classList.add('show');
+    error.scrollIntoView({block:'center',behavior:'smooth'});
+    return;
   }
   // Retain historical SP/SE and SP/ME values for old confirmed archive layouts,
   // but do not mix engine type with pilot configuration for new records.
