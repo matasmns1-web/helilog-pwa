@@ -62,8 +62,11 @@
   try{
    const db=await connect();
    const {data:identity,error:authErr}=await db.auth.getUser();
-   if(authErr)throw authErr;
+   // Supabase reports a missing session on first visit; that is signed OUT,
+   // not a broken database connection.
+   if(authErr && identity?.user)throw authErr;
    if(!identity?.user){
+    if(authErr && authErr.name!=="AuthSessionMissingError"&&!/Auth session missing/i.test(authErr.message||""))throw authErr;
     status="signed_out";user=null;account=null;lastError="";return snapshot();
    }
    user={id:identity.user.id,email:identity.user.email};
