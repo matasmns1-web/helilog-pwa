@@ -9,8 +9,8 @@
  * Until configured, HeliLog remains a local-only test application.
  */
 window.HeliLogCloudConfig = Object.freeze({
-  supabaseUrl: "",
-  publishableKey: "",
+  supabaseUrl: "https://cabfifnsxpaalgsyicbo.supabase.co",
+  publishableKey: "sb_publishable_kemdvt9X-20WU3-G-gtnDg_LJxbN9JW",
   authEnabled: false,
   environment: "test",
   inviteOnly: true
