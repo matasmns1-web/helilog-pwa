@@ -1,6 +1,6 @@
 # HeliLog V2 — Development Foundation
 
-**Status:** V2.0 alpha — first standalone endorsement interface and print workflow implemented on a development branch. The production website remains V1.43.2.
+**Status:** V2.0 Alpha 2 — aircraft profiles, pilot account-holder selection, Add Flight and preliminary flight totals implemented alongside the endorsement archive. The production website remains V1.43.2.
 
 **Branch:** v2/development
 
@@ -55,9 +55,26 @@ To try it on a local development computer, check out the development branch, sta
 
 **Do not open the local HTML as a file:** browser storage and popup behavior may differ. All entries in V2 at this stage must be fictional.
 
+## Aircraft and Add Flight (Alpha 2)
+
+The standalone V2 testing interface now supports:
+
+- **Aircraft:** Save, edit and remove aircraft profiles (registration, manufacturer, model/variant, ICAO type designator and SE/ME classification). An aircraft already referenced by a flight cannot be deleted.
+- **Pilot profiles:** Existing pilot/endorser profiles can be marked as **Account Holder** (one at a time). PIC and SOLO flights automatically use that profile for Name of PIC. SPIC, PICUS, DUAL and CO-PILOT require selecting a separate saved commander.
+- **Add Flight:** DD-MM-YYYY date entry; departure/arrival airports; 24-hour departure/arrival entry as HHmm or HH:mm; additional hour/minute dropdown time picker; overnight durations; integer-minute IFR, Night and Instructor categories; cross-country marker; remarks; day/night takeoffs and landings, with takeoff-to-landing automatic mirroring unless manually changed.
+- **Independent configuration:** Flight engine class SE/ME comes from the aircraft; single/multi pilot operation is a separate field.
+- **Flights:** List saved test flights, edit them and remove them while they are unarchived.
+- **Preliminary totals:** Total, PIC, Co-pilot, Dual, SPIC, PICUS, SE/ME, single/multi pilot, cross-country, Night, IFR, Instructor and landings/takeoffs. PIC includes PIC/SOLO/SPIC/PICUS by the prototype convention (not a regulatory determination).
+- **Historical snapshots:** Each flight keeps registration, ICAO type and engine class at the time of entry. Changing an aircraft profile cannot retroactively change an existing flight's engine-class totals.
+- **Validation:** Reject malformed times, identical start/end times, impossible dates, excessive Night/IFR/Instructor time, missing aircraft/commander and invalid nonnegative counts. The Add Flight page keeps its fields visible on validation errors.
+
+The existing V2 storage key and schema continue unchanged, so your previously saved endorsement test records and archives should remain available in the same browser. As before, all data on the V2 test site is **local to the current browser/device**, not synchronized.
+
+The flight printing/archiving and simulator entry workflows are **not yet** in the V2 interface; use V1 for comparison only.
+
 ## Not yet implemented
 
-V2 is still not deployed to a public staging URL, and no V2 flight-entry or total-time replacement is available. There is no cloud database, secure account, remote backup service, iPad sync or cross-device conflict-resolution service. The storage revision mechanism is a development safeguard, not an atomic distributed transaction. The page layout identifier endorsement-sheet-v1 and **three endorsements per page** are provisional; visually inspect print previews to ensure longer wording fits the paper before confirming any archive. Signature images are **not** an identity-verification mechanism.
+V2 is deployed to a separate staging URL at https://helilog-v2-test.onrender.com, and basic V2 flight entry and totals are available, but V1 functional parity is not yet reached. There is no cloud database, secure account, remote backup service, iPad sync or cross-device conflict-resolution service. The storage revision mechanism is a development safeguard, not an atomic distributed transaction. The page layout identifier endorsement-sheet-v1 and **three endorsements per page** are provisional; visually inspect print previews to ensure longer wording fits the paper before confirming any archive. Signature images are **not** an identity-verification mechanism.
 
 **A captured signature image alone does not establish endorser identity or EASA/TKA acceptance.** A paper endorsement may still require a handwritten signature. Printed-batch confirmation must always be a separate explicit user action after reviewing/printing.
 
@@ -87,4 +104,4 @@ From the repository root, with Node.js 18 or later:
 
     node --test v2/*.test.cjs
 
-Tests cover signed-record immutability, archive numbering and stale-preview rejection, signed amendments, printable A4 markup and before/after correction printing, JSON round-trip, storage isolation, malformed data, revision conflicts and the simulated browser UI workflow.
+Tests cover signed-record immutability, archive numbering and stale-preview rejection, signed amendments, printable A4 markup and correction printing, JSON round-trip, storage isolation, malformed data, revision conflicts, 24-hour and overnight flight time, PIC role logic, aircraft snapshots and preliminary totals, with simulated browser workflow regressions.
