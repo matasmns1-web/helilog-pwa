@@ -69,7 +69,23 @@ html,body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,Seg
 .badge.signed{background:#ecfdf3;color:#067647}
 .badge.archive{background:#eef2ff;color:#3730a3}
 .summarybox{background:#f8fafc;border:1px solid var(--line);color:#4b5563}
-.time-selectors{gap:8px;margin:6px 0 0}
+.field{position:relative}
+.field input[data-time-field="1"]{padding-right:46px}
+.time-toggle{
+ position:absolute;right:5px;top:29px;width:36px;height:35px;min-height:35px;
+ font-size:19px;border:0;background:transparent;border-radius:7px;color:#4b5563
+}
+.time-toggle:hover{background:#eef2f7}
+.time-selectors[hidden]{display:none!important}
+.time-selectors{
+ position:absolute;z-index:60;right:0;top:70px;display:grid;
+ grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+ background:#fff;border:1px solid #d5dae0;border-radius:10px;
+ padding:10px;min-width:190px;box-shadow:0 10px 25px rgba(0,0,0,.15);
+}
+.time-selectors label{margin:0}
+.time-selectors select{width:100%}
+
 .time-selectors select{border:1px solid #d5dae0}
 .item{padding:12px 0}
 .itemtitle{font-size:15px}
