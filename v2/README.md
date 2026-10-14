@@ -1,3 +1,11 @@
+# HeliLog V2 — Development
+
+**Current testing landing page:** the complete V1.43.2 interface is restored with V2 endorsement print archiving. See [FULL-V1-INTERFACE.md](FULL-V1-INTERFACE.md) for parity scope, testing instructions and data safety.
+
+**Earlier V2 alpha:** [alpha.html](alpha.html) remains available with its own test data.
+
+---
+
 # HeliLog V2 — Development Foundation
 
 **Status:** V2.0 Alpha 3 — V1.43.2 interface restoration plus aircraft profiles, Add Flight, preliminary totals and endorsement archives. The production website remains V1.43.2.
