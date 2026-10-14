@@ -40,7 +40,7 @@ function boot(){
  };
  browser.window=browser;
  const context=vm.createContext(browser);
- for(const file of ["domain.js","storage.js","print.js","app.js"]){
+ for(const file of ["domain.js","storage.js","print.js","flights.js","app.js"]){
    vm.runInContext(fs.readFileSync(path.join(__dirname,file),"utf8"),context,{filename:file});
  }
  const current=()=>JSON.parse(records.get("helilog_v2_dev_workspace"));
