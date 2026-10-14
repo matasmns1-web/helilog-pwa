@@ -99,11 +99,11 @@
   need(ROLES.includes(role),"Invalid pilot function");
   const owner=accountHolder(state);
   const isSelf=SELF_ROLES.has(role);
-  need(!isSelf||!!owner,"Set an account holder under Pilot Profiles before logging PIC or SOLO");
-  const picPersonId=isSelf?owner.id:text(values.picPersonId,"Commander",90);
+  need(!isSelf||!!owner||!!original,"Set an account holder under Pilot Profiles before logging PIC or SOLO");
+  const picPersonId=isSelf?(original&&original.role===role?original.picPersonId:owner?.id):text(values.picPersonId,"Commander",90);
   const commander=state.people.find(p=>p.id===picPersonId);
   need(!!commander,"Selected commander does not exist");
-  if(!isSelf)need(!owner||commander.id!==owner.id,"For this pilot function, the commander must be someone other than the account holder");
+  if(!isSelf&&!original)need(!owner||commander.id!==owner.id,"For this pilot function, the commander must be someone other than the account holder");
   const pilotConfig=values.pilotConfig;
   need(pilotConfig==="single"||pilotConfig==="multi","Pilot configuration must be single or multi");
   const off=timeValue(values.off),on=timeValue(values.on),durationMin=elapsed(off,on);
@@ -142,7 +142,9 @@
   const next=updated(state,at),f=getFlight(next,id);
   need(!!f,"Flight not found");
   need(!flightIsArchived(next,id),"Archived flights require a correction addendum");
-  const revised=flightFields(next,{...f,...data});
+  const revised=flightFields(next,{...f,...data},f);
+  // Changing an aircraft profile must not rewrite the snapshot of an existing flight.
+  if(revised.aircraftId===f.aircraftId)revised.aircraftSnapshot=clone(f.aircraftSnapshot);
   Object.assign(f,revised,{updatedAt:at});return next;
  }
  function deleteFlight(state,id,at){
@@ -195,7 +197,7 @@
     need(!!aircraft,"Aircraft missing");
     need(!!f.aircraftSnapshot&&["SE","ME"].includes(f.aircraftSnapshot.engine)&&!!f.aircraftSnapshot.icao,"Aircraft snapshot missing");
     need(f.durationMin===elapsed(f.off,f.on),"Invalid duration");
-    const previous=flightFields(state,f);
+    const previous=flightFields(state,f,f);
     for(const field of ["date","dep","arr","off","on","role","picPersonId","pilotConfig",
      "ifrMin","nightMin","instructorMin","takeoffDay","takeoffNight","landingDay","landingNight","crossCountry","remarks"]){
        need(f[field]===previous[field],"Invalid "+field);
