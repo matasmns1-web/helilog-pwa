@@ -35,7 +35,7 @@ function cloud(){
  const stateText=st.configured?(state==="signed_in"?"Signed in":state==="error"?"Connection needs attention":
    state==="connecting"?"Connecting…":"Ready for private sign-in"):"Cloud not configured";
  app.innerHTML=header('Cloud account','HeliLog V2.2 · Private account foundation',
-  '<button class="btn" onclick="go(\\'profile\\')">← Profile</button>')+
+  `<button class="btn" onclick="go('profile')">← Profile</button>`)+
   '<div class="card" style="margin-bottom:16px"><div class="head"><h2>Connection status</h2></div>'+
   '<div class="pwa-state"><b>'+v22CloudEscape(stateText)+'</b></div>'+
   (st.configured?'<div class="mini">Test environment · Invitation-only accounts</div>':'<div class="mini">Test project is not configured yet.</div>')+
