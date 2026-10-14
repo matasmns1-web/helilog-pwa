@@ -9,6 +9,7 @@ let state=null, page="overview", editingId="", signingId="", signingProposal=nul
 let pendingBatch=null, batchPreviewOpened=false, pendingAmendment=null, amendmentPreviewOpened=false;
 let flash="", signatureDirty=false, signCanvas=null;
 let editingAircraftId="",editingFlightId="",manualLandingDay=false,manualLandingNight=false;
+let dashboardDays=null, logFilters={search:"",role:"",aircraft:"",xc:"",night:"",ifr:""};
 const esc=Print.escapeHTML, now=()=>new Date().toISOString();
 const uid=prefix=>prefix+"-"+(typeof crypto!=="undefined"&&crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random().toString(36).slice(2,10));
 const showDate=s=>/^\d{4}-\d{2}-\d{2}$/.test(String(s))?s.slice(8)+"-"+s.slice(5,7)+"-"+s.slice(0,4):String(s||"");
@@ -50,11 +51,16 @@ function safeRun(fn){
  catch(err){console.error("V2 operation failed",err);flash="Operation not completed: "+String(err.message||err);render();}
 }
 function render(){
- document.querySelectorAll("[data-nav]").forEach(btn=>btn.classList.toggle("active",btn.dataset.nav===page));
+ const rootPage=page==="flight-editor"||page==="flights"?"flights":page==="aircraft-editor"?"aircraft":
+ page==="flight-totals"?"flight-totals":page==="people"?"people":
+ ["editor","amend","sign","endorsements"].includes(page)?"endorsements":
+ ["amend-preview","archive"].includes(page)?"archive":page;
+ document.querySelectorAll("[data-nav]").forEach(btn=>btn.classList.toggle("active",btn.dataset.nav===rootPage));
  let html="";
  if(flash){html+=banner(flash,/not completed|Invalid|error|failed|unavailable|blocked/i.test(flash)?"warning":"success");flash="";}
  if(page==="overview")html+=overview();
  else if(page==="people")html+=peopleView();
+ else if(page==="more")html+=moreView();
  else if(page==="aircraft")html+=aircraftView();
  else if(page==="aircraft-editor")html+=aircraftEditorView();
  else if(page==="flights")html+=flightsView();
@@ -71,25 +77,85 @@ function render(){
  app.innerHTML=html;
  if(page==="sign")setupSignaturePad();
 }
-function overview(){
- const archived=state.archives.endorsements.reduce((n,b)=>n+b.items.length,0);
- const signed=state.endorsements.filter(e=>e.signature&&!D.isArchived(state,e.id)).length;
- return head("V2 development workspace","Test the new endorsement lifecycle without touching V1.43.2.",
- button("create-endorsement","+ Add endorsement","primary") )+
- banner("Development-only local data. No cloud sync, verified identities or approved digital signatures are implemented.","")+
- '<div class="grid"><div class="card"><div class="hint">ENDORSEMENTS</div><div class="stat">'+state.endorsements.length+'</div></div>'+
- '<div class="card"><div class="hint">SIGNED, AWAITING PRINT</div><div class="stat">'+signed+'</div></div>'+
- '<div class="card"><div class="hint">ARCHIVED</div><div class="stat">'+archived+'</div></div></div>'+
- '<div class="card"><h2>Endorsement workflow</h2><div class="flow">'+
- ['Create','Sign','Print preview','Confirm archive','Correct by addendum'].map((s,i)=>'<div class="flowstep">'+(i+1)+'. '+esc(s)+'</div>').join("")+
- '</div><hr class="sep"><p>Start by creating an instructor/examiner profile. Create an endorsement, draw a signature, print a paper-style page, and confirm only after checking it. Subsequent corrections remain separately traceable.</p>'+
- '<div class="actions">'+button("nav-people","Pilot profiles")+
- button("nav-endorsements","Manage endorsements")+
- button("nav-archive","Open print archive","primary")+'</div></div>'+
- '<div class="card"><h2>Flight logbook</h2><p>Aircraft management, Add Flight, and preliminary flight totals are now available on the V2 testing website. Flight print archiving remains in development.</p>'+
- '<a href="https://helilog-pwa.onrender.com" target="_blank" rel="noopener noreferrer">Open stable HeliLog V1.43.2</a></div>';
+function dashboardRows(records){
+ return records.map(f=>'<tr><td>'+esc(showDate(f.date))+'</td><td><b>'+esc(f.aircraftSnapshot?.icao||"—")+'</b></td>'+
+ '<td>'+esc(f.dep)+' → '+esc(f.arr)+'</td><td>'+fmtTime(f.durationMin)+'</td>'+
+ '<td><span class="tag">'+esc(f.role)+'</span></td></tr>').join("");
 }
-
+function dashboardStats(records){
+ const t=Flight.totals(state,records);
+ return '<div class="grid stats">'+[
+ ["Total",t.total],["PIC",t.pic],["Co-pilot",t.copilot],["Dual",t.dual]
+ ].map(([label,value])=>'<div class="card"><div class="label">'+label+'</div><div class="big">'+fmtTime(value)+'</div></div>').join("")+'</div>'+
+ '<div class="grid stats dashboard-secondary" style="margin-top:10px">'+
+ [["Night",t.night],["IFR",t.ifr]].map(([label,value])=>
+ '<div class="card"><div class="label">'+label+'</div><div class="big">'+fmtTime(value)+'</div></div>').join("")+
+ '</div>';
+}
+function overview(){
+ const owner=Flight.accountHolder(state);
+ const latest=[...state.flights].sort((a,b)=>b.date.localeCompare(a.date)||b.off.localeCompare(a.off));
+ const period=dashboardDays===null?latest:latest.filter(f=>{
+   const d=new Date(f.date+"T00:00:00Z").getTime();
+   const limit=Date.now()-dashboardDays*86400000;
+   return d>=limit;
+ });
+ const byAircraft=state.aircraft.map(a=>{
+   const mins=state.flights.filter(f=>f.aircraftId===a.id).reduce((sum,f)=>sum+f.durationMin,0);
+   return {a,mins};
+ }).sort((a,b)=>b.mins-a.mins);
+ const signed=state.endorsements.filter(e=>e.signature&&!D.isArchived(state,e.id)).length;
+ const pending=state.endorsements.filter(e=>e.signature).length;
+ const latestEndorsements=[...state.endorsements].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,4);
+ return head("Dashboard","Welcome back"+(owner?", "+owner.name:"")+" · V2 development workspace",
+ button("new-flight","＋ Add flight","primary")+button("nav-settings","⚗ Test settings"))+
+ banner("V2 testing environment — fictional flight data only. No cloud synchronization or regulatory signature approval.","")+
+ '<div class="card" style="margin-bottom:14px"><div class="head"><div><h2>Flight-time overview</h2>'+
+ '<div class="muted">'+period.length+' flights in selected period</div></div></div>'+
+ '<div class="dashboard-range">'+[
+  [30,"30 days"],[90,"90 days"],[365,"12 months"],["all","All time"]
+ ].map(([days,label])=>button("dashboard-range",label,
+ (dashboardDays===null&&days==="all"||dashboardDays===days)?"active":"",String(days))).join("")+'</div>'+
+ dashboardStats(period)+'</div>'+
+ '<div class="dashboard-actions">'+[
+  ["new-flight","＋","Add flight","Create a new logbook entry"],
+  ["nav-aircraft","🚁","Aircraft","Manage your fleet"],
+  ["nav-endorsements","✎","Endorsements","Memoranda and signatures"],
+  ["nav-archive","▤","Print archive","Confirmed paper pages"]
+ ].map(([action,icon,title,subtitle])=>
+ '<button type="button" class="card" data-action="'+action+'"><span>'+icon+'</span><b>'+title+'</b>'+
+ '<span class="muted">'+subtitle+'</span></button>').join("")+'</div>'+
+ '<div class="grid two" style="margin-bottom:16px"><div class="card"><div class="head"><h2>Recent flights</h2>'+
+ button("nav-flights","View all")+'</div>'+
+ '<div class="table-scroll"><table><thead><tr><th>Date</th><th>Type</th><th>Route</th><th>Time</th><th>Function</th></tr></thead>'+
+ '<tbody>'+dashboardRows(latest.slice(0,6))+'</tbody></table></div>'+
+ (!latest.length?'<p class="muted" style="padding-top:12px">No flights recorded yet.</p>':"")+'</div>'+
+ '<div class="card"><div class="head"><h2>Upcoming dates</h2>'+button("nav-people","Profiles")+'</div>'+
+ '<p class="muted">Licence, medical and rating expiry reminders will return in a later V2 milestone.</p>'+
+ '<p class="hint">V2 does not currently determine rating currency or regulatory validity.</p></div></div>'+
+ '<div class="grid two"><div class="card"><div class="head"><h2>Recent endorsements</h2>'+
+ button("nav-endorsements","View all")+'</div>'+
+ (latestEndorsements.length?latestEndorsements.map(e=>
+ '<div class="item"><b>'+esc(e.title)+'</b><div class="details">'+esc(showDate(e.date))+' · '+
+ (D.isArchived(state,e.id)?"Archived":e.signature?"Signed":"Draft")+'</div></div>').join(""):
+ '<p class="muted">No endorsements recorded yet.</p>')+
+ '<div class="hint">'+signed+' signed endorsement(s) awaiting archiving out of '+pending+' signed.</div></div>'+
+ '<div class="card"><div class="head"><h2>Aircraft time</h2>'+button("nav-aircraft","Manage")+'</div>'+
+ (byAircraft.length?byAircraft.map(x=>'<div class="detail-line"><span><b>'+esc(x.a.icao)+'</b> · '+
+ esc(x.a.registration)+'</span><strong>'+fmtTime(x.mins)+'</strong></div>').join(""):
+ '<p class="muted">No aircraft yet.</p>')+'</div></div>';
+}
+function moreView(){
+ return head("More","Aircraft, pilot profiles, endorsements and your V2 test workspace.")+
+ '<div class="more-links">'+[
+ ["nav-aircraft","🚁 Aircraft","Manage registrations and ICAO types"],
+ ["nav-people","👤 Pilot profiles","Your account holder and instructors"],
+ ["nav-endorsements","✎ Endorsements","Memoranda and signatures"],
+ ["nav-archive","▤ Print archive","Endorsement paper pages"],
+ ["nav-settings","○ Test settings","JSON backup and sandbox reset"]
+ ].map(([action,name,desc])=>'<button type="button" class="card more-link" data-action="'+action+'">'+
+ '<b>'+name+'</b><span class="muted">'+desc+'</span></button>').join("")+'</div>';
+}
 function fmtTime(n){return Flight.fmtMinutes(n);}
 function aircraftLabel(a){return a.registration+" · "+a.icao+(a.model?" · "+a.model:"");}
 function aircraftView(){
