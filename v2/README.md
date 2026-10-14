@@ -1,6 +1,6 @@
 # HeliLog V2 — Development Foundation
 
-**Status:** V2.0 alpha groundwork, not released. The production website remains V1.43.2.
+**Status:** V2.0 alpha — first standalone endorsement interface and print workflow implemented on a development branch. The production website remains V1.43.2.
 
 **Branch:** v2/development
 
@@ -35,9 +35,29 @@ The pure JavaScript domain module (domain.js) separates records from persistence
 - Store V2 development data with isolated key: helilog_v2_dev_workspace. Never read, overwrite, or remove the V1 storage keys.
 - Refuse stale writes and malformed JSON without silently wiping saved data.
 
+## Standalone V2 development interface
+
+The V2 sandbox has a separate responsive entry point at **v2/index.html**, connected to domain.js, storage.js, print.js and app.js. It supports:
+
+- Creating saved pilot/endorser profiles and unsigned endorsement drafts.
+- Reviewing and signing drafts with mouse, touch or stylus. Signing freezes the original endorsement.
+- Selecting multiple signed records and opening an **A4 portrait paper endorsement page** print preview with numbered pages, batch ID, full wording and captured signature.
+- A separate **manual confirmation** after preview, printing/review and explicit confirmation checkbox. Just opening a preview never marks a batch as printed.
+- Reprinting confirmed archived pages using their exact saved snapshots.
+- Creating a correction with a reason; obtaining a fresh signature; printing a separate A4 before/after addendum; confirming it as a separate record while the original page remains frozen.
+- Downloading a JSON development backup and deliberately resetting **only** the V2 sandbox.
+
+To try it on a local development computer, check out the development branch, start a local web server in the repository root, then visit the V2 page:
+
+    git checkout v2/development
+    python -m http.server 8000
+    # Open http://localhost:8000/v2/
+
+**Do not open the local HTML as a file:** browser storage and popup behavior may differ. All entries in V2 at this stage must be fictional.
+
 ## Not yet implemented
 
-This domain is not yet wired into a V2 end-user screen. No PDF/print renderer, cloud account, remote database, iPad sync, or flight-record replacement is present yet. The storage revision mechanism is a development safeguard, not an atomic distributed transaction. The page layout identifier endorsement-sheet-v1 and three endorsements per page are provisional.
+V2 is still not deployed to a public staging URL, and no V2 flight-entry or total-time replacement is available. There is no cloud database, secure account, remote backup service, iPad sync or cross-device conflict-resolution service. The storage revision mechanism is a development safeguard, not an atomic distributed transaction. The page layout identifier endorsement-sheet-v1 and **three endorsements per page** are provisional; visually inspect print previews to ensure longer wording fits the paper before confirming any archive. Signature images are **not** an identity-verification mechanism.
 
 **A captured signature image alone does not establish endorser identity or EASA/TKA acceptance.** A paper endorsement may still require a handwritten signature. Printed-batch confirmation must always be a separate explicit user action after reviewing/printing.
 
@@ -67,4 +87,4 @@ From the repository root, with Node.js 18 or later:
 
     node --test v2/*.test.cjs
 
-Tests cover signed-record immutability, archive numbering and stale-preview rejection, signed amendments, JSON round-trip, modification detection, storage isolation, malformed data and revision conflicts.
+Tests cover signed-record immutability, archive numbering and stale-preview rejection, signed amendments, printable A4 markup and before/after correction printing, JSON round-trip, storage isolation, malformed data, revision conflicts and the simulated browser UI workflow.
