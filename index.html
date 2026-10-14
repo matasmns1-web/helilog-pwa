@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V1.43 PWA Prototype</title>
+<title>HeliLog V1.43.1 PWA Prototype</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -718,6 +718,9 @@ function recordedTotals(){
     let cfg=configurationTimes(f);
     t.total+=mins;
     t.spSE+=cfg.spSE;t.spME+=cfg.spME;t.multi+=cfg.multi;
+    t.single+=flightPilotConfig(f)==='multi'?0:mins;
+    if(engineCode(ac(f.aid))==='ME')t.engineME+=mins;
+    else if(!isSimulatorSession(f))t.engineSE+=mins;
     t.copilot+=f.role==='CO-PILOT'?mins:0;
     t.dual+=f.role==='DUAL'?mins:0;
     t.pic+=['PIC','SOLO','SPIC','PICUS'].includes(f.role)?mins:0;
@@ -731,11 +734,17 @@ function recordedTotals(){
     t.ldgDay+=Number(f.landingDay||0);
     t.ldgNight+=Number(f.landingNight||0);
     return t;
-  },{total:0,spSE:0,spME:0,multi:0,pic:0,copilot:0,dual:0,spic:0,picus:0,instructor:0,night:0,ifr:0,toDay:0,toNight:0,ldgDay:0,ldgNight:0});
+  },{total:0,spSE:0,spME:0,single:0,multi:0,engineSE:0,engineME:0,pic:0,copilot:0,dual:0,spic:0,picus:0,instructor:0,night:0,ifr:0,toDay:0,toNight:0,ldgDay:0,ldgNight:0});
 }
 function calcTotals(){
   let t=recordedTotals(), b=S.broughtForward||{};
-  Object.keys(t).forEach(k=>t[k]+=Number(b[k]||0));
+  Object.keys(t).forEach(k=>{
+    const previous=k==='single'?(b.single??(Number(b.spSE||0)+Number(b.spME||0))):
+      k==='engineSE'?(b.engineSE??Number(b.spSE||0)):
+      k==='engineME'?(b.engineME??Number(b.spME||0)):
+      b[k];
+    t[k]+=Number(previous||0);
+  });
   return t;
 }
 // Paper type-breakdowns are only used in aircraft-type totals, never career totals.
@@ -1843,7 +1852,11 @@ function functionTime(f, kind){
 function broughtForwardExportTotals(){
   let b=S.broughtForward||{};
   return {
-    spSE:Number(b.spSE||0),spME:Number(b.spME||0),multi:Number(b.multi||0),total:Number(b.total||0),
+    spSE:Number(b.spSE||0),spME:Number(b.spME||0),
+    single:Number(b.single??(Number(b.spSE||0)+Number(b.spME||0))),
+    multi:Number(b.multi||0),
+    engineSE:Number(b.engineSE??b.spSE??0),engineME:Number(b.engineME??b.spME??0),
+    total:Number(b.total||0),
     toDay:Number(b.toDay||0),toNight:Number(b.toNight||0),ldgDay:Number(b.ldgDay||0),ldgNight:Number(b.ldgNight||0),
     night:Number(b.night||0),ifr:Number(b.ifr||0),pic:Number(b.pic||0),copilot:Number(b.copilot||0),
     dual:Number(b.dual||0),instructor:Number(b.instructor||0),std:0
@@ -1851,7 +1864,7 @@ function broughtForwardExportTotals(){
 }
 function addExportTotals(a,b){
   let out={};
-  ['spSE','spME','multi','total','toDay','toNight','ldgDay','ldgNight','night','ifr','pic','copilot','dual','instructor','std']
+  ['spSE','spME','single','multi','engineSE','engineME','total','toDay','toNight','ldgDay','ldgNight','night','ifr','pic','copilot','dual','instructor','std']
     .forEach(k=>out[k]=Number(a?.[k]||0)+Number(b?.[k]||0));
   return out;
 }
@@ -1872,6 +1885,9 @@ function sumLogbookFields(list,aircraftSnapshot=null){
     spSE:list.reduce((n,f)=>n+cfg(f).spSE,0),
     spME:list.reduce((n,f)=>n+cfg(f).spME,0),
     multi:list.reduce((n,f)=>n+cfg(f).multi,0),
+    single:list.reduce((n,f)=>n+(flightPilotConfig(f)==='multi'?0:Number(f.mins||0)),0),
+    engineSE:list.reduce((n,f)=>n+(!isSimulatorSession(f)&&engineCode(lookup(f.aid))!=='ME'?Number(f.mins||0):0),0),
+    engineME:list.reduce((n,f)=>n+(!isSimulatorSession(f)&&engineCode(lookup(f.aid))==='ME'?Number(f.mins||0):0),0),
     total:list.reduce((n,f)=>n+Number(f.mins||0),0),
     toDay:list.reduce((n,f)=>n+Number(f.takeoffDay||0),0),
     toNight:list.reduce((n,f)=>n+Number(f.takeoffNight||0),0),
@@ -3819,9 +3835,16 @@ function totals(){
   <div class="grid stats">${[['Total',t.total],['PIC',t.pic],['Co-pilot',t.copilot],['Dual',t.dual]].map(x=>`<div class="card"><div class="label">${x[0]}</div><div class="big">${fmt(x[1])}</div></div>`).join('')}</div>
   <div class="grid two" style="margin-top:16px">
     <div class="card">
-      <div class="head"><h2>Time configuration</h2></div>
-      <p>Single-pilot SE <span style="float:right"><b>${fmt(t.spSE)}</b></span></p>
-      <p>Single-pilot ME <span style="float:right"><b>${fmt(t.spME)}</b></span></p>
+      <div class="head"><h2>Aircraft engine experience</h2></div>
+      <p>Single-engine (SE) <span style="float:right"><b>${fmt(t.engineSE)}</b></span></p>
+      <p>Multi-engine (ME) <span style="float:right"><b>${fmt(t.engineME)}</b></span></p>
+      ${Number(S.broughtForward?.total||0)>0 &&
+         S.broughtForward?.engineSE===undefined && S.broughtForward?.engineME===undefined ?
+         `<div class="mini">Earlier paper totals: engine type is not assigned for ${fmt(Math.max(0,Number(S.broughtForward.total||0)-Number(S.broughtForward.spSE||0)-Number(S.broughtForward.spME||0)))}. Edit the previous-logbook totals before your first archive batch to provide an exact SE/ME breakdown.</div>`:''}
+    </div>
+    <div class="card">
+      <div class="head"><h2>Pilot configuration time</h2></div>
+      <p>Single-pilot <span style="float:right"><b>${fmt(t.single)}</b></span></p>
       <p>Multi-pilot <span style="float:right"><b>${fmt(t.multi)}</b></span></p>
       <p>Instructor <span style="float:right"><b>${fmt(t.instructor)}</b></span></p>
     </div>
@@ -3895,9 +3918,10 @@ function editBroughtForwardTotals(){
     <div class="section-title">Flight time</div>
     <div class="formgrid">
       ${durationField('bfTotal','Total time','total')}
-      ${durationField('bfSpSE','Single-pilot SE','spSE')}
-      ${durationField('bfSpME','Single-pilot ME','spME')}
-      ${durationField('bfMulti','Multi-pilot','multi')}
+      ${durationField('bfEngineSE','Single-engine (SE) total','engineSE')}
+      ${durationField('bfEngineME','Multi-engine (ME) total','engineME')}
+      ${durationField('bfSingle','Single-pilot total','single')}
+      ${durationField('bfMulti','Multi-pilot total','multi')}
       ${durationField('bfPIC','PIC','pic')}
       ${durationField('bfCopilot','Co-pilot','copilot')}
       ${durationField('bfDual','Dual','dual')}
@@ -3955,7 +3979,7 @@ function addBroughtForwardTypeRow(icao='',minutes=0){
 function saveBroughtForwardTotals(ev){
   ev.preventDefault();
   let durationMap={
-    total:'bfTotal',spSE:'bfSpSE',spME:'bfSpME',multi:'bfMulti',
+    total:'bfTotal',engineSE:'bfEngineSE',engineME:'bfEngineME',single:'bfSingle',multi:'bfMulti',
     pic:'bfPIC',copilot:'bfCopilot',dual:'bfDual',instructor:'bfInstructor',
     spic:'bfSPIC',picus:'bfPICUS',night:'bfNight',ifr:'bfIFR'
   };
@@ -3970,6 +3994,10 @@ function saveBroughtForwardTotals(ev){
     }
     next[key]=value;
   }
+  // Retain historical SP/SE and SP/ME values for old confirmed archive layouts,
+  // but do not mix engine type with pilot configuration for new records.
+  next.spSE=Number(S.broughtForward?.spSE||0);
+  next.spME=Number(S.broughtForward?.spME||0);
   let countMap={toDay:'bfToDay',toNight:'bfToNight',ldgDay:'bfLdgDay',ldgNight:'bfLdgNight'};
   for(let [key,id] of Object.entries(countMap)){
     let raw=document.getElementById(id).value.trim();
@@ -4381,7 +4409,7 @@ async function makeFullBackup(){
     app:'HeliLog',
     format:'helilog-full-backup',
     backupSchema:2,
-    appVersion:'1.43',
+    appVersion:'1.43.1',
     exportedAt:new Date().toISOString(),
     environment:TEST_MODE?'test':'production',
     integrity:{algorithm:'SHA-256',sha256:await sha256Hex(JSON.stringify(data))},
