@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101c31">
+<title>HeliLog V2 — Development Workspace</title>
+<style>
+:root{color-scheme:light;--navy:#17233a;--blue:#1e3a65;--text:#1b293e;--muted:#65758a;--line:#dce3ec;--surface:#fff;--bg:#f1f4f8;--accent:#1d4c8d;--red:#a51e32;--green:#0c6651}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,Arial,sans-serif}
+button,input,textarea,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}h1,h2,h3{line-height:1.24;margin:0 0 12px}h1{font-size:28px}h2{font-size:20px}h3{font-size:16px}p{margin:0 0 13px}
+.layout{display:grid;grid-template-columns:230px 1fr;min-height:100vh}.sidebar{background:var(--navy);color:#fff;padding:22px 15px;display:flex;flex-direction:column;gap:18px}
+.brand{font-weight:800;font-size:21px;letter-spacing:-.02em}.brand small{display:block;font-size:11px;font-weight:500;color:#b4c7df;letter-spacing:.08em}
+.sidebar nav{display:flex;flex-direction:column;gap:4px}.sidebar nav button{text-align:left;border:0;background:transparent;color:#e6edf5;padding:12px;border-radius:9px}
+.sidebar nav button.active,.sidebar nav button:hover{background:#334a6b}.sidebar .bottom{margin-top:auto;color:#c8d7eb;font-size:12px;line-height:1.55}
+.content{padding:28px 34px;max-width:1250px;width:100%;margin:0 auto}.pagehead{display:flex;align-items:start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+.pagehead .sub{color:var(--muted);max-width:660px}.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:21px;margin-bottom:17px;box-shadow:0 1px 2px #182a4510}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.stat{font-size:29px;font-weight:750}.muted,.hint{color:var(--muted)}.hint{font-size:12px}.notice{border-left:4px solid var(--accent);background:#e8f0fc;padding:13px 15px;margin-bottom:18px;border-radius:5px}.warning{border-left-color:var(--red);background:#fff0f2}.success{border-left-color:var(--green);background:#e8f7f2}
+.actions{display:flex;gap:9px;flex-wrap:wrap;align-items:center}.btn{border:1px solid #c8d2de;background:#fff;color:var(--navy);border-radius:8px;padding:9px 13px;font-weight:650}.btn:hover{background:#f5f7fa}.btn.primary{background:var(--blue);color:white;border-color:var(--blue)}.btn.primary:hover{background:#123059}.btn.danger{border-color:#e3a9b0;color:#9a2133}.btn.small{padding:6px 10px;font-size:12px}
+.field{display:flex;flex-direction:column;gap:6px;margin:0 0 14px}.field label{font-size:13px;font-weight:700}.field input,.field textarea,.field select{width:100%;border:1px solid #b8c8d9;border-radius:8px;padding:10px 11px;background:#fff;color:var(--text)}.field textarea{min-height:118px;resize:vertical}.formgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 17px}
+.item{padding:15px 0;border-bottom:1px solid var(--line)}.item:last-child{border:0}.itemhead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.itemtitle{font-weight:750;font-size:16px}.badge{display:inline-block;font-size:11px;font-weight:750;border-radius:100px;padding:3px 8px;background:#eef0f5;color:#475569}.badge.signed{background:#e8f4ed;color:#07603c}.badge.archive{background:#e9eef9;color:#22498d}
+.details{display:flex;flex-wrap:wrap;gap:5px 15px;font-size:12px;color:var(--muted);margin:6px 0}.bodytext{white-space:pre-wrap;overflow-wrap:anywhere;margin:9px 0}
+.sep{border:0;border-top:1px solid var(--line);margin:18px 0}.sigpad{display:block;width:100%;max-width:680px;height:170px;touch-action:none;border:1px dashed #6e849e;background:#fff;border-radius:8px}
+.sigpreview{max-width:170px;max-height:70px;display:block}.selection{display:flex;gap:11px;align-items:start;padding:12px 0;border-bottom:1px solid var(--line)}
+.selection input{margin-top:5px;width:17px;height:17px}.selection:last-child{border:0}
+pre{white-space:pre-wrap;overflow-wrap:anywhere}.flow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.flowstep{border:1px solid var(--line);border-radius:8px;padding:9px 12px;background:#fff;font-weight:600;font-size:12px}
+a{color:var(--accent)}.footer{color:var(--muted);font-size:12px;margin-top:32px}
+@media(max-width:840px){.layout{grid-template-columns:1fr}.sidebar{padding:13px 16px;gap:8px}.sidebar nav{flex-direction:row;overflow:auto}.sidebar nav button{white-space:nowrap;padding:9px 12px}.sidebar .bottom{display:none}.content{padding:19px 16px}.grid{grid-template-columns:1fr}}
+@media(max-width:560px){.formgrid{grid-template-columns:1fr}.card{padding:16px}h1{font-size:23px}.itemhead{display:block}.itemhead .actions{margin-top:10px}}
+</style>
+</head>
+<body>
+<div class="layout">
+ <aside class="sidebar">
+  <div class="brand">🚁 HeliLog <small>V2.0 ALPHA · DEVELOPMENT ONLY</small></div>
+  <nav aria-label="Development pages">
+   <button type="button" data-nav="overview" class="active">Overview</button>
+   <button type="button" data-nav="endorsements">Endorsements</button>
+   <button type="button" data-nav="archive">Print archive</button>
+   <button type="button" data-nav="people">Pilot profiles</button>
+   <button type="button" data-nav="settings">Testing &amp; backup</button>
+  </nav>
+  <div class="bottom">Separate V2 sandbox. This is not the production HeliLog application and is not an approved logbook or electronic signature system.</div>
+ </aside>
+ <main class="content" id="app" aria-live="polite"><div class="card">Loading the V2 development workspace…</div></main>
+</div>
+<script src="./domain.js"></script>
+<script src="./storage.js"></script>
+<script src="./print.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>
