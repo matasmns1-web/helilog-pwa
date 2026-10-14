@@ -1,6 +1,8 @@
 # HeliLog V2 — Development
 
-**Current release: V2.1.** The complete V1.43.2 interface is restored with V2 endorsement print archiving; installed-app signing is separate from web-only print/archive management. See [FULL-V1-INTERFACE.md](FULL-V1-INTERFACE.md) for parity scope, testing instructions and data safety.
+**Current version: V2.2 (Cloud Foundation).** The Cloud account screen and private Supabase schema are prepared. A live Supabase test project still needs to be connected and configured before sign-in can work. No local logbook data is uploaded. See [CLOUD-FOUNDATION.md](CLOUD-FOUNDATION.md).
+
+**Prior release: V2.1.** The complete V1.43.2 interface is restored with V2 endorsement print archiving; installed-app signing is separate from web-only print/archive management. See [FULL-V1-INTERFACE.md](FULL-V1-INTERFACE.md) for parity scope, testing instructions and data safety.
 
 **Earlier modular prototype:** [alpha.html](alpha.html) remains available with its own test data.
 
