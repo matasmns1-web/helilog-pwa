@@ -4,9 +4,9 @@
  * No access to the earlier V2 alpha workspace key or to V1 production origin.
  */
 (function(root,factory){
- const api=factory(root.HeliLogV2Domain,root.HeliLogV2Print);
- if(typeof module==="object"&&module.exports)module.exports=api;
- else root.HeliLogV2Bridge=api;
+ if(typeof module==="object"&&module.exports)
+  module.exports=factory(require("./domain.js"),require("./print.js"));
+ else root.HeliLogV2Bridge=factory(root.HeliLogV2Domain,root.HeliLogV2Print);
 })(typeof globalThis!=="undefined"?globalThis:this,function(D,Printer){
  "use strict";
  if(!D||!Printer)return null;
