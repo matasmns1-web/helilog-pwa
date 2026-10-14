@@ -4538,7 +4538,7 @@ async function makeFullBackup(){
     app:'HeliLog',
     format:'helilog-full-backup',
     backupSchema:2,
-    appVersion:'1.43.1',
+    appVersion:'2.0-alpha-v1-interface',
     exportedAt:new Date().toISOString(),
     environment:TEST_MODE?'test':'production',
     integrity:{algorithm:'SHA-256',sha256:await sha256Hex(JSON.stringify(data))},
@@ -4568,7 +4568,8 @@ async function downloadFullBackup(){
     if(box){
       box.innerHTML='<div class="successbox"><b>Backup prepared.</b> The JSON download contains a SHA-256 checksum and '+
         info.flights+' flights, '+info.aircraft+' aircraft and '+(S.printArchive?.batches?.length||0)+
-        ' archived print batches. Verify the download is saved somewhere safe, preferably outside this device.</div>';
+        ' flight archive batches and '+(S.endorsementV2Archive?.batches?.length||0)+
+        ' signed endorsement print batches. Verify the download is saved somewhere safe, preferably outside this device.</div>';
     }
   }catch(e){alert('Could not create a verified backup: '+String(e.message||e));}
 }
@@ -4590,6 +4591,10 @@ function validateRestoreData(data){
   if(!Array.isArray(data.aircraft))errors.push('Aircraft list is missing.');
   if(errors.length)return errors;
   errors.push(...inspectHeliLogData(data).errors);
+  if(data.endorsementV2Archive){
+    try{v2ArchiveBridge.workspace(data);}
+    catch(e){errors.push('Invalid signed endorsement archive: '+String(e.message||e));}
+  }
   return errors;
 }
 
