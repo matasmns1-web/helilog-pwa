@@ -55,7 +55,7 @@ function boot(){
  const submit=(id,fields,selected=[])=>{
    const form={
      id,matches(){return true},
-     elements:{namedItem:name=>({value:fields[name]||""})},
+     elements:{namedItem:name=>({value:fields[name]??"",checked:fields[name]===true})},
      querySelectorAll(){return selected}
    };
    events.submit({target:form,preventDefault(){}});
@@ -115,4 +115,70 @@ test("UI: reset isolates V2 and never removes existing V1 storage",()=>{
  assert.equal(ui.records.get("helilog_v111"),"v1-test-placeholder");
  assert.equal(ui.current().endorsements.length,0);
  assert.match(ui.app.innerHTML,/reset/);
+});
+
+
+test("UI: aircraft, account holder, 24-hour flight, aircraft snapshot and totals",()=>{
+ const ui=boot();
+ ui.navigate("people");
+ ui.submit("person-form",{name:"Test Pilot",licence:"CPL(H)"});
+ const pilotId=ui.current().people[0].id;
+ ui.click("set-owner",pilotId);
+ ui.submit("person-form",{name:"Test Examiner",licence:"FI(H)"});
+ ui.navigate("aircraft");
+ ui.click("new-aircraft");
+ ui.submit("aircraft-form",{
+  registration:"LY-CAB",icao:"G2CA",manufacturer:"Guimbal",model:"Cabri G2",variant:"",engine:"SE"
+ });
+ assert.equal(ui.current().aircraft.length,1);
+ const aircraftId=ui.current().aircraft[0].id;
+ ui.navigate("flights");
+ ui.click("new-flight");
+ assert.match(ui.app.innerHTML,/data-time-picker="off"/);
+ const flight={
+  date:"14-10-2026",aircraftId,dep:"EYVI",arr:"EYKA",off:"0935",on:"10:45",
+  role:"PIC",picPersonId:"",pilotConfig:"single",ifrMin:"25",nightMin:"0",
+  instructorMin:"0",takeoffDay:"1",landingDay:"1",takeoffNight:"0",landingNight:"0",
+  crossCountry:true,remarks:"Fictional flight"
+ };
+ ui.submit("flight-form",flight);
+ let state=ui.current();
+ assert.equal(state.flights.length,1);
+ assert.equal(state.flights[0].durationMin,70);
+ assert.equal(state.flights[0].picPersonId,pilotId);
+ assert.equal(state.flights[0].off,"09:35");
+ assert.equal(state.flights[0].aircraftSnapshot.icao,"G2CA");
+ assert.equal(ui.context.HeliLogV2Flights.validateState(state).length,0);
+ const flightId=state.flights[0].id;
+ ui.navigate("aircraft");
+ ui.click("edit-aircraft",aircraftId);
+ ui.submit("aircraft-form",{
+  registration:"LY-CAB",icao:"A139",manufacturer:"Test",model:"Modified",variant:"",engine:"ME"
+ });
+ ui.navigate("flights");
+ ui.click("edit-flight",flightId);
+ ui.submit("flight-form",{...flight,remarks:"Updated fictional flight"});
+ state=ui.current();
+ assert.equal(state.flights[0].aircraftSnapshot.engine,"SE");
+ ui.navigate("flight-totals");
+ assert.match(ui.app.innerHTML,/1:10/);
+ assert.equal(ui.context.HeliLogV2Flights.totals(state).engineSE,70);
+ assert.equal(ui.context.HeliLogV2Flights.validateState(state).length,0);
+});
+test("UI: an invalid time does not create a flight",()=>{
+ const ui=boot();
+ ui.navigate("people");
+ ui.submit("person-form",{name:"Pilot"});
+ ui.click("set-owner",ui.current().people[0].id);
+ ui.navigate("aircraft");ui.click("new-aircraft");
+ ui.submit("aircraft-form",{registration:"LY-TEST",icao:"G2CA",engine:"SE"});
+ ui.navigate("flights");ui.click("new-flight");
+ ui.submit("flight-form",{
+  date:"14-10-2026",aircraftId:ui.current().aircraft[0].id,
+  dep:"EYVI",arr:"EYVI",off:"25:60",on:"10:45",role:"PIC",
+  pilotConfig:"single",ifrMin:"0",nightMin:"0",instructorMin:"0",
+  takeoffDay:"0",landingDay:"0",takeoffNight:"0",landingNight:"0"
+ });
+ assert.equal(ui.current().flights.length,0);
+ assert.match(ui.app.innerHTML,/Add Flight/);
 });
