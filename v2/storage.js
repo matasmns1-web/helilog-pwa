@@ -11,11 +11,19 @@
   const KEY = "helilog_v2_dev_workspace";
   const RESET_PHRASE = "RESET_V2_SANDBOX";
 
-  function createRepository(storage, domain) {
+  function createRepository(storage, domain, additionalValidate) {
     if (!storage || typeof storage.getItem !== "function" || typeof storage.setItem !== "function") {
       throw new Error("A browser-compatible storage adapter is required");
     }
     if (!domain || typeof domain.validateState !== "function") throw new Error("V2 domain is required");
+
+    function inspect(state) {
+      const errors = domain.validateState(state);
+      if (typeof additionalValidate === "function" && !errors.length) {
+        errors.push(...additionalValidate(state));
+      }
+      return errors;
+    }
 
     function load() {
       const raw = storage.getItem(KEY);
@@ -23,13 +31,13 @@
       let state;
       try { state = JSON.parse(raw); }
       catch (error) { throw new Error("V2 development data cannot be parsed; preserve it for investigation"); }
-      const errors = domain.validateState(state);
+      const errors = inspect(state);
       if (errors.length) throw new Error("Invalid V2 data: " + errors.join("; "));
       return state;
     }
 
     function save(state, expectedRevision) {
-      const errors = domain.validateState(state);
+      const errors = inspect(state);
       if (errors.length) throw new Error("Refusing invalid V2 state: " + errors.join("; "));
       if (state.meta.environment !== "development") {
         throw new Error("This adapter only stores V2 development data");
