@@ -86,7 +86,7 @@ function overview(){
  '<div class="actions">'+button("nav-people","Pilot profiles")+
  button("nav-endorsements","Manage endorsements")+
  button("nav-archive","Open print archive","primary")+'</div></div>'+
- '<div class="card"><h2>Flight logbook</h2><p>The V2 flight-entry and totals modules will follow. Existing V1 flight functionality remains on the stable production website.</p>'+
+ '<div class="card"><h2>Flight logbook</h2><p>Aircraft management, Add Flight, and preliminary flight totals are now available on the V2 testing website. Flight print archiving remains in development.</p>'+
  '<a href="https://helilog-pwa.onrender.com" target="_blank" rel="noopener noreferrer">Open stable HeliLog V1.43.2</a></div>';
 }
 
@@ -270,14 +270,15 @@ function updateRoleSelect(){
 }
 
 function peopleView(){
- return head("Pilot profiles","Add fictional test instructors and examiners for signing endorsements.")+
- '<div class="card"><h2>Add instructor / examiner</h2><form id="person-form">'+
+ return head("Pilot profiles","Add test pilots and choose an Account Holder for PIC/SOLO flights.")+
+ '<div class="card"><h2>Add pilot / instructor / examiner</h2><form id="person-form">'+
  '<div class="formgrid"><div class="field"><label for="person-name">Name</label><input id="person-name" name="name" maxlength="120" required placeholder="e.g. Test Examiner"></div>'+
  '<div class="field"><label for="person-licence">Licence / ID</label><input id="person-licence" name="licence" maxlength="100" placeholder="Optional"></div></div>'+
  '<button class="btn primary" type="submit">Save pilot profile</button></form></div>'+
  '<div class="card"><h2>Saved pilot profiles ('+state.people.length+')</h2>'+
- (state.people.length?state.people.map(p=>'<div class="item"><div class="itemtitle">'+esc(p.name)+'</div>'+
- '<div class="details">'+esc(p.licence||"No licence number")+'</div></div>').join(""):'<p class="muted">No profiles yet. Create one before adding endorsements.</p>')+'</div>';
+ (state.people.length?state.people.map(p=>'<div class="item"><div class="itemhead"><div><div class="itemtitle">'+esc(p.name)+(p.isAccountHolder?' <span class="badge archive">Account Holder</span>':"")+'</div>'+
+ '<div class="details">'+esc(p.licence||"No licence number")+'</div></div>'+
+ '<div class="actions">'+(!p.isAccountHolder?button("set-owner","Set as account holder","small",p.id):"")+'</div></div></div>').join(""):'<p class="muted">No profiles yet. Create one before adding endorsements.</p>')+'</div>';
 }
 function endorsementsView(){
  const records=[...state.endorsements].sort((a,b)=>b.date.localeCompare(a.date));
@@ -409,11 +410,11 @@ function settingsView(){
  '<div class="card"><h2>Development workspace</h2>'+
  '<p><b>Workspace:</b> '+esc(state.meta.workspaceId)+'</p>'+
  '<p><b>Storage revision:</b> '+state.meta.revision+'</p>'+
- '<p><b>Integrity:</b> '+esc(D.validateState(state).length?"Review required":"No errors detected")+'</p>'+
+ '<p><b>Integrity:</b> '+esc(D.validateState(state).length||Flight.validateState(state).length?"Review required":"No errors detected")+'</p>'+
  '<div class="actions">'+button("download-backup","Download V2 JSON backup","primary")+
  button("reset-workspace","Reset V2 test data","danger")+'</div>'+
  '<p class="hint" style="margin-top:12px">The reset requires typing RESET_V2_SANDBOX. This operation never clears V1.43.2 storage keys.</p></div>'+
- '<div class="card"><h2>What is not enabled</h2><p>Cloud accounts, cross-device sync, authority-approved signatures, V2 flight logging and regulated audit guarantees remain future work.</p></div>';
+ '<div class="card"><h2>What is not enabled</h2><p>Cloud accounts, cross-device sync, authority-approved signatures, V2 flight archive printing and regulated audit guarantees remain future work.</p></div>';
 }
 function readFields(form){
  const val=name=>String(form.elements.namedItem(name)?.value||"").trim();
