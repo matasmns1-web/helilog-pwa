@@ -200,10 +200,10 @@
     requireValue(isArchived(state, id), "Amendments are for archived endorsements");
     const before = effectiveEndorsement(state, id);
     const after = applyFields(before, patch);
+    requireValue(EDITABLE_FIELDS.some(field => before[field] !== after[field]), "Amendment has no content changes");
     after.signature = null;
     after.updatedAt = iso(at, "preparedAt");
     requireValue(personById(state, after.signatoryPersonId), "Endorser profile missing");
-    requireValue(JSON.stringify(before) !== JSON.stringify(after), "Amendment has no changes");
     requireValue(!state.amendments.endorsements.some(a => a.id === amendmentId), "Amendment ID already exists");
     return {
       id: nonempty(amendmentId, "amendmentId"),
