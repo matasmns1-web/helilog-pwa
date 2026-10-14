@@ -1,6 +1,6 @@
 # HeliLog
 
-**Helicopter pilot logbook — V1.43.1 prototype**
+**Helicopter pilot logbook — V1.43.2 prototype**
 
 [Open HeliLog](https://helilog-pwa.onrender.com) · [Developer & Maintenance Guide](docs/MAINTENANCE.md) · [Release & Recovery Checklist](docs/RELEASE-CHECKLIST.md)
 
