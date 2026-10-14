@@ -460,6 +460,34 @@ function setupSignaturePad(){
 }
 function handleClick(action,id){
  switch(action){
+  case "nav-aircraft":go("aircraft");return;
+  case "nav-flights":go("flights");return;
+  case "nav-flight-totals":go("flight-totals");return;
+  case "new-aircraft":editingAircraftId="";go("aircraft-editor");return;
+  case "edit-aircraft":editingAircraftId=id;go("aircraft-editor");return;
+  case "delete-aircraft":{
+   const a=Flight.getAircraft(state,id);
+   if(a&&!window.confirm("Delete aircraft "+a.registration+"? Aircraft used in flights cannot be deleted."))return;
+   commit(Flight.deleteAircraft(state,id,now()));
+   setNotice("Aircraft deleted.");go("aircraft");return;
+  }
+  case "set-owner":{
+   const pilot=person(id);
+   if(pilot&&!window.confirm("Set "+pilot.name+" as the account holder? PIC and SOLO flights will use this pilot as commander."))return;
+   commit(Flight.setAccountHolder(state,id,now()));
+   setNotice("Account holder selected.");go("people");return;
+  }
+  case "new-flight":
+   if(!state.aircraft.length)throw Error("Add an aircraft before logging a flight.");
+   editingFlightId="";manualLandingDay=false;manualLandingNight=false;go("flight-editor");return;
+  case "edit-flight":
+   editingFlightId=id;manualLandingDay=false;manualLandingNight=false;go("flight-editor");return;
+  case "delete-flight":{
+   const f=Flight.getFlight(state,id);
+   if(!f||!window.confirm("Delete test flight "+showDate(f.date)+" / "+f.dep+"–"+f.arr+"?"))return;
+   commit(Flight.deleteFlight(state,id,now()));
+   setNotice("Test flight deleted.");go("flights");return;
+  }
   case "nav-people":go("people");return;
   case "nav-endorsements":go("endorsements");return;
   case "nav-archive":go("archive");return;
