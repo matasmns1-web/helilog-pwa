@@ -1,6 +1,6 @@
 # HeliLog — Release, Test & Emergency Recovery Checklist
 
-**Baseline:** V1.43 · 13 October 2026  
+**Baseline:** V1.43.1 · 14 October 2026  
 **Detailed handover:** [Developer & Maintenance Guide](MAINTENANCE.md)  
 **Repository:** https://github.com/matasmns1-web/helilog-pwa  
 **Live:** https://helilog-pwa.onrender.com
@@ -30,6 +30,8 @@
 - [ ] Edit the unarchived flight and check the result; delete a test flight; check the duplicate warning.
 - [ ] Enter a separate FNPT/FTD/FFS simulator session and verify `stdMin` is excluded from actual helicopter flight/PIC totals.
 - [ ] Confirm reported Total, PIC, Co-pilot, Dual, Instructor, Night, IFR and ICAO breakdowns have no double counting.
+- [ ] Check all SE/ME × Single-/Multi-pilot combinations. SE/ME totals must follow aircraft engine configuration; Single-/Multi-pilot totals must follow the flight setting. These are separate breakdowns, not additive categories.
+- [ ] Verify print SE ✓ / ME ✓ cells are checkmarks only and the two pilot-config cells contain H:MM hours (or blank).
 - [ ] Test Logbook filters and CSV import/export on fictional data.
 - [ ] Run **Profile → Data integrity check** and review every error.
 - [ ] Confirm licence/medical/ratings dates display **DD-MM-YYYY** but store ISO `YYYY-MM-DD`.
@@ -38,10 +40,11 @@
 
 Use disposable **Test Mode** records (or a separate preview origin), **never real signed pages**.
 
-- [ ] Generate 48 fictional records; verify 46 helicopter flights, 2 simulator sessions and 4 A4 pages at 14 rows/page.
+- [ ] Generate 48 fictional records; verify 46 helicopter flights, 2 simulator sessions and 4 A4 pages at 14 rows/page, with 27 columns in the current paper layout.
 - [ ] Preview page numbering, A4 landscape, 12 mm margins, 26-column paper layout, simulator blank flight columns, totals, and unused-row hatching.
 - [ ] Confirm first batch only after pretending to print/check/sign **test** pages; verify the batch is frozen and archived entries cannot be silently edited/deleted.
 - [ ] Confirm successive batch page numbers and brought-forward hours are continuous.
+- [ ] Reprint a batch confirmed before V1.43.1: legacy 26-column layout must be preserved. New batches use 27 columns and explicit engine/pilot split. Never silently allocate unknown previous engine hours.
 - [ ] Propose an archived flight correction (example 1:00 → 1:30): reason required, original snapshot unchanged, pending revision does not change totals.
 - [ ] Preview the separate correction addendum; confirm printed/signed in Test Mode; verify the electronic flight reflects +0:30.
 - [ ] Confirm new archive batches carry the correction adjustment **once**. Reprint the earlier batch and verify its original flight time and totals are unchanged.
@@ -62,7 +65,7 @@ Use disposable **Test Mode** records (or a separate preview origin), **never rea
 
 ## E. Deploy and verify
 
-- [ ] Change version labels in `index.html` for actual app releases (currently V1.43); for asset/code changes, bump `const CACHE` in `service-worker.js` (currently `helilog-v1-43-shell`).
+- [ ] Change version labels in `index.html` for actual app releases (currently V1.43.1); for asset/code changes, bump `const CACHE` in `service-worker.js` (currently `helilog-v1-43-1-shell`).
 - [ ] Review Git diff: no unintentional changes to storage keys, migrations, confirmed batches, paper calculations or service-worker scope.
 - [ ] Merge/commit to `main`. Render's current setting is **autoDeploy: yes, commit trigger**; monitor its Deploys page. If settings change, use the manual Deploy action as appropriate.
 - [ ] Confirm the deployed **commit SHA** and **Live** status; smoke-test https://helilog-pwa.onrender.com.
