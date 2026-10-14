@@ -1908,6 +1908,9 @@ function exportPrintableLogbook(options={}){
   if(!flights.length){alert('There are no flights to export.');return false;}
   let archiveAircraft=options.aircraft||null;
   let archivePilot=options.pilot||null;
+  // Batches confirmed before V1.43.1 retain their EXACT three-column print layout.
+  // New exports and new batches use the four-column engine/pilot layout.
+  const legacyPaperLayout=options.paperLayoutVersion===1;
   let aircraftFor=id=>archiveAircraft?archiveAircraft.find(a=>a.id===id):ac(id);
   let cfgFor=f=>{
     let mins=Number(f.mins||0);
@@ -1934,9 +1937,9 @@ function exportPrintableLogbook(options={}){
       <tr class="totals-row">
         <td colspan="4" class="totals-label">${label}</td>
         <td></td><td></td><td></td>
-        <td class="num">${fmt(t.spSE)}</td>
-        <td class="num">${fmt(t.spME)}</td>
-        <td class="num">${fmt(t.multi)}</td>
+        ${legacyPaperLayout?
+          `<td class="num">${fmt(t.spSE)}</td><td class="num">${fmt(t.spME)}</td><td class="num">${fmt(t.multi)}</td>`:
+          `<td></td><td></td><td class="num">${fmt(t.single)}</td><td class="num">${fmt(t.multi)}</td>`}
         <td class="num">${fmt(t.total)}</td>
         <td></td>
         <td class="num">${t.toDay}</td>
@@ -1958,7 +1961,7 @@ function exportPrintableLogbook(options={}){
   function flightRow(f){
     if(isSimulatorSession(f)){
       return `<tr class="flight-row simulator-row">
-        ${'<td></td>'.repeat(22)}
+        ${'<td></td>'.repeat(legacyPaperLayout?22:23)}
         <td>${displayDate(f.date)}</td>
         <td class="sim-device-cell">${htmlEscape(f.stdType||simulatorDeviceLabel(f))}</td>
         <td class="num">${fmt(f.stdMin||0)}</td>
@@ -1981,9 +1984,14 @@ function exportPrintableLogbook(options={}){
       <td class="type">${htmlEscape(a.icao||'')}</td>
       <td>${htmlEscape(a.reg||'')}</td>
 
-      <td class="num">${cfg.spSE?fmt(cfg.spSE):''}</td>
-      <td class="num">${cfg.spME?fmt(cfg.spME):''}</td>
-      <td class="num">${cfg.multi?fmt(cfg.multi):''}</td>
+      ${legacyPaperLayout?
+        `<td class="num">${cfg.spSE?fmt(cfg.spSE):''}</td>
+          <td class="num">${cfg.spME?fmt(cfg.spME):''}</td>
+          <td class="num">${cfg.multi?fmt(cfg.multi):''}</td>`:
+        `<td class="engine-check">${engineCode(a)==='ME'?'':'&#10003;'}</td>
+          <td class="engine-check">${engineCode(a)==='ME'?'&#10003;':''}</td>
+          <td class="num">${flightPilotConfig(f)==='multi'?'':fmt(f.mins||0)}</td>
+          <td class="num">${flightPilotConfig(f)==='multi'?fmt(f.mins||0):''}</td>`}
       <td class="num">${fmt(f.mins||0)}</td>
       <td class="pic-name">${htmlEscape(f.picName||'')}</td>
 
@@ -2031,8 +2039,8 @@ function exportPrintableLogbook(options={}){
       // Block spare places only in new archive batches, never in flexible exports.
       // Old confirmed archives keep their original format when reprinted.
       blanks+=options.archiveBatch && options.blockUnusedRows===true
-        ? `<tr class="blank-row unused-row">${'<td>—</td>'.repeat(25)}<td class="unused-note">— UNUSED —</td></tr>`
-        : `<tr class="blank-row">${'<td></td>'.repeat(26)}</tr>`;
+        ? `<tr class="blank-row unused-row">${'<td>—</td>'.repeat(legacyPaperLayout?25:26)}<td class="unused-note">— UNUSED —</td></tr>`
+        : `<tr class="blank-row">${'<td></td>'.repeat(legacyPaperLayout?26:27)}</tr>`;
     }
 
     return `<section class="logbook-page">
@@ -2055,7 +2063,9 @@ function exportPrintableLogbook(options={}){
           <col class="c-place"><col class="c-time">
           <col class="c-place"><col class="c-time">
           <col class="c-type"><col class="c-reg">
-          <col class="c-sp"><col class="c-sp"><col class="c-mp">
+          ${legacyPaperLayout?
+            '<col class="c-sp"><col class="c-sp"><col class="c-mp">':
+            '<col class="c-check"><col class="c-check"><col class="c-pilot"><col class="c-pilot">'}
           <col class="c-total">
           <col class="c-picname">
           <col class="c-small"><col class="c-small">
@@ -2071,8 +2081,9 @@ function exportPrintableLogbook(options={}){
             <th colspan="2">DEPARTURE</th>
             <th colspan="2">ARRIVAL</th>
             <th colspan="2">AIRCRAFT</th>
-            <th colspan="2">SINGLE-PILOT TIME</th>
-            <th rowspan="3">MULTI-<br>PILOT<br>TIME</th>
+            ${legacyPaperLayout?
+              '<th colspan="2">SINGLE-PILOT TIME</th><th rowspan="3">MULTI-<br>PILOT<br>TIME</th>':
+              '<th colspan="2">ENGINE (✓)</th><th colspan="2">PILOT CONFIGURATION TIME</th>'}
             <th rowspan="3">TOTAL<br>TIME OF<br>FLIGHT</th>
             <th rowspan="3">NAME OF PIC</th>
             <th colspan="2">TAKE-OFFS</th>
@@ -2087,6 +2098,7 @@ function exportPrintableLogbook(options={}){
             <th rowspan="2">PLACE</th><th rowspan="2">TIME</th>
             <th rowspan="2">TYPE</th><th rowspan="2">REG.</th>
             <th rowspan="2">SE</th><th rowspan="2">ME</th>
+            ${legacyPaperLayout?'':'<th rowspan="2">SINGLE-<br>PILOT</th><th rowspan="2">MULTI-<br>PILOT</th>'}
             <th rowspan="2">DAY</th><th rowspan="2">NIGHT</th>
             <th rowspan="2">DAY</th><th rowspan="2">NIGHT</th>
             <th rowspan="2">NIGHT</th><th rowspan="2">IFR</th>
@@ -2105,6 +2117,11 @@ function exportPrintableLogbook(options={}){
       </table>
 
       <div class="page-footer">
+        ${!legacyPaperLayout?`<div class="engine-totals-print">
+          ENGINE TIME — SE ${fmt(cumulative.engineSE||0)} · ME ${fmt(cumulative.engineME||0)}
+          &nbsp;&nbsp; | &nbsp;&nbsp; PILOT TIME — SINGLE ${fmt(cumulative.single||0)} · MULTI ${fmt(cumulative.multi||0)}
+          ${options.unclassifiedPriorEngineMinutes>0?` · Prior paper engine type not allocated: ${fmt(options.unclassifiedPriorEngineMinutes)}`:''}
+        </div>`:''}
         ${options.correctionsApplied?.length?`<div style="font-size:7px;font-weight:700;margin-bottom:2px">
         CORRECTIONS CARRIED FORWARD: ${htmlEscape(options.correctionsApplied.join(', '))} —
         flight-time adjustment ${signedHours(Number(options.openingCorrectionsDelta?.total||0))}.
@@ -2187,6 +2204,10 @@ function exportPrintableLogbook(options={}){
       .c-reg{width:12mm}
       .c-sp{width:8mm}
       .c-mp{width:9mm}
+      .c-check{width:5.2mm}
+      .c-pilot{width:9mm}
+      .engine-check{font-family:Arial,'DejaVu Sans',sans-serif;font-size:13px!important;font-weight:800}
+      .engine-totals-print{font-size:7px;font-weight:700;margin-bottom:3px}
       .c-total{width:10mm}
       .c-picname{width:21mm}
       .c-small{width:6.7mm}
@@ -2194,7 +2215,7 @@ function exportPrintableLogbook(options={}){
       .c-fstd-date{width:9mm}
       .c-fstd-type{width:9mm}
       .c-fstd-time{width:9mm}
-      .c-remarks{width:42mm}
+      .c-remarks{width:${legacyPaperLayout?'42mm':'38mm'}}
 
       @media print{
         .toolbar{display:none}
