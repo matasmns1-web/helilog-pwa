@@ -1,6 +1,6 @@
 # HeliLog
 
-**Helicopter pilot logbook — V1.43 prototype**
+**Helicopter pilot logbook — V1.43.1 prototype**
 
 [Open HeliLog](https://helilog-pwa.onrender.com) · [Developer & Maintenance Guide](docs/MAINTENANCE.md) · [Release & Recovery Checklist](docs/RELEASE-CHECKLIST.md)
 
@@ -9,7 +9,7 @@ HeliLog is a browser-based, offline-capable PWA prototype for recording helicopt
 ## What V1 includes
 
 - Helicopter flight entry and editing, 24-hour times and **DD-MM-YYYY** date display.
-- ICAO aircraft designators, PIC/DUAL/Co-pilot roles, Night/IFR, instructor time, take-offs/landings, Cross-country and specialised helicopter operations.
+- ICAO aircraft designators, PIC/DUAL/Co-pilot roles, Night/IFR, instructor time, take-offs/landings, Cross-country and specialised helicopter operations. Independent SE/ME engine totals and Single-/Multi-pilot time; printed SE/ME checkmarks.
 - Dedicated simulator-session entries, kept separate from actual helicopter flight hours.
 - Filterable Logbook, career Totals and brought-forward paper-logbook balances.
 - CSV import/export, printable A4 landscape logbook pages and a manually confirmed, numbered print archive.
