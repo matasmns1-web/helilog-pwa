@@ -3673,7 +3673,7 @@ function endorsements(){
     'Instructor, examiner and licensing endorsements kept alongside your flight records.',
     `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="go('pilots')">Manage pilots</button><button class="btn primary" onclick="endorsementForm()">＋ Add endorsement</button></div>`)+
   `<div class="card">
-    <div class="note" style="margin-bottom:14px">V1.22 stores and signs endorsements inside HeliLog. Signed endorsements can now be printed and archived under Print Archive → Endorsements.</div>
+    <div class="note" style="margin-bottom:14px">Signed endorsements are locked against direct changes. Use Print Archive → Endorsements to print and archive them; archived corrections are separate, signed addenda.</div>
     <div class="endorsement-list">
       ${items.length?items.map(e=>{
         let signer=personById(e.signatoryPersonId);
