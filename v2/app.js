@@ -168,7 +168,19 @@ function flightField(label,name,val,options={}){
  (type==="number"?'min="'+(min||"0")+'" step="'+step+'" inputmode="numeric"':'maxlength="'+max+'"')+
  ' value="'+esc(val??"")+'"'+(required?' required':'')+
  (name==="off"||name==="on"?' inputmode="numeric" autocomplete="off" placeholder="HHmm or HH:mm" data-time-field="1"':'')+
- '><div class="error-text" id="'+name+'-error"></div></div>';
+ '>'+((name==="off"||name==="on")?timePickerMarkup(name,val):"")+
+ '<div class="error-text" id="'+name+'-error"></div></div>';
+function timePickerMarkup(name,val){
+ let hh="",mm="";
+ try{[hh,mm]=Flight.timeValue(val).split(":");}catch{}
+ const options=(max,selected)=>'<option value="">'+(max===23?"HH":"MM")+'</option>'+
+ Array.from({length:max+1},(_,i)=>{
+  const str=String(i).padStart(2,"0");
+  return '<option value="'+str+'"'+(str===selected?' selected':'')+'>'+str+'</option>';
+ }).join("");
+ return '<div class="time-selectors"><label><span>Hour (24h)</span><select name="'+name+'-hour" data-time-picker="'+name+'">'+options(23,hh)+'</select></label>'+
+ '<label><span>Minute</span><select name="'+name+'-minute" data-time-picker="'+name+'">'+options(59,mm)+'</select></label></div>';
+}
 }
 function flightEditorView(){
  const f=editingFlightId?Flight.getFlight(state,editingFlightId):null;
@@ -255,6 +267,14 @@ function checkTimeInput(input){
  const ok=!input.value.trim()||/^([01]\d|2[0-3]):?[0-5]\d$/.test(input.value.trim());
  input.classList.toggle("invalid",!ok);
  input.setAttribute("aria-invalid",ok?"false":"true");
+ if(ok&&input.value.trim()&&document.getElementById("flight-form")){
+  try{
+   const [hh,mm]=Flight.timeValue(input.value).split(":");
+   const h=document.getElementById(input.name+"-hour"),m=document.getElementById(input.name+"-minute");
+   if(h)h.value=hh;
+   if(m)m.value=mm;
+  }catch{}
+ }
  const error=document.getElementById(input.name+"-error");
  if(error)error.textContent=ok?"":"Use HHmm or HH:mm in 24-hour format.";
  return ok;
@@ -587,6 +607,18 @@ document.addEventListener("input",event=>{
 });
 document.addEventListener("change",event=>{
  if(event.target?.name==="role")updateRoleSelect();
+ const key=event.target?.dataset?.timePicker;
+ if(key==="off"||key==="on"){
+  const form=document.getElementById("flight-form");
+  if(!form)return;
+  const h=form.elements.namedItem(key+"-hour")?.value;
+  const m=form.elements.namedItem(key+"-minute")?.value;
+  const input=form.elements.namedItem(key);
+  if(input&&h!==""&&m!==""){
+   input.value=h+":"+m;
+   checkTimeInput(input);previewFlightDuration();
+  }
+ }
 });
 document.addEventListener("submit",event=>{
  const form=event.target;
