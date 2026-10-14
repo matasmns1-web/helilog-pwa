@@ -160,16 +160,19 @@ function fmtTime(n){return Flight.fmtMinutes(n);}
 function aircraftLabel(a){return a.registration+" · "+a.icao+(a.model?" · "+a.model:"");}
 function aircraftView(){
  const list=[...state.aircraft].sort((a,b)=>a.registration.localeCompare(b.registration));
- return head("Aircraft","Register helicopters using ICAO aircraft type designators. SE/ME engine type is independent of single/multi-pilot operation.",
- button("new-aircraft","+ Add aircraft","primary"))+
- '<div class="card"><h2>Saved aircraft ('+list.length+')</h2>'+
- (list.length?list.map(a=>'<div class="item"><div class="itemhead"><div>'+
- '<span class="itemtitle">'+esc(a.registration)+'</span> <span class="badge">'+esc(a.icao)+'</span>'+
- '<div class="details">'+esc([a.manufacturer,a.model,a.variant].filter(Boolean).join(" ")||"Unspecified model")+
- ' · '+(a.engine==="ME"?"Multi-engine":"Single-engine")+'</div></div>'+
- '<div class="actions">'+button("edit-aircraft","Edit","small",a.id)+
- button("delete-aircraft","Delete","small danger",a.id)+'</div></div>'+
- '</div>').join(""):'<p class="muted">No aircraft recorded yet. Add one before creating a flight.</p>')+'</div>';
+ return head("Aircraft","Manage registrations and aircraft ICAO type designators.",
+ button("new-aircraft","＋ Add aircraft","primary"))+
+ (list.length?'<div class="aircraft-grid">'+list.map(a=>{
+ const mins=state.flights.filter(f=>f.aircraftId===a.id).reduce((sum,f)=>sum+f.durationMin,0);
+ return '<div class="card"><div class="icao">'+esc(a.icao)+'</div>'+
+ '<div><b>'+esc(a.registration)+'</b></div>'+
+ '<div class="muted">'+esc([a.manufacturer,a.model,a.variant].filter(Boolean).join(" ")||"Unspecified model")+'</div>'+
+ '<div class="detail-line"><span>Engine</span><b>'+(a.engine==="ME"?"Multi-engine":"Single-engine")+'</b></div>'+
+ '<div class="detail-line"><span>Logged time</span><b>'+fmtTime(mins)+'</b></div>'+
+ '<div class="actions">'+button("edit-aircraft","Edit aircraft","small",a.id)+
+ button("delete-aircraft","Delete","small danger",a.id)+'</div></div>';
+ }).join("")+'</div>':
+ '<div class="card"><p class="muted">No aircraft recorded yet. Add one before creating a flight.</p></div>');
 }
 function aircraftEditorView(){
  const a=editingAircraftId?Flight.getAircraft(state,editingAircraftId):null;
@@ -188,26 +191,69 @@ function aircraftEditorView(){
  '<div class="actions"><button type="submit" class="btn primary">'+(a?"Save aircraft":"Add aircraft")+'</button>'+
  button("nav-aircraft","Cancel")+'</div></form></div>';
 }
+function filteredFlights(){
+ return state.flights.filter(f=>{
+  const a=f.aircraftSnapshot||{},q=logFilters.search.trim().toLowerCase();
+  if(q&&!([f.date,showDate(f.date),f.dep,f.arr,f.role,f.remarks,f.picName,a.registration,a.icao].join(" ").toLowerCase().includes(q)))return false;
+  if(logFilters.aircraft&&f.aircraftId!==logFilters.aircraft)return false;
+  if(logFilters.role&&f.role!==logFilters.role)return false;
+  if(logFilters.xc&&String(f.crossCountry)!==logFilters.xc)return false;
+  if(logFilters.night&&String(f.nightMin>0)!==logFilters.night)return false;
+  if(logFilters.ifr&&String(f.ifrMin>0)!==logFilters.ifr)return false;
+  return true;
+ }).sort((a,b)=>b.date.localeCompare(a.date)||b.off.localeCompare(a.off));
+}
+function flightTableRows(flights){
+ return flights.map(f=>'<tr><td>'+esc(showDate(f.date))+'</td>'+
+ '<td><b>'+esc(f.aircraftSnapshot?.icao||"—")+'</b></td>'+
+ '<td>'+esc(f.dep)+' → '+esc(f.arr)+'</td>'+
+ '<td>'+esc(f.off)+'–'+esc(f.on)+'</td>'+
+ '<td><b>'+fmtTime(f.durationMin)+'</b></td>'+
+ '<td><span class="tag">'+esc(f.role)+'</span></td>'+
+ '<td><div class="actions">'+button("edit-flight","Edit","small",f.id)+
+ button("delete-flight","Delete","small danger",f.id)+'</div></td></tr>').join("");
+}
+function flightTableFoot(flights){
+ const t=Flight.totals(state,flights);
+ return '<span><b>'+flights.length+'</b> of '+state.flights.length+' flights</span>'+
+ '<span class="filtertotals"><b>Filtered total: '+fmtTime(t.total)+'</b>'+
+ (logFilters.night?'<b>Night: '+fmtTime(t.night)+'</b>':"")+
+ (logFilters.ifr?'<b>IFR: '+fmtTime(t.ifr)+'</b>':"")+'</span>';
+}
+function updateFlightResults(){
+ const tbody=document.getElementById("flight-results");
+ const foot=document.getElementById("flight-footer");
+ if(!tbody||!foot)return;
+ const flights=filteredFlights();
+ tbody.innerHTML=flightTableRows(flights);
+ foot.innerHTML=flightTableFoot(flights);
+}
 function flightsView(){
- const flights=[...state.flights].sort((a,b)=>b.date.localeCompare(a.date)||b.off.localeCompare(a.off));
- return head("Flight logbook","V2 flight entries are test-only. Archive printing and archived-flight corrections will be added in a later milestone.",
- button("new-flight","+ Add Flight","primary"))+
+ const selected=(name,value)=>logFilters[name]===value?" selected":"";
+ const options=(values,field,all)=>{
+  return '<option value="">'+all+'</option>'+values.map(([value,label])=>
+  '<option value="'+esc(value)+'"'+selected(field,value)+'>'+esc(label)+'</option>').join("");
+ };
+ const select=(label,name,optionHTML)=>'<div class="field"><label for="filter-'+name+'">'+label+'</label>'+
+ '<select id="filter-'+name+'" data-flight-filter="'+name+'">'+optionHTML+'</select></div>';
+ const flights=filteredFlights();
+ return head("Logbook","Search and filter your flight records.",
+ button("new-flight","＋ Add flight","primary"))+
  (state.aircraft.length===0?banner("Add an aircraft before logging your first flight.","warning"):"")+
- '<div class="card"><h2>Flights ('+flights.length+')</h2>'+
- (flights.length?flights.map(f=>{
- const a=f.aircraftSnapshot||{};
- return '<div class="item"><div class="itemhead"><div>'+
- '<div class="itemtitle">'+esc(showDate(f.date))+' · '+esc(a.registration||"Unknown aircraft")+
- ' <span class="badge">'+esc(a.icao||"—")+'</span></div>'+
- '<div class="details">'+esc(f.dep)+' → '+esc(f.arr)+' · '+esc(f.off)+'–'+esc(f.on)+
- ' · <b>'+fmtTime(f.durationMin)+'</b> · '+esc(f.role)+
- ' · '+(f.pilotConfig==="multi"?"Multi-pilot":"Single-pilot")+
- ' · '+(a.engine==="ME"?"ME":"SE")+(f.crossCountry?" · Cross-country":"")+'</div>'+
- '</div><div class="actions">'+button("edit-flight","Edit","small",f.id)+
- button("delete-flight","Delete","small danger",f.id)+'</div></div>'+
- (f.remarks?'<div class="bodytext">'+esc(f.remarks)+'</div>':"")+
- '</div>';
- }).join(""):'<p class="muted">No flights yet. Add a test flight to begin.</p>')+'</div>';
+ '<div class="card"><div class="table-tools">'+
+ '<div class="field"><label for="filter-search">Search</label><input id="filter-search" data-flight-filter="search" type="search" '+
+ 'placeholder="Route, PIC, registration, remarks…" value="'+esc(logFilters.search)+'"></div>'+
+ select("Aircraft","aircraft",options(state.aircraft.map(a=>[a.id,a.icao+" — "+a.registration]),"aircraft","All aircraft"))+
+ select("Pilot function","role",options(Flight.ROLES.map(x=>[x,x]),"role","All functions"))+
+ select("Cross-country","xc",options([["true","XC only"],["false","Non-XC only"]],"xc","All flights"))+
+ select("Night","night",options([["true","Night time recorded"],["false","No night time"]],"night","All flights"))+
+ select("IFR","ifr",options([["true","IFR time recorded"],["false","No IFR time"]],"ifr","All flights"))+
+ button("reset-flight-filters","Reset filters","small")+'</div>'+
+ '<div class="table-scroll"><table><thead><tr>'+
+ ['Date','Type','Route','Times','Flight time','Function',''].map(x=>'<th>'+x+'</th>').join("")+
+ '</tr></thead><tbody id="flight-results">'+flightTableRows(flights)+'</tbody></table></div>'+
+ (!state.flights.length?'<p class="muted" style="margin-top:10px">No flights yet. Add a test flight to begin.</p>':"")+
+ '<div class="table-foot" id="flight-footer">'+flightTableFoot(flights)+'</div></div>';
 }
 function flightTotalsView(){
  const t=Flight.totals(state);
