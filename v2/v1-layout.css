@@ -117,6 +117,10 @@ tbody tr:hover{background:#fafbfc}
 .dashboard-range{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0 14px}
 .dashboard-range button{min-height:34px;padding:7px 10px;font-size:12px}
 .dashboard-range button.active{background:#111827;border-color:#111827;color:white}
+.more-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.more-link{text-align:left;min-height:92px;display:flex;flex-direction:column;justify-content:center;gap:5px}
+.more-link b{font-size:15px}
+.more-link span{font-size:12px}
 .mobile-nav{display:none}
 .mobile-nav button{cursor:pointer}
 @media(max-width:1180px) and (min-width:851px){
@@ -153,6 +157,11 @@ tbody tr:hover{background:#fafbfc}
   font-size:10px;font-weight:700;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px
  }
  .mobile-nav button.active{background:#eef2f7;color:#111827}
+ body:has(input:focus) .mobile-nav,body:has(textarea:focus) .mobile-nav,
+ body:has(select:focus) .mobile-nav{display:none}
+ body:has(input:focus) .content,body:has(textarea:focus) .content,
+ body:has(select:focus) .content{padding-bottom:calc(22px + env(safe-area-inset-bottom))}
+
  .mobile-nav .navicon{font-size:19px;line-height:1}
  .table-scroll{max-width:100%}
  .actions{justify-content:flex-start}
