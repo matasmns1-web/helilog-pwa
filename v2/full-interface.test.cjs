@@ -17,7 +17,7 @@ function boot(){
   return elements.get(id);
  }
  const env={
-  console,Date,JSON,Math,Promise,setTimeout(){},
+  console,Date,JSON,Math,Promise,URL,setTimeout(){},
   location:{hash:"#dashboard",protocol:"https:",hostname:"helilog-v2-test.onrender.com"},
   navigator:{userAgent:"Desktop simulator",platform:"Linux",maxTouchPoints:0},
   confirm(){return true},alert(s){alerts.push(String(s))},
@@ -30,7 +30,7 @@ function boot(){
  };
  env.window=env;
  const cx=vm.createContext(env);
- for(const file of ["domain.js","print.js","endorsement-bridge.js","endorsement-ui.js"]){
+ for(const file of ["domain.js","print.js","endorsement-bridge.js","endorsement-ui.js","cloud-config.js","cloud-foundation.js","cloud-view.js"]){
   vm.runInContext(fs.readFileSync(path.join(__dirname,file),"utf8"),cx,{filename:file});
  }
  const inline=html.slice(html.lastIndexOf("<script>")+8,html.lastIndexOf("</script>"));
@@ -72,7 +72,7 @@ test("V2 standalone assets and archive scripts are present",()=>{
 test("all original pages and new endorsement archive render in V2",()=>{
  const ui=boot();
  for(const route of ["dashboard","logbook","add","aircraft","pilots","endorsements",
-   "printarchive","endorsementarchive","totals","profile","testmode","mobilemore"]){
+   "printarchive","endorsementarchive","totals","profile","cloud","testmode","mobilemore"]){
   const page=ui.renderPage(route);
   assert.ok(page.length>400,route+" empty page");
   assert.doesNotMatch(page,/HeliLog could not load this screen/,route);
@@ -92,6 +92,9 @@ test("V1 flight form, totals panels, and new endorsement archive link work",()=>
  }
  const paper=ui.renderPage("printarchive");
  assert.match(paper,/Endorsement print archive — V2/);
+ const cloud=ui.renderPage("cloud");
+ assert.match(cloud,/Cloud not configured/);
+ assert.match(cloud,/No cloud database has been activated/);
 });
 test("new endorsement print archive opens inside the restored V1 interface",()=>{
  const ui=boot();
