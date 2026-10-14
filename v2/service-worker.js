@@ -1,4 +1,4 @@
-const CACHE='helilog-v2-full-interface-1';
+const CACHE='helilog-v2-1-shell';
 const SHELL=[
   './',
   './index.html',
@@ -8,7 +8,8 @@ const SHELL=[
   './apple-touch-icon.png',
   './domain.js',
   './print.js',
-  './endorsement-bridge.js'
+  './endorsement-bridge.js',
+  './endorsement-ui.js'
 ];
 
 self.addEventListener('install',event=>{

@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.0 Alpha — Complete V1 Interface</title>
+<title>HeliLog V2.1 — Testing</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -20,7 +20,8 @@ html.helilog-no-zoom,html.helilog-no-zoom body{touch-action:pan-x pan-y}
 /* Installed phone/tablet app: flight entry and viewing only; browser retains management tools. */
 html.installed-touch-app .web-only-tool,
 html.installed-touch-app .logbook-filter-controls,
-html.installed-touch-app nav button[data-v="printarchive"]{display:none!important}
+html.installed-touch-app nav button[data-v="printarchive"],
+html.helilog-installed-app nav button[data-v="printarchive"]{display:none!important}
 html.installed-touch-app .dashboard-actions{grid-template-columns:repeat(3,minmax(0,1fr))}
 html.installed-touch-app .logbook-flight-list{margin-top:0}
 button,input,select,textarea{font:inherit}button{cursor:pointer}.layout{display:flex;min-height:100vh}
@@ -255,7 +256,7 @@ html.helilog-test-mode .brand::after{
 }
 </style></head>
 <body><div class="layout">
-<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V2.0 ALPHA · TEST</span></div><nav>
+<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V2.1 · TEST</span></div><nav>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="aircraft">🚁 Aircraft</button><button data-v="pilots">👤 Pilots</button><button data-v="endorsements">✎ Endorsements</button><button data-v="printarchive">▤ Print archive</button><button data-v="profile">○ Profile</button><button data-v="testmode">⚗ Test Mode</button>
 </nav></aside><main id="app"></main>
 <div class="mobile">
@@ -268,7 +269,7 @@ html.helilog-test-mode .brand::after{
 <div id="deleteModal" class="modalbackdrop" onclick="if(event.target===this)closeDeleteModal()">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="deleteTitle">
     <h3 id="deleteTitle">Delete flight?</h3>
-    <p id="deleteText">This will remove the flight from the V1 prototype logbook.</p>
+    <p id="deleteText">This will remove the flight from the V2 test logbook.</p>
     <div class="modal-actions">
       <button class="btn" type="button" onclick="closeDeleteModal()">Cancel</button>
       <button class="btn dangerbtn" type="button" onclick="confirmDeleteFlight()">Delete flight</button>
@@ -849,6 +850,7 @@ function isInstalledTouchApp(){
 // Detect the installation mode rather than the viewport width: iPad landscape
 // and larger iPhones must still use the simplified installed-app Logbook.
 if(isInstalledTouchApp()) document.documentElement.classList.add('installed-touch-app');
+if(isStandaloneApp()) document.documentElement.classList.add('helilog-installed-app');
 
 function pwaEnvironment(){
   if(isStandaloneApp()) return {kind:'installed',label:'Installed app',detail:'HeliLog is running in standalone app mode.'};
@@ -973,7 +975,7 @@ function mobilemore(){
     <button class="card more-link" onclick="go('aircraft')"><span>🚁</span><b>Aircraft</b><span class="muted">Fleet and SE/ME setup</span></button>
     <button class="card more-link" onclick="go('pilots')"><span>👤</span><b>Pilot profiles</b><span class="muted">Create PIC, instructor and examiner profiles</span></button>
     <button class="card more-link" onclick="go('endorsements')"><span>✎</span><b>Endorsements</b><span class="muted">Memoranda and signatures</span></button>
-    <button class="card more-link" onclick="go('endorsementarchive')"><span>▤</span><b>Endorsement archive</b><span class="muted">Printed pages and corrections</span></button>
+    ${!isStandaloneApp()?`<button class="card more-link" onclick="go('endorsementarchive')"><span>▤</span><b>Endorsement archive</b><span class="muted">Printed pages and corrections</span></button>`:''}
     <button class="card more-link" onclick="go('totals')"><span>◉</span><b>Totals</b><span class="muted">Flight-time breakdown</span></button>
     <button class="card more-link" onclick="go('profile')"><span>○</span><b>Profile</b><span class="muted">Licence, medical and backup</span></button>
     <button class="card more-link" onclick="go('testmode')"><span>⚗</span><b>Test Mode</b><span class="muted">Separate sandbox and safe reset</span></button>
@@ -2740,7 +2742,7 @@ function discardPendingCorrection(id){
   pendingCorrectionPrint=null;printarchive();
 }
 function printarchive(){
-  if(isInstalledTouchApp()){go('dashboard');return;}
+  if(isStandaloneApp()){go('dashboard');return;}
   const batches=archivedBatches();
   const draft=nextArchiveDraft();
   const previewReady=!!pendingArchivePreview && pendingArchivePreview===JSON.stringify(draft);
@@ -3665,6 +3667,30 @@ function savePerson(e){
 
 
 function endorsementById(id){return (S.endorsements||[]).find(e=>e.id===id)}
+// V2.1 - signed on installed app, archived from browser.
+let v2EndorsementNotice='';
+function v2EndorsementStatus(e){
+ if(!e.signatureData)return '<span class="badge gray">Draft · Unsigned</span>';
+ if(v2ArchiveBridge.isArchived(S,e.id)){
+  const ref=v2PageOf(e.id), corrections=v2ArchiveBridge.stored(S).amendments.filter(a=>a.endorsementId===e.id).length;
+  return '<span class="badge">Archived'+(ref?' · Page '+ref.page:'')+'</span>'+
+   (corrections?'<span class="badge gray">'+corrections+' correction(s)</span>':'');
+ }
+ return '<span class="badge">Signed · Awaiting web archive</span>';
+}
+function v2EndorsementStatusHelp(e){
+ if(!e.signatureData)return '';
+ if(v2ArchiveBridge.isArchived(S,e.id)){
+  const ref=v2PageOf(e.id);
+  return '<div class="mini" style="margin-top:8px">Archived'+(ref?' · endorsement page '+ref.page:'')+
+   '. Original signed endorsement remains locked. Corrections are handled in the web browser.</div>';
+ }
+ return '<div class="mini" style="margin-top:8px">'+
+ (isStandaloneApp()?
+ 'Signed and saved in this installed app, awaiting web archiving. Records are not automatically shared with other devices yet.':
+ 'Signed and saved in this browser. Awaiting printing and archive confirmation in Print Archive → Endorsements.')+
+ '</div>';
+}
 
 function endorsements(){
   editingEndorsementId=null;
@@ -3673,7 +3699,10 @@ function endorsements(){
     'Instructor, examiner and licensing endorsements kept alongside your flight records.',
     `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="go('pilots')">Manage pilots</button><button class="btn primary" onclick="endorsementForm()">＋ Add endorsement</button></div>`)+
   `<div class="card">
-    <div class="note" style="margin-bottom:14px">Signed endorsements are locked against direct changes. Use Print Archive → Endorsements to print and archive them; archived corrections are separate, signed addenda.</div>
+    <div class="note" style="margin-bottom:14px">${isStandaloneApp()?
+      'Create, sign and review endorsements in the app. Records stay on this device; printing and archiving are web-only. Until cloud sync is ready, moving an endorsement to another device requires exporting a Full Backup from Profile and restoring it in the browser.':
+      'Signed endorsements are locked. Use Print Archive → Endorsements to print, archive or correct them.'}</div>
+    ${v2EndorsementNotice?'<div class="note" role="status" style="margin-bottom:14px">'+htmlEscape(v2EndorsementNotice)+'</div>':''}
     <div class="endorsement-list">
       ${items.length?items.map(e=>{
         let signer=personById(e.signatoryPersonId);
@@ -3684,7 +3713,7 @@ function endorsements(){
               <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
                 <b>${htmlEscape(e.title||e.category||'Endorsement')}</b>
                 <span class="badge gray">${htmlEscape(e.category||'Other')}</span>
-                ${e.signatureData?'<span class="badge">Signed</span>':'<span class="badge gray">Unsigned</span>'}
+                ${v2EndorsementStatus(e)}
               </div>
               <div class="endorsement-meta">
                 <span><b>Date:</b> ${displayDate(e.date)}</span>
@@ -3697,11 +3726,12 @@ function endorsements(){
               ${!e.signatureData?`<button class="btn" type="button" onclick="endorsementForm('${e.id}')">Edit</button>
               <button class="btn" type="button" onclick="signEndorsement('${e.id}')">Sign</button>
               <button class="btn dangerbtn" type="button" onclick="deleteEndorsement('${e.id}')">Delete</button>`:
-              `<button class="btn" onclick="go('endorsementarchive')">${v2ArchiveBridge.isArchived(S,e.id)?'Archived / Corrections':'Print / Archive'}</button>`}
+              (isStandaloneApp()?'':`<button class="btn" onclick="go('endorsementarchive')">${v2ArchiveBridge.isArchived(S,e.id)?'View archive / Corrections':'Print / Archive'}</button>`)}
             </div>
           </div>
 
           <div class="endorsement-body">${htmlEscape(e.text||'')}</div>
+          ${v2EndorsementStatusHelp(e)}
 
           ${e.signatureData?`<div class="signature-preview">
             <div>
@@ -3939,11 +3969,18 @@ function applyEndorsementSignature(id){
   let signer=personById(e.signatoryPersonId);
   if(!signer) return;
 
+  const previous={signatureData:e.signatureData,signedAt:e.signedAt,signedName:e.signedName,signedLicence:e.signedLicence};
   e.signatureData=canvas.toDataURL('image/png');
   e.signedAt=new Date().toISOString();
   e.signedName=signer.name;
   e.signedLicence=signer.licence||'';
-  save();
+  if(!save()){
+    Object.assign(e,previous);
+    return;
+  }
+  v2EndorsementNotice=isStandaloneApp()
+   ?'Endorsement signed and saved on this device. Awaiting web archive. Cloud synchronization is not enabled, so it will not appear automatically on another device.'
+   :'Endorsement signed and saved in this browser. Awaiting print archive confirmation.';
   endorsements();
 }
 
@@ -4538,7 +4575,7 @@ async function makeFullBackup(){
     app:'HeliLog',
     format:'helilog-full-backup',
     backupSchema:2,
-    appVersion:'2.0-alpha-v1-interface',
+    appVersion:'2.1',
     exportedAt:new Date().toISOString(),
     environment:TEST_MODE?'test':'production',
     integrity:{algorithm:'SHA-256',sha256:await sha256Hex(JSON.stringify(data))},
@@ -4911,6 +4948,10 @@ if(window.visualViewport) window.visualViewport.addEventListener('resize',update
 
 function render(){
   let v=location.hash.slice(1)||'dashboard';
+  if(isStandaloneApp()&&(v==='printarchive'||v==='endorsementarchive')){
+    v='endorsements';
+    if(location.hash!=='#endorsements')location.hash='#endorsements';
+  }
   try{
     if(v!=='add') editingFlightId=null;
     ({dashboard,logbook,add,aircraft,pilots,endorsements,printarchive,endorsementarchive:v2EndorsementArchive,totals,profile,testmode,mobilemore}[v]||dashboard)();

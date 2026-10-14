@@ -9,7 +9,17 @@ let v2PreviewShown=false;
 let v2CorrectionPreviewShown=false;
 const v2ArchiveBridge=window.HeliLogV2Bridge;
 
+// Installed PWA: record and sign only. Printing, locking batches and corrections
+// are browser-only. Guard every entrypoint, not merely the visible menu buttons.
+function v2ArchiveWebAllowed(){return !isStandaloneApp();}
+function v2RequireWebArchive(){
+ if(v2ArchiveWebAllowed())return true;
+ alert('Open HeliLog in a web browser to print, archive or correct a signed endorsement. The installed app is for recording and reviewing.');
+ return false;
+}
+
 function v2StoreArchive(next){
+ if(!v2RequireWebArchive())return false;
   const previous=S.endorsementV2Archive;
   S.endorsementV2Archive=next;
   if(!save()){
@@ -29,6 +39,7 @@ function v2StoreArchive(next){
   return true;
 }
 function v2PrintEndorsementHTML(markup){
+ if(!v2RequireWebArchive())return false;
   const w=window.open('','_blank');
   if(!w){alert('Pop-up blocked. Allow printing windows for HeliLog and try again. Nothing has been archived.');return false;}
   w.document.open();w.document.write(markup);w.document.close();w.focus();
@@ -38,6 +49,10 @@ function v2PageOf(id){
   return v2ArchiveBridge.source(S,id);
 }
 function v2EndorsementArchive(){
+ if(!v2ArchiveWebAllowed()){
+  if(location.hash!=='#endorsements')location.hash='#endorsements';
+  endorsements();return;
+ }
   const archive=v2ArchiveBridge.stored(S);
   const pending=(S.endorsements||[]).filter(e=>e.signatureData&&!v2ArchiveBridge.isArchived(S,e.id))
     .sort((a,b)=>(a.date||'').localeCompare(b.date||''));
@@ -86,6 +101,7 @@ function v2EndorsementArchive(){
 }
 function v2DiscardEndorsementPreview(){v2PendingEndorsementBatch=null;v2PreviewShown=false;v2EndorsementArchive();}
 function v2PreviewEndorsements(ev){
+ if(!v2RequireWebArchive())return;
   ev.preventDefault();
   const ids=[...document.querySelectorAll('#v2ArchiveEndorsementSelect input[name=v2ArchiveId]:checked')]
     .map(el=>el.value);
@@ -96,10 +112,12 @@ function v2PreviewEndorsements(ev){
   }catch(e){alert('Cannot preview endorsements: '+e.message);}
 }
 function v2ReopenEndorsementPreview(){
+ if(!v2RequireWebArchive())return;
   if(v2PendingEndorsementBatch)
    v2PreviewShown=v2PrintEndorsementHTML(v2ArchiveBridge.printBatch(v2PendingEndorsementBatch));
 }
 function v2ConfirmEndorsementBatch(){
+ if(!v2RequireWebArchive())return;
   if(!v2PendingEndorsementBatch||!v2PreviewShown)return;
   if(!document.getElementById('v2EndorsementConfirmed')?.checked){
     alert('Confirm that you printed and reviewed the endorsement pages first.');return;
@@ -112,10 +130,12 @@ function v2ConfirmEndorsementBatch(){
   }catch(e){alert('Archive not confirmed: '+e.message);}
 }
 function v2ReprintEndorsementBatch(id){
+ if(!v2RequireWebArchive())return;
   const b=v2ArchiveBridge.stored(S).batches.find(x=>x.id===id);
   if(b)v2PrintEndorsementHTML(v2ArchiveBridge.printBatch(b));
 }
 function v2StartEndorsementCorrection(id){
+ if(!v2RequireWebArchive())return;
   try{
     const e=v2ArchiveBridge.effective(S,id);
     if(!e||!v2ArchiveBridge.isArchived(S,id))throw Error('Endorsement is not archived.');
@@ -142,6 +162,7 @@ function v2StartEndorsementCorrection(id){
   }catch(e){alert('Cannot correct endorsement: '+e.message);}
 }
 function v2PrepareEndorsementCorrection(ev){
+ if(!v2RequireWebArchive())return;
  ev.preventDefault();
  try{
   const id=document.getElementById('v2CorrectionId').value;
@@ -168,6 +189,7 @@ function v2PrepareEndorsementCorrection(ev){
  }catch(e){alert('Unable to prepare correction: '+e.message);}
 }
 function v2SignEndorsementCorrection(){
+ if(!v2RequireWebArchive())return;
  if(!v2CorrectionDraft||!endorsementSignatureDirty){alert('The signatory must sign inside the signature box.');return;}
  const canvas=document.getElementById('signatureCanvas');
  if(!canvas)return;
@@ -180,6 +202,7 @@ function v2SignEndorsementCorrection(){
  }catch(e){alert('Cannot sign correction: '+e.message);}
 }
 function v2PrintCorrectionPreview(){
+ if(!v2RequireWebArchive())return;
  if(!v2PendingCorrection)return;
  try{
   const source=v2PageOf(v2PendingCorrection.endorsementId);
@@ -198,6 +221,7 @@ function v2PrintCorrectionPreview(){
  }catch(e){alert('Cannot print correction: '+e.message);}
 }
 function v2ConfirmEndorsementCorrection(){
+ if(!v2RequireWebArchive())return;
  if(!v2PendingCorrection||!v2CorrectionPreviewShown)return;
  if(!document.getElementById('v2CorrectionConfirmed')?.checked){
   alert('Confirm that the printed correction was reviewed.');return;
@@ -210,6 +234,7 @@ function v2ConfirmEndorsementCorrection(){
  }catch(e){alert('Correction not saved: '+e.message);}
 }
 function v2ReprintEndorsementCorrection(id){
+ if(!v2RequireWebArchive())return;
  const correction=v2ArchiveBridge.stored(S).amendments.find(x=>x.id===id);
  if(correction)v2PrintEndorsementHTML(v2ArchiveBridge.printAmendment(correction,v2PageOf(correction.endorsementId)));
 }
