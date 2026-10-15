@@ -721,6 +721,8 @@ function ensurePersonForName(name){
   let p={
     id:'p'+Date.now()+Math.random().toString(36).slice(2,6),
     name:clean,
+    firstName:pilotNameParts({name:clean}).firstName,
+    lastName:pilotNameParts({name:clean}).lastName,
     role:'Pilot',
     licence:'',
     notes:'',
@@ -3674,7 +3676,8 @@ function newPerson(editId=null){
     `<form class="card form" onsubmit="savePerson(event)">
       ${existing&&linked?`<div class="note" style="margin-bottom:16px"><b>${linked} linked flight${linked===1?'':'s'}.</b><br>If you change this pilot's name, linked flight records will be updated automatically.</div>`:''}
       <div class="formgrid">
-        <div class="field"><label>Name</label><input id="personName" required value="${existing?htmlEscape(existing.name):''}" placeholder="Pilot name"></div>
+        <div class="field"><label for="personFirstName">First name</label><input id="personFirstName" autocomplete="given-name" required value="${existing?htmlEscape(pilotNameParts(existing).firstName):''}" placeholder="First name"></div>
+        <div class="field"><label for="personLastName">Surname</label><input id="personLastName" autocomplete="family-name" required value="${existing?htmlEscape(pilotNameParts(existing).lastName):''}" placeholder="Surname"></div>
         <div class="field"><label>Role / relationship</label><input id="personRole" value="${existing?htmlEscape(existing.role||'Pilot'):'Pilot'}" placeholder="Instructor, examiner, commander..."></div>
         <div class="field"><label>Licence / identifier</label><input id="personLicence" value="${existing?htmlEscape(existing.licence||''):''}" placeholder="Optional"></div>
         <div class="field"><label>Notes</label><input id="personNotes" value="${existing?htmlEscape(existing.notes||''):''}" placeholder="Optional"></div>
@@ -3688,11 +3691,16 @@ function editPerson(id){newPerson(id)}
 
 function savePerson(e){
   e.preventDefault();
-  let name=$('#personName').value.trim();
+  let firstName=$('#personFirstName').value.trim().replace(/\s+/g,' ');
+  let lastName=$('#personLastName').value.trim().replace(/\s+/g,' ');
+  let name=[firstName,lastName].filter(Boolean).join(' ');
   let role=$('#personRole').value.trim()||'Pilot';
   let licence=$('#personLicence').value.trim();
   let notes=$('#personNotes').value.trim();
-  if(!name) return;
+  if(!firstName||!lastName){
+    alert('Please enter both the first name and surname.');
+    return;
+  }
 
   let duplicate=S.people.find(p=>p.id!==editingPersonId && p.name.toLowerCase()===name.toLowerCase());
   if(duplicate){
@@ -3704,7 +3712,8 @@ function savePerson(e){
     let p=personById(editingPersonId);
     if(!p){go('pilots');return;}
     let oldName=p.name;
-    p.name=name;p.role=role;p.licence=licence;p.notes=notes;
+    p.name=name;p.firstName=firstName;p.lastName=lastName;
+    p.role=role;p.licence=licence;p.notes=notes;
     S.flights.forEach(f=>{
       if(isArchivedFlight(f.id)) return;
       if(f.picPersonId===p.id || (!f.picPersonId && String(f.picName||'').toLowerCase()===oldName.toLowerCase())){
@@ -3715,7 +3724,7 @@ function savePerson(e){
   }else{
     S.people.push({
       id:'p'+Date.now()+Math.random().toString(36).slice(2,6),
-      name,role,licence,notes,isAccountHolder:false
+      name,firstName,lastName,role,licence,notes,isAccountHolder:false
     });
   }
 
