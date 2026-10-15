@@ -154,6 +154,8 @@ function cloud(){
   (v23AccountWorkspace()?'<div class="card" style="margin-top:16px">'+
    '<div class="head"><div><h2>Cloud archive integrity</h2><div class="muted">Read-only check of confirmed pages, frozen originals and signed corrections.</div></div>'+
    '<button class="btn primary" type="button" onclick="v28VerifyCloudArchives()"'+(v28Busy?' disabled':'')+'>Verify archives</button></div>'+
+   (window.HeliLogV24Archive?.recoveryNotice?.()?'<div class="note" role="status">'+
+      v22CloudEscape(window.HeliLogV24Archive.recoveryNotice())+'</div>':'')+
    (v28Notice?'<div class="note" role="status">'+v22CloudEscape(v28Notice)+'</div>':
      '<div class="mini">A successful check is recorded as a device-local evidence baseline. Save a separate recovery package under Profile → Backup &amp; restore.</div>')+
    '</div>':'');
