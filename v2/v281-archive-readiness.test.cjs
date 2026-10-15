@@ -17,7 +17,7 @@ function fixture(){
     then(resolve,reject){
      reads++;
      const deliver=()=>flags.readError?{data:null,error:{message:"Archive cloud read failed"}}:{data:[],error:null};
-     const wait=flags.delayed?new Promise(ok=>{release=release?()=>{ok();release();}:ok;}):Promise.resolve();
+     const wait=flags.delayed?new Promise(ok=>{const previous=release;release=previous?()=>{ok();previous();}:ok;}):Promise.resolve();
      return wait.then(deliver).then(resolve,reject);
     }
    };
