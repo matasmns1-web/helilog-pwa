@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="helilog-locked">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -11,12 +11,22 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.2 — Cloud Foundation</title>
+<title>HeliLog V2.3 — Private Logbook</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
 /* Keep normal swiping and scrolling but disable pinch/double-tap page zoom inside installed touch PWAs. */
 html.helilog-no-zoom,html.helilog-no-zoom body{touch-action:pan-x pan-y}
+/* V2.3: never render private app UI until Supabase verifies the account. */
+html.helilog-locked aside,html.helilog-locked .mobile{display:none!important}
+html.helilog-locked main{margin:0!important;width:100%!important;max-width:none!important;padding:18px!important;min-height:100vh!important}
+.v23-auth-container{min-height:85vh;display:flex;justify-content:center;align-items:center;padding:20px}
+.v23-auth-card{width:min(100%,445px);border:1px solid var(--line);background:#fff;border-radius:18px;padding:32px;box-shadow:0 15px 50px rgba(17,24,39,.06)}
+.v23-auth-card .form{margin-top:20px}.v23-auth-card .btn.primary{width:100%;padding:13px}
+html.helilog-cloud-workspace nav button[data-v="printarchive"]{display:none!important}
+html.helilog-cloud-workspace .cloud-archive-tool{display:none!important}
+.v23-syncbanner{margin:0 0 16px}.v23-syncbanner .note{margin-bottom:0}
+@media(max-width:550px){.v23-auth-container{align-items:flex-start;padding:18px 0}.v23-auth-card{padding:25px 20px}}
 /* Installed phone/tablet app: flight entry and viewing only; browser retains management tools. */
 html.installed-touch-app .web-only-tool,
 html.installed-touch-app .logbook-filter-controls,
@@ -256,7 +266,7 @@ html.helilog-test-mode .brand::after{
 }
 </style></head>
 <body><div class="layout">
-<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V2.2 · TEST</span></div><nav>
+<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V2.3 · TEST</span></div><nav>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="aircraft">🚁 Aircraft</button><button data-v="pilots">👤 Pilots</button><button data-v="endorsements">✎ Endorsements</button><button data-v="printarchive">▤ Print archive</button><button data-v="profile">○ Profile</button><button data-v="cloud">☁ Cloud account</button><button data-v="testmode">⚗ Test Mode</button>
 </nav></aside><main id="app"></main>
 <div class="mobile">
@@ -334,12 +344,14 @@ html.helilog-test-mode .brand::after{
 <script src="./cloud-config.js"></script>
 <script src="./cloud-foundation.js"></script>
 <script src="./cloud-view.js"></script>
+<script src="./cloud-sync.js"></script>
+<script src="./auth-gate.js"></script>
 <script>
 const LIVE_KEY='helilog_v2_complete_test_data'; // Separate V2 test browser key.
 const SANDBOX_KEY='helilog_v2_complete_test_sandbox';
 const MODE_KEY='helilog_v2_complete_test_mode';
 const TEST_MODE=localStorage.getItem(MODE_KEY)==='test';
-const KEY=TEST_MODE?SANDBOX_KEY:LIVE_KEY;
+let KEY=TEST_MODE?SANDBOX_KEY:LIVE_KEY;
 // All existing logbook saves, migrations, imports and archive snapshots use KEY.
 // Test and live records therefore reside in distinct browser-storage entries.
 document.documentElement.classList.toggle('helilog-test-mode',TEST_MODE);
@@ -710,7 +722,15 @@ let editingPersonId=null;
 let editingQualificationId=null;
 let editingEndorsementId=null;
 function save(){
-  try{localStorage.setItem(KEY,JSON.stringify(S));return true;}
+  try{
+    localStorage.setItem(KEY,JSON.stringify(S));
+    if(v23AccountWorkspace()){
+      try{window.HeliLogV23Sync.track(S);}
+      catch(syncError){console.error('Changes saved locally; sync queue could not be updated',syncError);
+        alert('Saved on this device, but cloud sync requires attention: '+syncError.message);}
+    }
+    return true;
+  }
   catch(e){
     console.error('HeliLog could not save changes:',e);
     alert('HeliLog could not save changes to this device. The browser storage may be full or unavailable. Export a Full Backup and check browser storage before continuing.');
@@ -919,7 +939,10 @@ if('serviceWorker' in navigator && (location.protocol==='https:' || location.hos
   });
 }
 
-function header(title,sub,action=''){return `<div class="top"><div><h1>${title}</h1><div class="sub">${sub||''}</div></div>${action}</div>`}
+function header(title,sub,action=''){
+ const banner=v23AccountWorkspace()?'<div id="v23SyncStatus" class="v23-syncbanner">'+v23SyncInfo()+'</div>':'';
+ return `<div class="top"><div><h1>${title}</h1><div class="sub">${sub||''}</div></div>${action}</div>`+banner;
+}
 
 let flightFormDirty=false;
 let restoringFlightHistory=false;
@@ -945,6 +968,7 @@ function cancelFlightForm(returnFlightId=''){
   else go('dashboard');
 }
 function go(v){
+  if(!v23Unlocked){v23LoginView();return;}
   if(!confirmLeaveFlightForm()) return;
   correctingArchivedId=null;
   clearFlightFormGuard();
@@ -978,7 +1002,7 @@ function mobilemore(){
     <button class="card more-link" onclick="go('aircraft')"><span>🚁</span><b>Aircraft</b><span class="muted">Fleet and SE/ME setup</span></button>
     <button class="card more-link" onclick="go('pilots')"><span>👤</span><b>Pilot profiles</b><span class="muted">Create PIC, instructor and examiner profiles</span></button>
     <button class="card more-link" onclick="go('endorsements')"><span>✎</span><b>Endorsements</b><span class="muted">Memoranda and signatures</span></button>
-    ${!isStandaloneApp()?`<button class="card more-link" onclick="go('endorsementarchive')"><span>▤</span><b>Endorsement archive</b><span class="muted">Printed pages and corrections</span></button>`:''}
+    ${!isStandaloneApp()&&!v23AccountWorkspace()?`<button class="card more-link" onclick="go('endorsementarchive')"><span>▤</span><b>Endorsement archive</b><span class="muted">Printed pages and corrections</span></button>`:''}
     <button class="card more-link" onclick="go('totals')"><span>◉</span><b>Totals</b><span class="muted">Flight-time breakdown</span></button>
     <button class="card more-link" onclick="go('profile')"><span>○</span><b>Profile</b><span class="muted">Licence, medical and backup</span></button>
     <button class="card more-link" onclick="go('cloud')"><span>☁</span><b>Cloud account</b><span class="muted">Private login and connection status</span></button>
@@ -2746,6 +2770,7 @@ function discardPendingCorrection(id){
   pendingCorrectionPrint=null;printarchive();
 }
 function printarchive(){
+  if(v23PreventUnsupportedArchive())return;
   if(isStandaloneApp()){go('dashboard');return;}
   const batches=archivedBatches();
   const draft=nextArchiveDraft();
@@ -4579,7 +4604,7 @@ async function makeFullBackup(){
     app:'HeliLog',
     format:'helilog-full-backup',
     backupSchema:2,
-    appVersion:'2.2',
+    appVersion:'2.3',
     exportedAt:new Date().toISOString(),
     environment:TEST_MODE?'test':'production',
     integrity:{algorithm:'SHA-256',sha256:await sha256Hex(JSON.stringify(data))},
@@ -4951,7 +4976,12 @@ window.addEventListener('resize',updateMobileKeyboardUI);
 if(window.visualViewport) window.visualViewport.addEventListener('resize',updateMobileKeyboardUI);
 
 function render(){
+  if(!v23Unlocked){v23LoginView();return;}
   let v=location.hash.slice(1)||'dashboard';
+  if(v23AccountWorkspace()&&(v==='printarchive'||v==='endorsementarchive')){
+    v23PreventUnsupportedArchive();v='dashboard';
+    if(location.hash!=='#dashboard')location.hash='#dashboard';
+  }
   if(isStandaloneApp()&&(v==='printarchive'||v==='endorsementarchive')){
     v='endorsements';
     if(location.hash!=='#endorsements')location.hash='#endorsements';
@@ -4969,5 +4999,10 @@ function render(){
     app.innerHTML=`<div class="card"><h2>HeliLog could not load this screen</h2><p class="muted">${String(e)}</p></div>`;
   }
 }
-render();
+v23Boot();
+// Refresh aircraft and flights when returning to HeliLog or reconnecting.
+window.addEventListener('online',()=>{if(v23AccountWorkspace())window.HeliLogV23Sync.refresh();});
+window.addEventListener('focus',()=>{if(v23AccountWorkspace())window.HeliLogV23Sync.refresh();});
+setInterval(()=>{if(v23AccountWorkspace()&&document.visibilityState==='visible')
+  window.HeliLogV23Sync.refresh();},30000);
 </script></body></html>
