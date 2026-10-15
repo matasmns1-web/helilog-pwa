@@ -1002,7 +1002,7 @@ function mobilemore(){
     <button class="card more-link" onclick="go('aircraft')"><span>🚁</span><b>Aircraft</b><span class="muted">Fleet and SE/ME setup</span></button>
     <button class="card more-link" onclick="go('pilots')"><span>👤</span><b>Pilot profiles</b><span class="muted">Create PIC, instructor and examiner profiles</span></button>
     <button class="card more-link" onclick="go('endorsements')"><span>✎</span><b>Endorsements</b><span class="muted">Memoranda and signatures</span></button>
-    ${!isStandaloneApp()&&!v23AccountWorkspace()?`<button class="card more-link" onclick="go('endorsementarchive')"><span>▤</span><b>Endorsement archive</b><span class="muted">Printed pages and corrections</span></button>`:''}
+    ${!isStandaloneApp()?`<button class="card more-link" onclick="go('endorsementarchive')"><span>▤</span><b>Endorsement archive</b><span class="muted">Printed pages and corrections</span></button>`:''}
     <button class="card more-link" onclick="go('totals')"><span>◉</span><b>Totals</b><span class="muted">Flight-time breakdown</span></button>
     <button class="card more-link" onclick="go('profile')"><span>○</span><b>Profile</b><span class="muted">Licence, medical and backup</span></button>
     <button class="card more-link" onclick="go('cloud')"><span>☁</span><b>Cloud account</b><span class="muted">Private login and connection status</span></button>
@@ -4998,8 +4998,8 @@ function render(){
   if(v23AccountWorkspace()&&v==='testmode'){
     v='dashboard';if(location.hash!=='#dashboard')location.hash='#dashboard';
   }
-  if(v23AccountWorkspace()&&(v==='printarchive'||v==='endorsementarchive')){
-    v23PreventUnsupportedArchive();v='dashboard';
+  if(v23AccountWorkspace()&&(v==='printarchive'||v==='endorsementarchive')&&v23PreventUnsupportedArchive()){
+    v='dashboard';
     if(location.hash!=='#dashboard')location.hash='#dashboard';
   }
   if(isStandaloneApp()&&(v==='printarchive'||v==='endorsementarchive')){
@@ -5021,8 +5021,8 @@ function render(){
 }
 v23Boot();
 // Refresh aircraft and flights when returning to HeliLog or reconnecting.
-window.addEventListener('online',()=>{if(v23AccountWorkspace()&&!hasUnsavedFlightChanges())window.HeliLogV23Sync.refresh();});
-window.addEventListener('focus',()=>{if(v23AccountWorkspace()&&!hasUnsavedFlightChanges())window.HeliLogV23Sync.refresh();});
+window.addEventListener('online',()=>{if(v23AccountWorkspace()&&!hasUnsavedFlightChanges())v23RefreshSync();});
+window.addEventListener('focus',()=>{if(v23AccountWorkspace()&&!hasUnsavedFlightChanges())v23RefreshSync();});
 setInterval(()=>{if(v23AccountWorkspace()&&!hasUnsavedFlightChanges()&&document.visibilityState==='visible')
-  window.HeliLogV23Sync.refresh();},30000);
+  v23RefreshSync();},30000);
 </script></body></html>
