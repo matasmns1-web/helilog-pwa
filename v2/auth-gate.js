@@ -77,7 +77,14 @@ async function v23EnterWorkspace(auth){
  const client=await window.HeliLogCloud.client();
  window.HeliLogV23Sync.start({
   userId:id,client,getData:()=>S,
-  replaceData:next=>{S.aircraft=next.aircraft;S.flights=next.flights;localStorage.setItem(KEY,JSON.stringify(S));},
+  replaceData:next=>{
+   if(typeof hasUnsavedFlightChanges==='function'&&hasUnsavedFlightChanges())
+    throw Error("A flight form has unsaved changes. Finish or cancel the edit before refreshing cloud records.");
+   const updated={...S,aircraft:next.aircraft,flights:next.flights};
+   // Persist the complete merged cache before replacing the visible model.
+   localStorage.setItem(KEY,JSON.stringify(updated));
+   S=updated;
+  },
   onStatus:()=>v23UpdateSyncChip()
  });
  await window.HeliLogV23Sync.refresh();
