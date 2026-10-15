@@ -210,7 +210,7 @@ function v23PreventUnsupportedArchive(){
  if(!isStandaloneApp()&&window.HeliLogV24Archive?.available?.())return false;
  alert(isStandaloneApp()?
   "Use the HeliLog web browser to print and archive records. The app supports signing and reviewing.":
-  "Before printing, enable extended cloud sync in Cloud account and wait for Cloud synced. Signed and archived originals cannot be confirmed while synchronization is pending or offline.");
+  (window.HeliLogV24Archive?.blockReason?.()||"Check the cloud archive connection in this web browser. Other devices can synchronize later."));
  return true;
 }
 
