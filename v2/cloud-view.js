@@ -4,6 +4,7 @@
  */
 let v22CloudNotice="",v22CloudBusy=false;
 let v24PilotConflictPreview=null,v24PilotConflictBusy=false;
+let v27RecordPreview=null,v27RecordBusy=false;
 function v24FlattenProfile(data,prefix="",out={}){
  for(const [key,value] of Object.entries(data&&typeof data==="object"?data:{})){
   const field=prefix?prefix+"."+key:key;
@@ -33,6 +34,67 @@ function v24PilotDiffMarkup(){
   '<button class="btn" type="button" onclick="v24ResolvePilotConflict(\'cloud\')"'+(v24PilotConflictBusy?' disabled':'')+'>Use cloud profile on this device</button>'+
   '</div></div>';
 }
+
+function v27RecordDiffMarkup(){
+ const p=v27RecordPreview;
+ if(!p)return "";
+ const display=value=>value===null?'<span class="muted">Record deleted / absent</span>':
+  '<pre style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto;font-size:12px">'+
+  v22CloudEscape(JSON.stringify(value,null,2))+'</pre>';
+ return '<div class="card" style="margin-top:16px"><div class="head"><h2>Review record conflict</h2></div>'+
+  '<p><b>'+v22CloudEscape(p.kind)+': '+v22CloudEscape(p.id)+'</b></p>'+
+  '<p>These copies differ. Nothing has been overwritten. Review both versions before choosing.</p>'+
+  '<div class="profilegrid"><div><b>This device</b>'+display(p.local)+'</div>'+
+  '<div><b>Current cloud</b>'+display(p.cloud)+'</div></div>'+
+  '<div class="note" style="margin-top:12px">Before applying either choice, HeliLog saves a verified device-local safety snapshot of the complete workspace, both records and the pending queue. Keeping this device will attempt a revision-checked upload; if the cloud changes again, it will stop for a fresh review. This is not a remote backup.</div>'+
+  '<div class="actions" style="margin-top:12px">'+
+  '<button class="btn primary" type="button" onclick="v27ResolveRecordConflict(\'local\')"'+(v27RecordBusy?' disabled':'')+'>Keep this device copy</button>'+
+  '<button class="btn" type="button" onclick="v27ResolveRecordConflict(\'cloud\')"'+(v27RecordBusy?' disabled':'')+'>Use current cloud copy</button></div></div>';
+}
+function v27ConflictsMarkup(){
+ if(!v23AccountWorkspace())return "";
+ const rows=window.HeliLogV23Sync.conflicts();
+ const needsAttention=window.HeliLogV23Sync.status().state==="conflict";
+ if(!needsAttention && !rows.length)return "";
+ return '<div class="card" style="margin-top:16px"><div class="head"><h2>Offline edit conflicts</h2></div>'+
+  '<p>Edits on different devices affected the same record. HeliLog will not choose a winner or overwrite either copy automatically.</p>'+
+  (rows.length?rows.map(item=>'<div class="qual-item" style="margin-top:10px"><b>'+
+   v22CloudEscape(item.kind)+' · '+v22CloudEscape(item.id)+'</b>'+
+   '<div class="mini">Pending '+v22CloudEscape(item.action)+(item.note?' · '+v22CloudEscape(item.note):'')+'</div>'+
+   (item.reviewable?'<button class="btn" type="button" style="margin-top:9px" onclick="v27ReviewRecordConflict('+
+     v22CloudEscape(JSON.stringify(item.kind))+','+v22CloudEscape(JSON.stringify(item.id))+')">Compare copies</button>':
+    '<div class="note" style="margin-top:8px">Not eligible for general conflict resolution. Preserve both copies; do not reset or force-upload.</div>')+
+   '</div>').join(''):'<div class="note">The app detected an unqueued local difference or profile conflict. Your records remain on this device. Use the pilot-profile review below when available, or keep both devices intact for assisted recovery.</div>')+
+  '</div>';
+}
+async function v27ReviewRecordConflict(kind,id){
+ if(v27RecordBusy)return;
+ v27RecordBusy=true;v22CloudNotice="";
+ try{v27RecordPreview=await window.HeliLogV23Sync.previewRecordConflict(kind,id);}
+ catch(e){v27RecordPreview=null;v22CloudNotice="Could not review record: "+(e.message||e);}
+ finally{v27RecordBusy=false;cloud();}
+}
+async function v27ResolveRecordConflict(choice){
+ if(v27RecordBusy||!v27RecordPreview)return;
+ const local=choice==="local";
+ const question=local?
+  "Keep this DEVICE record and queue a revision-checked cloud update? A device-local safety backup will be saved first.":
+  "Use the CURRENT CLOUD version on this device, including deletion if the cloud record was removed? A device-local safety backup will be saved first.";
+ if(!confirm(question))return;
+ v27RecordBusy=true;v22CloudNotice="";
+ try{
+  const result=await window.HeliLogV23Sync.resolveRecordConflict(choice);
+  v27RecordPreview=null;
+  v22CloudNotice="Decision saved. A local safety snapshot was preserved ("+result.kind+": "+result.id+"). Checking cloud synchronization…";
+  await window.HeliLogV23Sync.refresh();
+  const state=window.HeliLogV23Sync.status();
+  if(state.state!=="synced")
+   v22CloudNotice+=" Remaining sync status: "+state.state+". "+(state.error||"Review any further conflicts before printing.");
+  else v22CloudNotice="Record conflict resolved. Cloud sync complete; a device-local safety snapshot was preserved.";
+ }catch(e){v27RecordPreview=null;v22CloudNotice="Record conflict was not resolved: "+(e.message||e)+". Preserve both copies.";}
+ finally{v27RecordBusy=false;cloud();}
+}
+
 function v22CloudEscape(s){
  return String(s??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 }
@@ -51,7 +113,7 @@ function cloud(){
     '<div class="field"><label for="cloudDisplayName">Display name</label>'+
     '<input id="cloudDisplayName" name="cloudDisplayName" autocomplete="name" maxlength="120" required value="'+v22CloudEscape(S.pilot?.name||'')+'"></div>'+
     '<button class="btn primary" type="submit">Create my private cloud profile</button></form>')+
-   '<button class="btn" type="button" onclick="v23SignOut()">Sign out of cloud</button></div>';
+   '</div>';
  }else{
   action='<div class="card"><div class="head"><h2>Sign in to HeliLog Cloud</h2></div>'+
    '<p class="muted">Initially, only accounts invited to this private test project can sign in. Public registration is disabled.</p>'+
@@ -64,7 +126,7 @@ function cloud(){
  }
  const stateText=st.configured?(state==="signed_in"?"Signed in":state==="error"?"Connection needs attention":
    state==="connecting"?"Connecting…":"Ready for private sign-in"):"Cloud not configured";
- app.innerHTML=header('Cloud account','HeliLog V2.4 · Private account and synchronization',
+ app.innerHTML=header('Cloud account','HeliLog V2.7 · Offline synchronization and conflict review',
   `<button class="btn" onclick="go('profile')">← Profile</button>`)+
   '<div class="card" style="margin-bottom:16px"><div class="head"><h2>Connection status</h2></div>'+
   '<div class="pwa-state"><b>'+v22CloudEscape(stateText)+'</b></div>'+
@@ -88,10 +150,10 @@ function cloud(){
    '<div class="actions" style="margin-top:12px"><button class="btn primary" type="button" onclick="v24ReviewPilotConflict()"'+
    (v24PilotConflictBusy?' disabled':'')+'>Review pilot profile conflict</button></div>':'')+
   '</div>'+
-  (v23AccountWorkspace()?v24PilotDiffMarkup():'')+
+  (v23AccountWorkspace()?v27ConflictsMarkup()+v27RecordDiffMarkup()+v24PilotDiffMarkup():'')+
   '<div class="card" style="margin-top:16px"><div class="head"><h2>Local logbook protection</h2></div>'+
   '<p><b>V2.4 synchronizes aircraft and flights; other data syncs after your one-time account setup.</b> Your existing V2.2 test data is preserved separately and never automatically uploaded.</p>'+
-  '<p class="muted">After extended synchronization is enabled, profiles, endorsements, qualifications and opening totals can synchronize. Print archives and correction history have a separate web-only confirmation process. Offline sign-in and general conflict resolution are still limited.</p>'+
+  '<p class="muted">After extended synchronization is enabled, profiles, endorsements, qualifications and opening totals can synchronize. Print archives and correction history have a separate web-only confirmation process. Offline edits queue locally until reconnect; general conflict review covers ordinary records, while signed endorsements and archive records require a separate protected workflow. Offline sign-in is not supported.</p>'+
   '<p class="mini">Other pilots will have separate private accounts when invitations become available. A saved instructor/examiner in your logbook does not automatically become an account user.</p>'+
   '</div>';
 }
