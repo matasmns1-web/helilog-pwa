@@ -53,7 +53,7 @@ function device(s,keep){
  const store=keep?.store||new Map();
  let data=keep?.data||{aircraft:[],flights:[]};
  let failBackup=false,archive=false;
- const root={navigator:{onLine:true},console,
+ const root={navigator:{onLine:true},console:{warn(){},error(){}},
   localStorage:{
    getItem:k=>store.has(k)?store.get(k):null,
    setItem:(k,v)=>{if(failBackup&&k.startsWith("helilog_v27_conflict_backup_"))throw Error("No space for backup");store.set(k,String(v));}
