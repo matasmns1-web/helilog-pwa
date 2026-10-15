@@ -29,7 +29,7 @@
   }else data[plural[kind]]=arr;
  }
  let owner="",db=null,pending=[],versions={},mirror={},baseline={},state="inactive",problem="",
-  running=false,paused=false,snapshotFn=null,replaceFn=null,listener=null;
+  running=false,paused=false,reconciling=false,pilotPreview=null,snapshotFn=null,replaceFn=null,listener=null;
  const clone=x=>JSON.parse(JSON.stringify(x));
  // PostgreSQL JSONB may reorder object keys. Compare canonical values,
  // otherwise harmless key ordering could produce false sync conflicts.
@@ -71,7 +71,7 @@
  function parseKey(k){const i=k.indexOf(":");return {kind:k.slice(0,i),id:k.slice(i+1)};}
  function stop(){
   owner="";db=null;pending=[];versions={};mirror={};baseline={};state="inactive";problem="";extended=false;types=[...coreKinds];
-  running=false;paused=true;snapshotFn=null;replaceFn=null;notify();
+  running=false;paused=true;reconciling=false;pilotPreview=null;snapshotFn=null;replaceFn=null;notify();
  }
  function start({userId,client,getData,replaceData,onStatus}){
   if(!/^[0-9a-f-]{36}$/i.test(String(userId)))throw Error("A verified Supabase user ID is required.");
@@ -80,7 +80,7 @@
   owner=userId;db=client;snapshotFn=getData;replaceFn=replaceData;listener=onStatus||null;
   extended=read(extKey(owner),false)===true;
   types=extended?[...coreKinds,...extraKinds]:[...coreKinds];
-  paused=false;running=false;pending=read(queueKey(owner),[]);
+  paused=false;running=false;reconciling=false;pilotPreview=null;pending=read(queueKey(owner),[]);
   versions=read(versionKey(owner),{});mirror=read(mirrorKey(owner),{});
   if(!Array.isArray(pending)||!versions||typeof versions!=="object"||Array.isArray(versions)||!mirror||typeof mirror!=="object"||Array.isArray(mirror))throw Error("Saved sync state is invalid. Preserve local data; do not reset.");
   if(pending.some(q=>![...coreKinds,...extraKinds].includes(q.kind)||typeof q.id!=="string"||!["put","delete"].includes(q.action)))throw Error("Saved sync queue contains invalid operations.");
@@ -132,13 +132,13 @@
   }
  }
  async function pull(){
-  if(!isActive()||running)return false;
+  if(!isActive()||running||reconciling)return false;
   if(root.navigator?.onLine===false){state="offline";notify();return false;}
   if(root.HeliLogCloud?.snapshot?.().userId!==owner){state="error";problem="Your cloud session has changed. Sign in again.";notify();return false;}
   const sessionOwner=owner;
   try{
    const remote=await listRemote(sessionOwner);
-   if(!isActive()||owner!==sessionOwner)return false;
+   if(!isActive()||owner!==sessionOwner||reconciling)return false;
    const rmap=new Map(remote.map(row=>[ident(row.kind,row.record_id),row]));
    // Recover an upload committed by the server when the device lost its
    // response (e.g. network changed just before the acknowledgement).
@@ -211,7 +211,7 @@
   }catch(e){problem=String(e.message||e);state=root.navigator?.onLine===false?"offline":"error";notify();return false;}
  }
  async function flush(){
-  if(!isActive()||running)return false;
+  if(!isActive()||running||reconciling)return false;
   if(root.navigator?.onLine===false){state="offline";notify();return false;}
   if(root.HeliLogCloud?.snapshot?.().userId!==owner){state="error";problem="Sign in again before syncing.";notify();return false;}
   running=true;state=pending.length?"syncing":"connecting";problem="";notify();
@@ -269,7 +269,106 @@
   if(pending.length)return flush();
   return state==="synced";
  }
- function ignoreNoChanges(){if(isActive())baseline=mapOf(snapshotFn());}
+ function requirePilotConflict(){
+  if(!isActive()||!extended||root.HeliLogCloud?.snapshot?.().userId!==owner)
+   throw Error("Sign in to your original HeliLog account first.");
+  if(root.navigator?.onLine===false)throw Error("Connect to the internet before reviewing your pilot profile.");
+  if(running||reconciling)throw Error("Wait for the current synchronization to finish.");
+  if(state!=="conflict"||!problem.includes("settings:pilot"))
+   throw Error("The pilot-profile conflict is no longer current. Check cloud sync.");
+  if(pending.some(q=>q.kind==="settings"&&q.id==="pilot"))
+   throw Error("There is already a pending pilot-profile edit. Do not overwrite it; preserve the device and contact support.");
+ }
+ async function getRemotePilot(){
+  const result=await db.from("helilog_records")
+   .select("kind,record_id,revision,payload")
+   .eq("owner_id",owner).eq("kind","settings").eq("record_id","pilot").maybeSingle();
+  if(result.error)throw Error("Cloud profile could not be read: "+result.error.message);
+  if(!result.data||result.data.payload?.id!=="pilot"||
+     typeof result.data.payload.data!=="object"||result.data.payload.data===null||
+     !Number.isInteger(Number(result.data.revision)))
+   throw Error("The cloud pilot profile is missing or incomplete. No local changes were made.");
+  return result.data;
+ }
+ async function previewPilotConflict(){
+  requirePilotConflict();
+  const sessionOwner=owner;
+  const row=await getRemotePilot();
+  if(owner!==sessionOwner||!isActive())throw Error("Your cloud account changed; restart the review.");
+  const local=clone(snapshotFn().pilot||{});
+  const remote=clone(row.payload.data);
+  pilotPreview={owner:sessionOwner,
+    localHash:canonical(local),remoteHash:canonical(row.payload),
+    remoteRevision:Number(row.revision)};
+  return {local,cloud:remote,matching:canonical(local)===canonical(remote),
+   cloudRevision:pilotPreview.remoteRevision};
+ }
+ async function resolvePilotConflict(choice){
+  requirePilotConflict();
+  if(!["local","cloud"].includes(choice))throw Error("Choose the web device or cloud profile.");
+  if(!pilotPreview||pilotPreview.owner!==owner)
+   throw Error("Review both versions before choosing one.");
+  // Prevent refresh and upload from racing with an explicit decision.
+  reconciling=true;
+  let ownerAtStart=owner;
+  try{
+   const row=await getRemotePilot();
+   if(owner!==ownerAtStart||!isActive()||root.HeliLogCloud?.snapshot?.().userId!==ownerAtStart)
+    throw Error("Cloud account changed. No data was modified.");
+   if(canonical(snapshotFn().pilot||{})!==pilotPreview.localHash||
+     canonical(row.payload)!==pilotPreview.remoteHash||
+     Number(row.revision)!==pilotPreview.remoteRevision)
+    throw Error("Either the web or cloud profile changed since review. Review both versions again.");
+   const current=clone(snapshotFn());
+   // Fail CLOSED if the device cannot save an independent safety copy.
+   const backupKey="helilog_v24_pilot_conflict_backup_"+owner+"_"+Date.now();
+   root.localStorage.setItem(backupKey,JSON.stringify({
+    reason:"V2.4 explicit pilot conflict resolution",
+    chosen:choice,createdAt:new Date().toISOString(),
+    localWorkspace:current,cloudPilot:clone(row.payload.data),
+    cloudRevision:Number(row.revision)
+   }));
+   if(!root.localStorage.getItem(backupKey))
+    throw Error("Safety backup could not be verified. No data was changed.");
+   const key=ident("settings","pilot");
+   const oldVersions={...versions},oldMirror={...mirror},oldBaseline={...baseline};
+   const oldPending=clone(pending);
+   try{
+    versions[key]=Number(row.revision);
+    mirror[key]=canonical(row.payload);
+    if(choice==="cloud"){
+     const next=clone(current);
+     next.pilot=clone(row.payload.data);
+     // The caller writes the whole workspace atomically to localStorage.
+     replaceFn(next);
+    }else{
+     pending.push({kind:"settings",id:"pilot",action:"put",
+       payload:{id:"pilot",data:clone(current.pilot)},
+       baseRevision:Number(row.revision),generation:1});
+    }
+    baseline=mapOf(snapshotFn());
+    persist();
+    state=choice==="local"?"pending":"connecting";
+    problem="";pilotPreview=null;notify();
+   }catch(e){
+    versions=oldVersions;mirror=oldMirror;baseline=oldBaseline;pending=oldPending;
+    if(choice==="cloud"){
+     try{replaceFn(current);}catch(rollbackError){
+      root.console?.error?.("Could not roll back the local profile change",rollbackError);
+     }
+    }
+    // Local storage writes are not atomic across separate keys; the complete
+    // preserved copy remains available under the separate safety-backup key.
+    state="error";problem="Resolution interrupted. Your pre-change test data was backed up locally.";
+    notify();
+    throw e;
+   }
+   return {choice,backupKey,pending:pending.length};
+  }finally{
+   reconciling=false;
+  }
+ }
+  function ignoreNoChanges(){if(isActive())baseline=mapOf(snapshotFn());}
  async function extensionPreview(){
   if(!isActive())throw Error("Sign in first.");
   if(root.navigator?.onLine===false)throw Error("Connect to the internet to initialize extended synchronization.");
@@ -331,5 +430,6 @@
   return {enabled:true,status:status(),backupKey};
  }
  return Object.freeze({recordKey,start,stop,track,refresh,flush,pull,status,ignoreNoChanges,
-  extended:()=>extended,extensionPreview,activateExtension});
+  extended:()=>extended,extensionPreview,activateExtension,
+  previewPilotConflict,resolvePilotConflict});
 });
