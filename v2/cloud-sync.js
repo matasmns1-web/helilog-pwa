@@ -297,7 +297,11 @@
   if(root.localStorage.getItem(backupKey)===null)
    root.localStorage.setItem(backupKey,JSON.stringify(before));
   if(mode==="cloud"&&preview.hasCloud){
-   const r=await listRemote(owner);
+   const previousKinds=types;
+   types=[...coreKinds,...extraKinds];
+   let r;
+   try{r=await listRemote(owner);}
+   finally{types=previousKinds;}
    const next=clone(before);
    for(const kind of extraKinds){
     const records=r.filter(row=>row.kind===kind);
