@@ -110,6 +110,14 @@
   if(error)throw Error(error.message||"Sign out failed.");
   status="signed_out";lastError="";user=null;account=null;return snapshot();
  }
- return Object.freeze({snapshot,refresh,signIn,initializeProfile,signOut,validConfig,
+ // Only return the browser SDK to an account whose identity has just been
+ // verified by Supabase. Row Level Security remains the real data boundary.
+ async function verifiedClient(){
+  const result=await refresh();
+  if(result.status!=="signed_in"||!result.userId||!result.hasProfile)
+   throw Error("Sign in and complete your private profile before accessing cloud records.");
+  return connect();
+ }
+ return Object.freeze({snapshot,refresh,signIn,initializeProfile,signOut,validConfig,client:verifiedClient,
   libraryUrl:sdkUrl});
 });

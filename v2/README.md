@@ -1,6 +1,6 @@
 # HeliLog V2 — Development
 
-**Current version: V2.2 (Cloud Foundation).** The Cloud account screen and private Supabase schema are prepared. A live Supabase test project still needs to be connected and configured before sign-in can work. No local logbook data is uploaded. See [CLOUD-FOUNDATION.md](CLOUD-FOUNDATION.md).
+**Current version: V2.3 — Login & initial cloud synchronization.** Proper login before the logbook, per-user local caches, and revision-checked aircraft/flight synchronization with Supabase. Older V2.2 test data is not uploaded or deleted. All other data types and paper archives remain device-local. See [CLOUD-SYNC.md](CLOUD-SYNC.md) for limitations and the acceptance test; [CLOUD-FOUNDATION.md](CLOUD-FOUNDATION.md) records the V2.2 foundation.
 
 **Prior release: V2.1.** The complete V1.43.2 interface is restored with V2 endorsement print archiving; installed-app signing is separate from web-only print/archive management. See [FULL-V1-INTERFACE.md](FULL-V1-INTERFACE.md) for parity scope, testing instructions and data safety.
 

@@ -13,6 +13,7 @@ const v2ArchiveBridge=window.HeliLogV2Bridge;
 // are browser-only. Guard every entrypoint, not merely the visible menu buttons.
 function v2ArchiveWebAllowed(){return !isStandaloneApp();}
 function v2RequireWebArchive(){
+ if(typeof v23PreventUnsupportedArchive==='function'&&v23PreventUnsupportedArchive())return false;
  if(v2ArchiveWebAllowed())return true;
  alert('Open HeliLog in a web browser to print, archive or correct a signed endorsement. The installed app is for recording and reviewing.');
  return false;
@@ -49,6 +50,7 @@ function v2PageOf(id){
   return v2ArchiveBridge.source(S,id);
 }
 function v2EndorsementArchive(){
+ if(typeof v23PreventUnsupportedArchive==='function'&&v23PreventUnsupportedArchive())return;
  if(!v2ArchiveWebAllowed()){
   if(location.hash!=='#endorsements')location.hash='#endorsements';
   endorsements();return;

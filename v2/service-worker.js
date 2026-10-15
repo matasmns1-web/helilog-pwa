@@ -1,4 +1,4 @@
-const CACHE='helilog-v2-2-shell';
+const CACHE='helilog-v2-3-shell';
 const SHELL=[
   './',
   './index.html',
@@ -12,7 +12,9 @@ const SHELL=[
   './endorsement-ui.js',
   './cloud-config.js',
   './cloud-foundation.js',
-  './cloud-view.js'
+  './cloud-view.js',
+  './cloud-sync.js',
+  './auth-gate.js'
 ];
 
 self.addEventListener('install',event=>{
