@@ -1,6 +1,6 @@
 # HeliLog V2 — Development
 
-**Current version: V2.3 — Login & initial cloud synchronization.** Proper login before the logbook, per-user local caches, and revision-checked aircraft/flight synchronization with Supabase. Older V2.2 test data is not uploaded or deleted. All other data types and paper archives remain device-local. See [CLOUD-SYNC.md](CLOUD-SYNC.md) for limitations and the acceptance test; [CLOUD-FOUNDATION.md](CLOUD-FOUNDATION.md) records the V2.2 foundation.
+**Current version: V2.4 — Extended cloud synchronization & print archive testing.** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
 
 **Prior release: V2.1.** The complete V1.43.2 interface is restored with V2 endorsement print archiving; installed-app signing is separate from web-only print/archive management. See [FULL-V1-INTERFACE.md](FULL-V1-INTERFACE.md) for parity scope, testing instructions and data safety.
 
