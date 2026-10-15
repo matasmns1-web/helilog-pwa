@@ -87,11 +87,11 @@ test('signed originals and archive confirmation are server-side protected',()=>{
 });
 test('print confirmation stays web only and requires confirmed cloud synchronization',()=>{
  const root={navigator:{onLine:true},matchMedia:()=>({matches:false}),HeliLogCloud:{snapshot:()=>({userId:uid})},
-  HeliLogV23Sync:{extended:()=>true,status:()=>({state:'pending'})}};root.window=root;
+  HeliLogV23Sync:{extended:()=>true,status:()=>({state:'pending',owner:uid,pending:1,conflicts:0})}};root.window=root;
  const api=new Function('window','module',archive+';return window.HeliLogV24Archive;')(root,undefined);
  api.start({userId:uid,db:{from(){return{}},rpc(){return{}}}});
  assert.equal(api.available(),false);
- root.HeliLogV23Sync.status=()=>({state:'synced'});
+ root.HeliLogV23Sync.status=()=>({state:'synced',owner:uid,pending:0,conflicts:0});
  assert.equal(api.available(),true);
  root.navigator.standalone=true;
  assert.rejects(api.confirmBatch('flight',{confirmedAt:'2026-10-15'},['f1']),/web browser/);
