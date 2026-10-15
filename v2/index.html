@@ -2078,7 +2078,9 @@ function exportPrintableLogbook(options={}){
           <td class="num">${flightPilotConfig(f)==='multi'?'':fmt(f.mins||0)}</td>
           <td class="num">${flightPilotConfig(f)==='multi'?fmt(f.mins||0):''}</td>`}
       <td class="num">${fmt(f.mins||0)}</td>
-      <td class="pic-name">${htmlEscape(displayPICName(f))}</td>
+      // For historical printed records, the original stored PIC value is
+      // retained to keep reprints unchanged. New PIC/SOLO flights store SELF.
+      <td class="pic-name">${htmlEscape(f.picName||'')}</td>
 
       <td class="num">${Number(f.takeoffDay||0)||''}</td>
       <td class="num">${Number(f.takeoffNight||0)||''}</td>
