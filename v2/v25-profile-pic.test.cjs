@@ -90,19 +90,24 @@ test("saved instructor and commander profiles have separate names but retain ful
  assert.match(html,/id="personLastName"/);
  assert.doesNotMatch(html,/id="personName"/);
 });
-test("visible logout works from any signed-in header and mobile More",()=>{
+test("logout is visible only in Profile and checks unsaved edits",()=>{
  assert.match(html,/function header\(title,sub,action=''\)/);
- assert.match(html,/onclick="v23SignOut\(\)">Log out<\/button>/);
- assert.match(html,/<b>Log out<\/b>/);
+ const header=html.slice(html.indexOf("function header("),html.indexOf("function dashboard("));
+ const more=html.slice(html.indexOf("function mobilemore("),html.indexOf("function ",html.indexOf("function mobilemore(")+1));
+ const profile=html.slice(html.indexOf("function profile(){"),html.indexOf("function profile(){")+1400);
+ assert.doesNotMatch(header,/v23SignOut/);
+ assert.doesNotMatch(more,/v23SignOut/);
+ assert.match(profile,/Log out<\/button>/);
+ assert.match(auth,/Switch account/);
  assert.match(auth,/if\(typeof confirmLeaveFlightForm==="function"&&!confirmLeaveFlightForm\(\)\)return;/);
 });
-test("V2.5 installs new assets together while keeping older profile migration explicit",()=>{
- assert.match(html,/<title>HeliLog V2\.5/);
- assert.match(html,/V2\.5 · TEST/);
- assert.equal(manifest.name,"HeliLog V2.5 — Test");
- assert.match(worker,/helilog-v2-5-profile-self-1/);
- assert.match(worker,/cloud-sync\.js\?v=2\.5-profile-self-1/);
- assert.match(html,/cloud-sync\.js\?v=2\.5-profile-self-1/);
+test("V2.6 installs new assets together while keeping older profile migration explicit",()=>{
+ assert.match(html,/<title>HeliLog V2\.6/);
+ assert.match(html,/V2\.6 · TEST/);
+ assert.equal(manifest.name,"HeliLog V2.6 — Test");
+ assert.match(worker,/helilog-v2-6-login-profile-1/);
+ assert.match(worker,/cloud-sync\.js\?v=2\.6-login-profile-1/);
+ assert.match(html,/cloud-sync\.js\?v=2\.6-login-profile-1/);
  assert.match(html,/id="ownFirstName"/);
  assert.match(html,/id="ownLastName"/);
  assert.doesNotMatch(html,/id="ownName"/);

@@ -1,14 +1,22 @@
 # HeliLog V2 — Development
 
-**Current version: V2.5 — Log out, first/surname, and SELF PIC/SOLO.** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
+**Current version: V2.6 — Login display and Profile-only logout (built on V2.5).** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
 
 **Prior release: V2.1.** The complete V1.43.2 interface is restored with V2 endorsement print archiving; installed-app signing is separate from web-only print/archive management. See [FULL-V1-INTERFACE.md](FULL-V1-INTERFACE.md) for parity scope, testing instructions and data safety.
 
 **Earlier modular prototype:** [alpha.html](alpha.html) remains available with its own test data.
 
+## V2.6 — Login screen and logout placement
+
+- The signed-out page and account-checking screen show **V2.6** rather than the hard-coded V2.3 text.
+- Static login content is explicitly non-editable and non-selectable; normal cursor, typing and paste remain available in Email and Password.
+- **Log out** appears only on the authenticated **Profile** page, not in every page header or the mobile More menu. Users who have not yet finished account setup can still select **Switch account** on the onboarding screen.
+- A fresh PWA cache and asset query version force compatible login/UI assets after an online update. Existing local records and cloud sync settings are unchanged.
+- No change to V1 production, Supabase schema or synced record data; V2 test accounts only.
+
 ## V2.5 — Pilot names, PIC/SOLO and sign out
 
-- A **Log out** button is available in the signed-in header and mobile More menu. Unsaved flight-form edits are checked before sign-out.
+- V2.5 initially added **Log out** to the signed-in header and mobile More menu (moved to Profile in V2.6). Unsaved flight-form edits are checked before sign-out.
 - The account holder and saved other pilot profiles now use separate **First name** and **Surname** fields. A combined full-name field remains internally for existing synced accounts, pilot references, and logbook exports.
 - Older profiles are split only for display as a best-effort fallback; the stored record remains unchanged until the user saves their profile. Check compound first names and surnames on first edit.
 - For newly entered **PIC** or **SOLO** flights, the Name of PIC field is **SELF**, with the pilot linked by profile ID. Other roles retain the commander's saved full name.
