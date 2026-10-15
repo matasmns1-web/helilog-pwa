@@ -11,7 +11,9 @@ function v23SyncInfo(){
  return '<div class="note" role="status"><b>'+v23Escape(label)+'</b>'+
  (st.pending?' · '+st.pending+' pending':'')+
  (st.error?'<div class="mini">'+v23Escape(st.error)+'</div>':'')+
- '<div class="mini">V2.3 synchronizes aircraft and flights ONLY. Endorsements, signatures, print archives, corrections, profile details and previous totals are still device-local.</div></div>';
+ '<div class="mini">'+(window.HeliLogV23Sync.extended()?
+  'Aircraft, flights, pilot profiles, qualifications, endorsements, medical records and opening totals are included in cloud sync. Print archive snapshots and signed corrections require separate confirmation.':
+  'Aircraft and flights sync. Enable extended data synchronization in Cloud account to include endorsements, pilot profiles, qualifications and brought-forward totals.')+'</div></div>';
 }
 function v23LoginView(){
  v23Unlocked=false;
@@ -82,8 +84,16 @@ async function v23EnterWorkspace(auth){
   replaceData:next=>{
    if(typeof hasUnsavedFlightChanges==='function'&&hasUnsavedFlightChanges())
     throw Error("A flight form has unsaved changes. Finish or cancel the edit before refreshing cloud records.");
-   const updated={...S,aircraft:next.aircraft,flights:next.flights};
-   // Persist the complete merged cache before replacing the visible model.
+   const updated={...S,
+     aircraft:next.aircraft,flights:next.flights,
+     people:next.people||S.people,endorsements:next.endorsements||S.endorsements,
+     qualifications:next.qualifications||S.qualifications,
+     pilot:next.pilot||S.pilot,
+     broughtForward:next.broughtForward??S.broughtForward,
+     broughtForwardByType:next.broughtForwardByType??S.broughtForwardByType,
+     broughtForwardImported:next.broughtForwardImported??S.broughtForwardImported,
+     broughtForwardImportedAt:next.broughtForwardImportedAt??S.broughtForwardImportedAt};
+   // Commit one complete account state, or keep the old one on failure.
    localStorage.setItem(KEY,JSON.stringify(updated));
    S=updated;
   },
@@ -141,6 +151,29 @@ async function v23SignOut(){
   KEY=LIVE_KEY;S={pilot:{name:""},aircraft:[],flights:[],people:[],endorsements:[],qualifications:[]};
   v23AuthBusy=false;v23LoginView();
  }
+}
+async function v24ActivateExtended(mode){
+ if(!v23AccountWorkspace())return;
+ try{
+  const preview=await window.HeliLogV23Sync.extensionPreview();
+  if(mode==="upload"&&preview.hasCloud){
+   alert('There are already '+preview.remoteRecords+' cloud profile/endorsement records. Upload was stopped to prevent overwriting them. Choose Use existing cloud records instead.');
+   return;
+  }
+  if(mode==="cloud"&&!preview.hasCloud){
+   alert('The cloud does not yet contain extended records. First enable Upload this device on the device containing the profile and endorsement records you want to keep.');
+   return;
+  }
+  const warning=mode==="upload"?
+    'Upload this device\'s pilot profile, instructors, licences, endorsements and brought-forward totals to your private cloud?\n\nThis should be done ONCE on the device containing the records you want to keep. Your existing local records are backed up first.':
+    'Use existing cloud profiles and endorsements on this device?\n\nYour current local copies of those fields will be preserved in a separate safety snapshot before being replaced by the cloud copy.';
+  if(!confirm(warning))return;
+  const outcome=await window.HeliLogV23Sync.activateExtension(mode);
+  if(outcome.status?.state==="error"||outcome.status?.state==="conflict"){
+   alert('Data was preserved, but cloud synchronization needs attention: '+(outcome.status.error||"Check cloud status"));
+  }
+  v23RefreshSync();
+ }catch(e){alert('Could not activate extended synchronization. Your local data was preserved: '+(e.message||e));}
 }
 async function v23RefreshSync(){
  if(!v23AccountWorkspace())return;
