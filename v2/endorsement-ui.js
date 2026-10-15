@@ -118,7 +118,7 @@ function v2ReopenEndorsementPreview(){
   if(v2PendingEndorsementBatch)
    v2PreviewShown=v2PrintEndorsementHTML(v2ArchiveBridge.printBatch(v2PendingEndorsementBatch));
 }
-function v2ConfirmEndorsementBatch(){
+async function v2ConfirmEndorsementBatch(){
  if(!v2RequireWebArchive())return;
   if(!v2PendingEndorsementBatch||!v2PreviewShown)return;
   if(!document.getElementById('v2EndorsementConfirmed')?.checked){
@@ -127,6 +127,11 @@ function v2ConfirmEndorsementBatch(){
   if(!confirm('Permanently archive these printed endorsement pages? Originals will be locked.'))return;
   try{
     const result=v2ArchiveBridge.confirm(S,v2PendingEndorsementBatch,new Date().toISOString());
+    if(v23AccountWorkspace()){
+      const batch=result.batches[result.batches.length-1];
+      await window.HeliLogV24Archive.confirmBatch('endorsement',batch,
+       batch.items.map(item=>item.endorsementId));
+    }
     if(!v2StoreArchive(result))return;
     v2PendingEndorsementBatch=null;v2PreviewShown=false;v2EndorsementArchive();
   }catch(e){alert('Archive not confirmed: '+e.message);}
@@ -222,7 +227,7 @@ function v2PrintCorrectionPreview(){
    '<button class="btn primary" onclick="v2ConfirmEndorsementCorrection()">Confirm permanent correction</button></div>';
  }catch(e){alert('Cannot print correction: '+e.message);}
 }
-function v2ConfirmEndorsementCorrection(){
+async function v2ConfirmEndorsementCorrection(){
  if(!v2RequireWebArchive())return;
  if(!v2PendingCorrection||!v2CorrectionPreviewShown)return;
  if(!document.getElementById('v2CorrectionConfirmed')?.checked){
@@ -231,6 +236,10 @@ function v2ConfirmEndorsementCorrection(){
  if(!confirm('Confirm signed endorsement correction? The original archive will remain unchanged.'))return;
  try{
   const next=v2ArchiveBridge.confirmAmendment(S,v2PendingCorrection,new Date().toISOString());
+  if(v23AccountWorkspace()){
+    const amendment=next.amendments[next.amendments.length-1];
+    await window.HeliLogV24Archive.confirmAddendum('endorsement',amendment.endorsementId,amendment);
+  }
   if(!v2StoreArchive(next))return;
   v2PendingCorrection=null;v2CorrectionPreviewShown=false;v2EndorsementArchive();
  }catch(e){alert('Correction not saved: '+e.message);}

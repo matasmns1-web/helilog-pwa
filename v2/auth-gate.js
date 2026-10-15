@@ -11,7 +11,9 @@ function v23SyncInfo(){
  return '<div class="note" role="status"><b>'+v23Escape(label)+'</b>'+
  (st.pending?' · '+st.pending+' pending':'')+
  (st.error?'<div class="mini">'+v23Escape(st.error)+'</div>':'')+
- '<div class="mini">V2.3 synchronizes aircraft and flights ONLY. Endorsements, signatures, print archives, corrections, profile details and previous totals are still device-local.</div></div>';
+ '<div class="mini">'+(window.HeliLogV23Sync.extended()?
+  'Aircraft, flights, pilot profiles, qualifications, endorsements, medical records and opening totals are included in cloud sync. Print archive snapshots and signed corrections require separate confirmation.':
+  'Aircraft and flights sync. Enable extended data synchronization in Cloud account to include endorsements, pilot profiles, qualifications and brought-forward totals.')+'</div></div>';
 }
 function v23LoginView(){
  v23Unlocked=false;
@@ -82,14 +84,27 @@ async function v23EnterWorkspace(auth){
   replaceData:next=>{
    if(typeof hasUnsavedFlightChanges==='function'&&hasUnsavedFlightChanges())
     throw Error("A flight form has unsaved changes. Finish or cancel the edit before refreshing cloud records.");
-   const updated={...S,aircraft:next.aircraft,flights:next.flights};
-   // Persist the complete merged cache before replacing the visible model.
+   const updated={...S,
+     aircraft:next.aircraft,flights:next.flights,
+     people:next.people||S.people,endorsements:next.endorsements||S.endorsements,
+     qualifications:next.qualifications||S.qualifications,
+     pilot:next.pilot||S.pilot,
+     broughtForward:next.broughtForward??S.broughtForward,
+     broughtForwardByType:next.broughtForwardByType??S.broughtForwardByType,
+     broughtForwardImported:next.broughtForwardImported??S.broughtForwardImported,
+     broughtForwardImportedAt:next.broughtForwardImportedAt??S.broughtForwardImportedAt};
+   // Commit one complete account state, or keep the old one on failure.
    localStorage.setItem(KEY,JSON.stringify(updated));
    S=updated;
   },
   onStatus:()=>v23UpdateSyncChip()
  });
  await window.HeliLogV23Sync.refresh();
+ if(window.HeliLogV23Sync.extended()){
+  window.HeliLogV24Archive.start({userId:id,db:client});
+  if(window.HeliLogV23Sync.status().state==="synced")
+   await window.HeliLogV24Archive.refresh(()=>S,v24CommitArchiveRefresh);
+ }
  v23Unlocked=true;
  document.documentElement.classList.remove("helilog-locked");
  document.documentElement.classList.add("helilog-cloud-workspace");
@@ -134,6 +149,7 @@ async function v23SignOut(){
  document.documentElement.classList.add("helilog-locked");
  document.documentElement.classList.remove("helilog-cloud-workspace");
  app.innerHTML='<div class="v23-auth-container"><div class="v23-auth-card">Signing out…</div></div>';
+ window.HeliLogV24Archive.stop();
  window.HeliLogV23Sync.stop();
  try{await window.HeliLogCloud.signOut();v23AuthMessage="Signed out. Your account-specific cached records are preserved on this device.";}
  catch(e){v23AuthMessage=e.message||String(e);}
@@ -142,15 +158,57 @@ async function v23SignOut(){
   v23AuthBusy=false;v23LoginView();
  }
 }
+async function v24ActivateExtended(mode){
+ if(!v23AccountWorkspace())return;
+ try{
+  const preview=await window.HeliLogV23Sync.extensionPreview();
+  if(mode==="upload"&&preview.hasCloud){
+   alert('There are already '+preview.remoteRecords+' cloud profile/endorsement records. Upload was stopped to prevent overwriting them. Choose Use existing cloud records instead.');
+   return;
+  }
+  if(mode==="cloud"&&!preview.hasCloud){
+   alert('The cloud does not yet contain extended records. First enable Upload this device on the device containing the profile and endorsement records you want to keep.');
+   return;
+  }
+  const warning=mode==="upload"?
+    'Upload this device\'s pilot profile, instructors, licences, endorsements and brought-forward totals to your private cloud?\n\nThis should be done ONCE on the device containing the records you want to keep. Your existing local records are backed up first.':
+    'Use existing cloud profiles and endorsements on this device?\n\nYour current local copies of those fields will be preserved in a separate safety snapshot before being replaced by the cloud copy.';
+  if(!confirm(warning))return;
+  const outcome=await window.HeliLogV23Sync.activateExtension(mode);
+  if(outcome.status?.state==="error"||outcome.status?.state==="conflict"){
+   alert('Data was preserved, but cloud synchronization needs attention: '+(outcome.status.error||"Check cloud status"));
+  }
+  await v24InitArchive();
+  await v23RefreshSync();
+ }catch(e){alert('Could not activate extended synchronization. Your local data was preserved: '+(e.message||e));}
+}
+function v24CommitArchiveRefresh(updated){
+ localStorage.setItem(KEY,JSON.stringify(updated));
+ S=updated;
+}
+async function v24InitArchive(){
+ if(!v23AccountWorkspace()||!window.HeliLogV23Sync.extended())return;
+ const client=await window.HeliLogCloud.client();
+ window.HeliLogV24Archive.start({userId:window.HeliLogCloud.snapshot().userId,db:client});
+ if(window.HeliLogV23Sync.status().state==="synced")
+  await window.HeliLogV24Archive.refresh(()=>S,v24CommitArchiveRefresh);
+}
 async function v23RefreshSync(){
  if(!v23AccountWorkspace())return;
  await window.HeliLogV23Sync.refresh();
+ if(window.HeliLogV23Sync.extended() && window.HeliLogV23Sync.status().state==="synced"){
+  if(!window.HeliLogV24Archive.available())await v24InitArchive();
+  else await window.HeliLogV24Archive.refresh(()=>S,v24CommitArchiveRefresh);
+ }
  v23UpdateSyncChip();
  if(location.hash==="#cloud")cloud();
 }
 function v23PreventUnsupportedArchive(){
  if(!v23AccountWorkspace())return false;
- alert("V2.3 cloud workspaces sync aircraft and flights only. Paper archive creation and corrections are unavailable here until immutable cloud archiving is implemented. Your old local V2.2 archives remain untouched.");
+ if(!isStandaloneApp()&&window.HeliLogV24Archive?.available?.())return false;
+ alert(isStandaloneApp()?
+  "Use the HeliLog web browser to print and archive records. The app supports signing and reviewing.":
+  "Before printing, enable extended cloud sync in Cloud account and wait for Cloud synced. Signed and archived originals cannot be confirmed while synchronization is pending or offline.");
  return true;
 }
 

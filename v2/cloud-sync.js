@@ -11,7 +11,23 @@
  else root.HeliLogV23Sync=api;
 })(typeof window!=="undefined"?window:globalThis,function(root){
  "use strict";
- const types=["aircraft","flight"],plural={aircraft:"aircraft",flight:"flights"};
+ const coreKinds=["aircraft","flight"];
+ const extraKinds=["person","qualification","endorsement","settings"];
+ let types=[...coreKinds],extended=false;
+ const plural={aircraft:"aircraft",flight:"flights",person:"people",qualification:"qualifications",endorsement:"endorsements"};
+ const settingNames=["pilot","broughtForward","broughtForwardByType","broughtForwardImported","broughtForwardImportedAt"];
+ function items(data,kind){
+  if(kind==="settings")return settingNames.map(name=>({id:name,data:clone(data?.[name]??(
+   name==="pilot"?{}:name==="broughtForward"?{}:name==="broughtForwardByType"?[]:name==="broughtForwardImported"?false:""))}));
+  return data?.[plural[kind]]||[];
+ }
+ function putItems(data,kind,arr){
+  if(kind==="settings"){
+   for(const item of arr){
+    if(settingNames.includes(item.id))data[item.id]=clone(item.data);
+   }
+  }else data[plural[kind]]=arr;
+ }
  let owner="",db=null,pending=[],versions={},mirror={},baseline={},state="inactive",problem="",
   running=false,paused=false,snapshotFn=null,replaceFn=null,listener=null;
  const clone=x=>JSON.parse(JSON.stringify(x));
@@ -31,6 +47,8 @@
  const versionKey=u=>"helilog_v23_versions_"+u;
  const mirrorKey=u=>"helilog_v23_mirror_"+u;
  const recordKey=u=>"helilog_v23_account_"+u;
+ const extKey=u=>"helilog_v24_ext_"+u;
+ const savedPreMigration=u=>"helilog_v24_pre_extension_"+u;
  const read=(key,otherwise)=>{
   const raw=root.localStorage.getItem(key);
   if(raw===null)return otherwise;
@@ -45,14 +63,14 @@
  function isActive(){return !!owner&&!paused;}
  function mapOf(data){
   const m={};
-  for(const kind of types)for(const r of (data?.[plural[kind]]||[])){
+  for(const kind of types)for(const r of items(data,kind)){
    if(r && typeof r.id==="string" && r.id.length && r.id.length<=120)m[ident(kind,r.id)]=canonical(r);
   }
   return m;
  }
  function parseKey(k){const i=k.indexOf(":");return {kind:k.slice(0,i),id:k.slice(i+1)};}
  function stop(){
-  owner="";db=null;pending=[];versions={};mirror={};baseline={};state="inactive";problem="";
+  owner="";db=null;pending=[];versions={};mirror={};baseline={};state="inactive";problem="";extended=false;types=[...coreKinds];
   running=false;paused=true;snapshotFn=null;replaceFn=null;notify();
  }
  function start({userId,client,getData,replaceData,onStatus}){
@@ -60,10 +78,17 @@
   if(!client?.from||typeof getData!=="function"||typeof replaceData!=="function")throw Error("Cloud workspace configuration is incomplete.");
   if(owner&&owner!==userId)stop();
   owner=userId;db=client;snapshotFn=getData;replaceFn=replaceData;listener=onStatus||null;
+  extended=read(extKey(owner),false)===true;
+  types=extended?[...coreKinds,...extraKinds]:[...coreKinds];
   paused=false;running=false;pending=read(queueKey(owner),[]);
   versions=read(versionKey(owner),{});mirror=read(mirrorKey(owner),{});
   if(!Array.isArray(pending)||!versions||typeof versions!=="object"||Array.isArray(versions)||!mirror||typeof mirror!=="object"||Array.isArray(mirror))throw Error("Saved sync state is invalid. Preserve local data; do not reset.");
-  if(pending.some(q=>!types.includes(q.kind)||typeof q.id!=="string"||!["put","delete"].includes(q.action)))throw Error("Saved sync queue contains invalid operations.");
+  if(pending.some(q=>![...coreKinds,...extraKinds].includes(q.kind)||typeof q.id!=="string"||!["put","delete"].includes(q.action)))throw Error("Saved sync queue contains invalid operations.");
+  // An interrupted activation must not lose queued records, even if the
+  // extension-enable marker was not durably committed yet.
+  if(pending.some(q=>extraKinds.includes(q.kind))&&!extended){
+   extended=true;types=[...coreKinds,...extraKinds];root.localStorage.setItem(extKey(owner),"true");
+  }
   baseline=mapOf(snapshotFn());state=pending.length?"pending":"connecting";problem="";notify();
  }
  function track(data){
@@ -132,7 +157,7 @@
    const pendingKeys=new Set(pending.map(q=>ident(q.kind,q.id)));
    // Recover an account-local entry that was saved before its queue write
    // completed (e.g. a quota/interruption). Never declare it cloud-synced.
-   for(const kind of types)for(const entry of (local[plural[kind]]||[])){
+   for(const kind of types)for(const entry of items(local,kind)){
     const k=ident(kind,String(entry.id));
     if(!rmap.has(k)&&!pendingKeys.has(k)&&versions[k]===undefined&&entry.id){
      pending.push({kind,id:String(entry.id),action:"put",payload:clone(entry),
@@ -142,7 +167,7 @@
    }
    let changed=false,conflicts=0;
    for(const kind of types){
-    const key=plural[kind],arr=local[key]||[];
+    const arr=items(local,kind);
     const byId=new Map(arr.map(x=>[String(x.id),x]));
     for(const [k,row] of rmap){
      if(row.kind!==kind)continue;
@@ -176,7 +201,7 @@
       byId.delete(String(entry.id));delete versions[k];delete mirror[k];changed=true;
      }
     }
-    local[key]=[...byId.values()];
+    putItems(local,kind,[...byId.values()]);
    }
    if(changed){replaceFn(local);baseline=mapOf(snapshotFn());}
    persist();
@@ -245,5 +270,66 @@
   return state==="synced";
  }
  function ignoreNoChanges(){if(isActive())baseline=mapOf(snapshotFn());}
- return Object.freeze({recordKey,start,stop,track,refresh,flush,pull,status,ignoreNoChanges});
+ async function extensionPreview(){
+  if(!isActive())throw Error("Sign in first.");
+  if(root.navigator?.onLine===false)throw Error("Connect to the internet to initialize extended synchronization.");
+  const old=[...types];types=[...coreKinds,...extraKinds];
+  try{
+   const remote=await listRemote(owner);
+   const extras=remote.filter(r=>extraKinds.includes(r.kind));
+   return {remoteRecords:extras.length,
+     localRecords:extraKinds.reduce((n,k)=>n+items(snapshotFn(),k).length,0),
+     hasCloud:extras.length>0,enabled:extended};
+  }finally{types=old;}
+ }
+ async function activateExtension(mode){
+  if(!isActive())throw Error("Sign in first.");
+  if(extended)return {enabled:true,alreadyEnabled:true};
+  if(!["upload","cloud"].includes(mode))throw Error("Choose this device or existing cloud data.");
+  if(root.navigator?.onLine===false)throw Error("Connect to the internet first.");
+  const before=snapshotFn(),preview=await extensionPreview();
+  if(mode==="upload"&&preview.hasCloud)
+    throw Error("This account already has extended cloud records. Choose existing cloud data on this device to avoid overwriting another device.");
+  if(mode==="cloud"&&!preview.hasCloud)
+    throw Error("No extended records exist in the cloud yet. Upload a primary device first.");
+  // A durable safety snapshot is created BEFORE switching mode or replacing.
+  const backupKey=savedPreMigration(owner);
+  if(root.localStorage.getItem(backupKey)===null)
+   root.localStorage.setItem(backupKey,JSON.stringify(before));
+  if(mode==="cloud"&&preview.hasCloud){
+   const previousKinds=types;
+   types=[...coreKinds,...extraKinds];
+   let r;
+   try{r=await listRemote(owner);}
+   finally{types=previousKinds;}
+   const next=clone(before);
+   for(const kind of extraKinds){
+    const records=r.filter(row=>row.kind===kind);
+    const fromCloud=records.map(row=>clone(row.payload));
+    if(kind==="settings"){
+     for(const item of fromCloud)if(settingNames.includes(item.id))next[item.id]=clone(item.data);
+    }else next[plural[kind]]=fromCloud;
+    for(const row of records){
+     const k=ident(row.kind,row.record_id);
+     versions[k]=row.revision;mirror[k]=canonical(row.payload);
+    }
+   }
+   replaceFn(next);
+  }
+  extended=true;types=[...coreKinds,...extraKinds];
+  root.localStorage.setItem(extKey(owner),"true");
+  baseline=mapOf(snapshotFn());
+  if(mode==="upload"){
+   for(const kind of extraKinds)for(const item of items(snapshotFn(),kind)){
+    const k=ident(kind,String(item.id));
+    pending.push({kind,id:String(item.id),action:"put",payload:clone(item),
+      baseRevision:null,generation:1});
+   }
+   persist();state="pending";notify();
+   await flush();
+  }else await refresh();
+  return {enabled:true,status:status(),backupKey};
+ }
+ return Object.freeze({recordKey,start,stop,track,refresh,flush,pull,status,ignoreNoChanges,
+  extended:()=>extended,extensionPreview,activateExtension});
 });

@@ -34,7 +34,7 @@ function cloud(){
  }
  const stateText=st.configured?(state==="signed_in"?"Signed in":state==="error"?"Connection needs attention":
    state==="connecting"?"Connecting…":"Ready for private sign-in"):"Cloud not configured";
- app.innerHTML=header('Cloud account','HeliLog V2.3 · Private account and synchronization',
+ app.innerHTML=header('Cloud account','HeliLog V2.4 · Private account and synchronization',
   `<button class="btn" onclick="go('profile')">← Profile</button>`)+
   '<div class="card" style="margin-bottom:16px"><div class="head"><h2>Connection status</h2></div>'+
   '<div class="pwa-state"><b>'+v22CloudEscape(stateText)+'</b></div>'+
@@ -47,9 +47,14 @@ function cloud(){
   '<div class="card" style="margin-top:16px"><div class="head"><h2>Aircraft & flight cloud sync</h2></div>'+
   (v23AccountWorkspace()?v23SyncInfo()+'<div class="actions" style="margin-top:14px"><button class="btn primary" type="button" onclick="v23RefreshSync()">Check / sync now</button></div>':
   '<p class="muted">Sign in to synchronize a private cloud workspace.</p>')+
-  '<p class="mini">Only aircraft and flight entries synchronize in V2.3. Changes with competing revisions are held for manual resolution, never silently overwritten.</p></div>'+
+  (v23AccountWorkspace()&&!window.HeliLogV23Sync.extended()?
+   `<div class="note" style="margin-top:12px"><b>V2.4 — One-time setup</b><p>Choose one primary device for your instructor profiles, medical and licence details, endorsements and previous totals. Other devices can then use the cloud copies. A safety snapshot will preserve this device's previous records.</p>
+   <div class="actions"><button class="btn primary" onclick="v24ActivateExtended('upload')">Upload this device's remaining records</button>
+   <button class="btn" onclick="v24ActivateExtended('cloud')">Use existing cloud records</button></div></div>`:
+   '<p class="mini">Extended cloud synchronization '+(v23AccountWorkspace()?'enabled.':'available after sign-in.')+'</p>')+
+  '<p class="mini">Conflicting revisions remain pending for manual resolution, not overwritten.</p></div>'+
   '<div class="card" style="margin-top:16px"><div class="head"><h2>Local logbook protection</h2></div>'+
-  '<p><b>V2.3 only synchronizes aircraft and flights created in this signed-in cloud workspace.</b> Your existing V2.2 test data is preserved separately and never automatically uploaded.</p>'+
+  '<p><b>V2.4 synchronizes aircraft and flights; other data syncs after your one-time account setup.</b> Your existing V2.2 test data is preserved separately and never automatically uploaded.</p>'+
   '<p class="muted">Endorsements, instructor profiles, qualifications, signature images, brought-forward totals and all print archive/correction history are NOT backed up to the cloud yet. Offline sign-in and automatic conflict resolution are planned later.</p>'+
   '<p class="mini">Other pilots will have separate private accounts when invitations become available. A saved instructor/examiner in your logbook does not automatically become an account user.</p>'+
   '</div>';

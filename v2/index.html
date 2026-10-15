@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.3 — Private Logbook</title>
+<title>HeliLog V2.4 — Extended Cloud Logbook</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -23,9 +23,7 @@ html.helilog-locked main{margin:0!important;width:100%!important;max-width:none!
 .v23-auth-container{min-height:85vh;display:flex;justify-content:center;align-items:center;padding:20px}
 .v23-auth-card{width:min(100%,445px);border:1px solid var(--line);background:#fff;border-radius:18px;padding:32px;box-shadow:0 15px 50px rgba(17,24,39,.06)}
 .v23-auth-card .form{margin-top:20px}.v23-auth-card .btn.primary{width:100%;padding:13px}
-html.helilog-cloud-workspace nav button[data-v="printarchive"],
 html.helilog-cloud-workspace nav button[data-v="testmode"]{display:none!important}
-html.helilog-cloud-workspace .cloud-archive-tool{display:none!important}
 .v23-syncbanner{margin:0 0 16px}.v23-syncbanner .note{margin-bottom:0}
 @media(max-width:550px){.v23-auth-container{align-items:flex-start;padding:18px 0}.v23-auth-card{padding:25px 20px}}
 /* Installed phone/tablet app: flight entry and viewing only; browser retains management tools. */
@@ -267,7 +265,7 @@ html.helilog-test-mode .brand::after{
 }
 </style></head>
 <body><div class="layout">
-<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V2.3 · TEST</span></div><nav>
+<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V2.4 · TEST</span></div><nav>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="aircraft">🚁 Aircraft</button><button data-v="pilots">👤 Pilots</button><button data-v="endorsements">✎ Endorsements</button><button data-v="printarchive">▤ Print archive</button><button data-v="profile">○ Profile</button><button data-v="cloud">☁ Cloud account</button><button data-v="testmode">⚗ Test Mode</button>
 </nav></aside><main id="app"></main>
 <div class="mobile">
@@ -342,11 +340,12 @@ html.helilog-test-mode .brand::after{
 <script src="./print.js"></script>
 <script src="./endorsement-bridge.js"></script>
 <script src="./endorsement-ui.js"></script>
-<script src="./cloud-config.js?v=2.3-authfix-1"></script>
-<script src="./cloud-foundation.js?v=2.3-authfix-1"></script>
-<script src="./cloud-view.js?v=2.3-authfix-1"></script>
-<script src="./cloud-sync.js?v=2.3-authfix-1"></script>
-<script src="./auth-gate.js?v=2.3-authfix-1"></script>
+<script src="./cloud-config.js?v=2.4-cloud-1"></script>
+<script src="./cloud-foundation.js?v=2.4-cloud-1"></script>
+<script src="./cloud-view.js?v=2.4-cloud-1"></script>
+<script src="./cloud-sync.js?v=2.4-cloud-1"></script>
+<script src="./auth-gate.js?v=2.4-cloud-1"></script>
+<script src="./cloud-archives.js?v=2.4-cloud-1"></script>
 <script>
 const LIVE_KEY='helilog_v2_complete_test_data'; // Separate V2 test browser key.
 const SANDBOX_KEY='helilog_v2_complete_test_sandbox';
@@ -1003,7 +1002,7 @@ function mobilemore(){
     <button class="card more-link" onclick="go('aircraft')"><span>🚁</span><b>Aircraft</b><span class="muted">Fleet and SE/ME setup</span></button>
     <button class="card more-link" onclick="go('pilots')"><span>👤</span><b>Pilot profiles</b><span class="muted">Create PIC, instructor and examiner profiles</span></button>
     <button class="card more-link" onclick="go('endorsements')"><span>✎</span><b>Endorsements</b><span class="muted">Memoranda and signatures</span></button>
-    ${!isStandaloneApp()&&!v23AccountWorkspace()?`<button class="card more-link" onclick="go('endorsementarchive')"><span>▤</span><b>Endorsement archive</b><span class="muted">Printed pages and corrections</span></button>`:''}
+    ${!isStandaloneApp()?`<button class="card more-link" onclick="go('endorsementarchive')"><span>▤</span><b>Endorsement archive</b><span class="muted">Printed pages and corrections</span></button>`:''}
     <button class="card more-link" onclick="go('totals')"><span>◉</span><b>Totals</b><span class="muted">Flight-time breakdown</span></button>
     <button class="card more-link" onclick="go('profile')"><span>○</span><b>Profile</b><span class="muted">Licence, medical and backup</span></button>
     <button class="card more-link" onclick="go('cloud')"><span>☁</span><b>Cloud account</b><span class="muted">Private login and connection status</span></button>
@@ -2610,7 +2609,7 @@ function previewNextArchive(){
     if(msg)msg.innerHTML='<div class="successbox">PDF preview opened. Print it, check every page and sign it. Only then confirm the printed batch below.</div>';
   }
 }
-function confirmPrintedArchive(){
+async function confirmPrintedArchive(){
   if(isInstalledTouchApp())return;
   if(!pendingArchivePreview){
     alert('Preview and print the new pages first. Nothing has been archived yet.');return;
@@ -2646,6 +2645,10 @@ function confirmPrintedArchive(){
   if(!agree)return;
   const finalBatch=JSON.parse(JSON.stringify(draft));
   finalBatch.confirmedAt=new Date().toISOString();
+  if(v23AccountWorkspace()){
+   try{await window.HeliLogV24Archive.confirmBatch('flight',finalBatch,finalBatch.flightIds);}
+   catch(err){alert('Printed pages were NOT marked archived: '+(err.message||err)+'. Check Cloud account before retrying.');return;}
+  }
   S.printArchive.batches.push(finalBatch);
   // Archive records are more sensitive than ordinary UI changes. Confirm that
   // the browser actually persisted them; never report success after a quota failure.
@@ -2736,7 +2739,7 @@ function printCorrectionAddendum(id){
   pendingCorrectionPrint=JSON.stringify(c);
   printarchive();
 }
-function confirmCorrectionAddendum(id){
+async function confirmCorrectionAddendum(id){
   const c=archiveCorrections().find(x=>x.id===id);
   if(!c||c.confirmedAt)return;
   if(pendingCorrectionPrint!==JSON.stringify(c)){
@@ -2747,6 +2750,10 @@ function confirmCorrectionAddendum(id){
     'The revised entry will affect electronic totals and future paper carried-forward totals.\n'+
     'Confirmed corrections cannot be edited or deleted in HeliLog.'))return;
   c.confirmedAt=new Date().toISOString();
+  if(v23AccountWorkspace()){
+   try{await window.HeliLogV24Archive.confirmAddendum('flight',c.flightId,c);}
+   catch(err){c.confirmedAt='';alert('Correction was not archived in the cloud: '+(err.message||err));return;}
+  }
   try{
     verifiedEnvironmentWrite(KEY,S);
     const confirmed=JSON.parse(localStorage.getItem(KEY)||'{}').printArchive?.corrections?.find(x=>x.id===id);
@@ -3717,7 +3724,9 @@ function v2EndorsementStatusHelp(e){
  }
  return '<div class="mini" style="margin-top:8px">'+
  (isStandaloneApp()?
- 'Signed and saved in this installed app, awaiting web archiving. Records are not automatically shared with other devices yet.':
+ (window.HeliLogV23Sync.extended()?
+ 'Signed and saved on this device. Awaiting cloud synchronization and web-only printing/archiving.':
+ 'Signed locally. Enable extended sync under Cloud account to send this endorsement to the web browser.'):
  'Signed and saved in this browser. Awaiting printing and archive confirmation in Print Archive → Endorsements.')+
  '</div>';
 }
@@ -3730,7 +3739,9 @@ function endorsements(){
     `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="go('pilots')">Manage pilots</button><button class="btn primary" onclick="endorsementForm()">＋ Add endorsement</button></div>`)+
   `<div class="card">
     <div class="note" style="margin-bottom:14px">${isStandaloneApp()?
-      'Create, sign and review endorsements in the app. Records stay on this device; printing and archiving are web-only. Until cloud sync is ready, moving an endorsement to another device requires exporting a Full Backup from Profile and restoring it in the browser.':
+      (window.HeliLogV23Sync.extended()?
+  'Create, sign and review endorsements in the app. Endorsements now synchronize to your account. Use the web browser to print and archive once Cloud synced.':
+  'Create, sign and review endorsements in the app. Records remain device-local until you enable extended sync in Cloud account. Printing and archiving are web-only.'):
       'Signed endorsements are locked. Use Print Archive → Endorsements to print, archive or correct them.'}</div>
     ${v2EndorsementNotice?'<div class="note" role="status" style="margin-bottom:14px">'+htmlEscape(v2EndorsementNotice)+'</div>':''}
     <div class="endorsement-list">
@@ -4608,7 +4619,7 @@ async function makeFullBackup(){
     app:'HeliLog',
     format:'helilog-full-backup',
     backupSchema:2,
-    appVersion:'2.3',
+    appVersion:'2.4',
     exportedAt:new Date().toISOString(),
     environment:v23AccountWorkspace()?'cloud-test':TEST_MODE?'test':'production',
     integrity:{algorithm:'SHA-256',sha256:await sha256Hex(JSON.stringify(data))},
@@ -4991,8 +5002,8 @@ function render(){
   if(v23AccountWorkspace()&&v==='testmode'){
     v='dashboard';if(location.hash!=='#dashboard')location.hash='#dashboard';
   }
-  if(v23AccountWorkspace()&&(v==='printarchive'||v==='endorsementarchive')){
-    v23PreventUnsupportedArchive();v='dashboard';
+  if(v23AccountWorkspace()&&(v==='printarchive'||v==='endorsementarchive')&&v23PreventUnsupportedArchive()){
+    v='dashboard';
     if(location.hash!=='#dashboard')location.hash='#dashboard';
   }
   if(isStandaloneApp()&&(v==='printarchive'||v==='endorsementarchive')){
@@ -5014,8 +5025,8 @@ function render(){
 }
 v23Boot();
 // Refresh aircraft and flights when returning to HeliLog or reconnecting.
-window.addEventListener('online',()=>{if(v23AccountWorkspace()&&!hasUnsavedFlightChanges())window.HeliLogV23Sync.refresh();});
-window.addEventListener('focus',()=>{if(v23AccountWorkspace()&&!hasUnsavedFlightChanges())window.HeliLogV23Sync.refresh();});
+window.addEventListener('online',()=>{if(v23AccountWorkspace()&&!hasUnsavedFlightChanges())v23RefreshSync();});
+window.addEventListener('focus',()=>{if(v23AccountWorkspace()&&!hasUnsavedFlightChanges())v23RefreshSync();});
 setInterval(()=>{if(v23AccountWorkspace()&&!hasUnsavedFlightChanges()&&document.visibilityState==='visible')
-  window.HeliLogV23Sync.refresh();},30000);
+  v23RefreshSync();},30000);
 </script></body></html>
