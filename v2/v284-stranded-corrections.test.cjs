@@ -85,7 +85,7 @@ test("stale discrepancy from a previous refresh clears only after cloud-backed r
  const f=fixture();
  f.rows.helilog_records.length=0;
  assert.equal(await f.refresh(),false);
- assert.match(f.api.error(),/Unsynchronized flight correction/);
+ assert.match(f.api.error(),/identical unconfirmed proposal/);
  f.rows.helilog_records.push({owner_id:UID,kind:"correction_proposal",
    record_id:"COR-TEST-1",revision:1,payload:pending()});
  assert.equal(await f.refresh(),true);
