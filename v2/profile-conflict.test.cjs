@@ -9,7 +9,7 @@ const clone=x=>JSON.parse(JSON.stringify(x));
 const canonical=x=>JSON.stringify(Object.keys(x).sort().reduce((a,k)=>(a[k]=x[k],a),{}));
 function fixture(){
  const server=[{owner_id:user,kind:"settings",record_id:"pilot",revision:1,payload:{id:"pilot",data:{name:"Cloud pilot",licenceType:"CPL(H)",medical:{class:""}}}}];
- let cloudWrites=0,failBackups=false;
+ let cloudWrites=0,cloudPilotWrites=0,failBackups=false;
  const storage=new Map();
  const store={
   getItem:key=>storage.has(key)?storage.get(key):null,
@@ -34,7 +34,7 @@ function fixture(){
     let data=[],error=null;
     const record=server.find(row=>Object.entries(f).every(([k,v])=>row[k]===v));
     if(op==="get")data=server.filter(row=>Object.entries(f).every(([k,v])=>row[k]===v)).map(clone);
-    else if(op==="update"&&record){cloudWrites++;Object.assign(record,clone(changes));data=[{revision:record.revision}];}
+    else if(op==="update"&&record){cloudWrites++;if(f.kind==="settings"&&f.record_id==="pilot")cloudPilotWrites++;Object.assign(record,clone(changes));data=[{revision:record.revision}];}
     else if(op==="delete"&&record){cloudWrites++;data=[{revision:record.revision}];server.splice(server.indexOf(record),1);}
     else if(op==="insert"){cloudWrites++;server.push({...clone(changes),revision:1});data=[{revision:1}];}
     return Promise.resolve({data,error}).then(ok,bad);
@@ -52,7 +52,7 @@ function fixture(){
  const api=new Function("window","module",code+";return window.HeliLogV23Sync;")(root,undefined);
  let data=clone(local);
  api.start({userId:user,client:db,getData:()=>data,replaceData:newData=>{data=clone(newData);store.setItem("account-data",JSON.stringify(data))}});
- return {api,storage,server,root,get data(){return data},get cloudWrites(){return cloudWrites},
+ return {api,storage,server,root,get data(){return data},get cloudWrites(){return cloudWrites},get cloudPilotWrites(){return cloudPilotWrites},
   failBackups:()=>{failBackups=true},localValue:()=>data.pilot.name,serverValue:()=>server[0].payload.data.name};
 }
 test("pilot profile conflict protects both copies until explicit review",async()=>{
@@ -77,7 +77,7 @@ test("keep web profile preserves backup, updates just pilot cloud revision and c
  assert.equal(f.api.status().state,"synced");
  assert.equal(f.serverValue(),"Web pilot");
  assert.equal(f.server[0].revision,2);
- assert.equal(f.cloudWrites,1);
+ assert.equal(f.cloudPilotWrites,1);
 });
 test("keep cloud profile changes only local profile and keeps signed endorsement intact",async()=>{
  const f=fixture();await f.api.refresh();await f.api.previewPilotConflict();
