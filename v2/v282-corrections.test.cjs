@@ -51,8 +51,23 @@ function server(){
 }
 function device(s,keep){
  const store=keep?.store||new Map();
- let data=keep?.data||{aircraft:[],flights:[],printArchive:{firstPage:1,batches:[],corrections:[]}};
- store.set('helilog_v24_ext_'+USER,'true');
+ let data=keep?.data||{aircraft:[],flights:[],printArchive:{firstPage:1,batches:[],corrections:[]},
+  pilot:{},broughtForward:{},broughtForwardByType:[],broughtForwardImported:false,broughtForwardImportedAt:""};
+ store.set("helilog_v24_ext_"+USER,"true");
+ const settings=[["pilot",{}],["broughtForward",{}],["broughtForwardByType",[]],
+  ["broughtForwardImported",false],["broughtForwardImportedAt",""]];
+ const versions=store.has("helilog_v23_versions_"+USER)?
+  JSON.parse(store.get("helilog_v23_versions_"+USER)):{};
+ const mirrors=store.has("helilog_v23_mirror_"+USER)?
+  JSON.parse(store.get("helilog_v23_mirror_"+USER)):{};
+ for(const [id,value] of settings){
+  const key="settings:"+id,payload={id,data:value};
+  if(!s.rows.some(row=>row.kind==="settings"&&row.record_id===id))
+   s.rows.push({owner_id:USER,kind:"settings",record_id:id,payload,revision:1});
+  if(!Object.hasOwn(versions,key)){versions[key]=1;mirrors[key]=JSON.stringify({data:value,id});}
+ }
+ store.set("helilog_v23_versions_"+USER,JSON.stringify(versions));
+ store.set("helilog_v23_mirror_"+USER,JSON.stringify(mirrors));
  let failBackup=false,archive=false;
  const root={navigator:{onLine:true},console:{warn(){},error(){}},
   localStorage:{
@@ -86,7 +101,7 @@ test("offline mobile proposal persists and becomes pending on web after reconnec
  app.data.printArchive.corrections.push(draft);
  app.api.track(app.data);await tick();
  assert.equal(app.api.status().pending,1);
- assert.equal(s.rows.length,0);
+ assert.equal(s.rows.filter(r=>r.kind==='correction_proposal').length,0);
  const restored=app.restart();
  assert.equal(restored.api.status().pending,1);
  restored.root.navigator.onLine=true;
