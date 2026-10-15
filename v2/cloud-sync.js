@@ -327,6 +327,8 @@
   const local=localRecord(snapshotFn(),kind,id);
   if((action==="delete")!== (local===null))
    throw Error("Local queue differs from the saved record. Preserve data and restart review.");
+  if(action==="put"&&canonical(q.payload)!==canonical(local))
+   throw Error("Local edits differ from the pending queue. Preserve data and restart review.");
   recordPreview={owner,kind,id,generation,action,
    localHash:canonical(local),remoteHash:canonical(row),
    cloudRevision:row?Number(row.revision):null};
