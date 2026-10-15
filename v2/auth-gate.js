@@ -1,4 +1,5 @@
 /* HeliLog V2.3 private login gate. No automatic import of V2.2 local data. */
+const HELILOG_TEST_VERSION='V2.6';
 let v23Unlocked=false,v23AuthBusy=false,v23AuthMessage="";
 function v23Escape(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function v23AccountWorkspace(){return v23Unlocked && !!window.HeliLogV23Sync.status().owner;}
@@ -19,9 +20,9 @@ function v23LoginView(){
  v23Unlocked=false;
  document.documentElement.classList.add("helilog-locked");
  const st=window.HeliLogCloud.snapshot(),profile=st.status==="signed_in"&&!st.hasProfile;
- app.innerHTML='<div class="v23-auth-container"><div class="v23-auth-card">'+
+ app.innerHTML='<div class="v23-auth-container"><div class="v23-auth-card" contenteditable="false">'+
  '<div style="font-size:29px;font-weight:800">🚁 HeliLog</div>'+
- '<div class="muted">V2.3 · Private pilot logbook test</div>'+
+ '<div class="muted">'+HELILOG_TEST_VERSION+' · Private pilot logbook test</div>'+
  '<h1 style="font-size:23px;margin-top:25px">'+(profile?'Create your pilot profile':'Sign in')+'</h1>'+
  '<p class="muted">'+(profile?'Complete your account before opening your logbook.':
  'Sign in to open your private cloud logbook. Registration is invitation-only.')+'</p>'+
@@ -31,7 +32,7 @@ function v23LoginView(){
  '<form class="form" onsubmit="v23CreateProfile(event)"><div class="field"><label for="v23PilotName">Your name</label>'+
  '<input id="v23PilotName" type="text" maxlength="120" required autocomplete="name"></div>'+
  '<button class="btn primary" type="submit">Create private profile</button></form>'+
- '<button class="btn" type="button" style="margin-top:15px" onclick="v23SignOut()">Sign out</button>':
+ '<button class="btn" type="button" style="margin-top:15px" onclick="v23SignOut()">Switch account</button>':
  '<form class="form" onsubmit="v23SignIn(event)"><div class="field"><label for="v23Email">Email</label>'+
  '<input id="v23Email" type="email" required autocomplete="username"></div>'+
  '<div class="field"><label for="v23Password">Password</label>'+
@@ -46,7 +47,7 @@ async function v23Boot(){
  if(v23AuthBusy)return;
  v23AuthBusy=true;v23AuthMessage="";
  document.documentElement.classList.add("helilog-locked");
- app.innerHTML='<div class="v23-auth-container"><div class="v23-auth-card"><h2>🚁 HeliLog V2.3</h2><p>Checking your account…</p></div></div>';
+ app.innerHTML='<div class="v23-auth-container"><div class="v23-auth-card" contenteditable="false"><h2>🚁 HeliLog '+HELILOG_TEST_VERSION+'</h2><p>Checking your account…</p></div></div>';
  try{
   const auth=await window.HeliLogCloud.refresh();
   if(auth.status==="signed_in"&&auth.hasProfile){
@@ -121,7 +122,7 @@ async function v23SignIn(event){
  const field=document.getElementById("v23Password"),password=field?.value||"";
  if(field)field.value="";
  v23AuthBusy=true;v23AuthMessage="";
- app.innerHTML='<div class="v23-auth-container"><div class="v23-auth-card">Signing in…</div></div>';
+ app.innerHTML='<div class="v23-auth-container"><div class="v23-auth-card" contenteditable="false">Signing in…</div></div>';
  try{
   const auth=await window.HeliLogCloud.signIn(email,password);
   if(auth.status!=="signed_in")throw Error(auth.error||"Unable to verify your account.");
@@ -149,7 +150,7 @@ async function v23SignOut(){
  v23AuthBusy=true;v23Unlocked=false;
  document.documentElement.classList.add("helilog-locked");
  document.documentElement.classList.remove("helilog-cloud-workspace");
- app.innerHTML='<div class="v23-auth-container"><div class="v23-auth-card">Signing out…</div></div>';
+ app.innerHTML='<div class="v23-auth-container"><div class="v23-auth-card" contenteditable="false">Signing out…</div></div>';
  window.HeliLogV24Archive.stop();
  window.HeliLogV23Sync.stop();
  try{await window.HeliLogCloud.signOut();v23AuthMessage="Signed out. Your account-specific cached records are preserved on this device.";}
