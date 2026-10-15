@@ -355,6 +355,15 @@
     throw Error("One of the records changed since review. Review again; nothing was overwritten.");
    if(isProtectedRecord(reviewed.kind,reviewed.id))
     throw Error("Record was archived during review. Preserve both copies.");
+   // Never adopt remote deletion of a referenced local aircraft or commander.
+   // A dangling flight/endorsement reference would corrupt the logbook graph.
+   if(choice==="cloud" && !row && reviewed.kind==="aircraft" &&
+      (before.flights||[]).some(f=>f.aid===reviewed.id||f.aircraftId===reviewed.id))
+    throw Error("Cloud aircraft deletion would orphan existing local flights. Preserve both copies for assisted recovery.");
+   if(choice==="cloud" && !row && reviewed.kind==="person" &&
+      ((before.flights||[]).some(f=>f.picPersonId===reviewed.id)||
+       (before.endorsements||[]).some(e=>e.signatoryPersonId===reviewed.id)))
+    throw Error("Cloud pilot deletion would orphan an existing flight or endorsement. Preserve both copies for assisted recovery.");
    const backupKey="helilog_v27_conflict_backup_"+owner+"_"+Date.now()+"_"+reviewed.kind+"_"+reviewed.id;
    if(root.localStorage.getItem(backupKey)!==null)
     throw Error("A backup with that identifier already exists. Try again without deleting it.");
