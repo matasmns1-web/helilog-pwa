@@ -53,7 +53,7 @@ test("conflict comparison is explicit and shows both copies without automatic ac
 });
 test("V2.7 remains Profile-only logout and ships coherent cache assets",()=>{
  assert.doesNotMatch(code,/onclick="v23SignOut\(\)"/);
- assert.match(html,/onclick=\\"v23SignOut\(\)\\">Log out/);
+ assert.match(html,/onclick="v23SignOut\(\)">Log out/);
  assert.match(html,/V2\.7 · TEST/);
  assert.match(auth,/HELILOG_TEST_VERSION='V2\.7'/);
  assert.equal(manifest.name,"HeliLog V2.7 — Test");
