@@ -96,3 +96,18 @@ test("installed app is still prohibited from browser-only archive confirmation",
  await assert.rejects(()=>f.archive.confirmBatch("endorsement",{confirmedAt:"2026-10-15"},["e-1"]),/web browser/);
  assert.equal(f.writes,0);
 });
+
+test("refresh from a signed-out session cannot overwrite a newly initialized archive state",async()=>{
+ const f=fixture();
+ f.flags.delayed=true;
+ const workspace={printArchive:{batches:[],corrections:[]},endorsementV2Archive:{batches:[],amendments:[]}};
+ let committed=false;
+ const pending=f.archive.refresh(()=>workspace,()=>{committed=true;});
+ f.archive.stop();
+ f.flags.delayed=false;
+ f.archive.start({userId:uid,db:f.client});
+ f.release();
+ assert.equal(await pending,false);
+ assert.equal(committed,false);
+ assert.equal(f.archive.available(),true);
+});
