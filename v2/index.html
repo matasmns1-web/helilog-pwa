@@ -2810,7 +2810,14 @@ async function confirmCorrectionAddendum(id){
     const next=JSON.parse(JSON.stringify(S));
     const saved=next.printArchive?.corrections?.find(x=>x.id===id);
     if(!saved)throw Error('The cloud confirmed the addendum, but this browser no longer has its matching correction.');
-    if(saved.confirmedAt&&JSON.stringify(saved)!==JSON.stringify(signed))
+    const stable=value=>JSON.stringify((function sort(x){
+      if(Array.isArray(x))return x.map(sort);
+      if(x&&typeof x==='object'){
+        const out={};for(const k of Object.keys(x).sort())out[k]=sort(x[k]);return out;
+      }
+      return x;
+    })(value));
+    if(saved.confirmedAt&&stable(saved)!==stable(signed))
       throw Error('The cloud confirmed the addendum, but the local confirmed copy differs. Do not retry.');
     if(!saved.confirmedAt){
       if(JSON.stringify(saved)!==preview)
