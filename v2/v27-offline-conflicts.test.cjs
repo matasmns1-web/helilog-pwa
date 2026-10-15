@@ -163,3 +163,13 @@ test("records changed locally after queuing require separate recovery",async()=>
  await assert.rejects(()=>b.api.previewRecordConflict("aircraft","a1"),/pending queue/);
  assert.equal(b.data.aircraft[0].reg,"LY-NOT-QUEUED");
 });
+
+test("adopting remote aircraft deletion cannot orphan local flights",async()=>{
+ const {s,b}=await conflict();
+ b.data.flights.push({id:"f-local",aid:"a1"});
+ s.rows.splice(0,s.rows.length);
+ await b.api.previewRecordConflict("aircraft","a1");
+ await assert.rejects(()=>b.api.resolveRecordConflict("cloud"),/orphan existing local flights/);
+ assert.equal(b.data.aircraft[0].reg,"LY-OFFLINE");
+ assert.equal(b.data.flights[0].aid,"a1");
+});
