@@ -100,6 +100,11 @@ async function v23EnterWorkspace(auth){
   onStatus:()=>v23UpdateSyncChip()
  });
  await window.HeliLogV23Sync.refresh();
+ if(window.HeliLogV23Sync.extended()){
+  window.HeliLogV24Archive.start({userId:id,db:client});
+  if(window.HeliLogV23Sync.status().state==="synced")
+   await window.HeliLogV24Archive.refresh(()=>S,v24CommitArchiveRefresh);
+ }
  v23Unlocked=true;
  document.documentElement.classList.remove("helilog-locked");
  document.documentElement.classList.add("helilog-cloud-workspace");
@@ -144,6 +149,7 @@ async function v23SignOut(){
  document.documentElement.classList.add("helilog-locked");
  document.documentElement.classList.remove("helilog-cloud-workspace");
  app.innerHTML='<div class="v23-auth-container"><div class="v23-auth-card">Signing out…</div></div>';
+ window.HeliLogV24Archive.stop();
  window.HeliLogV23Sync.stop();
  try{await window.HeliLogCloud.signOut();v23AuthMessage="Signed out. Your account-specific cached records are preserved on this device.";}
  catch(e){v23AuthMessage=e.message||String(e);}
@@ -172,18 +178,37 @@ async function v24ActivateExtended(mode){
   if(outcome.status?.state==="error"||outcome.status?.state==="conflict"){
    alert('Data was preserved, but cloud synchronization needs attention: '+(outcome.status.error||"Check cloud status"));
   }
-  v23RefreshSync();
+  await v24InitArchive();
+  await v23RefreshSync();
  }catch(e){alert('Could not activate extended synchronization. Your local data was preserved: '+(e.message||e));}
+}
+function v24CommitArchiveRefresh(updated){
+ localStorage.setItem(KEY,JSON.stringify(updated));
+ S=updated;
+}
+async function v24InitArchive(){
+ if(!v23AccountWorkspace()||!window.HeliLogV23Sync.extended())return;
+ const client=await window.HeliLogCloud.client();
+ window.HeliLogV24Archive.start({userId:window.HeliLogCloud.snapshot().userId,db:client});
+ if(window.HeliLogV23Sync.status().state==="synced")
+  await window.HeliLogV24Archive.refresh(()=>S,v24CommitArchiveRefresh);
 }
 async function v23RefreshSync(){
  if(!v23AccountWorkspace())return;
  await window.HeliLogV23Sync.refresh();
+ if(window.HeliLogV23Sync.extended() && window.HeliLogV23Sync.status().state==="synced"){
+  if(!window.HeliLogV24Archive.available())await v24InitArchive();
+  else await window.HeliLogV24Archive.refresh(()=>S,v24CommitArchiveRefresh);
+ }
  v23UpdateSyncChip();
  if(location.hash==="#cloud")cloud();
 }
 function v23PreventUnsupportedArchive(){
  if(!v23AccountWorkspace())return false;
- alert("V2.3 cloud workspaces sync aircraft and flights only. Paper archive creation and corrections are unavailable here until immutable cloud archiving is implemented. Your old local V2.2 archives remain untouched.");
+ if(!isStandaloneApp()&&window.HeliLogV24Archive?.available?.())return false;
+ alert(isStandaloneApp()?
+  "Use the HeliLog web browser to print and archive records. The app supports signing and reviewing.":
+  "Before printing, enable extended cloud sync in Cloud account and wait for Cloud synced. Signed and archived originals cannot be confirmed while synchronization is pending or offline.");
  return true;
 }
 
