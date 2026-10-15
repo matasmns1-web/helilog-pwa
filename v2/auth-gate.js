@@ -91,7 +91,7 @@ async function v23EnterWorkspace(auth){
  v23Unlocked=true;
  document.documentElement.classList.remove("helilog-locked");
  document.documentElement.classList.add("helilog-cloud-workspace");
- if(location.hash==="#login"||!location.hash)location.hash="#dashboard";
+ if(location.hash==="#login"||location.hash==="#cloud"||!location.hash)location.hash="#dashboard";
  render();
 }
 function v23UpdateSyncChip(){
