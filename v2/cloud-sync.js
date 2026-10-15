@@ -31,7 +31,12 @@
  const versionKey=u=>"helilog_v23_versions_"+u;
  const mirrorKey=u=>"helilog_v23_mirror_"+u;
  const recordKey=u=>"helilog_v23_account_"+u;
- const read=(key,otherwise)=>{try{const s=root.localStorage.getItem(key);return s===null?otherwise:JSON.parse(s);}catch{return otherwise;}};
+ const read=(key,otherwise)=>{
+  const raw=root.localStorage.getItem(key);
+  if(raw===null)return otherwise;
+  try{return JSON.parse(raw);}
+  catch{throw Error("Cloud sync metadata is unreadable: "+key+". No pending changes were erased.");}
+ };
  const persist=()=>{if(!owner)return;root.localStorage.setItem(queueKey(owner),JSON.stringify(pending));root.localStorage.setItem(versionKey(owner),JSON.stringify(versions));root.localStorage.setItem(mirrorKey(owner),JSON.stringify(mirror));};
  function notify(){try{listener?.(status());}catch(e){root.console?.warn?.("Cloud status view failed",e)}}
  function status(){
@@ -121,7 +126,18 @@
      else{delete versions[k];delete mirror[k];}
     }
    }
-   const local=clone(snapshotFn()),pendingKeys=new Set(pending.map(q=>ident(q.kind,q.id)));
+   const local=clone(snapshotFn());
+   const pendingKeys=new Set(pending.map(q=>ident(q.kind,q.id)));
+   // Recover an account-local entry that was saved before its queue write
+   // completed (e.g. a quota/interruption). Never declare it cloud-synced.
+   for(const kind of types)for(const entry of (local[plural[kind]]||[])){
+    const k=ident(kind,String(entry.id));
+    if(!rmap.has(k)&&!pendingKeys.has(k)&&versions[k]===undefined&&entry.id){
+     pending.push({kind,id:String(entry.id),action:"put",payload:clone(entry),
+       baseRevision:null,generation:1});
+     pendingKeys.add(k);
+    }
+   }
    let changed=false,conflicts=0;
    for(const kind of types){
     const key=plural[kind],arr=local[key]||[];
