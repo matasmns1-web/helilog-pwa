@@ -68,6 +68,28 @@ test("saving profile retains full name for exported logbook and stores separate 
  assert.equal(S.flights[2].picName,"Old Pilot");
  assert.equal(saves,1);assert.equal(opened,true);
 });
+test("saved instructor and commander profiles have separate names but retain full PIC name",()=>{
+ const S={people:[{id:"existing",name:"Old Instructor",role:"Instructor"}],
+  flights:[{id:"dual",role:"DUAL",picName:"Old Instructor",picPersonId:"existing"}]};
+ const first={value:"Test"},surname={value:"Examiner"},role={value:"Examiner"},
+  licence={value:"FI(H)"},notes={value:"Fictional"};
+ const fields={"#personFirstName":first,"#personLastName":surname,
+ "#personRole":role,"#personLicence":licence,"#personNotes":notes};
+ let editId="existing",saved=false;
+ const code=section("function savePerson(e){","function endorsementById(");
+ const fn=new Function("S","$","personById","editingPersonId","isArchivedFlight","save","go","alert",code+";return savePerson");
+ const save=fn(S,k=>fields[k],id=>S.people.find(p=>p.id===id),editId,()=>false,
+ ()=>{saved=true},()=>{},msg=>{throw Error(msg)});
+ save({preventDefault(){}});
+ assert.equal(S.people[0].firstName,"Test");
+ assert.equal(S.people[0].lastName,"Examiner");
+ assert.equal(S.people[0].name,"Test Examiner");
+ assert.equal(S.flights[0].picName,"Test Examiner");
+ assert.equal(saved,true);
+ assert.match(html,/id="personFirstName"/);
+ assert.match(html,/id="personLastName"/);
+ assert.doesNotMatch(html,/id="personName"/);
+});
 test("visible logout works from any signed-in header and mobile More",()=>{
  assert.match(html,/function header\(title,sub,action=''\)/);
  assert.match(html,/onclick="v23SignOut\(\)">Log out<\/button>/);
