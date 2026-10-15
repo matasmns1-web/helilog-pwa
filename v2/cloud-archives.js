@@ -9,7 +9,7 @@
  else root.HeliLogV24Archive=api;
 })(typeof window!=="undefined"?window:globalThis,function(root){
  "use strict";
- let owner="",client=null,reading=false,readPromise=null,error="";
+ let owner="",client=null,reading=false,readPromise=null,error="",sessionGeneration=0;
  const clone=v=>JSON.parse(JSON.stringify(v));
  const normalized=value=>JSON.stringify((function order(v){
   if(Array.isArray(v))return v.map(order);
@@ -24,9 +24,10 @@
   // Repeated sync checks must not erase a prior archive discrepancy or
   // cancel an in-progress archive read for this same authenticated account.
   if(owner===userId&&client===db)return;
+  sessionGeneration++;
   owner=userId;client=db;reading=false;readPromise=null;error="";
  }
- function stop(){owner="";client=null;reading=false;readPromise=null;error="";}
+ function stop(){sessionGeneration++;owner="";client=null;reading=false;readPromise=null;error="";}
  function blockReason(){
   if(root.matchMedia?.("(display-mode: standalone)")?.matches||root.navigator?.standalone)
    return "Paper archives must be printed and confirmed from a web browser.";
@@ -64,7 +65,7 @@
   if(root.HeliLogCloud?.snapshot?.().userId!==owner)return false;
   if(root.navigator?.onLine===false)return false;
   if(readPromise)return readPromise;
-  reading=true;const sessionOwner=owner,sessionClient=client;
+  reading=true;const sessionOwner=owner,sessionClient=client,sessionAtStart=sessionGeneration;
   const operation=(async()=>{
   try{
    const [b,a]=await Promise.all([
@@ -73,7 +74,7 @@
    ]);
    if(b.error)throw Error(b.error.message||"Could not retrieve cloud print archives");
    if(a.error)throw Error(a.error.message||"Could not retrieve correction history");
-   if(owner!==sessionOwner||client!==sessionClient)return false;
+   if(owner!==sessionOwner||client!==sessionClient||sessionGeneration!==sessionAtStart)return false;
    const data=clone(snapshot());
    const flight=(b.data||[]).filter(x=>x.kind==="flight").map(x=>x.payload);
    const endors=(b.data||[]).filter(x=>x.kind==="endorsement").map(x=>x.payload);
@@ -100,8 +101,16 @@
    data.endorsementV2Archive.amendments=ecor;
    commit(data);
    error="";return true;
-  }catch(e){error=String(e.message||e);root.console?.warn?.("HeliLog archive pull stopped:",error);return false;}
-  finally{reading=false;readPromise=null;}
+  }catch(e){
+   if(sessionGeneration===sessionAtStart){
+    error=String(e.message||e);
+    root.console?.warn?.("HeliLog archive pull stopped:",error);
+   }
+   return false;
+  }
+  finally{
+   if(sessionGeneration===sessionAtStart){reading=false;readPromise=null;}
+  }
   })();
   readPromise=operation;
   return operation;
