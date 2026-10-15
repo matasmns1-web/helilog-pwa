@@ -25,7 +25,7 @@ test("existing full-name accounts split for display without rewriting old data",
 });
 test("PIC and SOLO display SELF, while other commanders and frozen pages retain original names",()=>{
  const api=new Function("S","isSimulatorSession","isArchivedFlight",helpers+";return displayPICName")(
-  {pilot:{name:"Test Pilot"}},()=>false,f=>f.id==="f-archived");
+  {pilot:{name:"Test Pilot"}},()=>false,id=>id==="f-archived");
  assert.equal(api({id:"f-pic",role:"PIC",picName:"Test Pilot"}),"SELF");
  assert.equal(api({id:"f-solo",role:"SOLO",picName:"Test Pilot"}),"SELF");
  assert.equal(api({id:"f-dual",role:"DUAL",picName:"Instructor Example"}),"Instructor Example");
