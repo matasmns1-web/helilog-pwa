@@ -25,7 +25,7 @@ function boot(installed=false){
   return elements.get(id);
  }
  const env={
-  console,Date,JSON,Math,Promise,setTimeout(){},clearTimeout(){},
+  console,Date,JSON,Math,Promise,URL,setTimeout(){},setInterval(){},clearTimeout(){},
   location:{hash:"#dashboard",protocol:"https:",hostname:"helilog-v2-test.onrender.com"},
   navigator:{userAgent:"Mozilla/5.0 (iPad)",platform:"MacIntel",maxTouchPoints:5,standalone:installed},
   matchMedia(){return {matches:env.navigator.standalone}},addEventListener(){},
@@ -44,11 +44,13 @@ function boot(installed=false){
  };
  env.window=env;
  const context=vm.createContext(env);
- for(const file of ["domain.js","print.js","endorsement-bridge.js","endorsement-ui.js"]){
+ for(const file of ["domain.js","print.js","endorsement-bridge.js","endorsement-ui.js","cloud-config.js","cloud-foundation.js","cloud-view.js","cloud-sync.js","auth-gate.js"]){
   vm.runInContext(fs.readFileSync(path.join(__dirname,file),"utf8"),context,{filename:file});
  }
+ env.HeliLogCloud={refresh:()=>new Promise(()=>{}),snapshot:()=>({configured:false,status:"signed_out"})};
  const inline=html.slice(html.lastIndexOf("<script>")+8,html.lastIndexOf("</script>"));
  vm.runInContext(inline,context,{filename:"v2/index.html inline JS"});
+ vm.runInContext("v23Unlocked=true",context);
  const evaluate=script=>vm.runInContext(script,context);
  return {evaluate,env,alerts,store,app:()=>element("#app").innerHTML,
   get opens(){return opens},failSaves:()=>{failSave=true}};
@@ -62,9 +64,9 @@ function seedEndorsement(b){
   ' signatureData:"",signedAt:"",signedName:"",signedLicence:""});'
  ].join("\n"));
 }
-test("V2.1 is the current interface version label",()=>{
- assert.match(html,/<title>HeliLog V2\.1/);
- assert.match(html,/V2\.1 · TEST/);
+test("V2.3 is the current interface version label",()=>{
+ assert.match(html,/<title>HeliLog V2\.3/);
+ assert.match(html,/V2\.3 · TEST/);
  assert.doesNotMatch(html,/<title>HeliLog V2\.0 Alpha/);
 });
 test("installed app can sign and save but shows pending status without archive controls",()=>{
@@ -119,6 +121,6 @@ test("failed local save does not show success or leave an unsaved signature mark
 test("standalone mode hides desktop archive nav and new service worker caches UI",()=>{
  assert.match(html,/html\.helilog-installed-app nav button\[data-v="printarchive"\]/);
  const sw=fs.readFileSync(path.join(__dirname,"service-worker.js"),"utf8");
- assert.match(sw,/helilog-v2-1-shell/);
+ assert.match(sw,/helilog-v2-3-shell/);
  assert.match(sw,/\.\/endorsement-ui\.js/);
 });
