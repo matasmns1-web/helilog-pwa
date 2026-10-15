@@ -17,7 +17,7 @@ function boot(){
   return elements.get(id);
  }
  const env={
-  console,Date,JSON,Math,Promise,URL,setTimeout(){},
+  console,Date,JSON,Math,Promise,URL,setTimeout(){},setInterval(){},
   location:{hash:"#dashboard",protocol:"https:",hostname:"helilog-v2-test.onrender.com"},
   navigator:{userAgent:"Desktop simulator",platform:"Linux",maxTouchPoints:0},
   confirm(){return true},alert(s){alerts.push(String(s))},
@@ -30,11 +30,13 @@ function boot(){
  };
  env.window=env;
  const cx=vm.createContext(env);
- for(const file of ["domain.js","print.js","endorsement-bridge.js","endorsement-ui.js","cloud-config.js","cloud-foundation.js","cloud-view.js"]){
+ for(const file of ["domain.js","print.js","endorsement-bridge.js","endorsement-ui.js","cloud-config.js","cloud-foundation.js","cloud-view.js","cloud-sync.js","auth-gate.js"]){
   vm.runInContext(fs.readFileSync(path.join(__dirname,file),"utf8"),cx,{filename:file});
  }
+ env.HeliLogCloud={refresh:()=>new Promise(()=>{}),snapshot:()=>({configured:false,status:"signed_out"})};
  const inline=html.slice(html.lastIndexOf("<script>")+8,html.lastIndexOf("</script>"));
  vm.runInContext(inline,cx,{filename:"V2 restored HTML inline script"});
+ vm.runInContext("v23Unlocked=true",cx);
  function renderPage(route){
   env.location.hash="#"+route;
   vm.runInContext("render()",cx);
