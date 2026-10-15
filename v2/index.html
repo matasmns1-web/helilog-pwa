@@ -4046,7 +4046,7 @@ function applyEndorsementSignature(id){
     return;
   }
   v2EndorsementNotice=isStandaloneApp()
-   ?'Endorsement signed and saved on this device. Endorsements are not part of V2.3 cloud sync and will not appear automatically on another device. Web archiving will return after protected cloud archive sync is implemented.'
+   ?'Endorsement signed and saved on this device. With extended cloud sync enabled, it will appear on your other devices after Cloud synced. Printing and archive confirmation remain web-only.'
    :'Endorsement signed and saved in this browser. Awaiting print archive confirmation.';
   endorsements();
 }
@@ -4419,7 +4419,7 @@ function profile(){
     <div class="install-help" style="margin-top:10px">On iPhone/iPad, open the hosted HeliLog site in Safari, use <b>Share → Add to Home Screen</b>. Full offline PWA support requires HeliLog to be served over HTTPS. Opening this prototype directly as a file still works for testing, but it cannot register the offline service worker.</div>
   </div>
 
-  <div class="note" style="margin-top:16px">Profile, licence, rating and medical information in V1.43.1 is for record keeping and PDF identification only. Automatic EASA validity, recency and expiry calculations are planned for a later version.</div>`;
+  <div class="note" style="margin-top:16px">Profile, licence, rating and medical information in this test version is for record keeping and PDF identification only. Automatic EASA validity, recency and expiry calculations are planned for a later version.</div>`;
   updatePWAStatus();
 }
 
