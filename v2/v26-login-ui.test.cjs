@@ -19,13 +19,13 @@ function loginMarkup(snapshot){
  const window={HeliLogCloud:{snapshot:()=>snapshot}};
  const renderer=new Function("window","document","app","TEST_MODE","v23AuthMessage",
   "v23Escape","HELILOG_TEST_VERSION","v23Unlocked",body+";return v23LoginView;");
- renderer(window,document,app,false,"",x=>String(x),"V2.6",false)();
+ renderer(window,document,app,false,"",x=>String(x),"V2.7",false)();
  return app.innerHTML;
 }
 
 test("login displays current version, and only form fields accept text",()=>{
  const markup=loginMarkup({status:"signed_out",error:""});
- assert.match(markup,/V2\.6 · Private pilot logbook test/);
+ assert.match(markup,/V2\.7 · Private pilot logbook test/);
  assert.match(markup,/contenteditable="false"/);
  assert.match(markup,/<h1[^>]*>Sign in<\/h1>/);
  assert.match(markup,/id="v23Email" type="email"/);
@@ -57,15 +57,15 @@ test("Log out lives in Profile only; it is not in the common header or mobile Mo
  assert.match(auth,/unsynchronized change\(s\) remain saved/);
 });
 
-test("PWA version and references are consistent for the V2.6 update",()=>{
- assert.match(html,/<title>HeliLog V2\.6/);
- assert.match(html,/V2\.6 · TEST/);
- assert.equal(manifest.name,"HeliLog V2.6 — Test");
- assert.match(auth,/HELILOG_TEST_VERSION='V2\.6'/);
+test("PWA version and references are consistent for the V2.7 update",()=>{
+ assert.match(html,/<title>HeliLog V2\.7/);
+ assert.match(html,/V2\.7 · TEST/);
+ assert.equal(manifest.name,"HeliLog V2.7 — Test");
+ assert.match(auth,/HELILOG_TEST_VERSION='V2\.7'/);
  assert.match(auth,/<h2>🚁 HeliLog '\+HELILOG_TEST_VERSION/);
- assert.match(worker,/helilog-v2-6-login-profile-1/);
+ assert.match(worker,/helilog-v2-7-offline-review-1/);
  for(const file of ["cloud-config","cloud-foundation","cloud-view","cloud-sync","auth-gate","cloud-archives"]){
-  const ref=file+".js?v=2.6-login-profile-1";
+  const ref=file+".js?v=2.7-offline-review-1";
   assert.ok(html.includes(ref),"Missing version in HTML: "+ref);
   assert.ok(worker.includes(ref),"Missing version in PWA shell: "+ref);
  }

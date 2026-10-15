@@ -1,10 +1,19 @@
 # HeliLog V2 — Development
 
-**Current version: V2.6 — Login display and Profile-only logout (built on V2.5).** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
+**Current version: V2.7 — Offline queue recovery and reviewed ordinary-record conflicts (built on V2.6).** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
 
 **Prior release: V2.1.** The complete V1.43.2 interface is restored with V2 endorsement print archiving; installed-app signing is separate from web-only print/archive management. See [FULL-V1-INTERFACE.md](FULL-V1-INTERFACE.md) for parity scope, testing instructions and data safety.
 
 **Earlier modular prototype:** [alpha.html](alpha.html) remains available with its own test data.
+
+## V2.7 — Offline synchronization and manual conflict review
+
+- Signed-in devices continue to save and queue ordinary record edits while offline. Pending operations survive reopening the app after previously signing in online, and upload after reconnect if the verified session is active.
+- If two devices edit the same aircraft, flight, saved pilot or qualification while disconnected, changes are **not** silently merged or overwritten. In **Cloud account → Offline edit conflicts**, the user can compare the device and cloud versions, then choose to keep the device copy or use the cloud copy.
+- Each explicit resolution requires a verified, device-local full-workspace safety snapshot containing the original queue and both copies. The choice is rejected if the remote revision or local pending version changed since review. Keeping the device copy still uses a revision-checked cloud update.
+- Signed endorsements, archived flight/aircraft records, and pilot settings are deliberately excluded from the generic conflict choice. Pilot profile recovery retains its dedicated V2.4 workflow; other protected conflicts require specialist recovery in a later version.
+- A local change that was not correctly captured in the sync queue remains blocked rather than uploaded automatically. Offline app unlocking/reopening without a valid session, remote disaster recovery, archive integrity verification and cloud backups are **not** part of V2.7.
+- No live V1 production, Supabase schema, cloud archives or real pilot records are modified by this branch. Fictional test data only.
 
 ## V2.6 — Login screen and logout placement
 

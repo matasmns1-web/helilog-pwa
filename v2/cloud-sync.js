@@ -29,7 +29,7 @@
   }else data[plural[kind]]=arr;
  }
  let owner="",db=null,pending=[],versions={},mirror={},baseline={},state="inactive",problem="",
-  running=false,paused=false,reconciling=false,pilotPreview=null,snapshotFn=null,replaceFn=null,listener=null;
+  running=false,paused=false,reconciling=false,pilotPreview=null,recordPreview=null,snapshotFn=null,replaceFn=null,listener=null;
  const clone=x=>JSON.parse(JSON.stringify(x));
  // PostgreSQL JSONB may reorder object keys. Compare canonical values,
  // otherwise harmless key ordering could produce false sync conflicts.
@@ -71,7 +71,7 @@
  function parseKey(k){const i=k.indexOf(":");return {kind:k.slice(0,i),id:k.slice(i+1)};}
  function stop(){
   owner="";db=null;pending=[];versions={};mirror={};baseline={};state="inactive";problem="";extended=false;types=[...coreKinds];
-  running=false;paused=true;reconciling=false;pilotPreview=null;snapshotFn=null;replaceFn=null;notify();
+  running=false;paused=true;reconciling=false;pilotPreview=null;recordPreview=null;snapshotFn=null;replaceFn=null;notify();
  }
  function start({userId,client,getData,replaceData,onStatus}){
   if(!/^[0-9a-f-]{36}$/i.test(String(userId)))throw Error("A verified Supabase user ID is required.");
@@ -80,7 +80,7 @@
   owner=userId;db=client;snapshotFn=getData;replaceFn=replaceData;listener=onStatus||null;
   extended=read(extKey(owner),false)===true;
   types=extended?[...coreKinds,...extraKinds]:[...coreKinds];
-  paused=false;running=false;reconciling=false;pilotPreview=null;pending=read(queueKey(owner),[]);
+  paused=false;running=false;reconciling=false;pilotPreview=null;recordPreview=null;pending=read(queueKey(owner),[]);
   versions=read(versionKey(owner),{});mirror=read(mirrorKey(owner),{});
   if(!Array.isArray(pending)||!versions||typeof versions!=="object"||Array.isArray(versions)||!mirror||typeof mirror!=="object"||Array.isArray(mirror))throw Error("Saved sync state is invalid. Preserve local data; do not reset.");
   if(pending.some(q=>![...coreKinds,...extraKinds].includes(q.kind)||typeof q.id!=="string"||!["put","delete"].includes(q.action)))throw Error("Saved sync queue contains invalid operations.");
@@ -269,6 +269,150 @@
   if(pending.length)return flush();
   return state==="synced";
  }
+
+ // V2.7: user-reviewed conflicts for ordinary records only. Signed endorsements,
+ // archived flights and pilot settings keep their existing protected workflows.
+ const reviewableKinds=["aircraft","flight","person","qualification"];
+ function conflicts(){
+  return pending.filter(q=>q.conflict).map(q=>({
+   kind:q.kind,id:q.id,action:q.action,
+   reviewable:reviewableKinds.includes(q.kind) && !isProtectedRecord(q.kind,q.id),
+   note:q.kind==="endorsement"?"Signed endorsements need archive-safe recovery.":
+    q.kind==="settings"?"Use the separate pilot-profile workflow or preserve both copies for support.":
+    isProtectedRecord(q.kind,q.id)?"Archived records require a separate integrity review.":""
+  }));
+ }
+ function isProtectedRecord(kind,id){
+  if(kind==="endorsement"||kind==="settings")return true;
+  if(kind==="flight" && typeof root.isArchivedFlight==="function")return !!root.isArchivedFlight(id);
+  if(kind==="aircraft" && typeof root.archivedFlightIdsForAircraft==="function")
+   return !!root.archivedFlightIdsForAircraft(id);
+  return false;
+ }
+ function conflictQueueEntry(kind,id){
+  return pending.find(q=>q.kind===kind&&q.id===id&&q.conflict===true);
+ }
+ function requireRecordReview(kind,id){
+  if(!isActive()||root.HeliLogCloud?.snapshot?.().userId!==owner)
+   throw Error("Sign in to the correct HeliLog account.");
+  if(root.navigator?.onLine===false)throw Error("Reconnect to review both record copies.");
+  if(running||reconciling)throw Error("Wait until synchronization finishes.");
+  if(!reviewableKinds.includes(kind)||isProtectedRecord(kind,id))
+   throw Error("This record cannot be resolved here. Preserve both copies and use protected archive recovery.");
+  const q=conflictQueueEntry(kind,id);
+  if(!q)throw Error("No pending conflict remains for this record. Check sync again.");
+  return q;
+ }
+ async function remoteRecord(kind,id){
+  const result=await db.from("helilog_records")
+   .select("kind,record_id,revision,payload")
+   .eq("owner_id",owner).eq("kind",kind).eq("record_id",id).maybeSingle();
+  if(result.error)throw Error("Cloud record could not be read: "+result.error.message);
+  if(result.data&&(!Number.isInteger(Number(result.data.revision))||
+    result.data.kind!==kind||result.data.record_id!==id))
+   throw Error("Cloud record response was invalid. Both copies remain unchanged.");
+  return result.data?clone(result.data):null;
+ }
+ function localRecord(data,kind,id){
+  return items(data,kind).find(x=>String(x.id)===id)??null;
+ }
+ async function previewRecordConflict(kind,id){
+  const q=requireRecordReview(kind,id),sessionOwner=owner;
+  const generation=q.generation,action=q.action;
+  const row=await remoteRecord(kind,id);
+  if(!isActive()||owner!==sessionOwner||root.HeliLogCloud?.snapshot?.().userId!==owner)
+   throw Error("Account changed during conflict review.");
+  if(conflictQueueEntry(kind,id)!==q ||q.generation!==generation)
+   throw Error("Local record changed; restart the review.");
+  const local=localRecord(snapshotFn(),kind,id);
+  if((action==="delete")!== (local===null))
+   throw Error("Local queue differs from the saved record. Preserve data and restart review.");
+  if(action==="put"&&canonical(q.payload)!==canonical(local))
+   throw Error("Local edits differ from the pending queue. Preserve data and restart review.");
+  recordPreview={owner,kind,id,generation,action,
+   localHash:canonical(local),remoteHash:canonical(row),
+   cloudRevision:row?Number(row.revision):null};
+  return {kind,id,local:clone(local),cloud:row?clone(row.payload):null,
+   localDeleted:local===null,cloudDeleted:row===null,
+   cloudRevision:recordPreview.cloudRevision};
+ }
+ async function resolveRecordConflict(choice){
+  if(!["local","cloud"].includes(choice))throw Error("Choose device or cloud copy.");
+  if(!recordPreview)throw Error("Review both copies before resolving.");
+  const reviewed=recordPreview;
+  const q=requireRecordReview(reviewed.kind,reviewed.id);
+  if(reviewed.owner!==owner||q.generation!==reviewed.generation||q.action!==reviewed.action)
+   throw Error("Pending edits changed since review. Review both copies again.");
+  reconciling=true;
+  const sessionOwner=owner;
+  try{
+   const row=await remoteRecord(reviewed.kind,reviewed.id);
+   if(!isActive()||owner!==sessionOwner||root.HeliLogCloud?.snapshot?.().userId!==owner)
+    throw Error("Cloud account changed. No data was modified.");
+   const before=clone(snapshotFn()),local=localRecord(before,reviewed.kind,reviewed.id);
+   if(canonical(row)!==reviewed.remoteHash||canonical(local)!==reviewed.localHash||
+      q.generation!==reviewed.generation||!q.conflict)
+    throw Error("One of the records changed since review. Review again; nothing was overwritten.");
+   if(isProtectedRecord(reviewed.kind,reviewed.id))
+    throw Error("Record was archived during review. Preserve both copies.");
+   // Never adopt remote deletion of a referenced local aircraft or commander.
+   // A dangling flight/endorsement reference would corrupt the logbook graph.
+   if(choice==="cloud" && !row && reviewed.kind==="aircraft" &&
+      (before.flights||[]).some(f=>f.aid===reviewed.id||f.aircraftId===reviewed.id))
+    throw Error("Cloud aircraft deletion would orphan existing local flights. Preserve both copies for assisted recovery.");
+   if(choice==="cloud" && !row && reviewed.kind==="person" &&
+      ((before.flights||[]).some(f=>f.picPersonId===reviewed.id)||
+       (before.endorsements||[]).some(e=>e.signatoryPersonId===reviewed.id)))
+    throw Error("Cloud pilot deletion would orphan an existing flight or endorsement. Preserve both copies for assisted recovery.");
+   const backupKey="helilog_v27_conflict_backup_"+owner+"_"+Date.now()+"_"+reviewed.kind+"_"+reviewed.id;
+   if(root.localStorage.getItem(backupKey)!==null)
+    throw Error("A backup with that identifier already exists. Try again without deleting it.");
+   const backup=JSON.stringify({reason:"V2.7 manual conflict review",
+    createdAt:new Date().toISOString(),choice,
+    workspace:before,cloudRow:row,
+    pending:clone(pending),versions:clone(versions),mirror:clone(mirror)});
+   root.localStorage.setItem(backupKey,backup);
+   if(root.localStorage.getItem(backupKey)!==backup)
+    throw Error("Safety backup verification failed. No data was changed.");
+   const previous={versions:{...versions},mirror:{...mirror},
+    baseline:{...baseline},pending:clone(pending)};
+   const k=ident(reviewed.kind,reviewed.id);
+   try{
+    if(row){versions[k]=Number(row.revision);mirror[k]=canonical(row.payload);}
+    else{delete versions[k];delete mirror[k];}
+    if(choice==="cloud"){
+     const next=clone(before);
+     const records=items(next,reviewed.kind).filter(x=>String(x.id)!==reviewed.id);
+     if(row)records.push(clone(row.payload));
+     putItems(next,reviewed.kind,records);
+     replaceFn(next); // Account cache is written atomically by the host.
+     pending=pending.filter(entry=>entry!==q);
+    }else{
+     // Rebase ONLY the reviewed item against the version that was just checked.
+     // The next cloud write still uses revision-based compare-and-swap.
+     q.baseRevision=row?Number(row.revision):null;
+     q.conflict=false;
+    }
+    baseline=mapOf(snapshotFn());
+    persist();
+    recordPreview=null;
+    state=pending.some(x=>x.conflict)?"conflict":pending.length?"pending":"connecting";
+    problem=state==="conflict"?"Other sync conflicts still need review.":"";
+    notify();
+   }catch(e){
+    versions=previous.versions;mirror=previous.mirror;
+    baseline=previous.baseline;pending=previous.pending;
+    if(choice==="cloud")try{replaceFn(before);}catch(rollbackError){
+     root.console?.error?.("Could not restore local workspace after failed resolution",rollbackError);
+    }
+    state="error";
+    problem="Recovery interrupted; the independent local safety copy was retained.";
+    notify();throw e;
+   }
+   return {choice,kind:reviewed.kind,id:reviewed.id,backupKey,pending:pending.length};
+  }finally{reconciling=false;}
+ }
+
  function requirePilotConflict(){
   if(!isActive()||!extended||root.HeliLogCloud?.snapshot?.().userId!==owner)
    throw Error("Sign in to your original HeliLog account first.");
@@ -431,5 +575,5 @@
  }
  return Object.freeze({recordKey,start,stop,track,refresh,flush,pull,status,ignoreNoChanges,
   extended:()=>extended,extensionPreview,activateExtension,
-  previewPilotConflict,resolvePilotConflict});
+  previewPilotConflict,resolvePilotConflict,conflicts,previewRecordConflict,resolveRecordConflict});
 });
