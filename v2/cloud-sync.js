@@ -186,6 +186,12 @@
     const byId=new Map(arr.map(x=>[String(x.id),x]));
     for(const [k,row] of rmap){
      if(row.kind!==kind)continue;
+     if(kind==="correction_proposal"&&arr.some(draft=>
+       String(draft.flightId)===String(row.payload?.flightId)&&String(draft.id)!==String(row.record_id))){
+      state="conflict";
+      problem="Different pending corrections exist for the same archived flight. Both drafts are preserved for manual review.";
+      notify();return false;
+     }
      if(pendingKeys.has(k)){
       const q=pending.find(x=>ident(x.kind,x.id)===k);
       if(q.baseRevision!==null&&q.baseRevision!==row.revision){q.conflict=true;conflicts++;}
