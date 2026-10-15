@@ -1,10 +1,19 @@
 # HeliLog V2 — Development
 
-**Current version: V2.8 — Cloud archive integrity checks and verified external recovery exports (built on V2.7).** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
+**Current version: V2.8.1 — Web archive readiness fix, preserving V2.8 cloud integrity and recovery features.** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
 
 **Prior release: V2.1.** The complete V1.43.2 interface is restored with V2 endorsement print archiving; installed-app signing is separate from web-only print/archive management. See [FULL-V1-INTERFACE.md](FULL-V1-INTERFACE.md) for parity scope, testing instructions and data safety.
 
 **Earlier modular prototype:** [alpha.html](alpha.html) remains available with its own test data.
+
+## V2.8.1 — Web archive readiness hotfix
+
+- Fixes an overly broad archive readiness message that could block a web browser that was already synchronized during a background archive refresh. Confirmation now waits for that refresh instead of treating it as a failure.
+- Archiving depends **only on the active web browser's verified account, its own pending edits and conflicts, and cloud archive integrity**. Other devices may be offline or stale and will receive archived status when they next synchronize.
+- Specific blockers now explain whether the current browser is offline, pending, conflicted, has an account mismatch or has a genuine archive discrepancy. A genuine discrepancy still blocks confirmation until safely resolved.
+- Preserve archive refresh errors across repeated same-account initialization rather than temporarily hiding problems. Discard stale refresh results after switching accounts or signing out.
+- Keeps owner-verified archive RPCs, immutable originals, and V2.8 verification of cloud records. No schema change, signed archive rewrite, or V1 production update.
+- Follow the archived record check from [V2.8-TEST-GUIDE.md](V2.8-TEST-GUIDE.md) to confirm the web-only print flow using fictional flights.
 
 ## V2.8 — Archive integrity, backups and recovery
 
