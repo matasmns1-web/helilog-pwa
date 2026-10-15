@@ -1,5 +1,5 @@
 /* HeliLog V2.3 private login gate. No automatic import of V2.2 local data. */
-const HELILOG_TEST_VERSION='V2.7';
+const HELILOG_TEST_VERSION='V2.8';
 let v23Unlocked=false,v23AuthBusy=false,v23AuthMessage="";
 function v23Escape(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function v23AccountWorkspace(){return v23Unlocked && !!window.HeliLogV23Sync.status().owner;}
@@ -212,6 +212,78 @@ function v23PreventUnsupportedArchive(){
   "Use the HeliLog web browser to print and archive records. The app supports signing and reviewing.":
   "Before printing, enable extended cloud sync in Cloud account and wait for Cloud synced. Signed and archived originals cannot be confirmed while synchronization is pending or offline.");
  return true;
+}
+
+
+/* V2.8: explicit integrity and external recovery checks. Never overwrite cloud data. */
+let v28LastAudit=null,v28Busy=false,v28Notice="";
+async function v28ReadAudit(storeEvidence=false){
+ if(!v23AccountWorkspace())throw Error("Sign in to your private account first.");
+ const owner=window.HeliLogCloud.snapshot().userId;
+ const db=await window.HeliLogCloud.client();
+ return window.HeliLogV28Integrity.auditCloud({
+  client:db,owner,storeEvidence
+ });
+}
+async function v28VerifyCloudArchives(){
+ if(v28Busy)return;
+ v28Busy=true;v28Notice="";
+ try{
+  const report=await v28ReadAudit(true);
+  v28LastAudit=report;
+  v28Notice=report.ok?
+   "Cloud archive verification passed: "+report.counts.batches+" batches, "+
+     report.counts.entries+" frozen originals and "+report.counts.addenda+
+     " correction addenda checked. Previous device evidence was retained.":
+   "Cloud archive integrity check FAILED: "+report.errors.slice(0,3).join(" | ")+
+     ". The cloud was not changed. Preserve both copies and do not print or archive.";
+ }catch(e){
+  v28LastAudit=null;
+  v28Notice="Archive verification could not finish: "+(e.message||e)+
+   ". No cloud records were changed.";
+ }finally{v28Busy=false;cloud();}
+}
+async function v28DownloadCloudRecovery(){
+ if(v28Busy)return;
+ v28Busy=true;v28Notice="";
+ try{
+  if(!v23AccountWorkspace()||window.HeliLogV23Sync.status().state!=="synced")
+   throw Error("Wait for Cloud synced, with no pending or conflicting edits.");
+  const owner=window.HeliLogCloud.snapshot().userId;
+  const initial=JSON.stringify(S);
+  const report=await v28ReadAudit(true);
+  v28LastAudit=report;
+  if(!report.ok)throw Error("Cloud archive audit failed: "+report.errors.slice(0,3).join(" | "));
+  if(owner!==window.HeliLogCloud.snapshot().userId||
+     window.HeliLogV23Sync.status().state!=="synced"||
+     JSON.stringify(S)!==initial)
+   throw Error("Your account changed while preparing the export. Save edits and retry.");
+  const pack=await window.HeliLogV28Recovery.create({data:S,owner,archiveReport:report});
+  if(JSON.stringify(S)!==initial)throw Error("Logbook changed before download. Retry.");
+  offerBackupFile(pack,"HeliLog_V28_Cloud_Recovery");
+  v28Notice="Verified recovery package download requested. Store the JSON securely outside this device. "+
+   "It includes private records and signatures; a downloaded file is NOT an automatic cloud backup.";
+ }catch(e){v28Notice="Recovery package was NOT prepared: "+(e.message||e);}
+ finally{v28Busy=false;if(location.hash==="#cloud")cloud();else profile();}
+}
+async function v28InspectCloudRecovery(ev){
+ if(v28Busy)return;
+ const file=ev.target.files?.[0];
+ ev.target.value="";
+ if(!file)return;
+ v28Busy=true;v28Notice="";
+ try{
+  if(!v23AccountWorkspace())throw Error("Sign in to the account that owns the backup.");
+  if(file.size>100*1024*1024)throw Error("File exceeds the 100 MB read-only verification limit.");
+  const parsed=JSON.parse(await file.text());
+  const result=await window.HeliLogV28Recovery.verify(parsed,window.HeliLogCloud.snapshot().userId);
+  const n=result.counts;
+  v28Notice="Recovery file SHA-256 verified ("+n.flights+" flights, "+n.aircraft+" aircraft, "+
+   n.endorsements+" endorsements, "+n.flightArchives+" flight archive batches and "+
+   n.endorsementArchives+" endorsement archive batches). "+
+   "This is a READ-ONLY inspection; neither the device nor the cloud was restored.";
+ }catch(e){v28Notice="Recovery file rejected: "+(e.message||e)+". No records were modified.";}
+ finally{v28Busy=false;if(location.hash==="#cloud")cloud();else profile();}
 }
 
 function v23ExitOldTestMode(){
