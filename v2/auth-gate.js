@@ -1,5 +1,5 @@
 /* HeliLog V2.3 private login gate. No automatic import of V2.2 local data. */
-const HELILOG_TEST_VERSION='V2.8';
+const HELILOG_TEST_VERSION='V2.8.1';
 let v23Unlocked=false,v23AuthBusy=false,v23AuthMessage="";
 function v23Escape(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function v23AccountWorkspace(){return v23Unlocked && !!window.HeliLogV23Sync.status().owner;}
@@ -210,7 +210,7 @@ function v23PreventUnsupportedArchive(){
  if(!isStandaloneApp()&&window.HeliLogV24Archive?.available?.())return false;
  alert(isStandaloneApp()?
   "Use the HeliLog web browser to print and archive records. The app supports signing and reviewing.":
-  "Before printing, enable extended cloud sync in Cloud account and wait for Cloud synced. Signed and archived originals cannot be confirmed while synchronization is pending or offline.");
+  (window.HeliLogV24Archive?.blockReason?.()||"Check the cloud archive connection in this web browser. Other devices can synchronize later."));
  return true;
 }
 

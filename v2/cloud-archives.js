@@ -9,7 +9,7 @@
  else root.HeliLogV24Archive=api;
 })(typeof window!=="undefined"?window:globalThis,function(root){
  "use strict";
- let owner="",client=null,reading=false,error="";
+ let owner="",client=null,reading=false,readPromise=null,error="",sessionGeneration=0;
  const clone=v=>JSON.parse(JSON.stringify(v));
  const normalized=value=>JSON.stringify((function order(v){
   if(Array.isArray(v))return v.map(order);
@@ -21,28 +21,52 @@
  const same=(a,b)=>normalized(a)===normalized(b);
  function start({userId,db}){
   if(!/^[0-9a-f-]{36}$/i.test(userId)||!db?.from||!db?.rpc)throw Error("Cloud archive requires an authenticated Supabase client.");
-  owner=userId;client=db;error="";
+  // Repeated sync checks must not erase a prior archive discrepancy or
+  // cancel an in-progress archive read for this same authenticated account.
+  if(owner===userId&&client===db)return;
+  sessionGeneration++;
+  owner=userId;client=db;reading=false;readPromise=null;error="";
  }
- function stop(){owner="";client=null;reading=false;error="";}
- function available(){
-  return !!owner && root.HeliLogCloud?.snapshot?.().userId===owner &&
-   root.HeliLogV23Sync?.extended?.() && root.HeliLogV23Sync?.status?.().state==="synced" &&
-   root.navigator?.onLine!==false && !reading && !error;
- }
- function assertReady(){
-  if(!available())throw Error("Finish synchronizing the account and signed endorsements before archiving. Open Cloud account and check sync status.");
+ function stop(){sessionGeneration++;owner="";client=null;reading=false;readPromise=null;error="";}
+ function blockReason(){
   if(root.matchMedia?.("(display-mode: standalone)")?.matches||root.navigator?.standalone)
-   throw Error("Paper archives must be printed and confirmed from a web browser.");
+   return "Paper archives must be printed and confirmed from a web browser.";
+  if(!owner||!client||root.HeliLogCloud?.snapshot?.().userId!==owner)
+   return "This browser's cloud archive account has not been verified. Sign in and try again.";
+  if(root.navigator?.onLine===false)
+   return "This browser is offline. Reconnect it to confirm printed pages; other devices may synchronize later.";
+  if(!root.HeliLogV23Sync?.extended?.())
+   return "Enable extended synchronization for this account before confirming printed archives.";
+  const sync=root.HeliLogV23Sync?.status?.();
+  if(!sync||sync.owner!==owner)
+   return "The cloud account and this browser's sync workspace differ. Sign in again.";
+  if(sync.state==="conflict"||sync.conflicts>0)
+   return "This browser has an unresolved cloud record conflict. Review it in Cloud account before archiving.";
+  if(sync.pending>0||sync.state==="pending"||sync.state==="syncing")
+   return "This browser still has "+(sync.pending||"")+" unsent change(s). Synchronize these records before confirming pages; other devices do not need to be online.";
+  if(sync.state!=="synced")
+   return "This browser is not ready to archive (cloud status: "+sync.state+
+    (sync.error?"; "+sync.error:"")+"). Open Cloud account and check / sync now.";
+  if(error)
+   return "This browser's cloud archive refresh found a discrepancy: "+error+
+    ". Do not clear stored records; use Cloud account to review and retry the archive check.";
+  return "";
+ }
+ function available(){return blockReason()==="";}
+ function assertReady(){
+  const reason=blockReason();
+  if(reason)throw Error(reason);
  }
  function queryRows(table,columns){
   return client.from(table).select(columns).eq("owner_id",owner);
  }
  async function refresh(snapshot,commit){
   if(!owner || !root.HeliLogV23Sync?.extended?.())return false;
-  if(reading)return false;
   if(root.HeliLogCloud?.snapshot?.().userId!==owner)return false;
   if(root.navigator?.onLine===false)return false;
-  reading=true;const sessionOwner=owner;
+  if(readPromise)return readPromise;
+  reading=true;const sessionOwner=owner,sessionClient=client,sessionAtStart=sessionGeneration;
+  const operation=(async()=>{
   try{
    const [b,a]=await Promise.all([
     queryRows("helilog_print_archives","kind,payload,first_page,confirmed_at"),
@@ -50,7 +74,7 @@
    ]);
    if(b.error)throw Error(b.error.message||"Could not retrieve cloud print archives");
    if(a.error)throw Error(a.error.message||"Could not retrieve correction history");
-   if(owner!==sessionOwner)return false;
+   if(owner!==sessionOwner||client!==sessionClient||sessionGeneration!==sessionAtStart)return false;
    const data=clone(snapshot());
    const flight=(b.data||[]).filter(x=>x.kind==="flight").map(x=>x.payload);
    const endors=(b.data||[]).filter(x=>x.kind==="endorsement").map(x=>x.payload);
@@ -77,8 +101,23 @@
    data.endorsementV2Archive.amendments=ecor;
    commit(data);
    error="";return true;
-  }catch(e){error=String(e.message||e);root.console?.warn?.("HeliLog archive pull stopped:",error);return false;}
-  finally{reading=false;}
+  }catch(e){
+   if(sessionGeneration===sessionAtStart){
+    error=String(e.message||e);
+    root.console?.warn?.("HeliLog archive pull stopped:",error);
+   }
+   return false;
+  }
+  finally{
+   if(sessionGeneration===sessionAtStart){reading=false;readPromise=null;}
+  }
+  })();
+  readPromise=operation;
+  return operation;
+ }
+ async function waitForArchiveRefresh(){
+  if(readPromise)await readPromise;
+  assertReady();
  }
  async function verifyIntegrityBeforeWrite(){
   if(!root.HeliLogV28Integrity?.auditCloud)
@@ -112,7 +151,7 @@
   if(owner!==sessionOwner)throw Error("Account changed during flight archive validation.");
  }
  async function confirmBatch(kind,batch,ids){
-  assertReady();
+  await waitForArchiveRefresh();
   if(!["flight","endorsement"].includes(kind)||!Array.isArray(ids)||!ids.length)
    throw Error("Invalid archive type or empty batch.");
   if(batch.confirmedAt===undefined)throw Error("Print batch must have confirmation time.");
@@ -127,7 +166,7 @@
   return data;
  }
  async function confirmAddendum(kind,recordId,correction){
-  assertReady();
+  await waitForArchiveRefresh();
   if(!["flight","endorsement"].includes(kind)||!recordId||!correction?.confirmedAt)
    throw Error("Invalid signed correction.");
   await verifyIntegrityBeforeWrite();
@@ -138,5 +177,5 @@
   if(!data)throw Error("Cloud correction was not acknowledged.");
   return data;
  }
- return Object.freeze({start,stop,refresh,confirmBatch,confirmAddendum,available,error:()=>error});
+ return Object.freeze({start,stop,refresh,confirmBatch,confirmAddendum,available,blockReason,error:()=>error});
 });

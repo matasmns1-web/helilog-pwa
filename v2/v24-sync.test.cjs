@@ -87,17 +87,17 @@ test('signed originals and archive confirmation are server-side protected',()=>{
 });
 test('print confirmation stays web only and requires confirmed cloud synchronization',()=>{
  const root={navigator:{onLine:true},matchMedia:()=>({matches:false}),HeliLogCloud:{snapshot:()=>({userId:uid})},
-  HeliLogV23Sync:{extended:()=>true,status:()=>({state:'pending'})}};root.window=root;
+  HeliLogV23Sync:{extended:()=>true,status:()=>({state:'pending',owner:uid,pending:1,conflicts:0})}};root.window=root;
  const api=new Function('window','module',archive+';return window.HeliLogV24Archive;')(root,undefined);
  api.start({userId:uid,db:{from(){return{}},rpc(){return{}}}});
  assert.equal(api.available(),false);
- root.HeliLogV23Sync.status=()=>({state:'synced'});
+ root.HeliLogV23Sync.status=()=>({state:'synced',owner:uid,pending:0,conflicts:0});
  assert.equal(api.available(),true);
  root.navigator.standalone=true;
  assert.rejects(api.confirmBatch('flight',{confirmedAt:'2026-10-15'},['f1']),/web browser/);
 });
-test('V2.8 keeps the V2.4 cloud archive and sync modules versioned together',()=>{
+test('V2.8.1 keeps the V2.4 cloud archive and sync modules versioned together',()=>{
  for(const file of ['cloud-config.js','cloud-foundation.js','cloud-view.js','cloud-sync.js','auth-gate.js','cloud-archives.js'])
-  assert.match(html,new RegExp(file.replace('.','\\.')+'\\?v=2\\.8-archive-recovery-1'));
- assert.match(html,/V2\.8 · TEST/);
+  assert.match(html,new RegExp(file.replace('.','\\.')+'\\?v=2\\.8\\.1-archive-readiness-1'));
+ assert.match(html,/V2\.8\.1 · TEST/);
 });
