@@ -1,10 +1,19 @@
 # HeliLog V2 — Development
 
-**Current version: V2.8.1 — Web archive readiness fix, preserving V2.8 cloud integrity and recovery features.** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
+**Current version: V2.8.2 — Mobile correction proposals sync to web, with signed addendum confirmation remaining web-only.** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
 
 **Prior release: V2.1.** The complete V1.43.2 interface is restored with V2 endorsement print archiving; installed-app signing is separate from web-only print/archive management. See [FULL-V1-INTERFACE.md](FULL-V1-INTERFACE.md) for parity scope, testing instructions and data safety.
 
 **Earlier modular prototype:** [alpha.html](alpha.html) remains available with its own test data.
+
+## V2.8.2 — Mobile correction proposals and cloud synchronization
+
+- Archived flights remain read-only, but the installed iPhone/iPad app can now open the edit form to **Propose correction** with a required reason.
+- Pending correction proposals are a separate `correction_proposal` record kind in the private, revision-checked cloud sync; offline drafts persist locally and upload on reconnect.
+- The web browser receives pending proposals, where existing **Print / sign / Confirm correction addendum** remains authoritative. The signed addendum stays in the protected immutable archive, while an account-scoped database trigger retires the matching pending proposal atomically.
+- A second device can later download the confirmed addendum without retaining duplicate pending corrections. Concurrent proposals for the same archived flight are rejected and preserved for manual recovery.
+- Database migration: `supabase/migrations/20261015010000_v282_correction_proposals.sql` for dedicated TEST Supabase project only.
+- All V1 production code and prior signed records remain unchanged. Use fictional records for testing.
 
 ## V2.8.1 — Web archive readiness hotfix
 

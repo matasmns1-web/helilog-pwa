@@ -1,5 +1,5 @@
 /* HeliLog V2.3 private login gate. No automatic import of V2.2 local data. */
-const HELILOG_TEST_VERSION='V2.8.1';
+const HELILOG_TEST_VERSION='V2.8.2';
 let v23Unlocked=false,v23AuthBusy=false,v23AuthMessage="";
 function v23Escape(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function v23AccountWorkspace(){return v23Unlocked && !!window.HeliLogV23Sync.status().owner;}
@@ -89,6 +89,9 @@ async function v23EnterWorkspace(auth){
      aircraft:next.aircraft,flights:next.flights,
      people:next.people||S.people,endorsements:next.endorsements||S.endorsements,
      qualifications:next.qualifications||S.qualifications,
+     // Only correction proposals are synced as ordinary records. Signed
+     // archive batches and confirmed addenda stay in the protected archive pull.
+     printArchive:{...S.printArchive,corrections:next.printArchive?.corrections||S.printArchive?.corrections},
      pilot:next.pilot||S.pilot,
      broughtForward:next.broughtForward??S.broughtForward,
      broughtForwardByType:next.broughtForwardByType??S.broughtForwardByType,

@@ -12,17 +12,24 @@
 })(typeof window!=="undefined"?window:globalThis,function(root){
  "use strict";
  const coreKinds=["aircraft","flight"];
- const extraKinds=["person","qualification","endorsement","settings"];
+ const extraKinds=["person","qualification","endorsement","settings","correction_proposal"];
  let types=[...coreKinds],extended=false;
  const plural={aircraft:"aircraft",flight:"flights",person:"people",qualification:"qualifications",endorsement:"endorsements"};
  const settingNames=["pilot","broughtForward","broughtForwardByType","broughtForwardImported","broughtForwardImportedAt"];
  function items(data,kind){
+  if(kind==="correction_proposal")return (data?.printArchive?.corrections||[]).filter(c=>c&&!c.confirmedAt);
   if(kind==="settings")return settingNames.map(name=>({id:name,data:clone(data?.[name]??(
    name==="pilot"?{}:name==="broughtForward"?{}:name==="broughtForwardByType"?[]:name==="broughtForwardImported"?false:""))}));
   return data?.[plural[kind]]||[];
  }
  function putItems(data,kind,arr){
-  if(kind==="settings"){
+  if(kind==="correction_proposal"){
+   if(!data.printArchive)data.printArchive={firstPage:1,paperReference:"",batches:[],corrections:[]};
+   const confirmed=(data.printArchive.corrections||[]).filter(c=>!!c.confirmedAt);
+   const sealed=new Set(confirmed.map(c=>String(c.id)));
+   // Cloud proposals never replace already confirmed correction addenda.
+   data.printArchive.corrections=[...confirmed,...arr.filter(c=>!sealed.has(String(c.id)))];
+  }else if(kind==="settings"){
    for(const item of arr){
     if(settingNames.includes(item.id))data[item.id]=clone(item.data);
    }
@@ -155,6 +162,14 @@
    }
    const local=clone(snapshotFn());
    const pendingKeys=new Set(pending.map(q=>ident(q.kind,q.id)));
+   // Confirmation deletes the cloud proposal atomically alongside the signed
+   // addendum. Avoid retaining version metadata for a retired local draft.
+   const localDraftIDs=new Set(items(local,"correction_proposal").map(x=>ident("correction_proposal",String(x.id))));
+   for(const k of Object.keys(versions)){
+    if(k.startsWith("correction_proposal:")&&!rmap.has(k)&&!pendingKeys.has(k)&&!localDraftIDs.has(k)){
+     delete versions[k];delete mirror[k];
+    }
+   }
    // Recover an account-local entry that was saved before its queue write
    // completed (e.g. a quota/interruption). Never declare it cloud-synced.
    for(const kind of types)for(const entry of items(local,kind)){
@@ -171,6 +186,12 @@
     const byId=new Map(arr.map(x=>[String(x.id),x]));
     for(const [k,row] of rmap){
      if(row.kind!==kind)continue;
+     if(kind==="correction_proposal"&&arr.some(draft=>
+       String(draft.flightId)===String(row.payload?.flightId)&&String(draft.id)!==String(row.record_id))){
+      state="conflict";
+      problem="Different pending corrections exist for the same archived flight. Both drafts are preserved for manual review.";
+      notify();return false;
+     }
      if(pendingKeys.has(k)){
       const q=pending.find(x=>ident(x.kind,x.id)===k);
       if(q.baseRevision!==null&&q.baseRevision!==row.revision){q.conflict=true;conflicts++;}
@@ -277,7 +298,8 @@
   return pending.filter(q=>q.conflict).map(q=>({
    kind:q.kind,id:q.id,action:q.action,
    reviewable:reviewableKinds.includes(q.kind) && !isProtectedRecord(q.kind,q.id),
-   note:q.kind==="endorsement"?"Signed endorsements need archive-safe recovery.":
+   note:q.kind==="correction_proposal"?"Pending archived-flight corrections require manual review; do not force overwrite.":
+    q.kind==="endorsement"?"Signed endorsements need archive-safe recovery.":
     q.kind==="settings"?"Use the separate pilot-profile workflow or preserve both copies for support.":
     isProtectedRecord(q.kind,q.id)?"Archived records require a separate integrity review.":""
   }));

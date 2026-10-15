@@ -96,7 +96,13 @@
    compare(data.endorsementV2Archive.batches||[],endors,"endorsement batch");
    compare(data.endorsementV2Archive.amendments||[],ecor,"endorsement addendum");
    data.printArchive.batches=flight;
-   data.printArchive.corrections=[...(data.printArchive.corrections||[]).filter(x=>!x.confirmedAt),...fcor];
+   // An addendum confirmed on the web replaces any stale unconfirmed copy
+   // downloaded on another device. Never retain two entries for one ID.
+   const cloudConfirmed=new Set(fcor.map(c=>String(c.id)));
+   data.printArchive.corrections=[
+    ...(data.printArchive.corrections||[]).filter(x=>!x.confirmedAt&&!cloudConfirmed.has(String(x.id))),
+    ...fcor
+   ];
    data.endorsementV2Archive.batches=endors;
    data.endorsementV2Archive.amendments=ecor;
    commit(data);

@@ -1,4 +1,4 @@
-/* HeliLog V2.8.1: browser-scoped archive readiness and background refresh races. */
+/* HeliLog V2.8.2: browser-scoped archive readiness and background refresh races. */
 const test=require("node:test");
 const assert=require("node:assert/strict");
 const fs=require("node:fs");
