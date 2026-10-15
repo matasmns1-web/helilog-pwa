@@ -103,6 +103,7 @@ test("refresh from a signed-out session cannot overwrite a newly initialized arc
  const workspace={printArchive:{batches:[],corrections:[]},endorsementV2Archive:{batches:[],amendments:[]}};
  let committed=false;
  const pending=f.archive.refresh(()=>workspace,()=>{committed=true;});
+ await Promise.resolve();await Promise.resolve();
  f.archive.stop();
  f.flags.delayed=false;
  f.archive.start({userId:uid,db:f.client});
