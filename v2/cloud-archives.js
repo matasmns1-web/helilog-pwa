@@ -75,7 +75,8 @@
    if(b.error)throw Error(b.error.message||"Could not retrieve cloud print archives");
    if(a.error)throw Error(a.error.message||"Could not retrieve correction history");
    if(owner!==sessionOwner||client!==sessionClient||sessionGeneration!==sessionAtStart)return false;
-   const data=clone(snapshot());
+   const originalSnapshot=clone(snapshot());
+   const data=clone(originalSnapshot);
    const flight=(b.data||[]).filter(x=>x.kind==="flight").map(x=>x.payload);
    const endors=(b.data||[]).filter(x=>x.kind==="endorsement").map(x=>x.payload);
    const fcor=(a.data||[]).filter(x=>x.record_kind==="flight").map(x=>x.signature_metadata);
@@ -132,7 +133,7 @@
        root.HeliLogCloud?.snapshot?.().userId!==owner)
      throw Error("Account changed during safe recovery. No records were changed.");
     const current=snapshot();
-    if(!same(current,data))
+    if(!same(current,originalSnapshot))
      throw Error("Logbook changed while the correction was being checked. Refresh again without discarding data.");
     if(root.HeliLogV23Sync?.status?.().state!=="synced"||
        root.HeliLogV23Sync.status().pending>0||
