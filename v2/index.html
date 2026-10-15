@@ -2711,6 +2711,10 @@ function reprintArchiveBatch(seq){
 
 let pendingCorrectionPrint=null;
 function printCorrectionAddendum(id){
+  if(isInstalledTouchApp()){
+    alert('Print and sign correction addenda from the HeliLog web browser. The app can save and synchronize proposals.');
+    return;
+  }
   const c=archiveCorrections().find(x=>x.id===id);
   if(!c)return;
   const edits=correctionDifferences(c.before,c.after);
@@ -2764,6 +2768,10 @@ function printCorrectionAddendum(id){
   printarchive();
 }
 async function confirmCorrectionAddendum(id){
+  if(isInstalledTouchApp()){
+    alert('Only the web browser can confirm a printed and signed correction addendum.');
+    return;
+  }
   const c=archiveCorrections().find(x=>x.id===id);
   if(!c||c.confirmedAt)return;
   if(pendingCorrectionPrint!==JSON.stringify(c)){
