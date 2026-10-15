@@ -4649,7 +4649,7 @@ async function makeFullBackup(){
     app:'HeliLog',
     format:'helilog-full-backup',
     backupSchema:2,
-    appVersion:'2.8',
+    appVersion:'2.8.1',
     exportedAt:new Date().toISOString(),
     environment:v23AccountWorkspace()?'cloud-test':TEST_MODE?'test':'production',
     integrity:{algorithm:'SHA-256',sha256:await sha256Hex(JSON.stringify(data))},
