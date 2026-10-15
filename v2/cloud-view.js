@@ -3,6 +3,36 @@
  * read/written to the cloud. Signup is disabled: invite-only accounts.
  */
 let v22CloudNotice="",v22CloudBusy=false;
+let v24PilotConflictPreview=null,v24PilotConflictBusy=false;
+function v24FlattenProfile(data,prefix="",out={}){
+ for(const [key,value] of Object.entries(data&&typeof data==="object"?data:{})){
+  const field=prefix?prefix+"."+key:key;
+  if(value&&typeof value==="object"&&!Array.isArray(value))v24FlattenProfile(value,field,out);
+  else out[field]=typeof value==="string"?value:JSON.stringify(value);
+ }
+ return out;
+}
+function v24PilotDiffMarkup(){
+ const p=v24PilotConflictPreview;
+ if(!p)return '';
+ const local=v24FlattenProfile(p.local),cloud=v24FlattenProfile(p.cloud);
+ const keys=[...new Set([...Object.keys(local),...Object.keys(cloud)])].sort();
+ const rows=keys.filter(k=>local[k]!==cloud[k]);
+ const value=v=>v===undefined?'<span class="muted">Not set</span>':v22CloudEscape(v);
+ return '<div class="card" style="margin-top:16px"><div class="head"><h2>Review pilot profile conflict</h2></div>'+
+  '<p>This web browser and the cloud have different copies of the pilot profile. <b>No version has been overwritten.</b> Only the pilot profile is affected; flight records and signed endorsements are not changed by this action.</p>'+
+  (rows.length?'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left">Field</th><th style="text-align:left">This web browser</th><th style="text-align:left">Current cloud</th></tr></thead><tbody>'+
+   rows.map(k=>'<tr><td style="padding:8px;border-top:1px solid var(--line)">'+v22CloudEscape(k)+'</td>'+
+    '<td style="padding:8px;border-top:1px solid var(--line)">'+value(local[k])+'</td>'+
+    '<td style="padding:8px;border-top:1px solid var(--line)">'+value(cloud[k])+'</td></tr>').join('')+
+   '</tbody></table></div>':
+   '<div class="note">Both copies contain the same fields. Only the saved sync baseline needs repair.</div>')+
+  '<div class="note" style="margin-top:12px">A separate safety backup of this browser\'s full test workspace and the current cloud pilot profile will be saved locally before either choice. Keeping the web copy updates only the pilot profile in Supabase; choosing the cloud copy updates only this browser\'s pilot profile.</div>'+
+  '<div class="actions" style="margin-top:12px">'+
+  '<button class="btn primary" type="button" onclick="v24ResolvePilotConflict(\'local\')"'+(v24PilotConflictBusy?' disabled':'')+'>Keep this web profile</button>'+
+  '<button class="btn" type="button" onclick="v24ResolvePilotConflict(\'cloud\')"'+(v24PilotConflictBusy?' disabled':'')+'>Use cloud profile on this device</button>'+
+  '</div></div>';
+}
 function v22CloudEscape(s){
  return String(s??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 }
@@ -52,10 +82,16 @@ function cloud(){
    <div class="actions"><button class="btn primary" onclick="v24ActivateExtended('upload')">Upload this device's remaining records</button>
    <button class="btn" onclick="v24ActivateExtended('cloud')">Use existing cloud records</button></div></div>`:
    '<p class="mini">Extended cloud synchronization '+(v23AccountWorkspace()?'enabled.':'available after sign-in.')+'</p>')+
-  '<p class="mini">Conflicting revisions remain pending for manual resolution, not overwritten.</p></div>'+
+  '<p class="mini">Conflicting revisions remain pending for manual resolution, not overwritten.</p>'+
+  (v23AccountWorkspace()&&window.HeliLogV23Sync.status().state==="conflict"&&
+   window.HeliLogV23Sync.status().error.includes("settings:pilot")?
+   '<div class="actions" style="margin-top:12px"><button class="btn primary" type="button" onclick="v24ReviewPilotConflict()"'+
+   (v24PilotConflictBusy?' disabled':'')+'>Review pilot profile conflict</button></div>':'')+
+  '</div>'+
+  (v23AccountWorkspace()?v24PilotDiffMarkup():'')+
   '<div class="card" style="margin-top:16px"><div class="head"><h2>Local logbook protection</h2></div>'+
   '<p><b>V2.4 synchronizes aircraft and flights; other data syncs after your one-time account setup.</b> Your existing V2.2 test data is preserved separately and never automatically uploaded.</p>'+
-  '<p class="muted">Endorsements, instructor profiles, qualifications, signature images, brought-forward totals and all print archive/correction history are NOT backed up to the cloud yet. Offline sign-in and automatic conflict resolution are planned later.</p>'+
+  '<p class="muted">After extended synchronization is enabled, profiles, endorsements, qualifications and opening totals can synchronize. Print archives and correction history have a separate web-only confirmation process. Offline sign-in and general conflict resolution are still limited.</p>'+
   '<p class="mini">Other pilots will have separate private accounts when invitations become available. A saved instructor/examiner in your logbook does not automatically become an account user.</p>'+
   '</div>';
 }
@@ -103,4 +139,37 @@ async function v22CloudSignOut(){
  try{await window.HeliLogCloud.signOut();v22CloudNotice="Signed out of cloud. Local test logbook is unchanged."}
  catch(e){v22CloudNotice=e.message||String(e)}
  finally{v22CloudBusy=false;cloud()}
+}
+
+async function v24ReviewPilotConflict(){
+ if(v24PilotConflictBusy)return;
+ v24PilotConflictBusy=true;v22CloudNotice='';
+ try{
+  v24PilotConflictPreview=await window.HeliLogV23Sync.previewPilotConflict();
+ }catch(error){
+  v24PilotConflictPreview=null;
+  v22CloudNotice='Could not review the pilot profile: '+(error.message||error);
+ }finally{v24PilotConflictBusy=false;cloud();}
+}
+async function v24ResolvePilotConflict(choice){
+ if(v24PilotConflictBusy||!v24PilotConflictPreview)return;
+ const local=choice==='local';
+ if(!confirm(local?
+  'Keep this WEB browser pilot profile and upload it to the cloud? Other devices will then receive the web profile. HeliLog will save a local safety backup first.':
+  'Replace this browser pilot profile with the CURRENT CLOUD profile? The existing browser profile will be included in a local safety backup first.'))return;
+ v24PilotConflictBusy=true;v22CloudNotice='';
+ try{
+  const result=await window.HeliLogV23Sync.resolvePilotConflict(choice);
+  v24PilotConflictPreview=null;
+  v22CloudNotice='Your profile decision was saved with a local safety backup. Verifying cloud synchronization…';
+  await window.HeliLogV23Sync.refresh();
+  const status=window.HeliLogV23Sync.status();
+  if(status.state==='synced')
+   v22CloudNotice='Pilot profile conflict resolved. Cloud sync is complete. A local safety backup was preserved.';
+  else
+   v22CloudNotice='Your choice was preserved, but cloud sync is '+status.state+'. Do not delete local data; '+(status.error||'try syncing again.');
+ }catch(error){
+  v24PilotConflictPreview=null;
+  v22CloudNotice='Profile conflict was not resolved: '+(error.message||error)+'. No cloud data was intentionally overwritten.';
+ }finally{v24PilotConflictBusy=false;cloud();}
 }
