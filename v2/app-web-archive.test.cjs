@@ -77,7 +77,7 @@ test("installed app can sign and save but shows pending status without archive c
  const stored=JSON.parse(b.store.get("helilog_v2_complete_test_data"));
  assert.equal(stored.endorsements.find(e=>e.id==="v21-demo").signatureData,PNG);
  assert.match(b.app(),/Signed · Awaiting web archive/);
- assert.match(b.app(),/Endorsements are not part of V2.3 cloud sync/);
+ assert.match(b.app(),/With extended cloud sync enabled/);
  assert.doesNotMatch(b.app(),/Print \/ Archive<\/button>/);
  b.evaluate('mobilemore()');
  assert.doesNotMatch(b.app(),/<b>Endorsement archive<\/b>/);
