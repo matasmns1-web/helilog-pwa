@@ -19,7 +19,7 @@ function loginMarkup(snapshot){
  const window={HeliLogCloud:{snapshot:()=>snapshot}};
  const renderer=new Function("window","document","app","TEST_MODE","v23AuthMessage",
   "v23Escape","HELILOG_TEST_VERSION","v23Unlocked",body+";return v23LoginView;");
- renderer(window,document,app,false,"",x=>String(x),"V2.7",false)();
+ renderer(window,document,app,false,"",x=>String(x),"V2.8",false)();
  return app.innerHTML;
 }
 
