@@ -1,4 +1,4 @@
-const CACHE='helilog-v2-4-profilefix-1';
+const CACHE='helilog-v2-5-profile-self-1';
 const SHELL=[
   './',
   './index.html',
@@ -10,12 +10,12 @@ const SHELL=[
   './print.js',
   './endorsement-bridge.js',
   './endorsement-ui.js',
-  './cloud-config.js?v=2.4-profilefix-1',
-  './cloud-foundation.js?v=2.4-profilefix-1',
-  './cloud-view.js?v=2.4-profilefix-1',
-  './cloud-sync.js?v=2.4-profilefix-1',
-  './auth-gate.js?v=2.4-profilefix-1',
-  './cloud-archives.js?v=2.4-profilefix-1'
+  './cloud-config.js?v=2.5-profile-self-1',
+  './cloud-foundation.js?v=2.5-profile-self-1',
+  './cloud-view.js?v=2.5-profile-self-1',
+  './cloud-sync.js?v=2.5-profile-self-1',
+  './auth-gate.js?v=2.5-profile-self-1',
+  './cloud-archives.js?v=2.5-profile-self-1'
 ];
 
 self.addEventListener('install',event=>{

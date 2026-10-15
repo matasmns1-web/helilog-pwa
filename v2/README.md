@@ -1,10 +1,19 @@
 # HeliLog V2 — Development
 
-**Current version: V2.4 — Extended cloud synchronization & print archive testing.** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
+**Current version: V2.5 — Log out, first/surname, and SELF PIC/SOLO.** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
 
 **Prior release: V2.1.** The complete V1.43.2 interface is restored with V2 endorsement print archiving; installed-app signing is separate from web-only print/archive management. See [FULL-V1-INTERFACE.md](FULL-V1-INTERFACE.md) for parity scope, testing instructions and data safety.
 
 **Earlier modular prototype:** [alpha.html](alpha.html) remains available with its own test data.
+
+## V2.5 — Pilot names, PIC/SOLO and sign out
+
+- A **Log out** button is available in the signed-in header and mobile More menu. Unsaved flight-form edits are checked before sign-out.
+- The account holder and saved other pilot profiles now use separate **First name** and **Surname** fields. A combined full-name field remains internally for existing synced accounts, pilot references, and logbook exports.
+- Older profiles are split only for display as a best-effort fallback; the stored record remains unchanged until the user saves their profile. Check compound first names and surnames on first edit.
+- For newly entered **PIC** or **SOLO** flights, the Name of PIC field is **SELF**, with the pilot linked by profile ID. Other roles retain the commander's saved full name.
+- Previously archived printed rows retain their original stored PIC wording so archived page reprints cannot change silently. Existing unarchived PIC/SOLO flights display SELF in the logbook UI.
+- No schema migration, cloud reset, or changes to V1 production. Fictional test records only.
 
 ---
 
