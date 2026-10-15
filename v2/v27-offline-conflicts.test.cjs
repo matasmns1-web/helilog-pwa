@@ -1,0 +1,165 @@
+/* HeliLog V2.7 - offline edits and explicit ordinary-record conflicts
+ * Run: node --test v2/v27-offline-conflicts.test.cjs
+ */
+const test=require("node:test");
+const assert=require("node:assert/strict");
+const fs=require("node:fs");
+const path=require("node:path");
+const source=fs.readFileSync(path.join(__dirname,"cloud-sync.js"),"utf8");
+const USER="11111111-1111-4111-a111-111111111111";
+const copy=x=>JSON.parse(JSON.stringify(x));
+const tick=async()=>{for(let i=0;i<120;i++)await Promise.resolve()};
+function server(){
+ const rows=[];
+ let writes=0;
+ class Query{
+  constructor(){this.op="read";this.filters={}}
+  select(){return this}
+  eq(k,v){this.filters[k]=v;return this}
+  in(k,values){this.inFilter=[k,values];return this}
+  range(){return this}
+  order(){return this}
+  insert(x){this.op="insert";this.val=x;return this}
+  update(x){this.op="update";this.val=x;return this}
+  delete(){this.op="delete";return this}
+  async maybeSingle(){
+   const matched=rows.filter(row=>this.match(row));
+   return {data:matched[0]?copy(matched[0]):null,error:null};
+  }
+  match(row){return Object.entries(this.filters).every(([k,v])=>row[k]===v)&&
+   (!this.inFilter||this.inFilter[1].includes(row[this.inFilter[0]]));}
+  then(ok,bad){
+   let data=[],error=null;
+   if(this.op==="read")data=rows.filter(row=>this.match(row)).map(copy);
+   else if(this.op==="insert"){
+    if(rows.some(r=>r.owner_id===this.val.owner_id&&r.kind===this.val.kind&&r.record_id===this.val.record_id))
+     error={code:"23505",message:"Duplicate"};
+    else{rows.push({...copy(this.val),revision:1});writes++;data=[{revision:1}];}
+   }else{
+    const pos=rows.findIndex(r=>this.match(r));
+    if(pos>=0){
+     const row=rows[pos];
+     if(this.op==="update")Object.assign(row,copy(this.val));
+     else rows.splice(pos,1);
+     writes++;data=[{revision:row.revision}];
+    }
+   }
+   return Promise.resolve({data,error}).then(ok,bad);
+  }
+ }
+ return {rows,get writes(){return writes},client:{from:()=>new Query()}};
+}
+function device(s,keep){
+ const store=keep?.store||new Map();
+ let data=keep?.data||{aircraft:[],flights:[]};
+ let failBackup=false,archive=false;
+ const root={navigator:{onLine:true},console,
+  localStorage:{
+   getItem:k=>store.has(k)?store.get(k):null,
+   setItem:(k,v)=>{if(failBackup&&k.startsWith("helilog_v27_conflict_backup_"))throw Error("No space for backup");store.set(k,String(v));}
+  },
+  HeliLogCloud:{snapshot:()=>({userId:USER})},
+  isArchivedFlight:()=>archive,
+  archivedFlightIdsForAircraft:()=>archive
+ };
+ root.window=root;
+ const api=new Function("window","module",source+";return window.HeliLogV23Sync;")(root,undefined);
+ api.start({userId:USER,client:s.client,getData:()=>data,replaceData:next=>{
+  data=next;store.set("workspace",JSON.stringify(data));
+ }});
+ return {api,root,store,get data(){return data},
+  failBackup(){failBackup=true},protected(){archive=true},
+  restart(){api.stop();return device(s,{store,data});}};
+}
+async function conflict(){
+ const s=server(),a=device(s),b=device(s);
+ await a.api.refresh();
+ a.data.aircraft.push({id:"a1",reg:"LY-START",icao:"G2CA"});
+ a.api.track(a.data);await tick();await b.api.refresh();
+ b.root.navigator.onLine=false;
+ b.data.aircraft[0].reg="LY-OFFLINE";b.api.track(b.data);await tick();
+ assert.equal(b.api.status().pending,1);
+ a.data.aircraft[0].reg="LY-CLOUD";a.api.track(a.data);await tick();
+ b.root.navigator.onLine=true;await b.api.refresh();
+ assert.equal(b.api.status().state,"conflict");
+ return {s,a,b};
+}
+test("offline edits remain queued and are transmitted after reconnect when uncontested",async()=>{
+ const s=server(),a=device(s);await a.api.refresh();
+ a.root.navigator.onLine=false;
+ a.data.aircraft.push({id:"a1",reg:"LY-OFFLINE"});
+ a.api.track(a.data);await tick();
+ assert.equal(s.rows.length,0);
+ assert.equal(a.api.status().pending,1);
+ assert.ok(a.store.get("helilog_v23_queue_"+USER));
+ const restored=a.restart();
+ assert.equal(restored.api.status().pending,1);
+ restored.root.navigator.onLine=true;
+ await restored.api.refresh();await tick();
+ assert.equal(s.rows[0].payload.reg,"LY-OFFLINE");
+ assert.equal(restored.api.status().pending,0);
+});
+test("two-device conflict previews both copies without changing server or local record",async()=>{
+ const {s,b}=await conflict();const writes=s.writes;
+ const row=b.api.conflicts().find(x=>x.id==="a1");
+ assert.equal(row.reviewable,true);
+ const p=await b.api.previewRecordConflict("aircraft","a1");
+ assert.equal(p.local.reg,"LY-OFFLINE");
+ assert.equal(p.cloud.reg,"LY-CLOUD");
+ assert.equal(s.writes,writes);
+ assert.equal(b.data.aircraft[0].reg,"LY-OFFLINE");
+});
+test("choosing cloud keeps a verified backup and changes only reviewed item",async()=>{
+ const {s,b}=await conflict(),writes=s.writes;
+ await b.api.previewRecordConflict("aircraft","a1");
+ const r=await b.api.resolveRecordConflict("cloud");
+ assert.ok(b.store.get(r.backupKey));
+ const backup=JSON.parse(b.store.get(r.backupKey));
+ assert.equal(backup.workspace.aircraft[0].reg,"LY-OFFLINE");
+ assert.equal(backup.cloudRow.payload.reg,"LY-CLOUD");
+ assert.equal(b.data.aircraft[0].reg,"LY-CLOUD");
+ assert.equal(s.writes,writes);
+ await b.api.refresh();assert.equal(b.api.status().state,"synced");
+});
+test("choosing device rebases exactly one queued record onto cloud revision",async()=>{
+ const {s,b}=await conflict();
+ await b.api.previewRecordConflict("aircraft","a1");
+ const r=await b.api.resolveRecordConflict("local");
+ assert.ok(b.store.get(r.backupKey));
+ assert.equal(s.rows[0].payload.reg,"LY-CLOUD");
+ await b.api.refresh();await tick();
+ assert.equal(s.rows[0].payload.reg,"LY-OFFLINE");
+ assert.equal(s.rows[0].revision,3);
+ assert.equal(b.api.status().pending,0);
+});
+test("stale review refuses both keep-device and use-cloud",async()=>{
+ for(const choice of ["local","cloud"]){
+  const {s,a,b}=await conflict();
+  await b.api.previewRecordConflict("aircraft","a1");
+  a.data.aircraft[0].reg="LY-NEWER";a.api.track(a.data);await tick();
+  await assert.rejects(()=>b.api.resolveRecordConflict(choice),/changed since review/);
+  assert.equal(s.rows[0].payload.reg,"LY-NEWER");
+  assert.equal(b.data.aircraft[0].reg,"LY-OFFLINE");
+ }
+});
+test("failed local safety backup blocks changes to both copies",async()=>{
+ const {s,b}=await conflict();
+ await b.api.previewRecordConflict("aircraft","a1");
+ b.failBackup();const writes=s.writes;
+ await assert.rejects(()=>b.api.resolveRecordConflict("cloud"),/No space for backup/);
+ assert.equal(b.data.aircraft[0].reg,"LY-OFFLINE");
+ assert.equal(s.writes,writes);
+ assert.equal(b.api.status().pending,1);
+});
+test("archived records cannot be resolved through ordinary conflict controls",async()=>{
+ const {b}=await conflict();
+ b.protected();
+ assert.equal(b.api.conflicts()[0].reviewable,false);
+ await assert.rejects(()=>b.api.previewRecordConflict("aircraft","a1"),/protected archive recovery/);
+});
+test("records changed locally after queuing require separate recovery",async()=>{
+ const {b}=await conflict();
+ b.data.aircraft[0].reg="LY-NOT-QUEUED";
+ await assert.rejects(()=>b.api.previewRecordConflict("aircraft","a1"),/pending queue/);
+ assert.equal(b.data.aircraft[0].reg,"LY-NOT-QUEUED");
+});
