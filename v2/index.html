@@ -4009,7 +4009,7 @@ function applyEndorsementSignature(id){
     return;
   }
   v2EndorsementNotice=isStandaloneApp()
-   ?'Endorsement signed and saved on this device. Awaiting web archive. Cloud synchronization is not enabled, so it will not appear automatically on another device.'
+   ?'Endorsement signed and saved on this device. Endorsements are not part of V2.3 cloud sync and will not appear automatically on another device. Web archiving will return after protected cloud archive sync is implemented.'
    :'Endorsement signed and saved in this browser. Awaiting print archive confirmation.';
   endorsements();
 }
