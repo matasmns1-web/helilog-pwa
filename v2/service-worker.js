@@ -1,4 +1,4 @@
-const CACHE='helilog-v2-8-2-corrections-1';
+const CACHE='helilog-v2-8-3-confirmation-1';
 const SHELL=[
   './',
   './index.html',
@@ -10,14 +10,14 @@ const SHELL=[
   './print.js',
   './endorsement-bridge.js',
   './endorsement-ui.js',
-  './cloud-config.js?v=2.8.2-corrections-1',
-  './cloud-foundation.js?v=2.8.2-corrections-1',
-  './cloud-view.js?v=2.8.2-corrections-1',
-  './cloud-sync.js?v=2.8.2-corrections-1',
-  './auth-gate.js?v=2.8.2-corrections-1',
-  './cloud-archives.js?v=2.8.2-corrections-1',
-  './archive-integrity.js?v=2.8.2-corrections-1',
-  './recovery.js?v=2.8.2-corrections-1'
+  './cloud-config.js?v=2.8.3-confirmation-1',
+  './cloud-foundation.js?v=2.8.3-confirmation-1',
+  './cloud-view.js?v=2.8.3-confirmation-1',
+  './cloud-sync.js?v=2.8.3-confirmation-1',
+  './auth-gate.js?v=2.8.3-confirmation-1',
+  './cloud-archives.js?v=2.8.3-confirmation-1',
+  './archive-integrity.js?v=2.8.3-confirmation-1',
+  './recovery.js?v=2.8.3-confirmation-1'
 ];
 
 self.addEventListener('install',event=>{
