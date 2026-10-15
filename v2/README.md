@@ -1,10 +1,19 @@
 # HeliLog V2 — Development
 
-**Current version: V2.8.3 — Fix signed correction confirmation order while retaining V2.8.2 mobile proposal synchronization.** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
+**Current version: V2.8.4 — Safe recovery of stranded V2.8.2 local correction confirmations (maintains V2.8.3 cloud-first confirmation).** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
 
 **Prior release: V2.1.** The complete V1.43.2 interface is restored with V2 endorsement print archiving; installed-app signing is separate from web-only print/archive management. See [FULL-V1-INTERFACE.md](FULL-V1-INTERFACE.md) for parity scope, testing instructions and data safety.
 
 **Earlier modular prototype:** [alpha.html](alpha.html) remains available with its own test data.
+
+## V2.8.4 — Recover a prematurely confirmed local correction safely
+
+- Detects the V2.8.2 failure where a locally marked signed correction is absent from immutable cloud addenda, but the **identical unconfirmed proposal** remains in the same authenticated account's cloud records.
+- Before repair, validates the original signed cloud flight archive, every other protected archive entry, cloud proposal ID and exact contents (excluding the mistakenly set `confirmedAt`), confirmed addendum absence and this browser's clean sync status. Rechecks cloud confirmation and account identity.
+- Saves a separate verified browser-local safety snapshot of the entire pre-recovery workspace. If backup storage or any verification fails, does not modify the correction.
+- When all guards pass, restores ONLY that erroneous local correction to **Pending** from the cloud proposal. No original archived flight or cloud record is rewritten; the user can then follow the V2.8.3 web-only addendum confirmation.
+- If the cloud proposal is absent, different, already signed or otherwise inconsistent, keep the blocker visible. Do not clear storage or force a cloud overwrite.
+- The Cloud Account screen shows a recovery notice when the safe repair succeeds. Includes 12 targeted recovery regressions. No schema changes or V1 production edits.
 
 ## V2.8.3 — Confirm the signed addendum in cloud before marking the local draft
 
