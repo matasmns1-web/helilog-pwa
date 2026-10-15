@@ -9,7 +9,7 @@
  else root.HeliLogV24Archive=api;
 })(typeof window!=="undefined"?window:globalThis,function(root){
  "use strict";
- let owner="",client=null,reading=false,readPromise=null,error="",sessionGeneration=0;
+ let owner="",client=null,reading=false,readPromise=null,error="",recoveryNotice="",sessionGeneration=0;
  const clone=v=>JSON.parse(JSON.stringify(v));
  const normalized=value=>JSON.stringify((function order(v){
   if(Array.isArray(v))return v.map(order);
@@ -25,9 +25,9 @@
   // cancel an in-progress archive read for this same authenticated account.
   if(owner===userId&&client===db)return;
   sessionGeneration++;
-  owner=userId;client=db;reading=false;readPromise=null;error="";
+  owner=userId;client=db;reading=false;readPromise=null;error="";recoveryNotice="";
  }
- function stop(){sessionGeneration++;owner="";client=null;reading=false;readPromise=null;error="";}
+ function stop(){sessionGeneration++;owner="";client=null;reading=false;readPromise=null;error="";recoveryNotice="";}
  function blockReason(){
   if(root.matchMedia?.("(display-mode: standalone)")?.matches||root.navigator?.standalone)
    return "Paper archives must be printed and confirmed from a web browser.";
@@ -75,7 +75,8 @@
    if(b.error)throw Error(b.error.message||"Could not retrieve cloud print archives");
    if(a.error)throw Error(a.error.message||"Could not retrieve correction history");
    if(owner!==sessionOwner||client!==sessionClient||sessionGeneration!==sessionAtStart)return false;
-   const data=clone(snapshot());
+   const originalSnapshot=clone(snapshot());
+   const data=clone(originalSnapshot);
    const flight=(b.data||[]).filter(x=>x.kind==="flight").map(x=>x.payload);
    const endors=(b.data||[]).filter(x=>x.kind==="endorsement").map(x=>x.payload);
    const fcor=(a.data||[]).filter(x=>x.record_kind==="flight").map(x=>x.signature_metadata);
@@ -92,9 +93,71 @@
     }
    };
    compare(data.printArchive.batches||[],flight,"flight batch");
-   compare((data.printArchive.corrections||[]).filter(x=>x.confirmedAt),fcor,"flight correction");
    compare(data.endorsementV2Archive.batches||[],endors,"endorsement batch");
    compare(data.endorsementV2Archive.amendments||[],ecor,"endorsement addendum");
+   const confirmedLocally=(data.printArchive.corrections||[]).filter(x=>x.confirmedAt);
+   const missing=confirmedLocally.filter(x=>!fcor.some(y=>y.id===x.id));
+   // Existing confirmed addenda with the same ID must match byte-for-byte
+   // after canonical JSONB ordering. Never "repair" a genuine mismatch.
+   compare(confirmedLocally.filter(x=>!missing.includes(x)),fcor,"flight correction");
+   if(missing.length>1)
+    throw Error("Multiple locally confirmed flight corrections are absent from the cloud. A manual archive review is required; no records were changed.");
+   let recovered=null;
+   if(missing.length===1){
+    const orphan=missing[0],sessionOwner=owner;
+    // Only V2.8.2's known premature-confirmation case is recoverable:
+    // the EXACT SAME correction is still an unconfirmed record in the
+    // user's cloud account, and the referenced immutable batch exists.
+    if(!orphan.id||!orphan.flightId||!orphan.confirmedAt||
+       !flight.some(batch=>batch.id===orphan.sourceBatch&&
+         Array.isArray(batch.flightIds)&&batch.flightIds.includes(orphan.flightId)))
+     throw Error("A locally confirmed correction lacks a valid cloud archive original. No data was changed.");
+    const proposalResult=await queryRows("helilog_records","record_id,kind,payload,revision")
+      .eq("kind","correction_proposal").eq("record_id",String(orphan.id)).maybeSingle();
+    if(proposalResult.error)throw Error("Could not verify the cloud correction proposal: "+proposalResult.error.message);
+    const proposal=proposalResult.data?.payload;
+    const localPending={...orphan,confirmedAt:""};
+    if(!proposal||proposalResult.data.record_id!==orphan.id||
+       proposal.id!==orphan.id||proposal.flightId!==orphan.flightId||
+       proposal.sourceBatch!==orphan.sourceBatch||proposal.confirmedAt||
+       !same(localPending,proposal))
+     throw Error("The cloud does not contain an identical unconfirmed proposal for the locally marked correction. No data was changed.");
+    // Double-check that no signed addendum appeared while we were looking up
+    // the draft. A concurrently confirmed cloud addendum wins on next refresh.
+    const recheck=await queryRows("helilog_archive_addenda","record_kind,record_id,signature_metadata")
+      .eq("record_kind","flight").eq("record_id",orphan.flightId);
+    if(recheck.error)throw Error("Could not recheck signed correction history: "+recheck.error.message);
+    if((recheck.data||[]).some(row=>String(row.signature_metadata?.id)===String(orphan.id)))
+     throw Error("Cloud addendum changed during recovery. Synchronize again; nothing was overwritten.");
+    if(owner!==sessionOwner||client!==sessionClient||sessionGeneration!==sessionAtStart||
+       root.HeliLogCloud?.snapshot?.().userId!==owner)
+     throw Error("Account changed during safe recovery. No records were changed.");
+    const current=snapshot();
+    if(!same(current,originalSnapshot))
+     throw Error("Logbook changed while the correction was being checked. Refresh again without discarding data.");
+    if(root.HeliLogV23Sync?.status?.().state!=="synced"||
+       root.HeliLogV23Sync.status().pending>0||
+       root.HeliLogV23Sync.status().conflicts>0)
+     throw Error("A local sync change or conflict prevents archive recovery. Finish syncing before retrying.");
+    // Keep a separate full pre-repair snapshot; if browser quota/storage is
+    // unavailable, fail CLOSED. The server record remains untouched.
+    const storage=root.localStorage;
+    if(!storage)throw Error("Secure local recovery storage is unavailable; nothing was modified.");
+    const key="helilog_v284_stranded_correction_backup_"+owner+"_"+Date.now()+"_"+orphan.id;
+    if(storage.getItem(key)!==null)
+     throw Error("The recovery backup key already exists; retry without clearing data.");
+    const backup=JSON.stringify({purpose:"V2.8.4 premature correction confirmation recovery",
+      createdAt:new Date().toISOString(),owner,originalWorkspace:data,
+      verifiedCloudProposal:proposal,cloudRevision:proposalResult.data.revision});
+    storage.setItem(key,backup);
+    if(storage.getItem(key)!==backup)
+     throw Error("Recovery backup could not be verified; no records were changed.");
+    // Reclassify ONLY the prematurely confirmed local item, leaving all
+    // previously signed archive records and other data untouched.
+    const pos=data.printArchive.corrections.findIndex(x=>x.id===orphan.id);
+    data.printArchive.corrections[pos]=clone(proposal);
+    recovered={id:orphan.id,backupKey:key};
+   }
    data.printArchive.batches=flight;
    // An addendum confirmed on the web replaces any stale unconfirmed copy
    // downloaded on another device. Never retain two entries for one ID.
@@ -105,7 +168,11 @@
    ];
    data.endorsementV2Archive.batches=endors;
    data.endorsementV2Archive.amendments=ecor;
+   // One verified local commit, only after all protected archive comparisons
+   // have passed. If persistence fails, the independent recovery backup stays.
    commit(data);
+   if(recovered)recoveryNotice="Recovered a V2.8.2 prematurely marked correction ("+
+     recovered.id+") as PENDING after verifying its identical cloud proposal. A device-local safety backup was saved. The signed original was not changed.";
    error="";return true;
   }catch(e){
    if(sessionGeneration===sessionAtStart){
@@ -183,5 +250,5 @@
   if(!data)throw Error("Cloud correction was not acknowledged.");
   return data;
  }
- return Object.freeze({start,stop,refresh,confirmBatch,confirmAddendum,available,blockReason,error:()=>error});
+ return Object.freeze({start,stop,refresh,confirmBatch,confirmAddendum,available,blockReason,error:()=>error,recoveryNotice:()=>recoveryNotice});
 });

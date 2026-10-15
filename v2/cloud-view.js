@@ -126,7 +126,7 @@ function cloud(){
  }
  const stateText=st.configured?(state==="signed_in"?"Signed in":state==="error"?"Connection needs attention":
    state==="connecting"?"Connecting…":"Ready for private sign-in"):"Cloud not configured";
- app.innerHTML=header('Cloud account','HeliLog V2.8.3 · Synchronization and archive integrity',
+ app.innerHTML=header('Cloud account','HeliLog V2.8.4 · Synchronization and archive integrity',
   `<button class="btn" onclick="go('profile')">← Profile</button>`)+
   '<div class="card" style="margin-bottom:16px"><div class="head"><h2>Connection status</h2></div>'+
   '<div class="pwa-state"><b>'+v22CloudEscape(stateText)+'</b></div>'+
@@ -154,6 +154,8 @@ function cloud(){
   (v23AccountWorkspace()?'<div class="card" style="margin-top:16px">'+
    '<div class="head"><div><h2>Cloud archive integrity</h2><div class="muted">Read-only check of confirmed pages, frozen originals and signed corrections.</div></div>'+
    '<button class="btn primary" type="button" onclick="v28VerifyCloudArchives()"'+(v28Busy?' disabled':'')+'>Verify archives</button></div>'+
+   (window.HeliLogV24Archive?.recoveryNotice?.()?'<div class="note" role="status">'+
+      v22CloudEscape(window.HeliLogV24Archive.recoveryNotice())+'</div>':'')+
    (v28Notice?'<div class="note" role="status">'+v22CloudEscape(v28Notice)+'</div>':
      '<div class="mini">A successful check is recorded as a device-local evidence baseline. Save a separate recovery package under Profile → Backup &amp; restore.</div>')+
    '</div>':'');
