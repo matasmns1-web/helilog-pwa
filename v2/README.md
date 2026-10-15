@@ -12,6 +12,7 @@
 - Static login content is explicitly non-editable and non-selectable; normal cursor, typing and paste remain available in Email and Password.
 - **Log out** appears only on the authenticated **Profile** page, not in every page header or the mobile More menu. Users who have not yet finished account setup can still select **Switch account** on the onboarding screen.
 - A fresh PWA cache and asset query version force compatible login/UI assets after an online update. Existing local records and cloud sync settings are unchanged.
+- **Release check:** after deploying the staging branch, reload the sign-in page while online and verify it displays `V2.6`; then confirm that Log out appears under Profile only.
 - No change to V1 production, Supabase schema or synced record data; V2 test accounts only.
 
 ## V2.5 — Pilot names, PIC/SOLO and sign out
