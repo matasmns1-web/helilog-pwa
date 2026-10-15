@@ -3724,7 +3724,9 @@ function v2EndorsementStatusHelp(e){
  }
  return '<div class="mini" style="margin-top:8px">'+
  (isStandaloneApp()?
- 'Signed and saved in this installed app, awaiting web archiving. Records are not automatically shared with other devices yet.':
+ (window.HeliLogV23Sync.extended()?
+ 'Signed and saved on this device. Awaiting cloud synchronization and web-only printing/archiving.':
+ 'Signed locally. Enable extended sync under Cloud account to send this endorsement to the web browser.'):
  'Signed and saved in this browser. Awaiting printing and archive confirmation in Print Archive → Endorsements.')+
  '</div>';
 }
@@ -3737,7 +3739,9 @@ function endorsements(){
     `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="go('pilots')">Manage pilots</button><button class="btn primary" onclick="endorsementForm()">＋ Add endorsement</button></div>`)+
   `<div class="card">
     <div class="note" style="margin-bottom:14px">${isStandaloneApp()?
-      'Create, sign and review endorsements in the app. Records stay on this device; printing and archiving are web-only. Until cloud sync is ready, moving an endorsement to another device requires exporting a Full Backup from Profile and restoring it in the browser.':
+      (window.HeliLogV23Sync.extended()?
+  'Create, sign and review endorsements in the app. Endorsements now synchronize to your account. Use the web browser to print and archive once Cloud synced.':
+  'Create, sign and review endorsements in the app. Records remain device-local until you enable extended sync in Cloud account. Printing and archiving are web-only.'):
       'Signed endorsements are locked. Use Print Archive → Endorsements to print, archive or correct them.'}</div>
     ${v2EndorsementNotice?'<div class="note" role="status" style="margin-bottom:14px">'+htmlEscape(v2EndorsementNotice)+'</div>':''}
     <div class="endorsement-list">
