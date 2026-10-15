@@ -80,11 +80,45 @@
   }catch(e){error=String(e.message||e);root.console?.warn?.("HeliLog archive pull stopped:",error);return false;}
   finally{reading=false;}
  }
+ async function verifyIntegrityBeforeWrite(){
+  if(!root.HeliLogV28Integrity?.auditCloud)
+   throw Error("The V2.8 archive-integrity module did not load. Reload while online.");
+  const checkedOwner=owner;
+  const report=await root.HeliLogV28Integrity.auditCloud({
+   client,owner:checkedOwner,storeEvidence:true
+  });
+  if(!report.ok){
+   error="Cloud archive integrity check failed: "+report.errors.slice(0,3).join(" | ");
+   throw Error(error+" No new archive was confirmed.");
+  }
+  if(owner!==checkedOwner)throw Error("Account changed during integrity verification.");
+  assertReady();
+ }
+ async function verifyPrintedFlights(batch,ids){
+  const prints=Array.isArray(batch?.flights)?batch.flights:[];
+  if(prints.length!==ids.length||prints.some((f,i)=>f?.id!==ids[i]))
+   throw Error("Printed flight snapshots do not match the selected record IDs.");
+  const sessionOwner=owner;
+  const {data,error:err}=await client.from("helilog_records")
+   .select("record_id,payload").eq("owner_id",owner).eq("kind","flight").in("record_id",ids);
+  if(err)throw Error("Cannot validate printed flight originals: "+err.message);
+  if(!Array.isArray(data)||data.length!==ids.length)
+   throw Error("At least one printed flight is missing from the cloud.");
+  const found=new Map(data.map(x=>[x.record_id,x.payload]));
+  for(const flight of prints){
+   if(!found.has(flight.id)||!same(flight,found.get(flight.id)))
+    throw Error("Printed flight "+flight.id+" differs from its current cloud record. Sync and preview again.");
+  }
+  if(owner!==sessionOwner)throw Error("Account changed during flight archive validation.");
+ }
  async function confirmBatch(kind,batch,ids){
   assertReady();
   if(!["flight","endorsement"].includes(kind)||!Array.isArray(ids)||!ids.length)
    throw Error("Invalid archive type or empty batch.");
   if(batch.confirmedAt===undefined)throw Error("Print batch must have confirmation time.");
+  await verifyIntegrityBeforeWrite();
+  if(kind==="flight")await verifyPrintedFlights(batch,ids);
+  assertReady();
   const {data,error:err}=await client.rpc("helilog_confirm_print_batch",{
    p_kind:kind,p_batch:clone(batch),p_record_ids:ids
   });
@@ -96,6 +130,7 @@
   assertReady();
   if(!["flight","endorsement"].includes(kind)||!recordId||!correction?.confirmedAt)
    throw Error("Invalid signed correction.");
+  await verifyIntegrityBeforeWrite();
   const {data,error:err}=await client.rpc("helilog_confirm_print_addendum",{
    p_kind:kind,p_record_id:recordId,p_addendum:clone(correction)
   });

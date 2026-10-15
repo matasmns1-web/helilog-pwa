@@ -1,10 +1,19 @@
 # HeliLog V2 — Development
 
-**Current version: V2.7 — Offline queue recovery and reviewed ordinary-record conflicts (built on V2.6).** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
+**Current version: V2.8 — Cloud archive integrity checks and verified external recovery exports (built on V2.7).** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
 
 **Prior release: V2.1.** The complete V1.43.2 interface is restored with V2 endorsement print archiving; installed-app signing is separate from web-only print/archive management. See [FULL-V1-INTERFACE.md](FULL-V1-INTERFACE.md) for parity scope, testing instructions and data safety.
 
 **Earlier modular prototype:** [alpha.html](alpha.html) remains available with its own test data.
+
+## V2.8 — Archive integrity, backups and recovery
+
+- Removed the five Dashboard Quick Actions cards and outdated Cloud Account Local logbook protection card without removing the underlying features.
+- Added read-only cloud archive audit for pages, frozen originals, archived source rows and correction metadata. Existing verified archive evidence is remembered on the same device with SHA-256 fingerprints; failure blocks new archive confirmations.
+- New printed flight batches are compared to their synchronized cloud flight payloads before the owner-verified cloud confirmation call.
+- Added a user-triggered **verified cloud recovery package** download and a checksum/account-bound **read-only recovery file checker** under Profile → Backup & restore. Cloud overwrites remain blocked.
+- **Not automatic backups:** the user must safely store downloaded, unencrypted JSON outside the device. Fully recoverable encrypted remote backups and transactional restore remain future tasks.
+- [V2.8 acceptance and recovery safety guide](V2.8-TEST-GUIDE.md). Fictional test records only; production V1 remains untouched.
 
 ## V2.7 — Offline synchronization and manual conflict review
 

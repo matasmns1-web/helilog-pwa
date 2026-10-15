@@ -126,7 +126,7 @@ function cloud(){
  }
  const stateText=st.configured?(state==="signed_in"?"Signed in":state==="error"?"Connection needs attention":
    state==="connecting"?"Connecting…":"Ready for private sign-in"):"Cloud not configured";
- app.innerHTML=header('Cloud account','HeliLog V2.7 · Offline synchronization and conflict review',
+ app.innerHTML=header('Cloud account','HeliLog V2.8 · Synchronization and archive integrity',
   `<button class="btn" onclick="go('profile')">← Profile</button>`)+
   '<div class="card" style="margin-bottom:16px"><div class="head"><h2>Connection status</h2></div>'+
   '<div class="pwa-state"><b>'+v22CloudEscape(stateText)+'</b></div>'+
@@ -144,18 +144,19 @@ function cloud(){
    <div class="actions"><button class="btn primary" onclick="v24ActivateExtended('upload')">Upload this device's remaining records</button>
    <button class="btn" onclick="v24ActivateExtended('cloud')">Use existing cloud records</button></div></div>`:
    '<p class="mini">Extended cloud synchronization '+(v23AccountWorkspace()?'enabled.':'available after sign-in.')+'</p>')+
-  '<p class="mini">Conflicting revisions remain pending for manual resolution, not overwritten.</p>'+
+  (v23AccountWorkspace()&&window.HeliLogV23Sync.status().state==='conflict'?'<p class="mini">Unresolved conflicts are preserved for review; archives must not be confirmed until synchronized.</p>':'')+
   (v23AccountWorkspace()&&window.HeliLogV23Sync.status().state==="conflict"&&
    window.HeliLogV23Sync.status().error.includes("settings:pilot")?
    '<div class="actions" style="margin-top:12px"><button class="btn primary" type="button" onclick="v24ReviewPilotConflict()"'+
    (v24PilotConflictBusy?' disabled':'')+'>Review pilot profile conflict</button></div>':'')+
   '</div>'+
   (v23AccountWorkspace()?v27ConflictsMarkup()+v27RecordDiffMarkup()+v24PilotDiffMarkup():'')+
-  '<div class="card" style="margin-top:16px"><div class="head"><h2>Local logbook protection</h2></div>'+
-  '<p><b>V2.4 synchronizes aircraft and flights; other data syncs after your one-time account setup.</b> Your existing V2.2 test data is preserved separately and never automatically uploaded.</p>'+
-  '<p class="muted">After extended synchronization is enabled, profiles, endorsements, qualifications and opening totals can synchronize. Print archives and correction history have a separate web-only confirmation process. Offline edits queue locally until reconnect; general conflict review covers ordinary records, while signed endorsements and archive records require a separate protected workflow. Offline sign-in is not supported.</p>'+
-  '<p class="mini">Other pilots will have separate private accounts when invitations become available. A saved instructor/examiner in your logbook does not automatically become an account user.</p>'+
-  '</div>';
+  (v23AccountWorkspace()?'<div class="card" style="margin-top:16px">'+
+   '<div class="head"><div><h2>Cloud archive integrity</h2><div class="muted">Read-only check of confirmed pages, frozen originals and signed corrections.</div></div>'+
+   '<button class="btn primary" type="button" onclick="v28VerifyCloudArchives()"'+(v28Busy?' disabled':'')+'>Verify archives</button></div>'+
+   (v28Notice?'<div class="note" role="status">'+v22CloudEscape(v28Notice)+'</div>':
+     '<div class="mini">A successful check is recorded as a device-local evidence baseline. Save a separate recovery package under Profile → Backup &amp; restore.</div>')+
+   '</div>':'');
 }
 function v22CloudError(error){
  v22CloudNotice=String(error?.message||error||'Unknown cloud error');

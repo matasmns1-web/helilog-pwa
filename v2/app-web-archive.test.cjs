@@ -64,9 +64,9 @@ function seedEndorsement(b){
   ' signatureData:"",signedAt:"",signedName:"",signedLicence:""});'
  ].join("\n"));
 }
-test("V2.3 is the current interface version label",()=>{
- assert.match(html,/<title>HeliLog V2\.3/);
- assert.match(html,/V2\.3 · TEST/);
+test("V2.8 is the current interface version label",()=>{
+ assert.match(html,/<title>HeliLog V2\.8/);
+ assert.match(html,/V2\.8 · TEST/);
  assert.doesNotMatch(html,/<title>HeliLog V2\.0 Alpha/);
 });
 test("installed app can sign and save but shows pending status without archive controls",()=>{
@@ -77,7 +77,7 @@ test("installed app can sign and save but shows pending status without archive c
  const stored=JSON.parse(b.store.get("helilog_v2_complete_test_data"));
  assert.equal(stored.endorsements.find(e=>e.id==="v21-demo").signatureData,PNG);
  assert.match(b.app(),/Signed · Awaiting web archive/);
- assert.match(b.app(),/Endorsements are not part of V2.3 cloud sync/);
+ assert.match(b.app(),/With extended cloud sync enabled/);
  assert.doesNotMatch(b.app(),/Print \/ Archive<\/button>/);
  b.evaluate('mobilemore()');
  assert.doesNotMatch(b.app(),/<b>Endorsement archive<\/b>/);
@@ -121,6 +121,6 @@ test("failed local save does not show success or leave an unsaved signature mark
 test("standalone mode hides desktop archive nav and new service worker caches UI",()=>{
  assert.match(html,/html\.helilog-installed-app nav button\[data-v="printarchive"\]/);
  const sw=fs.readFileSync(path.join(__dirname,"service-worker.js"),"utf8");
- assert.match(sw,/helilog-v2-3-shell/);
+ assert.match(sw,/helilog-v2-8-archive-recovery-1/);
  assert.match(sw,/\.\/endorsement-ui\.js/);
 });
