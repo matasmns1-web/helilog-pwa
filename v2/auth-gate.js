@@ -35,6 +35,8 @@ function v23LoginView(){
  '<div class="field"><label for="v23Password">Password</label>'+
  '<input id="v23Password" type="password" required autocomplete="current-password"></div>'+
  '<button class="btn primary" type="submit">Sign in</button></form>')+
+ (TEST_MODE?'<div class="note" style="margin-top:15px">The previous local Test Mode is active. To use cloud login, exit the old sandbox first. Its data remains safely stored.</div>'+
+ '<button class="btn" type="button" onclick="v23ExitOldTestMode()">Exit old Test Mode</button>':'')+
  '<p class="mini" style="margin-top:20px">Your cloud workspace starts empty. Existing V2.2 test records stay separately on this device and will not be uploaded automatically.</p>'+
  '</div></div>';
 }
@@ -141,4 +143,11 @@ function v23PreventUnsupportedArchive(){
  if(!v23AccountWorkspace())return false;
  alert("V2.3 cloud workspaces sync aircraft and flights only. Paper archive creation and corrections are unavailable here until immutable cloud archiving is implemented. Your old local V2.2 archives remain untouched.");
  return true;
+}
+
+function v23ExitOldTestMode(){
+ if(!TEST_MODE)return;
+ if(!confirm('Exit the old V2.2 local Test Mode? Your sandbox records will stay saved and will not be uploaded.'))return;
+ localStorage.removeItem(MODE_KEY);
+ location.reload();
 }
