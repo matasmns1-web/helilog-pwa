@@ -151,3 +151,18 @@ test("UI removes five dashboard cards and old Cloud Account information",()=>{
  assert.match(html,/Download verified cloud recovery package/);
  assert.match(html,/Inspect cloud recovery file/);
 });
+
+test("new flight print snapshots must exactly match synchronized cloud originals",async()=>{
+ const f=fixture();
+ const original={id:"f-1",aid:"a1",date:"2026-10-15",off:"10:00",on:"10:45",mins:45,role:"PIC",picName:"SELF"};
+ f.rows.helilog_records.push({owner_id:U,kind:"flight",record_id:"f-1",
+  revision:1,payload:clone(original),sealed_at:null});
+ const bad=clone(original);bad.mins=50;
+ await assert.rejects(()=>f.archive.confirmBatch("flight",
+  {confirmedAt:"2026-10-15",flights:[bad]},["f-1"]),/differs from its current cloud record/);
+ assert.equal(f.writes,0);
+ const accepted=await f.archive.confirmBatch("flight",
+  {confirmedAt:"2026-10-15",flights:[clone(original)]},["f-1"]);
+ assert.equal(accepted,true);
+ assert.equal(f.writes,1);
+});
