@@ -104,7 +104,22 @@ begin
  if v_first is null or v_first<1 or v_count is null or v_count<1 or v_count>1000 then
   raise exception 'Invalid page numbering';
  end if;
- if array_position(p_record_ids,null) is not null or
+ if (p_batch->>'kind') is distinct from p_kind then
+  raise exception 'Print type does not match batch';
+ end if;
+ if p_kind='flight' and
+    (select pg_catalog.array_agg(v order by ordinality)
+      from pg_catalog.jsonb_array_elements_text(p_batch->'flightIds')
+        with ordinality as t(v,ordinality)) is distinct from p_record_ids then
+  raise exception 'Printed flight IDs differ from committed record IDs';
+ end if;
+ if p_kind='endorsement' and
+    (select pg_catalog.array_agg(item->>'endorsementId' order by ordinality)
+      from pg_catalog.jsonb_array_elements(p_batch->'items')
+        with ordinality as t(item,ordinality)) is distinct from p_record_ids then
+  raise exception 'Printed endorsement IDs differ from committed record IDs';
+ end if;
+  if array_position(p_record_ids,null) is not null or
     (select count(*) from unnest(p_record_ids) v) <>
       (select count(distinct v) from unnest(p_record_ids) v) then
   raise exception 'Duplicate or missing archive records';
@@ -127,6 +142,18 @@ begin
   if not found then raise exception 'Original record missing: %',v_record; end if;
   if p_kind='endorsement' and v_sealed is null then
    raise exception 'An endorsement must be signed before archiving';
+  end if;
+  -- Freeze the actual approved endorsement text/signature, not a different
+  -- client-crafted image or wording.
+  if p_kind='endorsement' and not exists(
+     select 1 from pg_catalog.jsonb_array_elements(p_batch->'items') item
+      where item->>'endorsementId'=v_record
+        and item->'snapshot'->>'title'=v_payload->>'title'
+        and item->'snapshot'->>'text'=v_payload->>'text'
+        and item->'snapshot'->'signature'->>'data'=v_payload->>'signatureData'
+        and item->'snapshot'->>'signatoryPersonId'=v_payload->>'signatoryPersonId'
+  ) then
+   raise exception 'Printed endorsement snapshot does not match signed original';
   end if;
   if exists(select 1 from public.helilog_archive_entries
    where owner_id=v_owner and record_kind=p_kind and record_id=v_record) then
@@ -151,6 +178,11 @@ $$;
 revoke all on function public.helilog_confirm_print_batch(text,jsonb,text[]) from public,anon;
 grant execute on function public.helilog_confirm_print_batch(text,jsonb,text[]) to authenticated;
 
+create unique index if not exists helilog_print_batches_owner_print_id
+ on public.helilog_print_archives(owner_id,kind,(payload->>'id'));
+create unique index if not exists helilog_print_addenda_owner_print_id
+ on public.helilog_archive_addenda(owner_id,record_kind,(signature_metadata->>'id'));
+
 -- Confirm printed correction addenda without editing frozen originals.
 create or replace function public.helilog_confirm_print_addendum(
  p_kind text,p_record_id text,p_addendum jsonb)
@@ -171,7 +203,7 @@ begin
   raise exception 'Correction reason is required';
  end if;
  if p_kind='endorsement' and
-   coalesce(p_addendum->'signature'->>'data','')='' then
+   coalesce(p_addendum->'after'->'signature'->>'data','')='' then
   raise exception 'Signed correction PNG missing';
  end if;
  v_timestamp=(p_addendum->>'confirmedAt')::timestamptz;
