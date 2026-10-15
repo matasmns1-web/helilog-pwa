@@ -164,7 +164,7 @@
    const pendingKeys=new Set(pending.map(q=>ident(q.kind,q.id)));
    // Confirmation deletes the cloud proposal atomically alongside the signed
    // addendum. Avoid retaining version metadata for a retired local draft.
-   const localDraftIDs=new Set(items(local,"correction_proposal").map(x=>String(x.id)));
+   const localDraftIDs=new Set(items(local,"correction_proposal").map(x=>ident("correction_proposal",String(x.id))));
    for(const k of Object.keys(versions)){
     if(k.startsWith("correction_proposal:")&&!rmap.has(k)&&!pendingKeys.has(k)&&!localDraftIDs.has(k)){
      delete versions[k];delete mirror[k];
