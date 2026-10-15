@@ -98,6 +98,6 @@ test('print confirmation stays web only and requires confirmed cloud synchroniza
 });
 test('V2.4 archive and extended sync scripts are versioned together',()=>{
  for(const file of ['cloud-config.js','cloud-foundation.js','cloud-view.js','cloud-sync.js','auth-gate.js','cloud-archives.js'])
-  assert.match(html,new RegExp(file.replace('.','\\.')+'\\?v=2\\.4-cloud-1'));
+  assert.match(html,new RegExp(file.replace('.','\\.')+'\\?v=2\\.4-profilefix-1'));
  assert.match(html,/V2\.4 · TEST/);
 });
