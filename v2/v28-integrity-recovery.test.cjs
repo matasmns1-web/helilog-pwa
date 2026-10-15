@@ -37,7 +37,7 @@ function fixture(){
  const root={crypto:crypto.webcrypto,navigator:{get onLine(){return online}},localStorage:{
   getItem:key=>storage.get(key)??null,setItem:(key,val)=>storage.set(key,val)
  },console:{warn(){}},HeliLogCloud:{snapshot:()=>({userId:owner})},
-  HeliLogV23Sync:{extended:()=>true,status:()=>({state:"synced"})},matchMedia:()=>({matches:false})};
+  HeliLogV23Sync:{extended:()=>true,status:()=>({state:"synced",owner:U,pending:0,conflicts:0})},matchMedia:()=>({matches:false})};
  root.window=root;
  const integrity=new Function("window","module",source+";return window.HeliLogV28Integrity;")(root,undefined);
  root.HeliLogV28Integrity=integrity;
