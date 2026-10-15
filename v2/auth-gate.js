@@ -249,9 +249,18 @@ async function v28DownloadCloudRecovery(){
  try{
   if(!v23AccountWorkspace()||window.HeliLogV23Sync.status().state!=="synced")
    throw Error("Wait for Cloud synced, with no pending or conflicting edits.");
+  await v23RefreshSync();
+  if(window.HeliLogV23Sync.status().state!=="synced"||
+     window.HeliLogV24Archive?.error?.())
+   throw Error("Archive or record synchronization is not healthy. Resolve that issue before exporting a verified package.");
   const owner=window.HeliLogCloud.snapshot().userId;
   const initial=JSON.stringify(S);
   const report=await v28ReadAudit(true);
+  const localBatchCount=(S.printArchive?.batches?.length||0)+(S.endorsementV2Archive?.batches?.length||0);
+  const localCorrectionCount=(S.printArchive?.corrections||[]).filter(x=>x.confirmedAt).length+
+    (S.endorsementV2Archive?.amendments||[]).length;
+  if(localBatchCount!==report.counts.batches || localCorrectionCount!==report.counts.addenda)
+   throw Error("The device and cloud archive counts differ. Wait for archive refresh, then retry.");
   v28LastAudit=report;
   if(!report.ok)throw Error("Cloud archive audit failed: "+report.errors.slice(0,3).join(" | "));
   if(owner!==window.HeliLogCloud.snapshot().userId||
