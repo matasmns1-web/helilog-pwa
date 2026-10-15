@@ -352,9 +352,14 @@
     problem="";pilotPreview=null;notify();
    }catch(e){
     versions=oldVersions;mirror=oldMirror;baseline=oldBaseline;pending=oldPending;
-    // Restoring an old snapshot to localStorage must be handled manually when
-    // an unexpected storage failure happened during a transaction.
-    state="error";problem="Resolution interrupted; your safety backup was saved under "+backupKey;
+    if(choice==="cloud"){
+     try{replaceFn(current);}catch(rollbackError){
+      root.console?.error?.("Could not roll back the local profile change",rollbackError);
+     }
+    }
+    // Local storage writes are not atomic across separate keys; the complete
+    // preserved copy remains available under the separate safety-backup key.
+    state="error";problem="Resolution interrupted. Your pre-change test data was backed up locally.";
     notify();
     throw e;
    }
