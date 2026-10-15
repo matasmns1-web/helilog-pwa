@@ -112,7 +112,8 @@
   for(;;){
    let query=db.from(table).select(columns).eq("owner_id",owner);
    if(kindFilter)query=query.in("kind",types);
-   const {data,error}=await query.range(from,from+499);
+   const stableOrder=table==="helilog_archive_entries"?"archive_id":table==="helilog_records"?"record_id":"id";
+   const {data,error}=await query.order(stableOrder,{ascending:true}).range(from,from+499);
    if(error)throw Error("Cloud archive audit could not read "+table+": "+error.message);
    if(!Array.isArray(data))throw Error("Invalid cloud archive audit response from "+table);
    all.push(...data);
