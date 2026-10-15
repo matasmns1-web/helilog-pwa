@@ -11,7 +11,14 @@
  "use strict";
  let owner="",client=null,reading=false,error="";
  const clone=v=>JSON.parse(JSON.stringify(v));
- const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+ const normalized=value=>JSON.stringify((function order(v){
+  if(Array.isArray(v))return v.map(order);
+  if(v&&typeof v==="object"){
+   const out={};for(const k of Object.keys(v).sort())out[k]=order(v[k]);return out;
+  }
+  return v;
+ })(value));
+ const same=(a,b)=>normalized(a)===normalized(b);
  function start({userId,db}){
   if(!/^[0-9a-f-]{36}$/i.test(userId)||!db?.from||!db?.rpc)throw Error("Cloud archive requires an authenticated Supabase client.");
   owner=userId;client=db;error="";
