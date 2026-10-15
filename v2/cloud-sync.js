@@ -15,6 +15,17 @@
  let owner="",db=null,pending=[],versions={},mirror={},baseline={},state="inactive",problem="",
   running=false,paused=false,snapshotFn=null,replaceFn=null,listener=null;
  const clone=x=>JSON.parse(JSON.stringify(x));
+ // PostgreSQL JSONB may reorder object keys. Compare canonical values,
+ // otherwise harmless key ordering could produce false sync conflicts.
+ const canonical=value=>JSON.stringify((function order(v){
+  if(Array.isArray(v))return v.map(order);
+  if(v&&typeof v==="object"){
+   const out={};
+   for(const k of Object.keys(v).sort())out[k]=order(v[k]);
+   return out;
+  }
+  return v;
+ })(value));
  const ident=(kind,id)=>kind+":"+id;
  const queueKey=u=>"helilog_v23_queue_"+u;
  const versionKey=u=>"helilog_v23_versions_"+u;
@@ -30,7 +41,7 @@
  function mapOf(data){
   const m={};
   for(const kind of types)for(const r of (data?.[plural[kind]]||[])){
-   if(r && typeof r.id==="string" && r.id.length && r.id.length<=120)m[ident(kind,r.id)]=JSON.stringify(r);
+   if(r && typeof r.id==="string" && r.id.length && r.id.length<=120)m[ident(kind,r.id)]=canonical(r);
   }
   return m;
  }
@@ -101,12 +112,12 @@
    // response (e.g. network changed just before the acknowledgement).
    for(const q of [...pending]){
     const k=ident(q.kind,q.id),row=rmap.get(k);
-    const ackPut=q.action==="put"&&row&&JSON.stringify(row.payload)===JSON.stringify(q.payload)
+    const ackPut=q.action==="put"&&row&&canonical(row.payload)===canonical(q.payload)
       &&(q.baseRevision===null||row.revision===q.baseRevision+1);
     const ackDelete=q.action==="delete"&&!row;
     if(ackPut||ackDelete){
      pending=pending.filter(x=>x!==q);
-     if(ackPut){versions[k]=row.revision;mirror[k]=JSON.stringify(row.payload);}
+     if(ackPut){versions[k]=row.revision;mirror[k]=canonical(row.payload);}
      else{delete versions[k];delete mirror[k];}
     }
    }
@@ -123,25 +134,25 @@
       continue;
      }
      const current=byId.get(row.record_id);
-     const localValue=current===undefined?null:JSON.stringify(current);
+     const localValue=current===undefined?null:canonical(current);
      const original=mirror[k];
      // Cross-device safety: compare against the LAST VERIFIED CLOUD COPY,
      // not today's startup snapshot (which could contain unsent local edits).
      if(current && (original===undefined?
-         (versions[k]!==undefined?localValue!==JSON.stringify(row.payload):true):
+         (versions[k]!==undefined?localValue!==canonical(row.payload):true):
          localValue!==original)){
       problem="A local record differs from the last verified cloud copy: "+k+". Nothing was overwritten.";
       state="conflict";notify();return false;
      }
-     if(!current||JSON.stringify(current)!==JSON.stringify(row.payload)){
+     if(!current||canonical(current)!==canonical(row.payload)){
       byId.set(row.record_id,clone(row.payload));changed=true;
      }
-     versions[k]=row.revision;mirror[k]=JSON.stringify(row.payload);
+     versions[k]=row.revision;mirror[k]=canonical(row.payload);
     }
     for(const entry of arr){
      const k=ident(kind,String(entry.id));
      if(!rmap.has(k)&&!pendingKeys.has(k)&&Number.isInteger(versions[k])){
-      if(mirror[k]!==JSON.stringify(entry)){
+      if(mirror[k]!==canonical(entry)){
        state="conflict";problem="A locally changed record was removed remotely: "+k+". No changes were discarded.";notify();return false;
       }
       byId.delete(String(entry.id));delete versions[k];delete mirror[k];changed=true;
@@ -197,7 +208,7 @@
     if(still===q && still.generation===generation){
      pending=pending.filter(x=>x!==q);
      if(q.action==="delete"){delete versions[k];delete mirror[k];}
-     else{versions[k]=next;mirror[k]=JSON.stringify(q.payload);}
+     else{versions[k]=next;mirror[k]=canonical(q.payload);}
     }else if(still===q){q.baseRevision=q.action==="delete"?null:next;q.conflict=false;}
     persist();notify();
    }
