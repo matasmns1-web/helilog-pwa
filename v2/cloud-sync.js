@@ -89,16 +89,17 @@
    Promise.resolve().then(()=>flush());
   }catch(e){pending=old;baseline=oldBaseline;problem="Could not queue the change safely: "+e.message;state="error";notify();throw e;}
  }
- async function listRemote(){
+ async function listRemote(sessionOwner){
   const all=[];
   let from=0;
   for(;;){
    const {data,error}=await db.from("helilog_records")
      .select("kind,record_id,payload,revision")
-     .eq("owner_id",owner).in("kind",types)
+     .eq("owner_id",sessionOwner).in("kind",types)
      .order("record_id",{ascending:true}).order("kind",{ascending:true})
      .range(from,from+499);
    if(error)throw Error(error.message||"Unable to read your private cloud workspace");
+   if(!isActive()||owner!==sessionOwner)return [];
    all.push(...(data||[]));
    if(!data||data.length<500)return all;
    from+=500;
@@ -109,9 +110,10 @@
   if(!isActive()||running)return false;
   if(root.navigator?.onLine===false){state="offline";notify();return false;}
   if(root.HeliLogCloud?.snapshot?.().userId!==owner){state="error";problem="Your cloud session has changed. Sign in again.";notify();return false;}
+  const sessionOwner=owner;
   try{
-   const remote=await listRemote();
-   if(!isActive())return false;
+   const remote=await listRemote(sessionOwner);
+   if(!isActive()||owner!==sessionOwner)return false;
    const rmap=new Map(remote.map(row=>[ident(row.kind,row.record_id),row]));
    // Recover an upload committed by the server when the device lost its
    // response (e.g. network changed just before the acknowledgement).
@@ -237,8 +239,8 @@
  }
  async function refresh(){
   if(!isActive())return false;
-  await pull();
-  if(state==="conflict")return false;
+  const completed=await pull();
+  if(!completed||state==="conflict")return false;
   if(pending.length)return flush();
   return state==="synced";
  }
