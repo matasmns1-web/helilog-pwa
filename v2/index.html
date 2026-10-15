@@ -2437,16 +2437,19 @@ function correctionHistoryMarkup(id){
     ${arr.map(c=>`<div style="border-top:1px solid var(--line);padding:10px 0;margin-top:10px">
       <b>${htmlEscape(c.id)}</b> · ${c.confirmedAt?'Confirmed '+htmlEscape(formatDateTime(c.confirmedAt)):'Pending printed addendum'}
       <div class="mini">${htmlEscape(c.reason)}</div>
-      <button class="btn" onclick="printCorrectionAddendum('${c.id}')">Print/reprint addendum</button>
+      ${isInstalledTouchApp()?'<div class="mini">Open HeliLog in a web browser to print and confirm.</div>':`<button class="btn" onclick="printCorrectionAddendum('${c.id}')">Print/reprint addendum</button>`}
     </div>`).join('')}
   </div>`;
 }
 function startArchivedCorrection(id){
-  if(isInstalledTouchApp()){
-    alert('Archived corrections require a printed and signed addendum. Open HeliLog on your desktop to complete them. Your original archived entry remains protected.');return;
-  }
   if(!isArchivedFlight(id))return;
-  if(pendingCorrectionFor(id)){go('printarchive');return;}
+  if(pendingCorrectionFor(id)){
+    if(isInstalledTouchApp()){
+      alert('Your correction proposal is saved. It will synchronize when connected; use the web browser to print, sign and confirm it.');
+      return;
+    }
+    go('printarchive');return;
+  }
   correctingArchivedId=id;
   const f=effectiveFlight(S.flights.find(x=>x.id===id));
   if(isSimulatorSession(f))addSimulator(id);
@@ -2472,7 +2475,10 @@ function recordArchiveCorrection(id,after,reason){
   S.printArchive.corrections.push(item);
   if(!save()){S.printArchive.corrections.pop();return;}
   correctingArchivedId=null;editingFlightId=null;clearFlightFormGuard();
-  go('printarchive');
+  if(isInstalledTouchApp()){
+    flight(id);
+    alert('Correction proposal saved. It will sync to the web when this device is connected. The signed original is unchanged; print and confirm the addendum on the website.');
+  }else go('printarchive');
 }
 function archivedFlightIds(){
   return new Set(archivedBatches().flatMap(b=>Array.isArray(b.flightIds)?b.flightIds:[]));
