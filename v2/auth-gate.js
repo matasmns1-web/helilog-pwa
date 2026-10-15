@@ -143,6 +143,7 @@ async function v23CreateProfile(event){
 }
 async function v23SignOut(){
  if(v23AuthBusy)return;
+ if(typeof confirmLeaveFlightForm==="function"&&!confirmLeaveFlightForm())return;
  const pending=window.HeliLogV23Sync.status().pending;
  if(pending&&!confirm(pending+" unsynchronized change(s) remain saved on this device. Sign out anyway?"))return;
  v23AuthBusy=true;v23Unlocked=false;
