@@ -27,7 +27,7 @@
  function available(){
   return !!owner && root.HeliLogCloud?.snapshot?.().userId===owner &&
    root.HeliLogV23Sync?.extended?.() && root.HeliLogV23Sync?.status?.().state==="synced" &&
-   root.navigator?.onLine!==false && !reading;
+   root.navigator?.onLine!==false && !reading && !error;
  }
  function assertReady(){
   if(!available())throw Error("Finish synchronizing the account and signed endorsements before archiving. Open Cloud account and check sync status.");
