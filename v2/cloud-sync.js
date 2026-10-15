@@ -97,6 +97,19 @@
    const remote=await listRemote();
    if(!isActive())return false;
    const rmap=new Map(remote.map(row=>[ident(row.kind,row.record_id),row]));
+   // Recover an upload committed by the server when the device lost its
+   // response (e.g. network changed just before the acknowledgement).
+   for(const q of [...pending]){
+    const k=ident(q.kind,q.id),row=rmap.get(k);
+    const ackPut=q.action==="put"&&row&&JSON.stringify(row.payload)===JSON.stringify(q.payload)
+      &&(q.baseRevision===null||row.revision===q.baseRevision+1);
+    const ackDelete=q.action==="delete"&&!row;
+    if(ackPut||ackDelete){
+     pending=pending.filter(x=>x!==q);
+     if(ackPut){versions[k]=row.revision;mirror[k]=JSON.stringify(row.payload);}
+     else{delete versions[k];delete mirror[k];}
+    }
+   }
    const local=clone(snapshotFn()),pendingKeys=new Set(pending.map(q=>ident(q.kind,q.id)));
    let changed=false,conflicts=0;
    for(const kind of types){
