@@ -74,6 +74,8 @@ async function v23EnterWorkspace(auth){
   localStorage.setItem(key,JSON.stringify(workspace));
  }
  KEY=key;S=workspace;
+ if(typeof window.HeliLogCloud.client!=="function")
+  throw Error("HeliLog loaded an outdated cached cloud module. Close and reopen the app, then reload the website while online. Your account and existing data are safe.");
  const client=await window.HeliLogCloud.client();
  window.HeliLogV23Sync.start({
   userId:id,client,getData:()=>S,
