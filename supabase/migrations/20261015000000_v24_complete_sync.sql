@@ -104,8 +104,11 @@ begin
  if v_first is null or v_first<1 or v_count is null or v_count<1 or v_count>1000 then
   raise exception 'Invalid page numbering';
  end if;
- if (p_batch->>'kind') is distinct from p_kind then
-  raise exception 'Print type does not match batch';
+ if p_kind='endorsement' and (p_batch->>'kind') is distinct from p_kind then
+  raise exception 'Endorsement print type does not match batch';
+ end if;
+ if p_kind='flight' and coalesce(p_batch->>'kind','flight')<>'flight' then
+  raise exception 'Flight print type does not match batch';
  end if;
  if p_kind='flight' and
     (select pg_catalog.array_agg(v order by ordinality)
