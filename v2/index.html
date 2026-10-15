@@ -1108,7 +1108,7 @@ function dashboard(){
     <button class="card dashboard-action web-only-tool" onclick="openImportModal()"><span>⇧</span><b>Import CSV</b><span class="muted">Bring in flight history</span></button>
     <button class="card dashboard-action" onclick="go('endorsements')"><span>✎</span><b>Endorsements</b><span class="muted">Memoranda and signatures</span></button>
     <button class="card dashboard-action" onclick="go('profile')"><span>▣</span><b>Backup</b><span class="muted">Profile → Backup & restore</span></button>
-    <button class="card dashboard-action web-only-tool" onclick="go('printarchive')"><span>▤</span><b>Print archive</b><span class="muted">Continue signed paper pages</span></button>
+    <button class="card dashboard-action web-only-tool cloud-archive-tool" onclick="go('printarchive')"><span>▤</span><b>Print archive</b><span class="muted">Continue signed paper pages</span></button>
   </div>
 
   <div class="grid two" style="margin-top:16px">
@@ -3756,7 +3756,7 @@ function endorsements(){
               ${!e.signatureData?`<button class="btn" type="button" onclick="endorsementForm('${e.id}')">Edit</button>
               <button class="btn" type="button" onclick="signEndorsement('${e.id}')">Sign</button>
               <button class="btn dangerbtn" type="button" onclick="deleteEndorsement('${e.id}')">Delete</button>`:
-              (isStandaloneApp()?'':`<button class="btn" onclick="go('endorsementarchive')">${v2ArchiveBridge.isArchived(S,e.id)?'View archive / Corrections':'Print / Archive'}</button>`)}
+              (isStandaloneApp()||v23AccountWorkspace()?'':`<button class="btn" onclick="go('endorsementarchive')">${v2ArchiveBridge.isArchived(S,e.id)?'View archive / Corrections':'Print / Archive'}</button>`)}
             </div>
           </div>
 
@@ -4340,9 +4340,9 @@ function profile(){
       </div>
       <div>
         <p><b>Restore from backup</b></p>
-        <p class="muted">Select a backup to verify it first. Before restoring, HeliLog requires you to download a safety copy of this browser's current data. Older checksum-free HeliLog backups remain supported.</p>
+        <p class="muted">${v23AccountWorkspace()?'Full backup restore is paused until cloud-safe migration is ready. You can still download your complete local safety backup.':'Select a backup to verify it first. HeliLog requires a safety copy before restoring.'}</p>
         <input id="restoreBackupInput" type="file" accept=".json,application/json" style="display:none" onchange="handleBackupRestoreFile(event)">
-        <button class="btn" type="button" onclick="document.getElementById('restoreBackupInput').click()">Choose backup file</button>
+        <button class="btn" type="button" onclick="document.getElementById('restoreBackupInput').click()" ${v23AccountWorkspace()?'disabled title="Restore will be available after cloud-safe migration"':''}>Choose backup file</button>
       </div>
     </div>
     <div id="backupRestoreStatus" style="margin-top:12px"></div>
@@ -4494,6 +4494,7 @@ function resetSandbox(withSamples){
 }
 let cleanStartBackupFingerprint=null;
 async function prepareLiveCleanStart(){
+  if(v23AccountWorkspace()){alert('Clean-start reset is disabled in an authenticated cloud workspace.');return;}
   if(TEST_MODE)return;
   try{
     const before=JSON.stringify(S);
@@ -4511,6 +4512,7 @@ async function prepareLiveCleanStart(){
   }
 }
 function confirmLiveCleanStart(){
+  if(v23AccountWorkspace()){alert('Clean-start reset is disabled in an authenticated cloud workspace.');return;}
   if(TEST_MODE || KEY!==LIVE_KEY || !cleanStartBackupFingerprint)return;
   if(JSON.stringify(S)!==cleanStartBackupFingerprint){
     cleanStartBackupFingerprint=null;
@@ -4607,7 +4609,7 @@ async function makeFullBackup(){
     backupSchema:2,
     appVersion:'2.3',
     exportedAt:new Date().toISOString(),
-    environment:TEST_MODE?'test':'production',
+    environment:v23AccountWorkspace()?'cloud-test':TEST_MODE?'test':'production',
     integrity:{algorithm:'SHA-256',sha256:await sha256Hex(JSON.stringify(data))},
     data
   };
@@ -4669,6 +4671,9 @@ let pendingRestoreCandidate=null;
 let restoreSafetyDownloaded=false;
 
 async function handleBackupRestoreFile(ev){
+  if(v23AccountWorkspace()){
+    alert('Restoring an entire logbook is disabled in V2.3 cloud workspaces. Your existing test data is preserved separately.');return;
+  }
   const file=ev.target.files?.[0];
   const box=document.getElementById('backupRestoreStatus');
   pendingRestoreCandidate=null;
@@ -4737,6 +4742,9 @@ async function downloadPreRestoreSafetyBackup(){
   }catch(e){alert('Could not prepare safety backup. Restore is blocked: '+String(e.message||e));}
 }
 function restoreCheckedBackup(){
+  if(v23AccountWorkspace()){
+    alert('Full backup restore is paused in cloud workspaces to prevent overwriting synced flights. Keep the file and use a reviewed import once cloud migration is ready.');return;
+  }
   if(!pendingRestoreCandidate || !restoreSafetyDownloaded){
     alert('Download the safety backup before restoring.');return;
   }
