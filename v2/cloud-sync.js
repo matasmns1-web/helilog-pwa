@@ -12,15 +12,16 @@
 })(typeof window!=="undefined"?window:globalThis,function(root){
  "use strict";
  const types=["aircraft","flight"],plural={aircraft:"aircraft",flight:"flights"};
- let owner="",db=null,pending=[],versions={},baseline={},state="inactive",problem="",
+ let owner="",db=null,pending=[],versions={},mirror={},baseline={},state="inactive",problem="",
   running=false,paused=false,snapshotFn=null,replaceFn=null,listener=null;
  const clone=x=>JSON.parse(JSON.stringify(x));
  const ident=(kind,id)=>kind+":"+id;
  const queueKey=u=>"helilog_v23_queue_"+u;
  const versionKey=u=>"helilog_v23_versions_"+u;
+ const mirrorKey=u=>"helilog_v23_mirror_"+u;
  const recordKey=u=>"helilog_v23_account_"+u;
  const read=(key,otherwise)=>{try{const s=root.localStorage.getItem(key);return s===null?otherwise:JSON.parse(s);}catch{return otherwise;}};
- const persist=()=>{if(!owner)return;root.localStorage.setItem(queueKey(owner),JSON.stringify(pending));root.localStorage.setItem(versionKey(owner),JSON.stringify(versions));};
+ const persist=()=>{if(!owner)return;root.localStorage.setItem(queueKey(owner),JSON.stringify(pending));root.localStorage.setItem(versionKey(owner),JSON.stringify(versions));root.localStorage.setItem(mirrorKey(owner),JSON.stringify(mirror));};
  function notify(){try{listener?.(status());}catch(e){root.console?.warn?.("Cloud status view failed",e)}}
  function status(){
   return {state,pending:pending.length,conflicts:pending.filter(q=>q.conflict).length,error:problem,owner,online:root.navigator?.onLine!==false};
@@ -35,7 +36,7 @@
  }
  function parseKey(k){const i=k.indexOf(":");return {kind:k.slice(0,i),id:k.slice(i+1)};}
  function stop(){
-  owner="";db=null;pending=[];versions={};baseline={};state="inactive";problem="";
+  owner="";db=null;pending=[];versions={};mirror={};baseline={};state="inactive";problem="";
   running=false;paused=true;snapshotFn=null;replaceFn=null;notify();
  }
  function start({userId,client,getData,replaceData,onStatus}){
@@ -44,8 +45,8 @@
   if(owner&&owner!==userId)stop();
   owner=userId;db=client;snapshotFn=getData;replaceFn=replaceData;listener=onStatus||null;
   paused=false;running=false;pending=read(queueKey(owner),[]);
-  versions=read(versionKey(owner),{});
-  if(!Array.isArray(pending)||!versions||typeof versions!=="object"||Array.isArray(versions))throw Error("Saved sync state is invalid. Preserve local data; do not reset.");
+  versions=read(versionKey(owner),{});mirror=read(mirrorKey(owner),{});
+  if(!Array.isArray(pending)||!versions||typeof versions!=="object"||Array.isArray(versions)||!mirror||typeof mirror!=="object"||Array.isArray(mirror))throw Error("Saved sync state is invalid. Preserve local data; do not reset.");
   if(pending.some(q=>!types.includes(q.kind)||typeof q.id!=="string"||!["put","delete"].includes(q.action)))throw Error("Saved sync queue contains invalid operations.");
   baseline=mapOf(snapshotFn());state=pending.length?"pending":"connecting";problem="";notify();
  }
@@ -109,21 +110,28 @@
       continue;
      }
      const current=byId.get(row.record_id);
-     const priorRevision=versions[k];
-     // Never silently replace a locally changed record that escaped the queue.
-     if(priorRevision!==undefined&&current && baseline[k]!==JSON.stringify(current)){
-      problem="Unsynchronized local change detected for "+k;
+     const localValue=current===undefined?null:JSON.stringify(current);
+     const original=mirror[k];
+     // Cross-device safety: compare against the LAST VERIFIED CLOUD COPY,
+     // not today's startup snapshot (which could contain unsent local edits).
+     if(current && (original===undefined?
+         (versions[k]!==undefined?localValue!==JSON.stringify(row.payload):true):
+         localValue!==original)){
+      problem="A local record differs from the last verified cloud copy: "+k+". Nothing was overwritten.";
       state="conflict";notify();return false;
      }
      if(!current||JSON.stringify(current)!==JSON.stringify(row.payload)){
       byId.set(row.record_id,clone(row.payload));changed=true;
      }
-     versions[k]=row.revision;
+     versions[k]=row.revision;mirror[k]=JSON.stringify(row.payload);
     }
     for(const entry of arr){
      const k=ident(kind,String(entry.id));
      if(!rmap.has(k)&&!pendingKeys.has(k)&&Number.isInteger(versions[k])){
-      byId.delete(String(entry.id));delete versions[k];changed=true;
+      if(mirror[k]!==JSON.stringify(entry)){
+       state="conflict";problem="A locally changed record was removed remotely: "+k+". No changes were discarded.";notify();return false;
+      }
+      byId.delete(String(entry.id));delete versions[k];delete mirror[k];changed=true;
      }
     }
     local[key]=[...byId.values()];
@@ -175,7 +183,8 @@
     const next=Number(result.data[0].revision),still=pending.find(x=>x.kind===q.kind&&x.id===q.id);
     if(still===q && still.generation===generation){
      pending=pending.filter(x=>x!==q);
-     if(q.action==="delete")delete versions[k];else versions[k]=next;
+     if(q.action==="delete"){delete versions[k];delete mirror[k];}
+     else{versions[k]=next;mirror[k]=JSON.stringify(q.payload);}
     }else if(still===q){q.baseRevision=q.action==="delete"?null:next;q.conflict=false;}
     persist();notify();
    }
