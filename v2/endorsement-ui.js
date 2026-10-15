@@ -49,6 +49,7 @@ function v2PageOf(id){
   return v2ArchiveBridge.source(S,id);
 }
 function v2EndorsementArchive(){
+ if(typeof v23PreventUnsupportedArchive==='function'&&v23PreventUnsupportedArchive())return;
  if(!v2ArchiveWebAllowed()){
   if(location.hash!=='#endorsements')location.hash='#endorsements';
   endorsements();return;
