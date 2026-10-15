@@ -106,6 +106,7 @@ test("refresh from a signed-out session cannot overwrite a newly initialized arc
  f.archive.stop();
  f.flags.delayed=false;
  f.archive.start({userId:uid,db:f.client});
+ await Promise.resolve();await Promise.resolve();
  f.release();
  assert.equal(await pending,false);
  assert.equal(committed,false);
