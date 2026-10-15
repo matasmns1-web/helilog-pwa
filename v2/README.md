@@ -1,10 +1,19 @@
 # HeliLog V2 — Development
 
-**Current version: V2.8.2 — Mobile correction proposals sync to web, with signed addendum confirmation remaining web-only.** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
+**Current version: V2.8.3 — Fix signed correction confirmation order while retaining V2.8.2 mobile proposal synchronization.** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
 
 **Prior release: V2.1.** The complete V1.43.2 interface is restored with V2 endorsement print archiving; installed-app signing is separate from web-only print/archive management. See [FULL-V1-INTERFACE.md](FULL-V1-INTERFACE.md) for parity scope, testing instructions and data safety.
 
 **Earlier modular prototype:** [alpha.html](alpha.html) remains available with its own test data.
+
+## V2.8.3 — Confirm the signed addendum in cloud before marking the local draft
+
+- Fixes the V2.8.2 correction confirmation race where the web marked its correction `confirmedAt` too early, causing the cloud archive refresh to reject an otherwise valid pending proposal with an "Unsynchronized flight correction" warning.
+- Build a separate signed addendum for the owner-verified cloud RPC; leave the local proposal **pending** until the cloud acknowledges the signed correction, then save and verify the confirmed local copy.
+- Perform a clean cloud archive refresh before confirmation to clear the obsolete temporary error from a previous attempt (without ignoring real archive integrity problems).
+- Preserve both original archived flights and pending proposals if RPC or archive verification fails. If cloud confirmation succeeds but local device persistence fails, explicitly warn the user **not to confirm again** and to recover the signed copy by syncing.
+- Prevent double confirmation; handle already imported signed copies even when PostgreSQL JSONB reorders object keys.
+- No Supabase schema changes or V1 production changes. Use the `v283-correction-confirmation.test.cjs` regression suite with fictional records.
 
 ## V2.8.2 — Mobile correction proposals and cloud synchronization
 
