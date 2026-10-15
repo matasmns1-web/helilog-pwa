@@ -2767,38 +2767,75 @@ function printCorrectionAddendum(id){
   pendingCorrectionPrint=JSON.stringify(c);
   printarchive();
 }
+let correctionConfirmationBusy=false;
 async function confirmCorrectionAddendum(id){
+  if(correctionConfirmationBusy)return;
   if(isInstalledTouchApp()){
     alert('Only the web browser can confirm a printed and signed correction addendum.');
     return;
   }
   const c=archiveCorrections().find(x=>x.id===id);
   if(!c||c.confirmedAt)return;
-  if(pendingCorrectionPrint!==JSON.stringify(c)){
+  const preview=JSON.stringify(c);
+  if(pendingCorrectionPrint!==preview){
     alert('Preview the current correction addendum first, then check and sign it.');return;
   }
   if(!confirm('Confirm that correction '+c.id+' was PRINTED, CHECKED and SIGNED?\n\n'+
     'The original signed archive page will remain unchanged.\n'+
     'The revised entry will affect electronic totals and future paper carried-forward totals.\n'+
     'Confirmed corrections cannot be edited or deleted in HeliLog.'))return;
-  c.confirmedAt=new Date().toISOString();
-  if(v23AccountWorkspace()){
-   try{await window.HeliLogV24Archive.confirmAddendum('flight',c.flightId,c);}
-   catch(err){c.confirmedAt='';alert('Correction was not archived in the cloud: '+(err.message||err));return;}
-  }
+  // Build the signed addendum separately: NEVER mark the local draft confirmed
+  // before the owner-verified cloud archive RPC has acknowledged it. Otherwise
+  // a concurrent archive refresh sees an unconfirmed cloud addendum and blocks.
+  const signed={...JSON.parse(preview),confirmedAt:new Date().toISOString()};
+  const cloudAccount=v23AccountWorkspace();
+  correctionConfirmationBusy=true;
+  let cloudAcknowledged=false;
   try{
-    verifiedEnvironmentWrite(KEY,S);
-    const confirmed=JSON.parse(localStorage.getItem(KEY)||'{}').printArchive?.corrections?.find(x=>x.id===id);
-    if(!confirmed||confirmed.confirmedAt!==c.confirmedAt)throw new Error('Saved correction was not verified.');
+    if(cloudAccount){
+      // Also clears an old temporary "unsynchronized correction" warning from
+      // the previous confirmation-order bug, but does not mask real errors.
+      const refreshed=await window.HeliLogV24Archive.refresh(()=>S,v24CommitArchiveRefresh);
+      if(!refreshed)throw Error(window.HeliLogV24Archive.error()||
+        'Could not refresh cloud archive history. The proposal remains pending.');
+      const current=archiveCorrections().find(x=>x.id===id);
+      if(!current||current.confirmedAt||JSON.stringify(current)!==preview)
+        throw Error('Correction changed during cloud refresh. Preview and sign the current proposal again.');
+      await window.HeliLogV24Archive.confirmAddendum('flight',signed.flightId,signed);
+      cloudAcknowledged=true;
+    }
+    // A concurrent protected cloud pull may have imported this confirmed
+    // addendum already. Apply the confirmed timestamp to a new workspace
+    // snapshot, rather than mutating S while network operations are in flight.
+    const next=JSON.parse(JSON.stringify(S));
+    const saved=next.printArchive?.corrections?.find(x=>x.id===id);
+    if(!saved)throw Error('The cloud confirmed the addendum, but this browser no longer has its matching correction.');
+    if(saved.confirmedAt&&JSON.stringify(saved)!==JSON.stringify(signed))
+      throw Error('The cloud confirmed the addendum, but the local confirmed copy differs. Do not retry.');
+    if(!saved.confirmedAt){
+      if(JSON.stringify(saved)!==preview)
+        throw Error('The cloud confirmed the addendum, but the local draft changed. Preserve both copies.');
+      saved.confirmedAt=signed.confirmedAt;
+    }
+    verifiedEnvironmentWrite(KEY,next);
+    S=next;
+    pendingCorrectionPrint=null;
+    pendingArchivePreview=null;
+    selectedArchivePageCount=null;
+    printarchive();
   }catch(e){
-    c.confirmedAt='';
-    alert('Correction confirmation could not be saved. It remains pending. '+String(e.message||e));
-    return;
+    if(cloudAcknowledged){
+      // The cloud is now authoritative. Do not revert or suggest retrying
+      // confirmation: that could create a duplicate signed addendum.
+      alert('Cloud confirmed the signed correction, but this browser could not finish updating its local copy: '+
+        String(e.message||e)+'. Do NOT confirm it again. Keep this device data; reconnect or reopen HeliLog to retrieve the signed addendum.');
+    }else{
+      alert('Correction was not archived in the cloud: '+String(e.message||e)+
+        '. The proposal remains pending. Do not clear stored data.');
+    }
+  }finally{
+    correctionConfirmationBusy=false;
   }
-  pendingCorrectionPrint=null;
-  pendingArchivePreview=null;
-  selectedArchivePageCount=null;
-  printarchive();
 }
 function discardPendingCorrection(id){
   const list=archiveCorrections();
