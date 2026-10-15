@@ -98,6 +98,6 @@ test('print confirmation stays web only and requires confirmed cloud synchroniza
 });
 test('V2.8.4 keeps the V2.4 cloud archive and sync modules versioned together',()=>{
  for(const file of ['cloud-config.js','cloud-foundation.js','cloud-view.js','cloud-sync.js','auth-gate.js','cloud-archives.js'])
-  assert.match(html,new RegExp(file.replace('.','\\.')+'\\?v=2\\.8\\.3-confirmation-1'));
+  assert.match(html,new RegExp(file.replace('.','\\.')+'\\?v=2\\.8\\.4-recovery-1'));
  assert.match(html,/V2\.8\.4 · TEST/);
 });
