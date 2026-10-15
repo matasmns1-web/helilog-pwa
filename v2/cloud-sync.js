@@ -290,6 +290,8 @@
   const before=snapshotFn(),preview=await extensionPreview();
   if(mode==="upload"&&preview.hasCloud)
     throw Error("This account already has extended cloud records. Choose existing cloud data on this device to avoid overwriting another device.");
+  if(mode==="cloud"&&!preview.hasCloud)
+    throw Error("No extended records exist in the cloud yet. Upload a primary device first.");
   // A durable safety snapshot is created BEFORE switching mode or replacing.
   const backupKey=savedPreMigration(owner);
   if(root.localStorage.getItem(backupKey)===null)
@@ -298,10 +300,15 @@
    const r=await listRemote(owner);
    const next=clone(before);
    for(const kind of extraKinds){
-    const fromCloud=r.filter(row=>row.kind===kind).map(row=>clone(row.payload));
+    const records=r.filter(row=>row.kind===kind);
+    const fromCloud=records.map(row=>clone(row.payload));
     if(kind==="settings"){
      for(const item of fromCloud)if(settingNames.includes(item.id))next[item.id]=clone(item.data);
     }else next[plural[kind]]=fromCloud;
+    for(const row of records){
+     const k=ident(row.kind,row.record_id);
+     versions[k]=row.revision;mirror[k]=canonical(row.payload);
+    }
    }
    replaceFn(next);
   }
