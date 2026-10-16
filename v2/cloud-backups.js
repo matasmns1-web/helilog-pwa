@@ -131,6 +131,26 @@
    throw Error("Backup changed since it was verified. No file created.");
   return {owner,backupId:id,createdAt:row.created_at,serverHash:row.sha256,content:row.content};
  }
+ async function health(client,owner){
+  activeOwner(owner);
+  const report=checked(await client.rpc("helilog_backup_health"),"Backup health check");
+  activeOwner(owner);
+  if(!["healthy","stale_backup","scheduled_job_failure","checksum_mismatch",
+       "scheduler_disabled","no_backup"].includes(report.status)||
+     typeof report.scheduleActive!=="boolean"||
+     !Number.isInteger(report.snapshotCount)||report.snapshotCount<0)
+   throw Error("Unexpected backup health response. Treat the account as unverified.");
+  return report;
+ }
+ async function retention(client,owner){
+  activeOwner(owner);
+  const report=checked(await client.rpc("helilog_backup_retention_preview"),
+   "Backup retention preview");
+  activeOwner(owner);
+  if(report.mode!=="preview_only"||!Number.isInteger(report.eligibleForFuturePruning)||
+    report.eligibleForFuturePruning<0)throw Error("Invalid retention safety response.");
+  return report;
+ }
  return Object.freeze({list,create,preview,restore,encryptSnapshot,decryptSnapshot,
-   downloadPayload,keyFromPassword});
+   downloadPayload,keyFromPassword,health,retention});
 });
