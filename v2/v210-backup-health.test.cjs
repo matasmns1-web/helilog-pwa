@@ -76,7 +76,7 @@ test("complete printed/signed backup reconstructs only in memory with matching d
 });
 test("fingerprint protects immutable cloud originals",async()=>{
  const f=setup(),source=payload();
- source.content.records[0].payload.mins=52;
+ source.content.records[0].payload={...source.content.records[0].payload,mins:52};
  const result=await f.drill.drill(source,owner);
  assert.equal(result.ok,false);
  assert.match(result.problems.join(" "),/Archived original differs/);
@@ -92,7 +92,7 @@ test("missing frozen original or duplicate record fails closed",async()=>{
 });
 test("signed correction metadata tampering and cross-account exports are rejected",async()=>{
  const f=setup(),tampered=payload(),other=payload();
- tampered.content.addenda[0].after_snapshot.mins=60;
+ tampered.content.addenda[0].after_snapshot={...tampered.content.addenda[0].after_snapshot,mins:60};
  assert.equal((await f.drill.drill(tampered,owner)).ok,false);
  assert.match((await f.drill.drill(tampered,owner)).problems.join(" "),/Signed addendum metadata/);
  other.owner="33333333-3333-4333-a333-333333333333";
