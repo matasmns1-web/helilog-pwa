@@ -352,7 +352,12 @@ async function v29DownloadEncryptedSnapshot(){
   if(!v29SelectedId)throw Error("Select a cloud snapshot first.");
   const source=await window.HeliLogV29Backup.downloadPayload(db,owner,v29SelectedId);
   const encrypted=await window.HeliLogV29Backup.encryptSnapshot(source,password);
-  offerBackupFile(encrypted,"HeliLog_V29_ENCRYPTED_Cloud_Snapshot");
+  // Do not put the account holder's name, email or account ID in the filename.
+  const blob=new Blob([JSON.stringify(encrypted)],{type:"application/json"});
+  const url=URL.createObjectURL(blob),link=document.createElement("a");
+  link.href=url;link.download="HeliLog_V29_Encrypted_Cloud_Snapshot.json";
+  document.body.appendChild(link);
+  try{link.click();}finally{link.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);}
   v29BackupMessage="Encrypted file download requested. Keep it off-device, and store your passphrase separately. HeliLog cannot recover a forgotten passphrase.";
  });
 }
