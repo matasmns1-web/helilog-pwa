@@ -126,8 +126,8 @@ function cloud(){
  }
  const stateText=st.configured?(state==="signed_in"?"Signed in":state==="error"?"Connection needs attention":
    state==="connecting"?"Connecting…":"Ready for private sign-in"):"Cloud not configured";
- app.innerHTML=header('Cloud account','HeliLog V2.11 · Synchronization and archive integrity',
-  `<button class="btn" onclick="go('profile')">← Profile</button>`)+
+ app.innerHTML=header('Cloud account','HeliLog V2.11.1 · Synchronization and archive integrity',
+  `<button class="btn" onclick="go('settings')">← Settings</button>`)+
   '<div class="card" style="margin-bottom:16px"><div class="head"><h2>Connection status</h2></div>'+
   '<div class="pwa-state"><b>'+v22CloudEscape(stateText)+'</b></div>'+
   (st.configured?'<div class="mini">Test environment · Invitation-only accounts</div>':'<div class="mini">Test project is not configured yet.</div>')+
@@ -160,7 +160,7 @@ function cloud(){
    (window.HeliLogV24Archive?.recoveryNotice?.()?'<div class="note" role="status">'+
       v22CloudEscape(window.HeliLogV24Archive.recoveryNotice())+'</div>':'')+
    (v28Notice?'<div class="note" role="status">'+v22CloudEscape(v28Notice)+'</div>':
-     '<div class="mini">A successful check is recorded as a device-local evidence baseline. Save a separate recovery package under Backup &amp; Recovery.</div>')+
+     '<div class="mini">A successful check is recorded as a device-local evidence baseline. Save a separate recovery package under Settings → Backup &amp; Recovery.</div>')+
    '</div>':'');
 }
 function v22CloudError(error){
