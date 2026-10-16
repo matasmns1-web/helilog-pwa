@@ -1,10 +1,20 @@
 # HeliLog V2 — Development
 
-**Current version: V2.10 — Backup monitoring, non-destructive retention planning and isolated recovery drill (built on V2.9).** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
+**Current version: V2.11 — Cleaner Profile, expandable Medical and Licences & Ratings, separate Settings and Backup & Recovery pages, with unchanged V2.10 data protections.** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
 
 **Prior release: V2.1.** The complete V1.43.2 interface is restored with V2 endorsement print archiving; installed-app signing is separate from web-only print/archive management. See [FULL-V1-INTERFACE.md](FULL-V1-INTERFACE.md) for parity scope, testing instructions and data safety.
 
 **Earlier modular prototype:** [alpha.html](alpha.html) remains available with its own test data.
+
+## V2.11 — Profile, Settings and Backup & Recovery interface cleanup (TEST)
+
+- Slim **Profile** to pilot identity and separate expandable **Medical** and **Licences & Ratings** cards. A compact summary is visible when collapsed; the original medical/qualification editing and deletion actions remain inside.
+- Create dedicated **Settings** for brought-forward previous logbook totals, read-only data integrity checks, local Test Mode controls (only where supported) and app/device installation status.
+- Create dedicated **Backup & Recovery** for the existing full JSON backup and read-only recovery inspection plus all V2.9/V2.10 scheduled snapshots, encrypted exports, backup health, retention planning and isolated recovery drill. No data was migrated; this changes UI placement only.
+- Add Settings and Backup & Recovery to desktop sidebar and mobile More, with a direct Backup & Recovery link from Cloud Account. Existing cloud synchronization and conflict-resolution features remain in Cloud Account.
+- Fix editing/cancellation/status return paths when actions are accessed from their new pages; remove obsolete Profile backup references and outdated profile prototype notices.
+- No Supabase migrations or signed-record modifications; no changes to the V1 production code. Existing flight data and archived addenda must remain unchanged.
+- Manual acceptance checklist: [V2.11-TEST-GUIDE.md](V2.11-TEST-GUIDE.md).
 
 ## V2.10 — Backup reliability and isolated recovery (TEST)
 
