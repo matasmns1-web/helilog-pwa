@@ -51,6 +51,7 @@ test("Profile contains identity and two initially collapsed sections, not tools"
  assert.doesNotMatch(f.app.innerHTML,/id="qualificationsSection" open/);
  assert.doesNotMatch(f.app.innerHTML,/id="v29-backup-tools"|Existing logbook import|Data integrity check/);
  assert.match(f.app.innerHTML,/v23SignOut\(\)/);
+ assert.doesNotMatch(f.app.innerHTML,/go\('cloud'\)/);
 });
 test("Medical and Ratings can expand independently and retain editing actions",()=>{
  const f=fixture();f.pages.profile();
@@ -79,6 +80,9 @@ test("Settings holds prior totals, integrity, Test Mode and device tools",()=>{
  assert.match(f.app.innerHTML,/id="settings-testmode-card"/);
  assert.match(f.app.innerHTML,/id="pwaStatus"/);
  assert.match(f.app.innerHTML,/go\('backups'\)/);
+ assert.match(f.app.innerHTML,/go\('cloud'\)/);
+ assert.match(f.app.innerHTML,/Manage cloud account/);
+ assert.match(f.app.innerHTML,/Manage backups/);
  assert.doesNotMatch(f.app.innerHTML,/id="v29-backup-tools"|id="medicalSection"/);
  assert.equal(f.deps.statusCalls(),1);
  assert.match(html,/helilog-cloud-workspace #settings-testmode-card/);
@@ -93,13 +97,17 @@ test("Backup page retains legacy and cloud backup/restore tools",()=>{
  assert.equal(JSON.stringify(f.S),before);
  assert.doesNotMatch(f.app.innerHTML,/Existing logbook import|id="medicalSection"/);
 });
-test("Desktop, mobile More and router all expose Settings and Backups",()=>{
- assert.match(html,/data-v="settings"/);
- assert.match(html,/data-v="backups"/);
- assert.match(html,/onclick="go\('settings'\)"><span>⚙<\/span><b>Settings<\/b>/);
- assert.match(html,/onclick="go\('backups'\)"><span>▣<\/span><b>Backup &amp; Recovery<\/b>/);
+test("Settings is the only Cloud/Backup top-level navigation entry and nested routes remain",()=>{
+ const aside=html.slice(html.indexOf("<aside>"),html.indexOf("</aside>"));
+ const more=html.slice(html.indexOf("function mobilemore(){"),html.indexOf("function compareFlightsOldest("));
+ assert.match(aside,/data-v="settings"/);
+ assert.doesNotMatch(aside,/data-v="cloud"|data-v="backups"/);
+ assert.match(more,/onclick="go\('settings'\)"><span>⚙<\/span><b>Settings<\/b>/);
+ assert.doesNotMatch(more,/onclick="go\('cloud'\)"|onclick="go\('backups'\)"/);
  assert.match(html,/totals,profile,settings,backups,cloud,testmode,mobilemore/);
  assert.match(html,/moreViews=\[[^\]]*'settings','backups','cloud'/);
+ assert.match(html,/b.dataset.v==='settings' && \(v==='cloud'\|\|v==='backups'\)/);
+ assert.match(cloud,/go\('settings'\)/);
  assert.match(cloud,/go\(\\'backups\\'\)/);
 });
 test("Moved actions return to their new screens",()=>{
@@ -117,6 +125,6 @@ test("The UI-only release retains archived-flight handlers and updates PWA cache
   "downloadFullBackup","restoreCheckedBackup","showIntegrityCheck","editMedical",
   "saveMedical","saveQualification","deleteQualification"])
   assert.match(html,new RegExp("function "+name+"\\("));
- assert.match(html,/HeliLog V2\.11 — Interface Organization/);
- assert.match(worker,/helilog-v2-11-interface-1/);
+ assert.match(html,/HeliLog V2\.11\.1 — Unified Settings Navigation/);
+ assert.match(worker,/helilog-v2-11-1-settings-1/);
 });
