@@ -1,10 +1,19 @@
 # HeliLog V2 — Development
 
-**Current version: V2.9 — Private scheduled cloud backups, passphrase-encrypted exports and guarded recovery of missing unsigned records (built on V2.8.4).** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
+**Current version: V2.10 — Backup monitoring, non-destructive retention planning and isolated recovery drill (built on V2.9).** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
 
 **Prior release: V2.1.** The complete V1.43.2 interface is restored with V2 endorsement print archiving; installed-app signing is separate from web-only print/archive management. See [FULL-V1-INTERFACE.md](FULL-V1-INTERFACE.md) for parity scope, testing instructions and data safety.
 
 **Earlier modular prototype:** [alpha.html](alpha.html) remains available with its own test data.
+
+## V2.10 — Backup reliability and isolated recovery (TEST)
+
+- **Profile → Cloud backup & recovery:** adds on-demand backup health monitoring (latest snapshot, checksum, age, scheduler enabled/disabled, scheduled job failure indicators) and an account-scoped retention-policy preview.
+- The retention policy proposes retaining 90 latest daily snapshots plus 12 months of monthly anchors and all manual/pre-restore snapshots. **No snapshot deletion is enabled in V2.10**; that requires independently tested off-provider recovery.
+- Adds a **passphrase-authenticated, isolated recovery drill** for V2.9 encrypted exports. It reconstructs a complete snapshot in temporary browser memory, checks frozen originals against cloud records, batch references and signed corrections, then compares SHA-256 fingerprints. It never writes to the active device workspace or Supabase.
+- Maintains V2.9 daily private snapshots, user-encrypted downloads and transactional missing-only unsigned record restoration. Full external encrypted recovery to a lost/new Supabase project remains a *future supervised recovery procedure*, not a V2.10 capability.
+- Migration: `supabase/migrations/20261016050000_v210_backup_health_retention.sql`. New tests: `v2/v210-backup-health.test.cjs`.
+- The TEST project is not approved for real operational logbook records or EASA-compliant signed record retention.
 
 ## V2.9 — Backup & Recovery Improvements (TEST)
 
