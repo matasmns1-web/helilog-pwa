@@ -26,7 +26,7 @@ html.helilog-locked main{margin:0!important;width:100%!important;max-width:none!
 .v23-auth-card{user-select:none;-webkit-user-select:none;caret-color:transparent}
 .v23-auth-card input,.v23-auth-card textarea{user-select:text;-webkit-user-select:text;caret-color:auto}
 .v23-auth-card .form{margin-top:20px}.v23-auth-card .btn.primary{width:100%;padding:13px}
-html.helilog-cloud-workspace nav button[data-v="testmode"]{display:none!important}
+html.helilog-cloud-workspace nav button[data-v="testmode"],html.helilog-cloud-workspace #settings-testmode-card{display:none!important}
 .v23-syncbanner{margin:0 0 16px}.v23-syncbanner .note{margin-bottom:0}
 @media(max-width:550px){.v23-auth-container{align-items:flex-start;padding:18px 0}.v23-auth-card{padding:25px 20px}}
 /* Installed phone/tablet app: flight entry and viewing only; browser retains management tools. */
@@ -4374,8 +4374,7 @@ function profile(){
  });
  const names=pilotNameParts(),primary=qualifications.find(x=>x.isPrimary);
  app.innerHTML=header('Profile','Your pilot identity and qualifications',
-  `<button class="btn" type="button" onclick="go('settings')">Settings</button>
-    <button class="btn primary" type="button" onclick="editOwnProfile()">Edit profile</button>`)+
+  `<button class="btn" type="button" onclick="go('settings')">Settings</button>`)+
  `<div class="card profile-identity">
    <div class="head"><h2>Pilot details</h2><button type="button" class="btn" onclick="editOwnProfile()">Edit</button></div>
    <div class="profileline"><div class="k">Name</div><div><b>${htmlEscape([names.firstName,names.lastName].filter(Boolean).join(' ')||'—')}</b></div></div>
@@ -4466,7 +4465,7 @@ function settings(){
     <div id="integrityCheckResult" class="mini">No records will be changed by the check.</div>
   </div>
 
-  <div class="card" style="margin-top:16px">
+  <div class="card" id="settings-testmode-card" style="margin-top:16px">
     <div class="head">
       <div><h2>Test Mode &amp; safe reset</h2>
       <div class="muted">Use a separate test logbook without modifying your main flight records.</div></div>
@@ -4475,7 +4474,7 @@ function settings(){
     <div class="mini">Current environment: <b>${TEST_MODE?'TEST SANDBOX':'MAIN LOGBOOK'}</b>. This browser stores each environment separately.</div>
   </div>
 
-  <div class="card desktop-only" style="margin-top:16px">
+  <div class="card" style="margin-top:16px">
     <div class="head">
       <div>
         <h2>App &amp; device</h2>
@@ -4919,12 +4918,12 @@ function restoreCheckedBackup(){
       alert('CRITICAL: Restore failed and browser storage could not be rolled back. Keep your safety backup. '+rollbackErr);
     }
     alert('Restore failed. Existing in-memory data was retained. '+String(err.message||err));
-    profile();
+    backups();
     return;
   }
   pendingRestoreCandidate=null;
   restoreSafetyDownloaded=false;
-  profile();
+  backups();
   const box=document.getElementById('backupRestoreStatus');
   if(box)box.innerHTML='<div class="successbox"><b>Backup restored and saved successfully.</b> '+info.flights+
     ' flights and '+(S.printArchive?.batches?.length||0)+' print archive batches are now available. Keep the pre-restore safety backup.</div>';
