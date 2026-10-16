@@ -1,0 +1,26 @@
+name: HeliLog V2 staging regression tests
+
+on:
+  pull_request:
+    branches: [v2/development]
+  push:
+    branches: [v2/development]
+
+permissions:
+  contents: read
+
+jobs:
+  staging:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout V2 source
+        uses: actions/checkout@v4
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test backups, restore and archived records
+        run: |
+          node --test v2/v29-backup-recovery.test.cjs
+          node --test v2/v27-offline-conflicts.test.cjs v2/v28-integrity-recovery.test.cjs v2/v282-corrections.test.cjs v2/v283-correction-confirmation.test.cjs v2/v284-stranded-corrections.test.cjs
+          node --test v2/v24-sync.test.cjs v2/v25-profile-pic.test.cjs v2/v26-login-ui.test.cjs v2/v27-cloud-ui.test.cjs v2/v281-archive-readiness.test.cjs
