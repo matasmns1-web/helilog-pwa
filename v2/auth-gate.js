@@ -1,5 +1,5 @@
 /* HeliLog V2.3 private login gate. No automatic import of V2.2 local data. */
-const HELILOG_TEST_VERSION='V2.10';
+const HELILOG_TEST_VERSION='V2.11';
 let v23Unlocked=false,v23AuthBusy=false,v23AuthMessage="";
 function v23Escape(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function v23AccountWorkspace(){return v23Unlocked && !!window.HeliLogV23Sync.status().owner;}
@@ -276,7 +276,7 @@ async function v28DownloadCloudRecovery(){
   v28Notice="Verified recovery package download requested. Store the JSON securely outside this device. "+
    "It includes private records and signatures; a downloaded file is NOT an automatic cloud backup.";
  }catch(e){v28Notice="Recovery package was NOT prepared: "+(e.message||e);}
- finally{v28Busy=false;if(location.hash==="#cloud")cloud();else profile();}
+ finally{v28Busy=false;if(location.hash==="#cloud")cloud();else if(location.hash==="#backups")backups();}
 }
 async function v28InspectCloudRecovery(ev){
  if(v28Busy)return;
@@ -295,7 +295,7 @@ async function v28InspectCloudRecovery(ev){
    n.endorsementArchives+" endorsement archive batches). "+
    "This is a READ-ONLY inspection; neither the device nor the cloud was restored.";
  }catch(e){v28Notice="Recovery file rejected: "+(e.message||e)+". No records were modified.";}
- finally{v28Busy=false;if(location.hash==="#cloud")cloud();else profile();}
+ finally{v28Busy=false;if(location.hash==="#cloud")cloud();else if(location.hash==="#backups")backups();}
 }
 
 
@@ -311,7 +311,7 @@ async function v29Run(label,action){
  if(v29BackupBusy)return;
  v29BackupBusy=true;v29BackupMessage="";v29RestorePlan=null;
  try{await action();}catch(e){v29BackupMessage=label+": "+String(e.message||e);}
- finally{v29BackupBusy=false;profile();}
+ finally{v29BackupBusy=false;if(location.hash==="#backups")backups();}
 }
 async function v29LoadCloudSnapshots(){
  await v29Run("Backup history",async()=>{
@@ -398,13 +398,13 @@ async function v29PreviewCloudRestore(){
 }
 async function v29RestoreMissingCloudRecords(){
  if(!v29RestorePlan||v29RestorePlan.id!==v29SelectedId){
-  v29BackupMessage="Preview the selected snapshot again before restoring.";profile();return;
+  v29BackupMessage="Preview the selected snapshot again before restoring.";backups();return;
  }
  const input=document.getElementById("v29RestorePhrase");
  const phrase=input?.value||"";
  if(input)input.value="";
  if(phrase!=="RESTORE MISSING RECORDS"){
-  v29BackupMessage="Type RESTORE MISSING RECORDS to confirm.";profile();return;
+  v29BackupMessage="Type RESTORE MISSING RECORDS to confirm.";backups();return;
  }
  if(!confirm("Restore ONLY missing unsigned records from the selected TEST snapshot? "+
     "No existing cloud records, signatures or print archives will be overwritten. "+
