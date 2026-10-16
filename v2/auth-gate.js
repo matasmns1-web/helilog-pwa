@@ -472,9 +472,27 @@ async function v210TestEncryptedRecovery(ev){
 function v29BackupPanel(){
  if(!v23AccountWorkspace())return "";
  return `<div class="card" style="margin-top:16px">
-  <div class="head"><div><h2>V2.9 · Cloud backup &amp; recovery</h2>
+  <div class="head"><div><h2>V2.10 · Backup reliability &amp; recovery</h2>
    <div class="muted">Private daily server snapshots and passphrase-protected off-device downloads.</div></div></div>
   <p class="mini">Daily snapshots run at 03:00 UTC. They are in the same TEST Supabase database, not independent disaster recovery. Save an encrypted download elsewhere.</p>
+  <div class="actions" style="margin-top:10px">
+   <button class="btn" type="button" onclick="v210CheckBackupHealth()" ${v29BackupBusy?'disabled':''}>Check backup health &amp; retention</button>
+  </div>
+  ${v210Health?`<div class="note" role="status" style="margin-top:10px">
+    <b>Backup health:</b> ${htmlEscape(v210Health.status.replaceAll('_',' '))}
+    · Scheduler: ${v210Health.scheduleActive?'enabled':'DISABLED'}
+    · ${v210Health.snapshotCount} server snapshot(s).
+    ${v210Health.lastBackupAt?'Last snapshot: '+htmlEscape(new Date(v210Health.lastBackupAt).toLocaleString())+' ('+htmlEscape(String(v210Health.ageHours))+' h ago).':''}
+    · SHA-256: ${v210Health.checksumVerified?'verified':'NOT VERIFIED'}
+    · Failed scheduled runs (7 days): ${v210Health.failedJobRuns7d}.
+    ${v210Health.lastJobStatus?'· Most recent scheduled job: '+htmlEscape(v210Health.lastJobStatus):''}
+  </div>`:''}
+  ${v210Retention?`<div class="mini" style="margin-top:8px">
+    <b>Retention preview (no deletion):</b> ${v210Retention.daily} daily, 
+    ${v210Retention.manual} manual, ${v210Retention.preRestore} pre-restore backups;
+    ${v210Retention.eligibleForFuturePruning} would qualify under a future 90-daily/12-month-anchor policy.
+    All existing backup snapshots are preserved in V2.10.
+  </div>`:''}
   <div class="actions"><button class="btn" onclick="v29LoadCloudSnapshots()" ${v29BackupBusy?'disabled':''}>Refresh backup history</button>
    <button class="btn primary" onclick="v29CreateCloudSnapshot()" ${v29BackupBusy?'disabled':''}>Backup now</button></div>
   <div class="field" style="margin-top:12px"><label for="v29SnapshotSelect">Cloud snapshot</label>
@@ -492,6 +510,14 @@ function v29BackupPanel(){
     <div class="field"><label for="v29InspectPass">Passphrase to inspect a saved file</label><input id="v29InspectPass" type="password" autocomplete="off"></div>
     <input id="v29InspectFile" type="file" accept=".json,application/json" style="display:none" onchange="v29InspectEncryptedSnapshot(event)">
     <button class="btn" type="button" onclick="document.getElementById('v29InspectFile').click()" ${v29BackupBusy?'disabled':''}>Inspect encrypted backup</button>
+  </div>
+  <div class="note" style="margin-top:14px"><b>V2.10 — Isolated encrypted recovery drill</b>
+   <p>Decrypt a saved snapshot and reconstruct its original records and signed history in temporary browser memory only. No records are uploaded, deleted or changed. This tests backup consistency, NOT full cloud-provider restoration.</p></div>
+  <div class="actions" style="flex-wrap:wrap">
+   <div class="field"><label for="v210DrillPass">Backup passphrase</label>
+     <input id="v210DrillPass" type="password" autocomplete="off"></div>
+   <input id="v210DrillFile" type="file" accept=".json,application/json" style="display:none" onchange="v210TestEncryptedRecovery(event)">
+   <button class="btn" type="button" onclick="document.getElementById('v210DrillFile').click()" ${v29BackupBusy?'disabled':''}>Run isolated recovery drill</button>
   </div>
   <div style="margin:16px 0;border-top:1px solid var(--line)"></div>
   <p><b>Guarded cloud restore</b></p>
