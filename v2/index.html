@@ -37,7 +37,7 @@ html.helilog-installed-app nav button[data-v="printarchive"]{display:none!import
 html.installed-touch-app .dashboard-actions{grid-template-columns:repeat(3,minmax(0,1fr))}
 html.installed-touch-app .logbook-flight-list{margin-top:0}
 button,input,select,textarea{font:inherit}button{cursor:pointer}.layout{display:flex;min-height:100vh}
-aside{width:230px;background:var(--dark);color:white;padding:22px 14px;position:fixed;inset:0 auto 0 0}.brand{font-size:23px;font-weight:800;padding:7px 10px 24px}
+aside{width:230px;background:var(--dark);color:white;padding:22px 14px;position:fixed;inset:0 auto 0 0;overflow-y:auto;overscroll-behavior:contain}.brand{font-size:23px;font-weight:800;padding:7px 10px 24px}
 nav button{width:100%;border:0;background:transparent;color:#cbd5e1;text-align:left;padding:11px;border-radius:9px;margin:2px 0}
 nav button:hover,nav button.on{background:#273244;color:#fff}main{margin-left:230px;padding:28px;width:calc(100% - 230px);max-width:1450px}
 .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}.top h1{margin:0;font-size:27px}.sub{color:var(--muted);margin-top:4px}
@@ -114,6 +114,19 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:11px 9px;
 .qual-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
 .qual-meta{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;color:var(--muted);font-size:12px}
 .qual-actions{display:flex;gap:7px;flex-wrap:wrap}
+.profile-accordion{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:0;margin-top:14px;overflow:hidden}
+.profile-accordion>summary{display:flex;gap:14px;align-items:center;justify-content:space-between;padding:18px;list-style:none;min-height:74px}
+.profile-accordion>summary::-webkit-details-marker{display:none}
+.profile-accordion>summary:focus-visible{outline:3px solid #6b8cc6;outline-offset:-3px}
+.profile-accordion-heading{display:flex;flex-direction:column;gap:5px;min-width:0}
+.profile-accordion-heading .muted{font-size:13px;font-weight:400;overflow-wrap:anywhere}
+.profile-accordion-hint{display:inline-flex;align-items:center;gap:9px;font-size:13px;color:var(--muted);white-space:nowrap}
+.profile-accordion[open] .profile-accordion-hint span{transform:rotate(180deg)}
+.profile-accordion-body{padding:16px 18px 18px;border-top:1px solid var(--line)}
+.profile-accordion-body .qual-list{margin-top:12px}
+.profile-links{margin-top:14px}.profile-links .profile-action-row{border:0;padding-top:4px;justify-content:flex-start;flex-wrap:wrap}
+.profile-identity{margin-bottom:14px}
+@media(max-width:650px){.profile-accordion>summary{padding:15px}.profile-accordion-body{padding:14px}.profile-links .profile-action-row .btn{flex:1 1 125px;min-height:44px}}
 .empty-state{padding:18px;border:1px dashed var(--line);border-radius:10px;color:var(--muted);text-align:center}
 .endorsement-list{display:grid;gap:12px}
 .endorsement-card{border:1px solid var(--line);border-radius:12px;padding:14px;background:#fff}
@@ -269,7 +282,7 @@ html.helilog-test-mode .brand::after{
 </style></head>
 <body><div class="layout">
 <aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V2.10 · TEST</span></div><nav>
-<button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="aircraft">🚁 Aircraft</button><button data-v="pilots">👤 Pilots</button><button data-v="endorsements">✎ Endorsements</button><button data-v="printarchive">▤ Print archive</button><button data-v="profile">○ Profile</button><button data-v="cloud">☁ Cloud account</button><button data-v="testmode">⚗ Test Mode</button>
+<button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="aircraft">🚁 Aircraft</button><button data-v="pilots">👤 Pilots</button><button data-v="endorsements">✎ Endorsements</button><button data-v="printarchive">▤ Print archive</button><button data-v="profile">○ Profile</button><button data-v="settings">⚙ Settings</button><button data-v="cloud">☁ Cloud account</button><button data-v="backups">▣ Backup &amp; Recovery</button><button data-v="testmode">⚗ Test Mode</button>
 </nav></aside><main id="app"></main>
 <div class="mobile">
   <button data-v="dashboard"><span class="navicon">⌂</span><span>Home</span></button>
@@ -1023,14 +1036,16 @@ window.addEventListener('beforeunload',e=>{
 });
 
 function mobilemore(){
-  app.innerHTML=header('More','Aircraft, pilot profiles, endorsements and your profile')+
+  app.innerHTML=header('More','Manage aircraft, pilot records and account settings')+
   `<div class="grid more-grid">
     <button class="card more-link" onclick="go('aircraft')"><span>🚁</span><b>Aircraft</b><span class="muted">Fleet and SE/ME setup</span></button>
     <button class="card more-link" onclick="go('pilots')"><span>👤</span><b>Pilot profiles</b><span class="muted">Create PIC, instructor and examiner profiles</span></button>
     <button class="card more-link" onclick="go('endorsements')"><span>✎</span><b>Endorsements</b><span class="muted">Memoranda and signatures</span></button>
     ${!isStandaloneApp()?`<button class="card more-link" onclick="go('endorsementarchive')"><span>▤</span><b>Endorsement archive</b><span class="muted">Printed pages and corrections</span></button>`:''}
     <button class="card more-link" onclick="go('totals')"><span>◉</span><b>Totals</b><span class="muted">Flight-time breakdown</span></button>
-    <button class="card more-link" onclick="go('profile')"><span>○</span><b>Profile</b><span class="muted">Licence, medical and backup</span></button>
+    <button class="card more-link" onclick="go('profile')"><span>○</span><b>Profile</b><span class="muted">Pilot details, medical, licences and ratings</span></button>
+    <button class="card more-link" onclick="go('settings')"><span>⚙</span><b>Settings</b><span class="muted">Logbook totals, checks and device</span></button>
+    <button class="card more-link" onclick="go('backups')"><span>▣</span><b>Backup &amp; Recovery</b><span class="muted">Encrypted exports and cloud snapshots</span></button>
     <button class="card more-link" onclick="go('cloud')"><span>☁</span><b>Cloud account</b><span class="muted">Private login and connection status</span></button>
     ${!v23AccountWorkspace()?`<button class="card more-link" onclick="go('testmode')"><span>⚗</span><b>Test Mode</b><span class="muted">Separate sandbox and safe reset</span></button>`:''}
     <button class="card more-link" onclick="installHeliLog()"><span>▣</span><b>Install HeliLog</b><span class="muted">Home-screen / PWA setup</span></button>
@@ -4195,7 +4210,7 @@ function editBroughtForwardTotals(){
 
   app.innerHTML=header(correcting?'Correct imported logbook totals':'Import previous logbook totals',
     correcting?'Use this only to correct the original paper-logbook import.':'Enter the cumulative totals from your paper logbook before you start using HeliLog.',
-    `<button class="btn" onclick="go('profile')">Cancel</button>`)+
+    `<button class="btn" onclick="go('settings')">Cancel</button>`)+
   `<form class="card form" onsubmit="saveBroughtForwardTotals(event)">
     <div class="note">${correcting?'<b>Correction mode.</b> These values have already been imported. Saving will replace the original brought-forward totals.':'This is intended as a <b>one-time setup import</b>.'} The values stay separate from individual HeliLog flights, contribute to career totals, and populate <b>TOTAL FROM PREVIOUS PAGES</b> in the paper-style logbook export.</div>
 
@@ -4342,7 +4357,7 @@ function saveBroughtForwardTotals(ev){
   S.broughtForwardImported=true;
   if(!S.broughtForwardImportedAt) S.broughtForwardImportedAt=new Date().toISOString();
   save();
-  profile();
+  settings();
 }
 
 const profileExpanded={medical:false,qualifications:false};
@@ -5135,8 +5150,8 @@ function render(){
   }
   try{
     if(v!=='add') editingFlightId=null;
-    ({dashboard,logbook,add,aircraft,pilots,endorsements,printarchive,endorsementarchive:v2EndorsementArchive,totals,profile,cloud,testmode,mobilemore}[v]||dashboard)();
-    let moreViews=['mobilemore','aircraft','pilots','endorsements','endorsementarchive','totals','profile','cloud','testmode'];
+    ({dashboard,logbook,add,aircraft,pilots,endorsements,printarchive,endorsementarchive:v2EndorsementArchive,totals,profile,settings,backups,cloud,testmode,mobilemore}[v]||dashboard)();
+    let moreViews=['mobilemore','aircraft','pilots','endorsements','endorsementarchive','totals','profile','settings','backups','cloud','testmode'];
     document.querySelectorAll('[data-v]').forEach(b=>{
       let active=b.dataset.v===v || (b.dataset.v==='mobilemore' && moreViews.includes(v));
       b.classList.toggle('on',active);
