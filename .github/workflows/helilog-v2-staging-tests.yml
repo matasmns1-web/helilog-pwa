@@ -21,6 +21,6 @@ jobs:
           node-version: '22'
       - name: Test backups, restore and archived records
         run: |
-          node --test v2/v29-backup-recovery.test.cjs v2/v210-backup-health.test.cjs
+          node --test v2/v29-backup-recovery.test.cjs v2/v210-backup-health.test.cjs v2/v211-interface-layout.test.cjs
           node --test v2/v27-offline-conflicts.test.cjs v2/v28-integrity-recovery.test.cjs v2/v282-corrections.test.cjs v2/v283-correction-confirmation.test.cjs v2/v284-stranded-corrections.test.cjs
           node --test v2/v24-sync.test.cjs v2/v25-profile-pic.test.cjs v2/v26-login-ui.test.cjs v2/v27-cloud-ui.test.cjs v2/v281-archive-readiness.test.cjs
