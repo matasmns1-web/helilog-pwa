@@ -25,7 +25,7 @@ function loginMarkup(snapshot){
 
 test("login displays current version, and only form fields accept text",()=>{
  const markup=loginMarkup({status:"signed_out",error:""});
- assert.match(markup,/V2\.11 · Private pilot logbook test/);
+ assert.match(markup,/V2\.11\.1 · Private pilot logbook test/);
  assert.match(markup,/contenteditable="false"/);
  assert.match(markup,/<h1[^>]*>Sign in<\/h1>/);
  assert.match(markup,/id="v23Email" type="email"/);
@@ -58,10 +58,10 @@ test("Log out lives in Profile only; it is not in the common header or mobile Mo
 });
 
 test("PWA version and references are consistent for the V2.11.1 update",()=>{
- assert.match(html,/<title>HeliLog V2\.11/);
- assert.match(html,/V2\.11 · TEST/);
+ assert.match(html,/<title>HeliLog V2\.11\.1/);
+ assert.match(html,/V2\.11\.1 · TEST/);
  assert.equal(manifest.name,"HeliLog V2.11.1 — Test");
- assert.match(auth,/HELILOG_TEST_VERSION='V2\.11'/);
+ assert.match(auth,/HELILOG_TEST_VERSION='V2\.11\.1'/);
  assert.match(auth,/<h2>🚁 HeliLog '\+HELILOG_TEST_VERSION/);
  assert.match(worker,/helilog-v2-11-1-settings-1/);
  for(const file of ["cloud-config","cloud-foundation","cloud-view","cloud-sync","auth-gate","cloud-archives"]){
