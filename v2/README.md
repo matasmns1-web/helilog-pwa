@@ -1,10 +1,18 @@
 # HeliLog V2 — Development
 
-**Current version: V2.11 — Cleaner Profile, expandable Medical and Licences & Ratings, separate Settings and Backup & Recovery pages, with unchanged V2.10 data protections.** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
+**Current version: V2.11.1 — Cloud Account and Backup & Recovery moved under Settings navigation, with all V2.11 data protections unchanged.** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
 
 **Prior release: V2.1.** The complete V1.43.2 interface is restored with V2 endorsement print archiving; installed-app signing is separate from web-only print/archive management. See [FULL-V1-INTERFACE.md](FULL-V1-INTERFACE.md) for parity scope, testing instructions and data safety.
 
 **Earlier modular prototype:** [alpha.html](alpha.html) remains available with its own test data.
+
+## V2.11.1 — Unified Settings navigation (TEST)
+
+- Remove **Cloud Account** and **Backup & Recovery** as separate desktop sidebar and mobile More navigation entries; **Settings** is the single entry point.
+- In Settings, add compact **Cloud Account** and **Backup & Recovery** cards linked to the existing full-featured subpages. Existing synchronization, conflict resolution, encrypted exports, signed archive integrity and restore controls are unchanged.
+- Both subpages link back to Settings. The sidebar Settings item stays highlighted while either subpage is open; direct URL/bookmark hashes continue working.
+- Remove the redundant Cloud Account button from Profile. Existing medical and qualification expand/collapse behavior and Logout remain intact.
+- No database schema changes, data migrations or V1 production changes.
 
 ## V2.11 — Profile, Settings and Backup & Recovery interface cleanup (TEST)
 
