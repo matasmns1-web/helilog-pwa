@@ -48,7 +48,7 @@ test("Log out lives in Profile only; it is not in the common header or mobile Mo
  const moreStart=html.indexOf("function mobilemore(){");
  const more=html.slice(moreStart,html.indexOf("function ",moreStart+1));
  const profileStart=html.indexOf("function profile(){");
- const profile=html.slice(profileStart,profileStart+1500);
+ const profile=html.slice(profileStart,html.indexOf("function settings(){",profileStart));
  assert.doesNotMatch(head,/v23SignOut/);
  assert.doesNotMatch(more,/v23SignOut/);
  assert.match(profile,/v23AccountWorkspace\(\).*v23SignOut\(\).*Log out/);
