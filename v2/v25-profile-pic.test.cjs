@@ -94,7 +94,7 @@ test("logout is visible only in Profile and checks unsaved edits",()=>{
  assert.match(html,/function header\(title,sub,action=''\)/);
  const header=html.slice(html.indexOf("function header("),html.indexOf("function dashboard("));
  const more=html.slice(html.indexOf("function mobilemore("),html.indexOf("function ",html.indexOf("function mobilemore(")+1));
- const profile=html.slice(html.indexOf("function profile(){"),html.indexOf("function profile(){")+1400);
+ const profile=html.slice(html.indexOf("function profile(){"),html.indexOf("function settings(){"));
  assert.doesNotMatch(header,/v23SignOut/);
  assert.doesNotMatch(more,/v23SignOut/);
  assert.match(profile,/Log out<\/button>/);
