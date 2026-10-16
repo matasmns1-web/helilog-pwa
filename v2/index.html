@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.11.1 — Unified Settings Navigation</title>
+<title>HeliLog V2.11.2 — Unified Settings Navigation</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -105,6 +105,13 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:11px 9px;
 .pic-row .field{margin:0}
 .signature-placeholder{border:1px dashed var(--line);border-radius:8px;padding:8px 10px;background:#fafafa;color:var(--muted);font-size:12px}
 
+.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:stretch}
+.settings-grid>.card{min-width:0}
+.settings-grid>.settings-wide{grid-column:1/-1}
+.settings-grid .head{gap:12px;flex-wrap:wrap;align-items:flex-start}
+.settings-grid .head>div{min-width:0;flex:1 1 230px}
+.settings-grid .head>.btn{max-width:100%;white-space:normal}
+@media(max-width:1150px){.settings-grid{grid-template-columns:1fr}}
 .profilegrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 .profileline{display:grid;grid-template-columns:145px 1fr;gap:12px;padding:8px 0;border-bottom:1px solid var(--line)}
 .profileline:last-child{border-bottom:0}
@@ -281,7 +288,7 @@ html.helilog-test-mode .brand::after{
 }
 </style></head>
 <body><div class="layout">
-<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V2.11.1 · TEST</span></div><nav>
+<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V2.11.2 · TEST</span></div><nav>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="aircraft">🚁 Aircraft</button><button data-v="pilots">👤 Pilots</button><button data-v="endorsements">✎ Endorsements</button><button data-v="printarchive">▤ Print archive</button><button data-v="profile">○ Profile</button><button data-v="settings">⚙ Settings</button><button data-v="testmode">⚗ Test Mode</button>
 </nav></aside><main id="app"></main>
 <div class="mobile">
@@ -356,16 +363,16 @@ html.helilog-test-mode .brand::after{
 <script src="./print.js"></script>
 <script src="./endorsement-bridge.js"></script>
 <script src="./endorsement-ui.js"></script>
-<script src="./cloud-config.js?v=2.11.1-settings-1"></script>
-<script src="./cloud-foundation.js?v=2.11.1-settings-1"></script>
-<script src="./cloud-view.js?v=2.11.1-settings-1"></script>
-<script src="./cloud-sync.js?v=2.11.1-settings-1"></script>
-<script src="./auth-gate.js?v=2.11.1-settings-1"></script>
-<script src="./cloud-archives.js?v=2.11.1-settings-1"></script>
-<script src="./archive-integrity.js?v=2.11.1-settings-1"></script>
-<script src="./recovery.js?v=2.11.1-settings-1"></script>
-<script src="./cloud-backups.js?v=2.11.1-settings-1"></script>
-<script src="./disaster-recovery.js?v=2.11.1-settings-1"></script>
+<script src="./cloud-config.js?v=2.11.2-layout-1"></script>
+<script src="./cloud-foundation.js?v=2.11.2-layout-1"></script>
+<script src="./cloud-view.js?v=2.11.2-layout-1"></script>
+<script src="./cloud-sync.js?v=2.11.2-layout-1"></script>
+<script src="./auth-gate.js?v=2.11.2-layout-1"></script>
+<script src="./cloud-archives.js?v=2.11.2-layout-1"></script>
+<script src="./archive-integrity.js?v=2.11.2-layout-1"></script>
+<script src="./recovery.js?v=2.11.2-layout-1"></script>
+<script src="./cloud-backups.js?v=2.11.2-layout-1"></script>
+<script src="./disaster-recovery.js?v=2.11.2-layout-1"></script>
 <script>
 const LIVE_KEY='helilog_v2_complete_test_data'; // Separate V2 test browser key.
 const SANDBOX_KEY='helilog_v2_complete_test_sandbox';
@@ -4432,17 +4439,18 @@ function profile(){
 function settings(){
  app.innerHTML=header('Settings','Logbook, cloud account, backups and device preferences',
    `<button class="btn" type="button" onclick="go('profile')">← Profile</button>`)+
-   `<div class="profilegrid">
+   `<div class="settings-grid">
      <div class="card">
       <div class="head"><div><h2>Cloud account</h2><div class="muted">Connection, synchronization, conflicts and archive integrity.</div></div>
       <button class="btn" type="button" onclick="go('cloud')">Manage cloud account</button>
      </div>
+    </div>
      <div class="card">
       <div class="head"><div><h2>Backup &amp; recovery</h2><div class="muted">Encrypted exports, cloud snapshots and recovery verification.</div></div>
       <button class="btn" type="button" onclick="go('backups')">Manage backups</button>
      </div>
     </div>
-  <div class="card" style="margin-top:16px">
+  <div class="card">
     <div class="head">
       <div>
         <h2>Existing logbook import</h2>
@@ -4459,7 +4467,7 @@ function settings(){
   </div>
 
 
-  <div class="card" style="margin-top:16px">
+  <div class="card">
     <div class="head">
       <div><h2>Data integrity check</h2>
       <div class="muted">Review duplicate flights, invalid values and continuity of confirmed print archives.</div></div>
@@ -4468,7 +4476,7 @@ function settings(){
     <div id="integrityCheckResult" class="mini">No records will be changed by the check.</div>
   </div>
 
-  <div class="card" id="settings-testmode-card" style="margin-top:16px">
+  <div class="card" id="settings-testmode-card">
     <div class="head">
       <div><h2>Test Mode &amp; safe reset</h2>
       <div class="muted">Use a separate test logbook without modifying your main flight records.</div></div>
@@ -4477,7 +4485,7 @@ function settings(){
     <div class="mini">Current environment: <b>${TEST_MODE?'TEST SANDBOX':'MAIN LOGBOOK'}</b>. This browser stores each environment separately.</div>
   </div>
 
-  <div class="card" style="margin-top:16px">
+  <div class="card settings-wide">
     <div class="head">
       <div>
         <h2>App &amp; device</h2>
@@ -4490,6 +4498,7 @@ function settings(){
   </div>
 
 
+   </div>
    `;
  updatePWAStatus();
 }
@@ -4751,7 +4760,7 @@ async function makeFullBackup(){
     app:'HeliLog',
     format:'helilog-full-backup',
     backupSchema:2,
-    appVersion:'2.11.1',
+    appVersion:'2.11.2',
     exportedAt:new Date().toISOString(),
     environment:v23AccountWorkspace()?'cloud-test':TEST_MODE?'test':'production',
     integrity:{algorithm:'SHA-256',sha256:await sha256Hex(JSON.stringify(data))},

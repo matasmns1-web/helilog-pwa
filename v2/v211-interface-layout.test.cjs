@@ -87,6 +87,29 @@ test("Settings holds prior totals, integrity, Test Mode and device tools",()=>{
  assert.equal(f.deps.statusCalls(),1);
  assert.match(html,/helilog-cloud-workspace #settings-testmode-card/);
 });
+test("Settings cards fill the main content area without nesting",()=>{
+ const f=fixture();f.pages.settings();
+ const page=f.app.innerHTML;
+ const start=page.indexOf('<div class="settings-grid">');
+ assert.ok(start>=0,"Settings should use its own full-width grid");
+ let depth=0,directCards=0,closed=false;
+ for(const m of page.slice(start).matchAll(/<\/?div\b[^>]*>/g)){
+  if(m[0].startsWith("</")){
+   depth--;
+   assert.ok(depth>=0,"Unmatched closing div");
+   if(depth===0){closed=true;break;}
+  }else{
+   if(depth===1&&/\bclass="card(?: settings-wide)?"/.test(m[0]))directCards++;
+   depth++;
+  }
+ }
+ assert.ok(closed,"Settings grid should close before the next page");
+ assert.equal(directCards,6,"All Settings cards should be siblings, not nested");
+ assert.match(page,/class="card settings-wide"[\s\S]*?App &amp; device/);
+ assert.match(html,/\.settings-grid\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+ assert.match(html,/@media\(max-width:1150px\)\{\.settings-grid\{grid-template-columns:1fr\}\}/);
+});
+
 test("Backup page retains legacy and cloud backup/restore tools",()=>{
  const f=fixture(),before=JSON.stringify(f.S);f.pages.backups();
  assert.match(f.app.innerHTML,/data-screen="Backup & Recovery"/);
@@ -125,6 +148,6 @@ test("The UI-only release retains archived-flight handlers and updates PWA cache
   "downloadFullBackup","restoreCheckedBackup","showIntegrityCheck","editMedical",
   "saveMedical","saveQualification","deleteQualification"])
   assert.match(html,new RegExp("function "+name+"\\("));
- assert.match(html,/HeliLog V2\.11\.1 — Unified Settings Navigation/);
- assert.match(worker,/helilog-v2-11-1-settings-1/);
+ assert.match(html,/HeliLog V2\.11\.2 — Unified Settings Navigation/);
+ assert.match(worker,/helilog-v2-11-2-layout-1/);
 });
