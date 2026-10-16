@@ -1,10 +1,17 @@
 # HeliLog V2 — Development
 
-**Current version: V2.11.1 — Cloud Account and Backup & Recovery moved under Settings navigation, with all V2.11 data protections unchanged.** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
+**Current version: V2.11.2 — Full-width, correctly structured responsive Settings layout, with V2.11.1 navigation and existing record protections unchanged.** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
 
 **Prior release: V2.1.** The complete V1.43.2 interface is restored with V2 endorsement print archiving; installed-app signing is separate from web-only print/archive management. See [FULL-V1-INTERFACE.md](FULL-V1-INTERFACE.md) for parity scope, testing instructions and data safety.
 
 **Earlier modular prototype:** [alpha.html](alpha.html) remains available with its own test data.
+
+## V2.11.2 — Settings full-width layout hotfix (TEST)
+
+- Repair the Settings page's misnested Cloud Account and Backup & Recovery cards; all six Settings cards now occupy independent responsive grid cells across the available desktop content width.
+- On desktop, show Cloud Account alongside Backup & Recovery, Existing logbook import alongside Data integrity check, and App & device across the full row. Below 1150px viewport width, stack the cards into one accessible column.
+- Add a structural regression test that checks correct Settings card nesting, grid width and mobile breakpoint. Align asset versions and bump PWA offline cache.
+- UI-only fix: no changes to logbook records, cloud synchronization, printed archives, backups, database schema, or V1 production.
 
 ## V2.11.1 — Unified Settings navigation (TEST)
 
