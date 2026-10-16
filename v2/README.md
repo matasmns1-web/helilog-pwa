@@ -1,10 +1,21 @@
 # HeliLog V2 — Development
 
-**Current version: V2.8.4 — Safe recovery of stranded V2.8.2 local correction confirmations (maintains V2.8.3 cloud-first confirmation).** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
+**Current version: V2.9 — Private scheduled cloud backups, passphrase-encrypted exports and guarded recovery of missing unsigned records (built on V2.8.4).** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
 
 **Prior release: V2.1.** The complete V1.43.2 interface is restored with V2 endorsement print archiving; installed-app signing is separate from web-only print/archive management. See [FULL-V1-INTERFACE.md](FULL-V1-INTERFACE.md) for parity scope, testing instructions and data safety.
 
 **Earlier modular prototype:** [alpha.html](alpha.html) remains available with its own test data.
+
+## V2.9 — Backup & Recovery Improvements (TEST)
+
+- Installs private **daily 03:00 UTC server-side account snapshots** using Supabase pg_cron and pgcrypto SHA-256. The snapshot includes account metadata, every synchronized record, original printed archive batches, frozen entries and signed corrections. It is read-only to app clients and protected by per-account RLS.
+- Adds **Backup now** and snapshot history under **Profile → Cloud backup & recovery**, allowing manual snapshots between scheduled backups.
+- Adds AES-256-GCM encrypted JSON downloads with PBKDF2-SHA256 (310,000 iterations and random salt/nonce); encryption and decryption occur entirely inside the browser. Passphrases are not stored or sent to Supabase. The encrypted file can be inspected without modifying records.
+- Adds an authenticated, revision-fingerprint checked **read-only restore preview** and transactional recovery of **missing unsigned records only**, with explicit typed confirmation and a separate pre-restore database snapshot. No current records or signed/archived items are overwritten. Retired correction proposals are never resurrected.
+- The scheduled copies remain in the **same Supabase test database**, so they are **not independent provider-level disaster recovery**. Encrypted exports become independent only after the pilot securely saves them off-device. Restoring external encrypted exports directly to an empty or lost Supabase project is **not enabled**; that needs a separate controlled migration procedure.
+- No database administration secrets were embedded in web/PWA assets. V1 production remains unchanged. Do not use real health, licence, signature or flight records in this test system.
+- Migration files: `20261016030000_v29_cloud_backups.sql` and `20261016040000_v29_restore_guard.sql`.
+- Acceptance instructions: [V2.9-TEST-GUIDE.md](V2.9-TEST-GUIDE.md).
 
 ## V2.8.4 — Recover a prematurely confirmed local correction safely
 
