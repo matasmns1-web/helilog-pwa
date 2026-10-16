@@ -419,6 +419,42 @@ async function v29RestoreMissingCloudRecords(){
  });
 }
 
+function v29BackupPanel(){
+ if(!v23AccountWorkspace())return "";
+ return `<div class="card" style="margin-top:16px">
+  <div class="head"><div><h2>V2.9 · Cloud backup &amp; recovery</h2>
+   <div class="muted">Private daily server snapshots and passphrase-protected off-device downloads.</div></div></div>
+  <p class="mini">Daily snapshots run at 03:00 UTC. They are in the same TEST Supabase database, not independent disaster recovery. Save an encrypted download elsewhere.</p>
+  <div class="actions"><button class="btn" onclick="v29LoadCloudSnapshots()" ${v29BackupBusy?'disabled':''}>Refresh backup history</button>
+   <button class="btn primary" onclick="v29CreateCloudSnapshot()" ${v29BackupBusy?'disabled':''}>Backup now</button></div>
+  <div class="field" style="margin-top:12px"><label for="v29SnapshotSelect">Cloud snapshot</label>
+   <select id="v29SnapshotSelect" style="width:100%" onchange="v29ChooseSnapshot(this.value)">
+   ${v29Snapshots.length?v29Snapshots.map(b=>`<option value="${htmlEscape(b.id)}" ${b.id===v29SelectedId?'selected':''}>${htmlEscape(new Date(b.created_at).toLocaleString())} · ${htmlEscape(b.source)} · ${htmlEscape(b.id.slice(0,8))}</option>`).join(""):'<option value="">Load history first</option>'}
+   </select></div>
+  <p><b>Encrypted off-device copy</b></p>
+  <p class="mini">AES-256-GCM encryption is performed in this browser. Use a strong passphrase (12+ characters); HeliLog cannot recover it.</p>
+  <div class="formgrid">
+    <div class="field"><label for="v29ExportPass">Encryption passphrase</label><input id="v29ExportPass" type="password" autocomplete="new-password"></div>
+    <div class="field"><label for="v29ExportPassConfirm">Confirm passphrase</label><input id="v29ExportPassConfirm" type="password" autocomplete="new-password"></div>
+  </div>
+  <button class="btn primary" type="button" onclick="v29DownloadEncryptedSnapshot()" ${v29BackupBusy?'disabled':''}>Download encrypted backup</button>
+  <div class="actions" style="margin-top:12px;flex-wrap:wrap">
+    <div class="field"><label for="v29InspectPass">Passphrase to inspect a saved file</label><input id="v29InspectPass" type="password" autocomplete="off"></div>
+    <input id="v29InspectFile" type="file" accept=".json,application/json" style="display:none" onchange="v29InspectEncryptedSnapshot(event)">
+    <button class="btn" type="button" onclick="document.getElementById('v29InspectFile').click()" ${v29BackupBusy?'disabled':''}>Inspect encrypted backup</button>
+  </div>
+  <div style="margin:16px 0;border-top:1px solid var(--line)"></div>
+  <p><b>Guarded cloud restore</b></p>
+  <p class="muted">Only missing unsigned cloud records may be recovered. Existing records, sealed endorsements and printed archives are never overwritten.</p>
+  <button class="btn" type="button" onclick="v29PreviewCloudRestore()" ${v29BackupBusy?'disabled':''}>Preview safe restore</button>
+  ${v29RestorePlan?.restorable&&v29RestorePlan.id===v29SelectedId&&v29RestorePlan.missingUnsigned>0?`
+    <div class="note" style="margin-top:12px">Verified: ${v29RestorePlan.missingUnsigned} missing unsigned records. A pre-restore server snapshot will be kept.</div>
+    <div class="field"><label for="v29RestorePhrase">Type RESTORE MISSING RECORDS</label><input id="v29RestorePhrase" autocomplete="off"></div>
+    <button class="btn" type="button" onclick="v29RestoreMissingCloudRecords()" ${v29BackupBusy?'disabled':''}>Restore missing records</button>`:''}
+  ${v29BackupMessage?`<div role="status" class="note" style="margin-top:12px">${htmlEscape(v29BackupMessage)}</div>`:''}
+ </div>`;
+}
+
 function v23ExitOldTestMode(){
  if(!TEST_MODE)return;
  if(!confirm('Exit the old V2.2 local Test Mode? Your sandbox records will stay saved and will not be uploaded.'))return;
