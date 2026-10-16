@@ -1,4 +1,4 @@
-const CACHE='helilog-v2-9-backups-1';
+const CACHE='helilog-v2-10-backup-health-1';
 const SHELL=[
   './',
   './index.html',
@@ -10,15 +10,16 @@ const SHELL=[
   './print.js',
   './endorsement-bridge.js',
   './endorsement-ui.js',
-  './cloud-config.js?v=2.9-backups-1',
-  './cloud-foundation.js?v=2.9-backups-1',
-  './cloud-view.js?v=2.9-backups-1',
-  './cloud-sync.js?v=2.9-backups-1',
-  './auth-gate.js?v=2.9-backups-1',
-  './cloud-archives.js?v=2.9-backups-1',
-  './archive-integrity.js?v=2.9-backups-1',
-  './recovery.js?v=2.9-backups-1',
-  './cloud-backups.js?v=2.9-backups-1'
+  './cloud-config.js?v=2.10-backup-health-1',
+  './cloud-foundation.js?v=2.10-backup-health-1',
+  './cloud-view.js?v=2.10-backup-health-1',
+  './cloud-sync.js?v=2.10-backup-health-1',
+  './auth-gate.js?v=2.10-backup-health-1',
+  './cloud-archives.js?v=2.10-backup-health-1',
+  './archive-integrity.js?v=2.10-backup-health-1',
+  './recovery.js?v=2.10-backup-health-1',
+  './cloud-backups.js?v=2.10-backup-health-1',
+  './disaster-recovery.js?v=2.10-backup-health-1'
 ];
 
 self.addEventListener('install',event=>{
