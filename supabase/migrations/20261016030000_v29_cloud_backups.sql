@@ -41,7 +41,7 @@ revoke all on function public.helilog_backup_document(uuid) from public,anon,aut
 
 create or replace function public.helilog_backup_hash(p_data jsonb)
 returns text language sql immutable security definer set search_path='' as $$
- select pg_catalog.encode(public.digest(pg_catalog.convert_to(p_data::text,'UTF8'),'sha256'),'hex');
+ select pg_catalog.encode(extensions.digest(pg_catalog.convert_to(p_data::text,'UTF8'),'sha256'),'hex');
 $$;
 revoke all on function public.helilog_backup_hash(jsonb) from public,anon,authenticated;
 
