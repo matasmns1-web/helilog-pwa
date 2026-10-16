@@ -64,9 +64,9 @@ function seedEndorsement(b){
   ' signatureData:"",signedAt:"",signedName:"",signedLicence:""});'
  ].join("\n"));
 }
-test("V2.10 is the current interface version label",()=>{
- assert.match(html,/<title>HeliLog V2\.10/);
- assert.match(html,/V2\.10 · TEST/);
+test("V2.11 is the current interface version label",()=>{
+ assert.match(html,/<title>HeliLog V2\.11/);
+ assert.match(html,/V2\.11 · TEST/);
  assert.doesNotMatch(html,/<title>HeliLog V2\.0 Alpha/);
 });
 test("installed app can sign and save but shows pending status without archive controls",()=>{
@@ -121,6 +121,6 @@ test("failed local save does not show success or leave an unsaved signature mark
 test("standalone mode hides desktop archive nav and new service worker caches UI",()=>{
  assert.match(html,/html\.helilog-installed-app nav button\[data-v="printarchive"\]/);
  const sw=fs.readFileSync(path.join(__dirname,"service-worker.js"),"utf8");
- assert.match(sw,/helilog-v2-10-backup-health-1/);
+ assert.match(sw,/helilog-v2-11-interface-1/);
  assert.match(sw,/\.\/endorsement-ui\.js/);
 });
