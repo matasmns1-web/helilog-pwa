@@ -1,5 +1,5 @@
 /* HeliLog V2.3 private login gate. No automatic import of V2.2 local data. */
-const HELILOG_TEST_VERSION='V2.8.4';
+const HELILOG_TEST_VERSION='V2.9';
 let v23Unlocked=false,v23AuthBusy=false,v23AuthMessage="";
 function v23Escape(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function v23AccountWorkspace(){return v23Unlocked && !!window.HeliLogV23Sync.status().owner;}
@@ -296,6 +296,127 @@ async function v28InspectCloudRecovery(ev){
    "This is a READ-ONLY inspection; neither the device nor the cloud was restored.";
  }catch(e){v28Notice="Recovery file rejected: "+(e.message||e)+". No records were modified.";}
  finally{v28Busy=false;if(location.hash==="#cloud")cloud();else profile();}
+}
+
+
+/* V2.9 private snapshots, encrypted external exports and missing-only restore. */
+let v29Snapshots=[],v29SelectedId="",v29BackupBusy=false,v29BackupMessage="",v29RestorePlan=null;
+function v29RequireOwner(){
+ if(!v23AccountWorkspace())throw Error("Sign in to your private cloud workspace.");
+ const owner=window.HeliLogCloud.snapshot().userId;
+ if(!owner)throw Error("Verified cloud account unavailable.");
+ return owner;
+}
+async function v29Run(label,action){
+ if(v29BackupBusy)return;
+ v29BackupBusy=true;v29BackupMessage="";v29RestorePlan=null;
+ try{await action();}catch(e){v29BackupMessage=label+": "+String(e.message||e);}
+ finally{v29BackupBusy=false;profile();}
+}
+async function v29LoadCloudSnapshots(){
+ await v29Run("Backup history",async()=>{
+  const owner=v29RequireOwner(),db=await window.HeliLogCloud.client();
+  v29Snapshots=await window.HeliLogV29Backup.list(db,owner);
+  if(!v29Snapshots.some(x=>x.id===v29SelectedId))v29SelectedId=v29Snapshots[0]?.id||"";
+  v29BackupMessage=v29Snapshots.length?
+   "Loaded "+v29Snapshots.length+" most recent cloud snapshots. Daily backups run at 03:00 UTC.":
+   "No server snapshots yet. Create one now while connected.";
+ });
+}
+function v29ChooseSnapshot(id){v29SelectedId=String(id||"");v29RestorePlan=null;}
+async function v29CreateCloudSnapshot(){
+ await v29Run("Backup now",async()=>{
+  const owner=v29RequireOwner();
+  await v23RefreshSync();
+  if(window.HeliLogV23Sync.status().state!=="synced"||
+    window.HeliLogV24Archive.error())
+   throw Error("Resolve this browser's pending cloud edits or archive discrepancy first.");
+  const db=await window.HeliLogCloud.client();
+  const id=await window.HeliLogV29Backup.create(db,owner);
+  v29Snapshots=await window.HeliLogV29Backup.list(db,owner);
+  v29SelectedId=id;
+  v29BackupMessage="Created a private, checksum-protected snapshot in the TEST Supabase database. For independent disaster protection, also download an encrypted copy.";
+ });
+}
+async function v29DownloadEncryptedSnapshot(){
+ if(v29BackupBusy)return;
+ const passwordInput=document.getElementById("v29ExportPass");
+ const confirmInput=document.getElementById("v29ExportPassConfirm");
+ const password=passwordInput?.value||"", repeated=confirmInput?.value||"";
+ if(passwordInput)passwordInput.value="";
+ if(confirmInput)confirmInput.value="";
+ await v29Run("Encrypted export",async()=>{
+  if(password.length<12)throw Error("Enter a passphrase of at least 12 characters.");
+  if(password!==repeated)throw Error("Passphrase confirmation does not match.");
+  const owner=v29RequireOwner(),db=await window.HeliLogCloud.client();
+  if(!v29SelectedId)throw Error("Select a cloud snapshot first.");
+  const source=await window.HeliLogV29Backup.downloadPayload(db,owner,v29SelectedId);
+  const encrypted=await window.HeliLogV29Backup.encryptSnapshot(source,password);
+  offerBackupFile(encrypted,"HeliLog_V29_ENCRYPTED_Cloud_Snapshot");
+  v29BackupMessage="Encrypted file download requested. Keep it off-device, and store your passphrase separately. HeliLog cannot recover a forgotten passphrase.";
+ });
+}
+async function v29InspectEncryptedSnapshot(ev){
+ if(v29BackupBusy)return;
+ const file=ev?.target?.files?.[0];
+ if(ev?.target)ev.target.value="";
+ if(!file)return;
+ const passwordInput=document.getElementById("v29InspectPass");
+ const password=passwordInput?.value||"";
+ if(passwordInput)passwordInput.value="";
+ await v29Run("Inspect encrypted backup",async()=>{
+  if(file.size>100*1024*1024)throw Error("File exceeds the 100 MB verification limit.");
+  const owner=v29RequireOwner();
+  const unlocked=await window.HeliLogV29Backup.decryptSnapshot(JSON.parse(await file.text()),password,owner);
+  v29BackupMessage="Encrypted backup decrypted and authenticated: "+unlocked.records+" cloud records, "+
+   unlocked.archives+" print batches, "+unlocked.frozen+" frozen originals and "+
+   unlocked.addenda+" signed addenda. Inspection is read-only; no records were restored.";
+ });
+}
+async function v29PreviewCloudRestore(){
+ await v29Run("Recovery preview",async()=>{
+  const owner=v29RequireOwner();
+  if(!v29SelectedId)throw Error("Select a backup snapshot.");
+  await v23RefreshSync();
+  if(window.HeliLogV23Sync.status().state!=="synced"||window.HeliLogV24Archive.error())
+   throw Error("Resolve local pending/conflicted sync and archived-record discrepancies first.");
+  const db=await window.HeliLogCloud.client();
+  const plan=await window.HeliLogV29Backup.preview(db,owner,v29SelectedId);
+  v29RestorePlan=plan;
+  v29BackupMessage=plan.restorable?
+   "Verified snapshot: "+plan.missingUnsigned+" missing unsigned records can be restored. "+
+   plan.differentExisting+" different existing records; "+plan.protectedMismatch+
+   " protected mismatches. No existing cloud records or signed archives will be changed.":
+   "RECOVERY BLOCKED: "+plan.differentExisting+" existing records differ and "+
+   plan.protectedMismatch+" archived/signed records fail provenance checks. No changes made.";
+ });
+}
+async function v29RestoreMissingCloudRecords(){
+ if(!v29RestorePlan||v29RestorePlan.id!==v29SelectedId){
+  v29BackupMessage="Preview the selected snapshot again before restoring.";profile();return;
+ }
+ const input=document.getElementById("v29RestorePhrase");
+ const phrase=input?.value||"";
+ if(input)input.value="";
+ if(phrase!=="RESTORE MISSING RECORDS"){
+  v29BackupMessage="Type RESTORE MISSING RECORDS to confirm.";profile();return;
+ }
+ if(!confirm("Restore ONLY missing unsigned records from the selected TEST snapshot? "+
+    "No existing cloud records, signatures or print archives will be overwritten. "+
+    "A server-side pre-restore snapshot will be captured in the same transaction."))return;
+ const plan=v29RestorePlan;
+ await v29Run("Restore missing records",async()=>{
+  const owner=v29RequireOwner();
+  if(window.HeliLogV23Sync.status().state!=="synced")
+   throw Error("This browser is not fully synchronized.");
+  const db=await window.HeliLogCloud.client();
+  const result=await window.HeliLogV29Backup.restore(db,owner,plan,phrase);
+  await v23RefreshSync();
+  v29Snapshots=await window.HeliLogV29Backup.list(db,owner);
+  v29BackupMessage="Restored "+result.restored+" missing unsigned cloud record(s). "+
+   "An independent pre-restore SERVER snapshot was saved in this database. "+
+   "Other devices should reconnect and sync before new changes.";
+ });
 }
 
 function v23ExitOldTestMode(){
