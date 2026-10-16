@@ -4344,43 +4344,45 @@ function saveBroughtForwardTotals(ev){
   save();
   profile();
 }
+
+const profileExpanded={medical:false,qualifications:false};
+function rememberProfileSection(which,node){
+ if(!node?.isConnected)return;
+ if(which==="medical"||which==="qualifications")profileExpanded[which]=node.open;
+}
 function profile(){
-  editingQualificationId=null;
-  let med=S.pilot.medical||{};
-  let qualifications=[...(S.qualifications||[])].sort((a,b)=>{
-    let order={'Licence':1,'Type rating':2,'Instrument rating':3,'Instructor rating':4,'Other':5};
-    return (order[a.category]||99)-(order[b.category]||99) || a.name.localeCompare(b.name);
-  });
-
-  app.innerHTML=header('Profile','Pilot details, licences, ratings and medical records',
-    `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="go('pilots')">Manage pilots</button><button class="btn" onclick="go('endorsements')">Endorsements</button><button class="btn" onclick="go('cloud')">Cloud account</button><button class="btn primary" onclick="editOwnProfile()">Edit profile</button>${v23AccountWorkspace()?'<button class="btn" type="button" onclick="v23SignOut()">Log out</button>':''}</div>`)+
-  `<div class="profilegrid">
-    <div class="card">
-      <div class="head"><h2>Pilot details</h2><button class="btn" onclick="editOwnProfile()">Edit</button></div>
-      <div class="profileline"><div class="k">First name</div><div><b>${htmlEscape(pilotNameParts().firstName||'—')}</b></div></div>
-      <div class="profileline"><div class="k">Surname</div><div><b>${htmlEscape(pilotNameParts().lastName||'—')}</b></div></div>
-      <div class="profileline"><div class="k">Licence type</div><div>${htmlEscape(S.pilot.licenceType||'—')}</div></div>
-      <div class="profileline"><div class="k">Licence number</div><div>${htmlEscape(S.pilot.licenceNumber||'—')}</div></div>
-      <div class="profileline"><div class="k">Competent authority</div><div>${htmlEscape(S.pilot.authority||'—')}</div></div>
-      <div class="signature-placeholder" style="margin-top:14px">Reusable signature: planned for V2. It will be associated with this profile and only applied when you explicitly sign or certify a record.</div>
-    </div>
-
-    <div class="card">
-      <div class="head"><h2>Medical</h2><button class="btn" onclick="editMedical()">Edit</button></div>
-      <div class="profileline"><div class="k">Class</div><div>${htmlEscape(med.class||'—')}</div></div>
-      <div class="profileline"><div class="k">Certificate / reference</div><div>${htmlEscape(med.number||'—')}</div></div>
-      <div class="profileline"><div class="k">Issue date</div><div>${displayDate(med.issueDate)}</div></div>
-      <div class="profileline"><div class="k">Valid until</div><div>${displayDate(med.validUntil)}</div></div>
-      <div class="profileline"><div class="k">Notes</div><div>${htmlEscape(med.notes||'—')}</div></div>
-      <div class="mini" style="margin-top:12px">V1.21 stores the dates only. HeliLog does not yet determine medical validity or provide regulatory currency advice.</div>
-    </div>
+ editingQualificationId=null;
+ const med=S.pilot.medical||{};
+ const qualifications=[...(S.qualifications||[])].sort((a,b)=>{
+  const order={'Licence':1,'Type rating':2,'Instrument rating':3,'Instructor rating':4,'Other':5};
+  return (order[a.category]||99)-(order[b.category]||99)||a.name.localeCompare(b.name);
+ });
+ const names=pilotNameParts(),primary=qualifications.find(x=>x.isPrimary);
+ app.innerHTML=header('Profile','Your pilot identity and qualifications',
+  `<button class="btn" type="button" onclick="go('settings')">Settings</button>
+    <button class="btn primary" type="button" onclick="editOwnProfile()">Edit profile</button>`)+
+ `<div class="card profile-identity">
+   <div class="head"><h2>Pilot details</h2><button type="button" class="btn" onclick="editOwnProfile()">Edit</button></div>
+   <div class="profileline"><div class="k">Name</div><div><b>${htmlEscape([names.firstName,names.lastName].filter(Boolean).join(' ')||'—')}</b></div></div>
+   <div class="profileline"><div class="k">Licence</div><div>${htmlEscape(S.pilot.licenceType||primary?.name||'—')}${S.pilot.licenceNumber?' · '+htmlEscape(S.pilot.licenceNumber):''}</div></div>
+   <div class="profileline"><div class="k">Competent authority</div><div>${htmlEscape(S.pilot.authority||'—')}</div></div>
   </div>
-
-  <div class="card" style="margin-top:16px">
-    <div class="head">
-      <div><h2>Licences &amp; ratings</h2><div class="muted">Record your licences, type ratings and other privileges.</div></div>
-      <button class="btn primary" onclick="qualificationForm()">＋ Add licence / rating</button>
-    </div>
+  <details class="profile-accordion" id="medicalSection" ${profileExpanded.medical?'open':''} ontoggle="rememberProfileSection('medical',this)">
+   <summary><span class="profile-accordion-heading"><b>Medical</b><span class="muted">${htmlEscape(med.class||'Not recorded')}${med.validUntil?' · Valid until '+displayDate(med.validUntil):''}</span></span><span class="profile-accordion-hint">Details <span aria-hidden="true">⌄</span></span></summary>
+   <div class="profile-accordion-body">
+    <div class="head"><h2>Certificate details</h2><button type="button" class="btn" onclick="editMedical()">Edit medical</button></div>
+    <div class="profileline"><div class="k">Class</div><div>${htmlEscape(med.class||'—')}</div></div>
+    <div class="profileline"><div class="k">Certificate / reference</div><div>${htmlEscape(med.number||'—')}</div></div>
+    <div class="profileline"><div class="k">Issue date</div><div>${displayDate(med.issueDate)}</div></div>
+    <div class="profileline"><div class="k">Valid until</div><div>${displayDate(med.validUntil)}</div></div>
+    <div class="profileline"><div class="k">Notes</div><div>${htmlEscape(med.notes||'—')}</div></div>
+    <div class="mini" style="margin-top:10px">Dates are records only. HeliLog does not determine medical validity.</div>
+   </div>
+  </details>
+  <details class="profile-accordion" id="qualificationsSection" ${profileExpanded.qualifications?'open':''} ontoggle="rememberProfileSection('qualifications',this)">
+   <summary><span class="profile-accordion-heading"><b>Licences &amp; Ratings</b><span class="muted">${qualifications.length} qualification${qualifications.length===1?'':'s'}${primary?' · '+htmlEscape(primary.name):''}</span></span><span class="profile-accordion-hint">Details <span aria-hidden="true">⌄</span></span></summary>
+   <div class="profile-accordion-body">
+    <div class="head"><h2>Qualifications</h2><button type="button" class="btn primary" onclick="qualificationForm()">＋ Add licence / rating</button></div>
     <div class="qual-list">
       ${qualifications.length?qualifications.map(q=>`
         <div class="qual-item">
@@ -4405,8 +4407,24 @@ function profile(){
           </div>
         </div>`).join(''):`<div class="empty-state">No licences or ratings recorded yet.</div>`}
     </div>
-  </div>
-
+   </div>
+  </details>
+  <div class="card profile-links">
+   <div class="head"><h2>Account</h2></div>
+   <div class="actions profile-action-row">
+    <button class="btn" type="button" onclick="go('cloud')">☁ Cloud account</button>
+    <button class="btn" type="button" onclick="go('settings')">⚙ Settings</button>
+    ${v23AccountWorkspace()?'<button class="btn" type="button" onclick="v23SignOut()">Log out</button>':''}
+   </div>
+  </div>`;
+}
+function settings(){
+ app.innerHTML=header('Settings','Logbook setup, validation and device preferences',
+   `<button class="btn" type="button" onclick="go('profile')">← Profile</button>`)+
+   `<div class="card">
+    <div class="head"><div><h2>Backup &amp; recovery</h2><div class="muted">Encrypted exports, cloud snapshots and recovery verification.</div></div>
+     <button class="btn primary" type="button" onclick="go('backups')">Open backups</button>
+    </div>
   <div class="card" style="margin-top:16px">
     <div class="head">
       <div>
@@ -4423,33 +4441,6 @@ function profile(){
       : '<div class="note">You only need this if you already have flight time in a previous paper or electronic logbook. It does not create historical flight entries.</div>'}
   </div>
 
-  <div class="card" style="margin-top:16px">
-    <div class="head">
-      <div>
-        <h2>Backup &amp; restore</h2>
-        <div class="muted">Keep a complete copy of your HeliLog data outside this browser.</div>
-      </div>
-    </div>
-    <div class="profilegrid">
-      <div>
-        <p><b>Full HeliLog backup</b></p>
-        <p class="muted">Includes flights, aircraft, pilots, specialised-operation hours, imported totals, print archive snapshots, endorsements and signatures. JSON backups include a SHA-256 checksum.</p>
-        <button class="btn primary" type="button" onclick="downloadFullBackup()">Download backup</button>
-        ${v23AccountWorkspace()?'<button class="btn" style="margin-left:8px" type="button" onclick="v28DownloadCloudRecovery()">Download verified cloud recovery package</button>':''}
-      </div>
-      <div>
-        <p><b>Restore from backup</b></p>
-        <p class="muted">${v23AccountWorkspace()?'Cloud account replacement is blocked for safety. You can inspect a recovery package without modifying any records.':'Select a backup to verify it first. HeliLog requires a safety copy before restoring.'}</p>
-        ${v23AccountWorkspace()?'<input id="v28RecoveryInput" type="file" accept=".json,application/json" style="display:none" onchange="v28InspectCloudRecovery(event)"><button class="btn" type="button" onclick="document.getElementById(\'v28RecoveryInput\').click()">Inspect cloud recovery file</button>':''}
-        <input id="restoreBackupInput" type="file" accept=".json,application/json" style="display:none" onchange="handleBackupRestoreFile(event)">
-        <button class="btn" type="button" onclick="document.getElementById('restoreBackupInput').click()" ${v23AccountWorkspace()?'disabled title="Restore will be available after cloud-safe migration"':''}>Choose backup file</button>
-      </div>
-    </div>
-    <div id="backupRestoreStatus" style="margin-top:12px"></div>
-    ${v23AccountWorkspace()?'<div class="mini" style="margin-top:12px">Cloud recovery packages are SHA-256 verified and should be stored securely off-device. Downloads contain personal details and signatures. This version inspects files but intentionally does not overwrite synced cloud history.</div>'+ (v28Notice?'<div class="note" role="status" style="margin-top:8px">'+htmlEscape(v28Notice)+'</div>':''):''}
-  </div>
-
-  ${v29BackupPanel()}
 
   <div class="card" style="margin-top:16px">
     <div class="head">
@@ -4481,11 +4472,43 @@ function profile(){
     <div class="install-help" style="margin-top:10px">On iPhone/iPad, open the hosted HeliLog site in Safari, use <b>Share → Add to Home Screen</b>. Full offline PWA support requires HeliLog to be served over HTTPS. Opening this prototype directly as a file still works for testing, but it cannot register the offline service worker.</div>
   </div>
 
-  <div class="note" style="margin-top:16px">Profile, licence, rating and medical information in this test version is for record keeping and PDF identification only. Automatic EASA validity, recency and expiry calculations are planned for a later version.</div>`;
-  updatePWAStatus();
+
+   `;
+ updatePWAStatus();
 }
+function backups(){
+ app.innerHTML=header('Backup & Recovery','Cloud snapshots, secure exports and verified recovery',
+   `<button class="btn" type="button" onclick="go('cloud')">Cloud account</button><button class="btn" type="button" onclick="go('settings')">Settings</button>`)+
+   `${v29BackupPanel()}
+  <div class="card" style="margin-top:16px">
+    <div class="head">
+      <div>
+        <h2>Backup &amp; restore</h2>
+        <div class="muted">Keep a complete copy of your HeliLog data outside this browser.</div>
+      </div>
+    </div>
+    <div class="profilegrid">
+      <div>
+        <p><b>Full HeliLog backup</b></p>
+        <p class="muted">Includes flights, aircraft, pilots, specialised-operation hours, imported totals, print archive snapshots, endorsements and signatures. JSON backups include a SHA-256 checksum.</p>
+        <button class="btn primary" type="button" onclick="downloadFullBackup()">Download backup</button>
+        ${v23AccountWorkspace()?'<button class="btn" style="margin-left:8px" type="button" onclick="v28DownloadCloudRecovery()">Download verified cloud recovery package</button>':''}
+      </div>
+      <div>
+        <p><b>Restore from backup</b></p>
+        <p class="muted">${v23AccountWorkspace()?'Cloud account replacement is blocked for safety. You can inspect a recovery package without modifying any records.':'Select a backup to verify it first. HeliLog requires a safety copy before restoring.'}</p>
+        ${v23AccountWorkspace()?'<input id="v28RecoveryInput" type="file" accept=".json,application/json" style="display:none" onchange="v28InspectCloudRecovery(event)"><button class="btn" type="button" onclick="document.getElementById(\'v28RecoveryInput\').click()">Inspect cloud recovery file</button>':''}
+        <input id="restoreBackupInput" type="file" accept=".json,application/json" style="display:none" onchange="handleBackupRestoreFile(event)">
+        <button class="btn" type="button" onclick="document.getElementById('restoreBackupInput').click()" ${v23AccountWorkspace()?'disabled title="Restore will be available after cloud-safe migration"':''}>Choose backup file</button>
+      </div>
+    </div>
+    <div id="backupRestoreStatus" style="margin-top:12px"></div>
+    ${v23AccountWorkspace()?'<div class="mini" style="margin-top:12px">Cloud recovery packages are SHA-256 verified and should be stored securely off-device. Downloads contain personal details and signatures. This version inspects files but intentionally does not overwrite synced cloud history.</div>'+ (v28Notice?'<div class="note" role="status" style="margin-top:8px">'+htmlEscape(v28Notice)+'</div>':''):''}
+  </div>
 
 
+   `;
+}
 
 function freshLogbookData(from,forTest=false){
   const pilotName=forTest?'HeliLog Test Pilot':String(from?.pilot?.name||'Pilot').trim()||'Pilot';
