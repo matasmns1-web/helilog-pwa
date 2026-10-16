@@ -1,5 +1,5 @@
 /* HeliLog V2.3 private login gate. No automatic import of V2.2 local data. */
-const HELILOG_TEST_VERSION='V2.9';
+const HELILOG_TEST_VERSION='V2.10';
 let v23Unlocked=false,v23AuthBusy=false,v23AuthMessage="";
 function v23Escape(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function v23AccountWorkspace(){return v23Unlocked && !!window.HeliLogV23Sync.status().owner;}
@@ -421,6 +421,51 @@ async function v29RestoreMissingCloudRecords(){
   v29BackupMessage="Restored "+result.restored+" missing unsigned cloud record(s). "+
    "An independent pre-restore SERVER snapshot was saved in this database. "+
    "Other devices should reconnect and sync before new changes.";
+ });
+}
+
+
+/* V2.10 — authenticated monitoring and isolated recovery verification.
+ * No live records are written by these functions.
+ */
+let v210Health=null,v210Retention=null,v210DrillMessage="";
+async function v210CheckBackupHealth(){
+ await v29Run("Backup monitoring",async()=>{
+  const owner=v29RequireOwner(),db=await window.HeliLogCloud.client();
+  const [status,policy]=await Promise.all([
+   window.HeliLogV29Backup.health(db,owner),
+   window.HeliLogV29Backup.retention(db,owner)
+  ]);
+  v210Health=status;v210Retention=policy;
+  v29BackupMessage=status.status==="healthy"?
+   "Latest cloud snapshot checksum verified; scheduled-job monitoring shows no current backup warning.":
+   "ATTENTION: backup status is "+status.status.replaceAll("_"," ")+
+    ". Keep an independent encrypted copy and investigate before depending on cloud recovery.";
+ });
+}
+async function v210TestEncryptedRecovery(ev){
+ if(v29BackupBusy)return;
+ const file=ev?.target?.files?.[0];
+ if(ev?.target)ev.target.value="";
+ if(!file)return;
+ const input=document.getElementById("v210DrillPass");
+ const pass=input?.value||"";
+ if(input)input.value="";
+ await v29Run("Isolated recovery drill",async()=>{
+  if(file.size>100*1024*1024)
+   throw Error("Encrypted file is larger than the 100 MB recovery-drill limit.");
+  const owner=v29RequireOwner();
+  const locked=JSON.parse(await file.text());
+  const verified=await window.HeliLogV29Backup.decryptSnapshot(locked,pass,owner);
+  const report=await window.HeliLogV210Drill.drill(verified.data,owner);
+  if(!report.ok)throw Error("The encrypted snapshot failed the sandbox drill: "+
+   report.problems.slice(0,3).join(" | ")+". No data was modified.");
+  v210DrillMessage="SUCCESS: Isolated recovery reconstructed "+report.counts.records+
+   " cloud records, "+report.counts.archives+" print batches, "+
+   report.counts.frozen+" frozen originals and "+report.counts.addenda+
+   " signed addenda, with matching SHA-256 fingerprints. "+
+   "NO existing account was restored or modified. Full provider recovery still requires supervised tooling.";
+  v29BackupMessage=v210DrillMessage;
  });
 }
 
