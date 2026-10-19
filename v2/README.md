@@ -9,7 +9,7 @@
 ## V2.18 — Automatic night time (TEST)
 
 - Calculate NIGHT minutes from the **centre of the Sun 6° below the horizon** (civil twilight) in UTC. Works offline, including local flights, cross-midnight flights and a straight-line departure/arrival position estimate.
-- Bundled aerodrome reference coordinates for EYVI, EYKA, EYPA, EYSA, EYKL, EYMO, EYKS, EYVK, EVRA, EETN and EPWA (OurAirports). Other bases use manually entered WGS84 coordinates, preserved in the flight.
+- Bundled aerodrome reference coordinates for EYVI, EYKA, EYPA, EYSA, EYKL, EYMO, EYKS, EYVK, EYPN, EYPR, EYVP, EYRO, EYRD, EYMM, EYNI, EVRA, EETN and EPWA (OurAirports and Lithuania 2026 AIP aerodrome/ATZ coordinates). Other bases use manually entered WGS84 coordinates, preserved in the flight.
 - Live preview shows night minutes, twilight boundaries and distance; each flight stores automatic/manual mode and the reference coordinates. Manual override remains available.
 - **Historical flights remain manual unless opted in.** An automatic save without valid coordinates is blocked instead of silently recording zero. Night landings/take-offs are not changed.
 - Estimates depend on aerodrome locations, a straight-line approximation and the civil-twilight convention; actual track and national authority rules may differ. Test manually against official publications before relying on values.
