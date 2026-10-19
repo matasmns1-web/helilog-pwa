@@ -56,7 +56,7 @@ test("candidate packages all required relative PWA assets with separate backend"
   assert.ok(names.length>=20);
   assert.ok(!names.some(x=>x.endsWith(".cjs")||x.endsWith(".md")||x==="alpha.html"));
   const cfg=fs.readFileSync(path.join(built.output,"cloud-config.js"),"utf8");
-  assert.match(cfg,/environment:?"?\s*"production"/);
+  assert.match(cfg,/"environment"\s*:\s*"production"/);
   assert.match(cfg,/sb_publishable_PRODUCTION_FAKE/);
   assert.doesNotMatch(cfg,/cabfifnsxpaalgsyicbo/);
   assert.match(cfg,/helilog-pwa\.onrender\.com/);
