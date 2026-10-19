@@ -22,8 +22,9 @@
  const recoveryLinkError=recoveryQuery.get("error_description")||recoveryFragment.get("error_description")||"";
  // Dashboard invite links arrive at Site URL with type=invite, access_token and refresh_token.
  // An error fragment is also handled as a locked invite screen, never as an account login.
- const inviteAttempted=!recoveryRequested&&recoveryQuery.get("helilog_oauth")!=="google"&&(
-  recoveryFragment.get("type")==="invite"||!!recoveryFragment.get("error"));
+ const inviteAttempted=!recoveryRequested&&(
+  recoveryFragment.get("type")==="invite"||
+  (recoveryQuery.get("helilog_oauth")!=="google"&&!!recoveryFragment.get("error")));
  const inviteAccessToken=inviteAttempted&&recoveryFragment.get("type")==="invite"
   &&recoveryFragment.get("refresh_token")?recoveryFragment.get("access_token"):"";
  const inviteLinkError=recoveryFragment.get("error_description")||"";
