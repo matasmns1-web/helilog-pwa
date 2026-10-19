@@ -68,7 +68,7 @@ test("candidate packages all required relative PWA assets with separate backend"
   assert.equal(manifest.start_url,"./index.html");
   assert.equal(manifest.scope,"./");
   const worker=fs.readFileSync(path.join(built.output,"service-worker.js"),"utf8");
-  assert.match(worker,/helilog-v2-14-production-candidate-1/);
+  assert.match(worker,/helilog-v2-15-production-candidate-1/);
   assert.ok(fs.existsSync(path.join(root,"index.html")),"the existing V1 root is untouched");
  }finally{fs.rmSync(built.tmp,{recursive:true,force:true});}
 });
