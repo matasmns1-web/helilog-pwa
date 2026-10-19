@@ -54,7 +54,7 @@ function prepare(){
  let worker=fs.readFileSync(path.join(source,"service-worker.js"),"utf8");
  must(index.includes("HeliLog V2.15"),"HTML must be V2.15");
  must(manifest.name.includes("V2.15"),"manifest release version mismatch");
- must(worker.includes("helilog-v2-14"),"offline cache release version mismatch");
+ must(worker.includes("helilog-v2-15"),"offline cache release version mismatch");
  const cfg="/* Generated production candidate public configuration; no secret keys. */\n"+
  "window.HeliLogCloudConfig = Object.freeze("+JSON.stringify({
   supabaseUrl:apiOrigin,publishableKey:key,authEnabled:true,environment:"production",
@@ -70,8 +70,8 @@ function prepare(){
  manifest.short_name="HeliLog";
  manifest.description="Private beta helicopter pilot logbook; not independently certified for regulatory recordkeeping.";
  worker=worker.replace("const CACHE='helilog-v2-15-invitations-1';",
-                        "const CACHE='helilog-v2-14-production-candidate-1';");
- must(worker.includes("helilog-v2-14-production-candidate-1"),"distinct production PWA cache missing");
+                        "const CACHE='helilog-v2-15-production-candidate-1';");
+ must(worker.includes("helilog-v2-15-production-candidate-1"),"distinct production PWA cache missing");
  // Clean fixed build directory. Never overwrite the V2 source or V1 root.
  if(fs.existsSync(target))fs.rmSync(target,{recursive:true,force:true});
  fs.mkdirSync(target,{recursive:true});
