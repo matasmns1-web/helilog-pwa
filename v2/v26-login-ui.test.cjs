@@ -19,13 +19,13 @@ function loginMarkup(snapshot){
  const window={HeliLogCloud:{snapshot:()=>snapshot}};
  const renderer=new Function("window","document","app","TEST_MODE","v23AuthMessage",
   "v23Escape","HELILOG_TEST_VERSION","v23Unlocked",body+";return v23LoginView;");
- renderer(window,document,app,false,"",x=>String(x),"V2.17",false)();
+ renderer(window,document,app,false,"",x=>String(x),"V2.18",false)();
  return app.innerHTML;
 }
 
 test("login displays current version, and only form fields accept text",()=>{
  const markup=loginMarkup({status:"signed_out",error:""});
- assert.match(markup,/V2\.17 · Private pilot logbook test/);
+ assert.match(markup,/V2\.18 · Private pilot logbook test/);
  assert.match(markup,/contenteditable="false"/);
  assert.match(markup,/<h1[^>]*>Sign in<\/h1>/);
  assert.match(markup,/id="v23Email" type="email"/);
@@ -71,15 +71,15 @@ test("Log out lives in Profile only; it is not in the common header or mobile Mo
  assert.match(auth,/unsynchronized change\(s\) remain saved/);
 });
 
-test("PWA version and references are consistent for the V2.17 update",()=>{
- assert.match(html,/<title>HeliLog V2\.17/);
- assert.match(html,/V2\.17 · TEST/);
- assert.equal(manifest.name,"HeliLog V2.17 — Test");
- assert.match(auth,/HELILOG_TEST_VERSION='V2\.17'/);
+test("PWA version and references are consistent for the V2.18 update",()=>{
+ assert.match(html,/<title>HeliLog V2\.18/);
+ assert.match(html,/V2\.18 · TEST/);
+ assert.equal(manifest.name,"HeliLog V2.18 — Test");
+ assert.match(auth,/HELILOG_TEST_VERSION='V2\.18'/);
  assert.match(auth,/<h2>🚁 HeliLog '\+HELILOG_TEST_VERSION/);
- assert.match(worker,/helilog-v2-17-manual-1/);
+ assert.match(worker,/helilog-v2-18-night-1/);
  for(const file of ["cloud-config","cloud-foundation","cloud-view","cloud-sync","auth-gate","cloud-archives"]){
-  const ref=file+".js?v=2.17-manual-1";
+  const ref=file+".js?v=2.18-night-1";
   assert.ok(html.includes(ref),"Missing version in HTML: "+ref);
   assert.ok(worker.includes(ref),"Missing version in PWA shell: "+ref);
  }
