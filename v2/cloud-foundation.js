@@ -153,6 +153,16 @@
    return {state:"invalid",message:"This recovery link could not be verified. It may have expired or already been used. Request a new one."};
   }
  }
+ async function cancelPasswordRecovery(){
+  if(!recoveryRequested)return true;
+  recoveryVerified=false;
+  const db=await connect();
+  const {error}=await db.auth.signOut({scope:"local"});
+  if(error)throw Error("Could not close the password recovery session. Please retry before signing in.");
+  user=null;account=null;status="signed_out";lastError="";
+  clearRecoveryUrl();
+  return true;
+ }
  async function completePasswordRecovery(password){
   if(!recoveryVerified||!recoveryRequested)throw Error("Open a valid recovery email link first.");
   if(typeof password!=="string"||password.length<12||password.length>128)
@@ -184,6 +194,6 @@
   return connect();
  }
  return Object.freeze({snapshot,refresh,signIn,initializeProfile,signOut,sendPasswordReset,
-  beginPasswordRecovery,completePasswordRecovery,validConfig,client:verifiedClient,
+  beginPasswordRecovery,completePasswordRecovery,cancelPasswordRecovery,validConfig,client:verifiedClient,
   libraryUrl:sdkUrl});
 });

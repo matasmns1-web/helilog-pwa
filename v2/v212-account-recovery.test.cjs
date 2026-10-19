@@ -73,6 +73,16 @@ test("a verified reset updates ONLY the credential, revokes sessions and clears 
  assert.equal(f.calls.find(x=>x.type==="replaceUrl").url,"/");
  await assert.rejects(f.api.completePasswordRecovery("twelve letters + something"),/valid recovery email link/);
 });
+test("canceling a recovery link signs out its temporary session before returning to login",async()=>{
+ const f=fixture({callback:"?helilog_recovery=1#access_token=link&refresh_token=r&type=recovery",sessionToken:"link"});
+ assert.equal((await f.api.beginPasswordRecovery()).state,"ready");
+ assert.equal(await f.api.cancelPasswordRecovery(),true);
+ assert.equal(f.calls.find(x=>x.type==="signout").options.scope,"local");
+ assert.equal(f.calls.find(x=>x.type==="replaceUrl").url,"/");
+ await assert.rejects(f.api.completePasswordRecovery("a sufficient password"),/valid recovery email link/);
+ assert.ok(!f.calls.some(x=>x.type==="update"));
+ assert.match(gate,/await window\.HeliLogCloud\.cancelPasswordRecovery\(\)/);
+});
 test("an unsuccessful password update does not announce success or sign out",async()=>{
  const f=fixture({callback:"?helilog_recovery=1#access_token=link&refresh_token=r&type=recovery",
   sessionToken:"link",updateError:{message:"bad password"}});
