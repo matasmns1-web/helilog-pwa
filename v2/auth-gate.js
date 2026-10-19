@@ -1,5 +1,5 @@
 /* HeliLog V2.3 private login gate. No automatic import of V2.2 local data. */
-const HELILOG_TEST_VERSION='V2.12.2';
+const HELILOG_TEST_VERSION='V2.13';
 let v23Unlocked=false,v23AuthBusy=false,v23AuthMessage="";
 let v23RecoveryStage="signin";
 function v23Escape(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
@@ -46,7 +46,7 @@ function v23LoginView(){
  '</div></div>';
 }
 
-/* V2.12.2: recovery is an independent locked screen. Never open a workspace from an email link. */
+/* V2.13: recovery is an independent locked screen. Never open a workspace from an email link. */
 function v23RecoveryView(stage=v23RecoveryStage){
  v23Unlocked=false;
  document.documentElement.classList.add("helilog-locked");
