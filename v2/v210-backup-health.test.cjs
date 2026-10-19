@@ -1,4 +1,4 @@
-/* HeliLog V2.14 — backup health and no-write isolated recovery drill */
+/* HeliLog V2.15 — backup health and no-write isolated recovery drill */
 const test=require("node:test");
 const assert=require("node:assert/strict");
 const fs=require("node:fs");
@@ -134,10 +134,10 @@ test("monitoring SQL has authenticated owner-only checks and cannot delete backu
  assert.match(sql,/mode','preview_only'/);
  assert.doesNotMatch(sql,/\bdelete\s+from\s+public\.helilog_backup_snapshots\b/i);
 });
-test("PWA V2.14 release includes recovery sandbox and monitoring entry",()=>{
- assert.match(html,/cloud-backups\.js\?v=2\.14-prodprep-1/);
- assert.match(html,/disaster-recovery\.js\?v=2\.14-prodprep-1/);
- assert.match(sw,/disaster-recovery\.js\?v=2\.14-prodprep-1/);
+test("PWA V2.15 release includes recovery sandbox and monitoring entry",()=>{
+ assert.match(html,/cloud-backups\.js\?v=2\.15-invitations-1/);
+ assert.match(html,/disaster-recovery\.js\?v=2\.15-invitations-1/);
+ assert.match(sw,/disaster-recovery\.js\?v=2\.15-invitations-1/);
  assert.match(gate,/v210CheckBackupHealth/);
  assert.match(gate,/v210TestEncryptedRecovery/);
  assert.match(gate,/Run isolated recovery drill/);
