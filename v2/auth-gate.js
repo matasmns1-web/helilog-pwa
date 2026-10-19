@@ -26,7 +26,9 @@ function v23LoginView(){
  '<div class="muted">'+HELILOG_TEST_VERSION+' · Private pilot logbook test</div>'+
  '<h1 style="font-size:23px;margin-top:25px">'+(profile?'Create your pilot profile':'Sign in')+'</h1>'+
  '<p class="muted">'+(profile?'Complete your account before opening your logbook.':
- 'Sign in to open your private cloud logbook. Registration is invitation-only.')+'</p>'+
+ 'Sign in to open your private cloud logbook. '+(window.HeliLogCloudConfig?.googleEnabled===true?
+ 'Approved beta testers can also create an account with Google.':
+ 'Registration is invitation-only.')+'</p>')+'</p>'+
  (v23AuthMessage?'<div class="note" role="alert">'+v23Escape(v23AuthMessage)+'</div>':'')+
  (st.error?'<div class="mini">'+v23Escape(st.error)+'</div>':'')+
  (profile?
@@ -39,7 +41,11 @@ function v23LoginView(){
  '<div class="field"><label for="v23Password">Password</label>'+
  '<input id="v23Password" type="password" required autocomplete="current-password"></div>'+
  '<button class="btn primary" type="submit">Sign in</button></form>'+
- '<button class="btn" type="button" style="width:100%;margin-top:10px" onclick="v23ShowPasswordHelp()">Forgot password?</button>')+
+ '<button class="btn" type="button" style="width:100%;margin-top:10px" onclick="v23ShowPasswordHelp()">Forgot password?</button>'+
+ (window.HeliLogCloudConfig?.googleEnabled===true?
+ '<div class="muted" style="text-align:center;margin:15px 0 12px" aria-hidden="true">or</div>'+
+ '<button class="btn" type="button" style="width:100%;font-weight:600" onclick="v23GoogleSignIn()">Continue with Google</button>'+
+ '<p class="mini" style="margin-top:10px">Google sign-in uses your verified Google account. No HeliLog password is required.</p>':'') )+
  (TEST_MODE?'<div class="note" style="margin-top:15px">The previous local Test Mode is active. To use cloud login, exit the old sandbox first. Its data remains safely stored.</div>'+
  '<button class="btn" type="button" onclick="v23ExitOldTestMode()">Exit old Test Mode</button>':'')+
  '<p class="mini" style="margin-top:20px">Your logbook is private to this account. Aircraft and flights sync across devices signed into the same account; records from other accounts are not imported automatically.</p>'+
@@ -189,6 +195,12 @@ async function v23Boot(){
  document.documentElement.classList.add("helilog-locked");
  app.innerHTML='<div class="v23-auth-container"><div class="v23-auth-card" contenteditable="false"><h2>🚁 HeliLog '+HELILOG_TEST_VERSION+'</h2><p>Checking your account…</p></div></div>';
  try{
+  const google=await window.HeliLogCloud.finishGoogleRedirect();
+  if(google.state==="invalid"){
+   v23AuthMessage=google.message||"Google sign-in could not be verified.";
+   v23LoginView();
+   return;
+  }
   const invitation=await window.HeliLogCloud.beginInvitation();
   if(invitation.state!=="none"){
    v23InviteStage=invitation.state==="ready"?"setup":"invalid";
@@ -273,6 +285,23 @@ async function v23EnterWorkspace(auth){
 function v23UpdateSyncChip(){
  const el=document.getElementById("v23SyncStatus");
  if(el)el.innerHTML=v23SyncInfo();
+}
+async function v23GoogleSignIn(){
+ if(v23AuthBusy)return;
+ if(TEST_MODE){
+  v23AuthMessage="Exit the previous local Test Mode before signing in to a cloud account.";
+  v23LoginView();return;
+ }
+ v23AuthBusy=true;v23AuthMessage="";
+ app.innerHTML='<div class="v23-auth-container"><div class="v23-auth-card" contenteditable="false">Connecting securely to Google…</div></div>';
+ try{
+  await window.HeliLogCloud.signInWithGoogle();
+  // The Supabase browser client redirects to the provider. Its verified
+  // callback is handled by v23Boot on returning to the HeliLog origin.
+ }catch(e){
+  v23AuthMessage=String(e.message||e);
+  v23LoginView();
+ }finally{v23AuthBusy=false;}
 }
 async function v23SignIn(event){
  event.preventDefault();if(v23AuthBusy)return;
