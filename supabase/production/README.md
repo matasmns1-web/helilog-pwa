@@ -2,7 +2,7 @@
 
 Target: Supabase **HeliLog Production**, project `xvmzvoldlajvnfxonrvn` (`eu-central-1`). This is an independent database. Never run these commands on the test database `cabfifnsxpaalgsyicbo`.
 
-Apply the following **seven existing tested migrations in order**, then the one production-only overlay:
+Apply the following **seven existing tested migrations in order**, then the two production-only permission/scheduler overlays:
 
 1. `supabase/migrations/20261014000000_helilog_v22_foundation.sql`
 2. `supabase/migrations/20261015000000_v24_complete_sync.sql`
@@ -12,8 +12,9 @@ Apply the following **seven existing tested migrations in order**, then the one 
 6. `supabase/migrations/20261016050000_v210_backup_health_retention.sql`
 7. `supabase/migrations/20261019090000_v212_trigger_execution_hardening.sql`
 8. `supabase/production/20261019093000_production_backup_scheduler.sql`
+9. `supabase/production/20261019103000_restrict_record_guard_rpc.sql`
 
-The production overlay safely replaces the old *test-named* 03:00 UTC cron job with `helilog-production-daily-snapshots` and updates `helilog_backup_health()` to monitor that new job. This is not an independent/off-provider backup. Retention remains preview-only and no records are deleted.
+The production overlay safely replaces the old *test-named* 03:00 UTC cron job with `helilog-production-daily-snapshots` and updates `helilog_backup_health()` to monitor that new job. The final overlay revokes unnecessary API EXECUTE grants on the legacy record-guard trigger function without disabling the trigger itself. This is not an independent/off-provider backup. Retention remains preview-only and no records are deleted.
 
 ## Verification gates
 
