@@ -5,6 +5,12 @@
 let v22CloudNotice="",v22CloudBusy=false;
 let v24PilotConflictPreview=null,v24PilotConflictBusy=false;
 let v27RecordPreview=null,v27RecordBusy=false;
+/* V2.13: do not retain conflict previews or account notices across logins. */
+function v213ResetCloudViewState(){
+ v22CloudNotice="";v22CloudBusy=false;
+ v24PilotConflictPreview=null;v24PilotConflictBusy=false;
+ v27RecordPreview=null;v27RecordBusy=false;
+}
 function v24FlattenProfile(data,prefix="",out={}){
  for(const [key,value] of Object.entries(data&&typeof data==="object"?data:{})){
   const field=prefix?prefix+"."+key:key;
