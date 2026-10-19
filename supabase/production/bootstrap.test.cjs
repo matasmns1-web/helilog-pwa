@@ -28,3 +28,10 @@ test("production overlay contains no data deletion or account migration",()=>{
  assert.doesNotMatch(sql,/cabfifnsxpaalgsyicbo/);
  assert.doesNotMatch(sql,/xvmzvoldlajvnfxonrvn/);
 });
+
+test("production rejects direct RPC access to the record guard trigger",()=>{
+ const hardening=fs.readFileSync(path.join(dir,"20261019103000_restrict_record_guard_rpc.sql"),"utf8");
+ assert.match(hardening,/revoke execute on function public\.helilog_guard_record_change\(\)/i);
+ assert.match(hardening,/from public, anon, authenticated/i);
+ assert.doesNotMatch(hardening,/\b(drop|delete|truncate|update|insert)\b/i);
+});
