@@ -1,10 +1,18 @@
 # HeliLog V2 — Development
 
-**Current version: V2.13 — Private multi-account UI isolation and verified backup/security readiness.** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
+**Current version: V2.14 — Production candidate packaging and strict environment isolation.** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
 
 **Prior release: V2.1.** The complete V1.43.2 interface is restored with V2 endorsement print archiving; installed-app signing is separate from web-only print/archive management. See [FULL-V1-INTERFACE.md](FULL-V1-INTERFACE.md) for parity scope, testing instructions and data safety.
 
 **Earlier modular prototype:** [alpha.html](alpha.html) remains available with its own test data.
+
+## V2.14 — Production preparation (TEST)
+
+- Adds a gated `scripts/build-helilog-production.cjs` packager to build a separate candidate website root without modifying `main`, test records or V2 source.
+- Auth validates an exact HTTPS production website origin and a separate production Supabase project. Only publishable keys are allowed in browser code.
+- Builds refuse test/staging domains, the existing TEST backend, unsafe output paths and missing assets. A separate PWA cache namespace prevents collisions.
+- Adds automated production-candidate and origin-isolation tests. **Staging remains configured only for the TEST backend; no production cutover or personal-data migration occurs.**
+- See [V2.14-PRODUCTION-CUTOVER.md](V2.14-PRODUCTION-CUTOVER.md) for remaining gates.
 
 ## V2.13 — Security and recovery readiness (TEST)
 

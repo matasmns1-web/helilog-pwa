@@ -19,6 +19,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Test isolated V2 production candidate packaging
+        run: |
+          node --test scripts/production-release.test.cjs
       - name: Test backups, restore and archived records
         run: |
           node --test v2/v29-backup-recovery.test.cjs v2/v210-backup-health.test.cjs v2/v211-interface-layout.test.cjs v2/v212-account-recovery.test.cjs v2/v213-private-account-safety.test.cjs
