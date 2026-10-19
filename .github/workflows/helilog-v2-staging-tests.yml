@@ -19,6 +19,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Verify production database overlay is safe
+        run: node --test supabase/production/bootstrap.test.cjs
       - name: Test isolated V2 production candidate packaging
         run: |
           node --test scripts/production-release.test.cjs
