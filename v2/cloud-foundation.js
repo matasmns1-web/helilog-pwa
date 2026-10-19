@@ -23,18 +23,10 @@
  // Dashboard invite links arrive at Site URL with type=invite, access_token and refresh_token.
  // An error fragment is also handled as a locked invite screen, never as an account login.
  const inviteAttempted=!recoveryRequested&&(
-  recoveryFragment.get("type")==="invite"||
-  (recoveryQuery.get("helilog_oauth")!=="google"&&!!recoveryFragment.get("error")));
+  recoveryFragment.get("type")==="invite"||!!recoveryFragment.get("error"));
  const inviteAccessToken=inviteAttempted&&recoveryFragment.get("type")==="invite"
   &&recoveryFragment.get("refresh_token")?recoveryFragment.get("access_token"):"";
  const inviteLinkError=recoveryFragment.get("error_description")||"";
- // Google OAuth uses the implicit token callback only on a fixed same-origin URL.
- // A marker alone is never sufficient proof of a new, verified session.
- const googleRequested=!recoveryRequested&&!inviteAttempted&&recoveryQuery.get("helilog_oauth")==="google";
- const googleAccessToken=googleRequested&&recoveryFragment.get("refresh_token")?
-  recoveryFragment.get("access_token"):"";
- const googleLinkError=googleRequested?(recoveryFragment.get("error_description")||
-  recoveryQuery.get("error_description")||""):"";
  let recoveryVerified=false,inviteVerified=false;
  function clearRecoveryUrl(){
   const here=root.location;
@@ -96,7 +88,7 @@
   loading=(async()=>{
    const lib=await loadLibrary();
    client=lib.createClient(config().supabaseUrl,config().publishableKey,{
-    auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:recoveryRequested||inviteAttempted||googleRequested,flowType:"implicit"},
+    auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:recoveryRequested||inviteAttempted,flowType:"implicit"},
     db:{schema:"public"}
    });
    return client;
@@ -128,43 +120,6 @@
    status="error";lastError=String(e.message||e);
    // On error do not falsely present a verified account as connected.
    user=null;account=null;return snapshot();
-  }
- }
- function googleEnabled(){return config().googleEnabled===true;}
- function googleRedirectUrl(){
-  if(!root.location||root.location.protocol!=="https:"||
-    !root.location.origin||!root.location.pathname)
-   throw Error("Google sign-in requires the secure HeliLog website.");
-  return root.location.origin+root.location.pathname+"?helilog_oauth=google";
- }
- async function signInWithGoogle(){
-  if(!googleEnabled())throw Error("Google sign-in is not enabled for this HeliLog environment.");
-  const db=await connect();
-  const {data,error}=await db.auth.signInWithOAuth({
-   provider:"google",options:{redirectTo:googleRedirectUrl()}
-  });
-  if(error)throw Error("Google sign-in could not begin. Verify that the Google provider is configured in Supabase.");
-  return data;
- }
- async function finishGoogleRedirect(){
-  if(!googleRequested)return {state:"none"};
-  if(googleLinkError||!googleAccessToken){
-   clearRecoveryUrl();
-   return {state:"invalid",message:"Google sign-in was cancelled, rejected or expired. Please try again."};
-  }
-  try{
-   const db=await connect();
-   const {data:sessionData,error:sessionError}=await db.auth.getSession();
-   if(sessionError||!sessionData?.session||sessionData.session.access_token!==googleAccessToken)
-    throw Error("OAuth callback did not match the session");
-   const {data:identity,error:identityError}=await db.auth.getUser();
-   if(identityError||!identity?.user||identity.user.id!==sessionData.session.user?.id)
-    throw Error("Unverified Google account");
-   clearRecoveryUrl();
-   return {state:"ready"};
-  }catch{
-   clearRecoveryUrl();
-   return {state:"invalid",message:"Google sign-in could not be verified. Please try again."};
   }
  }
  async function signIn(email,password){
@@ -301,8 +256,7 @@
    throw Error("Sign in and complete your private profile before accessing cloud records.");
   return connect();
  }
- return Object.freeze({snapshot,refresh,signIn,googleEnabled,signInWithGoogle,finishGoogleRedirect,
-  initializeProfile,signOut,sendPasswordReset,
+ return Object.freeze({snapshot,refresh,signIn,initializeProfile,signOut,sendPasswordReset,
   beginPasswordRecovery,completePasswordRecovery,cancelPasswordRecovery,
   beginInvitation,cancelInvitation,completeInvitation,validConfig,client:verifiedClient,
   libraryUrl:sdkUrl});

@@ -1,10 +1,18 @@
 # HeliLog V2 — Development
 
-**Current version: V2.16 — Google OAuth login for beta pilots, with email/password login retained.** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
+**Current version: V2.17 — Manual account onboarding; email/password only, Google login removed.** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
 
 **Prior release: V2.1.** The complete V1.43.2 interface is restored with V2 endorsement print archiving; installed-app signing is separate from web-only print/archive management. See [FULL-V1-INTERFACE.md](FULL-V1-INTERFACE.md) for parity scope, testing instructions and data safety.
 
 **Earlier modular prototype:** [alpha.html](alpha.html) remains available with its own test data.
+
+## V2.17 — Manual friends-only beta (TEST)
+
+- Removed the Google sign-in button, client OAuth initiation, callbacks, configuration flag and production candidate Google provider flag. Email/password sign-in, Supabase invitation acceptance and password recovery logic remain unchanged.
+- New users are created directly by the project administrator through Supabase Authentication → Users → Add user → Create new user, with a unique password. Friends receive a link to HeliLog Test, complete their private pilot profile and use fictional test records only.
+- The Google OAuth settings guide and OAuth regression tests were retired; new regression checks ensure no Google Auth handler or enabled client config remains.
+- **Email limitation:** without custom SMTP, Supabase's default mailer does not send password recovery/invites to arbitrary friends. The administrator must manage temporary credentials securely. Do not share existing user credentials or use real pilot records during this private beta.
+- The production Supabase project and existing V1 Render service are unchanged. Domain registration, SMTP, external signup, Google OAuth and public release are postponed.
 
 ## V2.16 — Google login (TEST)
 

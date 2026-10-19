@@ -52,26 +52,26 @@ function prepare(){
  let gate=fs.readFileSync(path.join(source,"auth-gate.js"),"utf8");
  let manifest=JSON.parse(fs.readFileSync(path.join(source,"manifest.webmanifest"),"utf8"));
  let worker=fs.readFileSync(path.join(source,"service-worker.js"),"utf8");
- must(index.includes("HeliLog V2.16"),"HTML must be V2.16");
- must(manifest.name.includes("V2.16"),"manifest release version mismatch");
- must(worker.includes("helilog-v2-16"),"offline cache release version mismatch");
+ must(index.includes("HeliLog V2.17"),"HTML must be V2.17");
+ must(manifest.name.includes("V2.17"),"manifest release version mismatch");
+ must(worker.includes("helilog-v2-15"),"offline cache release version mismatch");
  const cfg="/* Generated production candidate public configuration; no secret keys. */\n"+
  "window.HeliLogCloudConfig = Object.freeze("+JSON.stringify({
   supabaseUrl:apiOrigin,publishableKey:key,authEnabled:true,environment:"production",
-  inviteOnly:true,googleEnabled:true,productionOrigin:webOrigin
+  inviteOnly:true,productionOrigin:webOrigin
  },null,2)+");\n";
  // The genuine local Test Mode warning remains untouched; this is not regulatory approval.
- index=index.replace("HeliLog V2.16 — Google Sign-in","HeliLog V2.16 — Private Beta Candidate")
-   .replace("V2.16 · TEST","V2.16 · PRIVATE BETA");
+ index=index.replace("HeliLog V2.17 — Manual Account Beta","HeliLog V2.17 — Private Beta Candidate")
+   .replace("V2.17 · TEST","V2.17 · PRIVATE BETA");
  gate=gate.replaceAll(" · Private pilot logbook test"," · Private beta logbook")
   .replaceAll("TEST Supabase database","private Supabase database")
   .replaceAll("TEST snapshot","private snapshot");
- manifest.name="HeliLog V2.16 — Private Beta";
+ manifest.name="HeliLog V2.17 — Private Beta";
  manifest.short_name="HeliLog";
  manifest.description="Private beta helicopter pilot logbook; not independently certified for regulatory recordkeeping.";
- worker=worker.replace("const CACHE='helilog-v2-16-google-1';",
-                        "const CACHE='helilog-v2-16-production-candidate-1';");
- must(worker.includes("helilog-v2-16-production-candidate-1"),"distinct production PWA cache missing");
+ worker=worker.replace("const CACHE='helilog-v2-17-manual-1';",
+                        "const CACHE='helilog-v2-15-production-candidate-1';");
+ must(worker.includes("helilog-v2-15-production-candidate-1"),"distinct production PWA cache missing");
  // Clean fixed build directory. Never overwrite the V2 source or V1 root.
  if(fs.existsSync(target))fs.rmSync(target,{recursive:true,force:true});
  fs.mkdirSync(target,{recursive:true});
@@ -88,7 +88,7 @@ function prepare(){
  for(const f of links)must(fs.existsSync(path.join(target,f)),"missing linked script "+f);
  for(const f of ["index.html","manifest.webmanifest","service-worker.js","cloud-foundation.js"])
   must(fs.statSync(path.join(target,f)).size>50,"empty release asset "+f);
- console.log("HeliLog V2.16 release candidate verified: "+files.length+" static assets");
+ console.log("HeliLog V2.17 release candidate verified: "+files.length+" static assets");
  console.log("Production origin: "+webOrigin+" | distinct Supabase project: "+project[1]);
  console.log("Build output: "+target+" (NOT DEPLOYED)");
 }
