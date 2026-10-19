@@ -6,7 +6,7 @@ const vilnius=night.lookup("EYVI"),kaunas=night.lookup("EYKA");
 test("bundled official reference coordinates include common Lithuanian aerodromes",()=>{
  assert.deepEqual({lat:vilnius.lat,lon:vilnius.lon},{lat:54.634102,lon:25.285801});
  assert.deepEqual({lat:kaunas.lat,lon:kaunas.lon},{lat:54.963965,lon:24.08582});
- for(const code of ["EYVI","EYKA","EYPA","EYSA","EYKL","EYMO","EYKS","EYVK","EVRA","EETN","EPWA"])
+ for(const code of ["EYVI","EYKA","EYPA","EYSA","EYKL","EYMO","EYKS","EYVK","EYPN","EYPR","EYVP","EYRO","EYRD","EYMM","EYNI","EVRA","EETN","EPWA"])
   assert.ok(night.lookup(code),code);
  assert.equal(night.lookup("XXXX"),null);
 });
@@ -83,4 +83,22 @@ test("flight form preserves historical night totals and requires opt-in automati
  assert.match(index,/v218InitNight\(existing\)/);
  assert.match(index,/\.\/night-calculation\.js\?v=2\.18-night-1/);
  assert.match(sw,/night-calculation\.js\?v=2\.18-night-1/);
+});
+
+test("published Lithuania AIP October 2026 Vilnius civil twilight table agrees within five minutes",()=>{
+ // GEN 2.7 valid 16 Apr 2026: EYVI October 18 TWIL FROM 04:15, TWIL TO 15:52 UTC.
+ // Astronomical estimates use published airport reference coordinates, rather
+ // than relying upon the published five-day interpolated civil-twilight table.
+ const around=Date.UTC(2026,9,18,15,0);
+ const ev=night.twilightAround(around,vilnius);
+ const morning=Date.UTC(2026,9,18,4,15),evening=Date.UTC(2026,9,18,15,52);
+ assert.ok(Math.abs(ev.morningUtc-morning)<=5*60000,"morning "+night.utcLabel(ev.morningUtc));
+ assert.ok(Math.abs(ev.eveningUtc-evening)<=5*60000,"evening "+night.utcLabel(ev.eveningUtc));
+});
+test("AIP Panevėžys aerodrome position is available offline",()=>{
+ const p=night.lookup("EYPN");
+ assert.ok(p);
+ assert.ok(Math.abs(p.lat-(55+42/60+32/3600))<0.00001);
+ assert.ok(Math.abs(p.lon-(24+20/60+43/3600))<0.00001);
+ assert.match(p.source,/AIP/);
 });
