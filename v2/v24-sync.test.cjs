@@ -96,8 +96,8 @@ test('print confirmation stays web only and requires confirmed cloud synchroniza
  root.navigator.standalone=true;
  assert.rejects(api.confirmBatch('flight',{confirmedAt:'2026-10-15'},['f1']),/web browser/);
 });
-test('V2.16 keeps the V2.4 cloud archive and sync modules versioned together',()=>{
+test('V2.17 keeps the V2.4 cloud archive and sync modules versioned together',()=>{
  for(const file of ['cloud-config.js','cloud-foundation.js','cloud-view.js','cloud-sync.js','auth-gate.js','cloud-archives.js'])
-  assert.match(html,new RegExp(file.replace('.','\\.')+'\\?v=2\\.16-google-1'));
- assert.match(html,/V2\.16 · TEST/);
+  assert.match(html,new RegExp(file.replace('.','\\.')+'\\?v=2\\.17-google-1'));
+ assert.match(html,/V2\.17 · TEST/);
 });
