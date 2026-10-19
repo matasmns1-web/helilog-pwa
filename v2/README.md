@@ -1,10 +1,20 @@
 # HeliLog V2 — Development
 
-**Current version: V2.11.2 — Full-width, correctly structured responsive Settings layout, with V2.11.1 navigation and existing record protections unchanged.** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
+**Current version: V2.12 — Private beta account-security foundation and password recovery, with existing archived-record protections preserved.** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
 
 **Prior release: V2.1.** The complete V1.43.2 interface is restored with V2 endorsement print archiving; installed-app signing is separate from web-only print/archive management. See [FULL-V1-INTERFACE.md](FULL-V1-INTERFACE.md) for parity scope, testing instructions and data safety.
 
 **Earlier modular prototype:** [alpha.html](alpha.html) remains available with its own test data.
+
+## V2.12 — Multi-account security and password recovery (TEST)
+
+- Added a "Forgot password?" route on the private sign-in screen, generic email acknowledgement, verified recovery link and matching new-password entry (12–128 characters). Sign out after updating the password; never open flight records directly from the recovery email.
+- The public Supabase client processes a recovery callback only when HeliLog receives a Supabase recovery token. The token must match the live session and its verified user. Expired/invalid links are rejected without reading or changing logbook data.
+- Preserved invitation-only signup and isolated per-account cloud caches. Database RLS and public RPC permissions must be tested with two fictional independent users before inviting beta testers.
+- Trigger-only SECURITY DEFINER function privileges are hardened in test-only migration `supabase/migrations/20261019090000_v212_trigger_execution_hardening.sql`.
+- Existing signed archives, backups, cloud sync, and V1 production source and data are not changed.
+- Before email recovery can work outside the developer account, configure **Supabase Authentication → URL Configuration** to allow `https://helilog-v2-test.onrender.com/?helilog_recovery=1`, verify the reset-password email template honors RedirectTo, and configure SMTP as appropriate.
+- Test with fictional records; independent restore and full two-account permission tests are still required before personal records or production use.
 
 ## V2.11.2 — Settings full-width layout hotfix (TEST)
 
