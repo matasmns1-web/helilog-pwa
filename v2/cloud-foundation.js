@@ -165,8 +165,8 @@
  }
  async function completePasswordRecovery(password){
   if(!recoveryVerified||!recoveryRequested)throw Error("Open a valid recovery email link first.");
-  if(typeof password!=="string"||password.length<12||password.length>128)
-   throw Error("Use a password between 12 and 128 characters.");
+  if(typeof password!=="string"||password.length<6||password.length>128)
+   throw Error("Use a password between 6 and 128 characters.");
   const db=await connect();
   const {data:identity,error:identityError}=await db.auth.getUser();
   if(identityError||!identity?.user)throw Error("Recovery session expired. Request another link.");

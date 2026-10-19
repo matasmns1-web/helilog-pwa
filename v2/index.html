@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.12 — Multi-Account Security & Recovery</title>
+<title>HeliLog V2.12.1 — Password Reset Minimum</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -288,7 +288,7 @@ html.helilog-test-mode .brand::after{
 }
 </style></head>
 <body><div class="layout">
-<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V2.12 · TEST</span></div><nav>
+<aside><div class="brand">🚁 HeliLog <span style="font-size:12px;color:#94a3b8">V2.12.1 · TEST</span></div><nav>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="aircraft">🚁 Aircraft</button><button data-v="pilots">👤 Pilots</button><button data-v="endorsements">✎ Endorsements</button><button data-v="printarchive">▤ Print archive</button><button data-v="profile">○ Profile</button><button data-v="settings">⚙ Settings</button><button data-v="testmode">⚗ Test Mode</button>
 </nav></aside><main id="app"></main>
 <div class="mobile">
@@ -363,16 +363,16 @@ html.helilog-test-mode .brand::after{
 <script src="./print.js"></script>
 <script src="./endorsement-bridge.js"></script>
 <script src="./endorsement-ui.js"></script>
-<script src="./cloud-config.js?v=2.12-accounts-1"></script>
-<script src="./cloud-foundation.js?v=2.12-accounts-1"></script>
-<script src="./cloud-view.js?v=2.12-accounts-1"></script>
-<script src="./cloud-sync.js?v=2.12-accounts-1"></script>
-<script src="./auth-gate.js?v=2.12-accounts-1"></script>
-<script src="./cloud-archives.js?v=2.12-accounts-1"></script>
-<script src="./archive-integrity.js?v=2.12-accounts-1"></script>
-<script src="./recovery.js?v=2.12-accounts-1"></script>
-<script src="./cloud-backups.js?v=2.12-accounts-1"></script>
-<script src="./disaster-recovery.js?v=2.12-accounts-1"></script>
+<script src="./cloud-config.js?v=2.12.1-password-1"></script>
+<script src="./cloud-foundation.js?v=2.12.1-password-1"></script>
+<script src="./cloud-view.js?v=2.12.1-password-1"></script>
+<script src="./cloud-sync.js?v=2.12.1-password-1"></script>
+<script src="./auth-gate.js?v=2.12.1-password-1"></script>
+<script src="./cloud-archives.js?v=2.12.1-password-1"></script>
+<script src="./archive-integrity.js?v=2.12.1-password-1"></script>
+<script src="./recovery.js?v=2.12.1-password-1"></script>
+<script src="./cloud-backups.js?v=2.12.1-password-1"></script>
+<script src="./disaster-recovery.js?v=2.12.1-password-1"></script>
 <script>
 const LIVE_KEY='helilog_v2_complete_test_data'; // Separate V2 test browser key.
 const SANDBOX_KEY='helilog_v2_complete_test_sandbox';
@@ -4760,7 +4760,7 @@ async function makeFullBackup(){
     app:'HeliLog',
     format:'helilog-full-backup',
     backupSchema:2,
-    appVersion:'2.12',
+    appVersion:'2.12.1',
     exportedAt:new Date().toISOString(),
     environment:v23AccountWorkspace()?'cloud-test':TEST_MODE?'test':'production',
     integrity:{algorithm:'SHA-256',sha256:await sha256Hex(JSON.stringify(data))},
