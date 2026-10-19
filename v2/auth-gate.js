@@ -27,7 +27,7 @@ function v23LoginView(){
  '<h1 style="font-size:23px;margin-top:25px">'+(profile?'Create your pilot profile':'Sign in')+'</h1>'+
  '<p class="muted">'+(profile?'Complete your account before opening your logbook.':
  'Sign in to open your private cloud logbook. '+(window.HeliLogCloudConfig?.googleEnabled===true?
- 'Approved beta testers can also create an account with Google.':
+ 'Google users can also create an account where Google registration is enabled.':
  'Registration is invitation-only.'))+'</p>'+
  (v23AuthMessage?'<div class="note" role="alert">'+v23Escape(v23AuthMessage)+'</div>':'')+
  (st.error?'<div class="mini">'+v23Escape(st.error)+'</div>':'')+
