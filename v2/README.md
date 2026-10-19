@@ -1,10 +1,17 @@
 # HeliLog V2 — Development
 
-**Current version: V2.12.2 — Accurate, version-independent onboarding and account-privacy guidance.** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
+**Current version: V2.13 — Private multi-account UI isolation and verified backup/security readiness.** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
 
 **Prior release: V2.1.** The complete V1.43.2 interface is restored with V2 endorsement print archiving; installed-app signing is separate from web-only print/archive management. See [FULL-V1-INTERFACE.md](FULL-V1-INTERFACE.md) for parity scope, testing instructions and data safety.
 
 **Earlier modular prototype:** [alpha.html](alpha.html) remains available with its own test data.
+
+## V2.13 — Security and recovery readiness (TEST)
+
+- **Private account UI isolation:** clear backup history, restore previews, signed archive status and cloud-conflict previews at logout/account switch. Cancel stale async backup responses using an account-specific generation guard, so one account's private metadata cannot appear in the next pilot's session.
+- **Fresh backup health:** after manual Backup now, refresh per-account health and retention; remove obsolete V2.10 labels in the Backup & Recovery interface.
+- **Verified two-account tests:** read and attempted write isolation, cross-owner backup/restore/archive RPC rejection, two manual snapshots, and checksum verification of all seven test snapshots. Tests performed without modifying existing flight or signed history.
+- **Production cutover plan:** [V2.13-RELEASE-GATES.md](V2.13-RELEASE-GATES.md) describes remaining independent encrypted restore, authentication, privacy and infrastructure gates. Current V2 remains on TEST Render/Supabase; V1 `main` is untouched.
 
 ## V2.12.2 — Accurate account onboarding (TEST)
 

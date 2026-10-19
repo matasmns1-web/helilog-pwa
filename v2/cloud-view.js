@@ -5,6 +5,12 @@
 let v22CloudNotice="",v22CloudBusy=false;
 let v24PilotConflictPreview=null,v24PilotConflictBusy=false;
 let v27RecordPreview=null,v27RecordBusy=false;
+/* V2.13: do not retain conflict previews or account notices across logins. */
+function v213ResetCloudViewState(){
+ v22CloudNotice="";v22CloudBusy=false;
+ v24PilotConflictPreview=null;v24PilotConflictBusy=false;
+ v27RecordPreview=null;v27RecordBusy=false;
+}
 function v24FlattenProfile(data,prefix="",out={}){
  for(const [key,value] of Object.entries(data&&typeof data==="object"?data:{})){
   const field=prefix?prefix+"."+key:key;
@@ -126,7 +132,7 @@ function cloud(){
  }
  const stateText=st.configured?(state==="signed_in"?"Signed in":state==="error"?"Connection needs attention":
    state==="connecting"?"Connecting…":"Ready for private sign-in"):"Cloud not configured";
- app.innerHTML=header('Cloud account','HeliLog V2.12.2 · Synchronization and archive integrity',
+ app.innerHTML=header('Cloud account','HeliLog V2.13 · Synchronization and archive integrity',
   `<button class="btn" onclick="go('settings')">← Settings</button>`)+
   '<div class="card" style="margin-bottom:16px"><div class="head"><h2>Connection status</h2></div>'+
   '<div class="pwa-state"><b>'+v22CloudEscape(stateText)+'</b></div>'+
