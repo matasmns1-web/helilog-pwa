@@ -28,7 +28,7 @@ function v23LoginView(){
  '<p class="muted">'+(profile?'Complete your account before opening your logbook.':
  'Sign in to open your private cloud logbook. '+(window.HeliLogCloudConfig?.googleEnabled===true?
  'Approved beta testers can also create an account with Google.':
- 'Registration is invitation-only.')+'</p>')+'</p>'+
+ 'Registration is invitation-only.'))+'</p>'+
  (v23AuthMessage?'<div class="note" role="alert">'+v23Escape(v23AuthMessage)+'</div>':'')+
  (st.error?'<div class="mini">'+v23Escape(st.error)+'</div>':'')+
  (profile?
