@@ -3529,6 +3529,12 @@ function v218UpdateNight(){
    'Approximate straight-line route: '+outcome.distanceKm+' km between aerodromes.');
  info+=' Departure site civil dusk: '+fmtTime(dep?.eveningUtc)+
        '; civil dawn: '+fmtTime(dep?.morningUtc)+'.';
+ if(outcome.distanceKm>=2){
+  const flight=window.HeliLogNight.utcFlight(outcome.date,outcome.off,outcome.on);
+  const arr=window.HeliLogNight.twilightAround(flight.end,outcome.arrival);
+  info+=' Arrival site civil dusk: '+fmtTime(arr?.eveningUtc)+
+        '; civil dawn: '+fmtTime(arr?.morningUtc)+'.';
+ }
  if(outcome.distanceKm>250)info+=' Long route: real track/twilight can differ; review manually.';
  status.textContent=info;
 }
