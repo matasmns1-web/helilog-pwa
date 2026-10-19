@@ -25,7 +25,7 @@
  });
  function coordinates(input){
   const a=Number(input?.lat),b=Number(input?.lon);
-  if(input==null||input.lat===""||input.lon===""||!Number.isFinite(a)||!Number.isFinite(b)||
+  if(input==null||input.lat==null||input.lon==null||input.lat===""||input.lon===""||!Number.isFinite(a)||!Number.isFinite(b)||
      a<-90||a>90||b<-180||b>180)return null;
   return {lat:a,lon:b};
  }
