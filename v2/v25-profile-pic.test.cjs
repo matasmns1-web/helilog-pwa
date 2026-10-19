@@ -106,8 +106,8 @@ test("V2.17 installs new assets together while keeping older profile migration e
  assert.match(html,/V2\.17 · TEST/);
  assert.equal(manifest.name,"HeliLog V2.17 — Test");
  assert.match(worker,/helilog-v2-17-manual-1/);
- assert.match(worker,/cloud-sync\.js\?v=2\.17-google-1/);
- assert.match(html,/cloud-sync\.js\?v=2\.17-google-1/);
+ assert.match(worker,/cloud-sync\.js\?v=2\.17-manual-1/);
+ assert.match(html,/cloud-sync\.js\?v=2\.17-manual-1/);
  assert.match(html,/id="ownFirstName"/);
  assert.match(html,/id="ownLastName"/);
  assert.doesNotMatch(html,/id="ownName"/);
