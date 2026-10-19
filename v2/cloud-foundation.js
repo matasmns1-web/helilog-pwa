@@ -35,10 +35,20 @@
  }
  function validConfig(c=config()){
   if(c.authEnabled!==true || !c.supabaseUrl || !c.publishableKey)return false;
-  if(c.environment!=="test"||c.inviteOnly!==true)throw Error("Only invite-only TEST cloud projects are accepted in V2.2.");
+  if(c.inviteOnly!==true||!["test","production"].includes(c.environment))
+   throw Error("Only invite-only test or verified production cloud projects are allowed.");
   let url;
   try{url=new URL(c.supabaseUrl);}catch{throw Error("Cloud project URL is invalid.");}
   if(url.protocol!=="https:"||url.username||url.password||url.pathname!=="/"&&url.pathname!==""||url.search||url.hash)throw Error("Use a secure Supabase project base URL.");
+  if(c.environment==="production"){
+   const origin=root.location?.origin||"";
+   if(!origin||!c.productionOrigin||origin!==c.productionOrigin||
+      !/^https:\/\//.test(origin)||
+      /(?:^|[.-])(test|staging|preview|dev)(?:[.-]|$)/i.test(new URL(origin).hostname)||
+      url.hostname==="cabfifnsxpaalgsyicbo.supabase.co"||
+      !/^[a-z0-9]{16,}\.supabase\.co$/.test(url.hostname))
+    throw Error("Production cloud connection blocked: use a verified production website and a separate production Supabase project.");
+  }
   const key=String(c.publishableKey);
   // Require modern publishable keys. A legacy JWT-shaped service_role key
   // can otherwise be misclassified as anon and accidentally exposed.
