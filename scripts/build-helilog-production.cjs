@@ -34,6 +34,11 @@ function prepare(){
   "only a publishable key is permitted, never a secret or service_role key");
  must(!target.startsWith(source+path.sep)&&target!==source,
   "candidate output cannot overwrite V2 source");
+ must(["dist-prod"].includes(path.basename(target))||
+      path.basename(target).startsWith("helilog-prod-"),
+  "build output must be named dist-prod or helilog-prod-* to prevent unsafe cleanup");
+ must(target!==root&&target!==path.parse(target).root,
+  "build output cannot be the repository root or filesystem root");
  const files=[
   "index.html","manifest.webmanifest","service-worker.js",
   "apple-touch-icon.png","icon-192.png","icon-512.png",
