@@ -21,8 +21,14 @@
   EYKL:[55.712021,21.242892],EYMO:[55.112875,25.336484],
   EYKS:[54.879799,23.881500],EYVK:[54.668301,25.515800],
   EVRA:[56.920752,23.970711],EETN:[59.413246,24.832640],
-  EPWA:[52.165699,20.967100]
+  EPWA:[52.165699,20.967100],
+  // Lithuania 2026 VFR AIP: EYPN reference point; others published ATZ centres.
+  EYPN:[55.708889,24.345278],EYPR:[54.653611,24.056389],
+  EYVP:[54.483056,24.992222],EYRO:[55.611111,24.217500],
+  EYRD:[54.495556,24.717500],EYMM:[54.662222,23.452222],
+  EYNI:[55.328056,21.048056]
  });
+ const AIP_CODES=new Set(['EYPN','EYPR','EYVP','EYRO','EYRD','EYMM','EYNI']);
  function coordinates(input){
   const a=Number(input?.lat),b=Number(input?.lon);
   if(input==null||input.lat==null||input.lon==null||input.lat===""||input.lon===""||!Number.isFinite(a)||!Number.isFinite(b)||
@@ -31,7 +37,8 @@
  }
  function lookup(code){
   const v=KNOWN[String(code||"").trim().toUpperCase()];
-  return v?{lat:v[0],lon:v[1],source:"OurAirports"}:null;
+  return v?{lat:v[0],lon:v[1],source:AIP_CODES.has(String(code||'').trim().toUpperCase())?
+    "Lithuania AIP aerodrome / ATZ centre":"OurAirports"}:null;
  }
  function utcFlight(date,off,on){
   if(!/^\d{4}-\d{2}-\d{2}$/.test(date||""))return null;
