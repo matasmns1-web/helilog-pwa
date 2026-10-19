@@ -58,12 +58,12 @@ test("Cloud Account setup avoids obsolete release labels",()=>{
 test("V2.7 remains Profile-only logout and ships coherent cache assets",()=>{
  assert.doesNotMatch(code,/onclick="v23SignOut\(\)"/);
  assert.match(html,/onclick="v23SignOut\(\)">Log out/);
- assert.match(html,/V2\.12\.2 · TEST/);
- assert.match(auth,/HELILOG_TEST_VERSION='V2\.12\.2'/);
- assert.equal(manifest.name,"HeliLog V2.12.2 — Test");
- assert.match(worker,/helilog-v2-12-2-onboarding-1/);
+ assert.match(html,/V2\.13 · TEST/);
+ assert.match(auth,/HELILOG_TEST_VERSION='V2\.13'/);
+ assert.equal(manifest.name,"HeliLog V2.13 — Test");
+ assert.match(worker,/helilog-v2-13-security-1/);
  for(const name of ["cloud-view","cloud-sync","auth-gate"]){
-  const url=name+".js?v=2.12.2-onboarding-1";
+  const url=name+".js?v=2.13-security-1";
   assert.ok(html.includes(url),name+" index");
   assert.ok(worker.includes(url),name+" cache");
  }

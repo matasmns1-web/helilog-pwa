@@ -1,4 +1,4 @@
-/* V2.12.2 security + password recovery: no emails are sent in these tests. */
+/* V2.13 security + password recovery: no emails are sent in these tests. */
 const test=require("node:test");
 const assert=require("node:assert/strict");
 const fs=require("node:fs");
@@ -99,7 +99,7 @@ test("sign in provides an accessible recovery request and matching-password form
  assert.match(gate,/id="v23NewPassword" type="password" minlength="6"/);
  assert.match(gate,/id="v23ConfirmPassword" type="password" minlength="6"/);
  assert.match(gate,/if\(password!==confirmation\|\|password.length<6/);
- assert.match(html,/HeliLog V2\.12\.2/);
+ assert.match(html,/HeliLog V2\.13/);
  assert.match(cloud,/password\.length<6\|\|password\.length>128/);
  assert.match(gate,/Use at least 6 characters/);
 });
