@@ -1,6 +1,7 @@
 /* HeliLog V2.3 private login gate. No automatic import of V2.2 local data. */
 const HELILOG_TEST_VERSION='V2.11.2';
 let v23Unlocked=false,v23AuthBusy=false,v23AuthMessage="";
+let v23RecoveryStage="signin";
 function v23Escape(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function v23AccountWorkspace(){return v23Unlocked && !!window.HeliLogV23Sync.status().owner;}
 function v23SyncInfo(){
@@ -37,18 +38,97 @@ function v23LoginView(){
  '<input id="v23Email" type="email" required autocomplete="username"></div>'+
  '<div class="field"><label for="v23Password">Password</label>'+
  '<input id="v23Password" type="password" required autocomplete="current-password"></div>'+
- '<button class="btn primary" type="submit">Sign in</button></form>')+
+ '<button class="btn primary" type="submit">Sign in</button></form>'+
+ '<button class="btn" type="button" style="width:100%;margin-top:10px" onclick="v23ShowPasswordHelp()">Forgot password?</button>')+
  (TEST_MODE?'<div class="note" style="margin-top:15px">The previous local Test Mode is active. To use cloud login, exit the old sandbox first. Its data remains safely stored.</div>'+
  '<button class="btn" type="button" onclick="v23ExitOldTestMode()">Exit old Test Mode</button>':'')+
  '<p class="mini" style="margin-top:20px">Your cloud workspace starts empty. Existing V2.2 test records stay separately on this device and will not be uploaded automatically.</p>'+
  '</div></div>';
 }
+
+/* V2.12: recovery is an independent locked screen. Never open a workspace from an email link. */
+function v23RecoveryView(stage=v23RecoveryStage){
+ v23Unlocked=false;
+ document.documentElement.classList.add("helilog-locked");
+ document.documentElement.classList.remove("helilog-cloud-workspace");
+ const invalid=stage==="invalid",ready=stage==="reset",sent=stage==="sent";
+ app.innerHTML='<div class="v23-auth-container"><div class="v23-auth-card" contenteditable="false">'+
+ '<div style="font-size:29px;font-weight:800">🚁 HeliLog</div>'+
+ '<div class="muted">'+HELILOG_TEST_VERSION+' · Private pilot logbook test</div>'+
+ '<h1 style="font-size:23px;margin-top:25px">'+(ready?'Set a new password':'Reset your password')+'</h1>'+
+ '<p class="muted">'+(ready?'Choose a new password for your HeliLog account.':
+ 'Enter your account email and we will send recovery instructions if the address is registered.')+'</p>'+
+ (v23AuthMessage?'<div class="note" role="status">'+v23Escape(v23AuthMessage)+'</div>':'')+
+ (ready?
+ '<form class="form" onsubmit="v23SaveRecoveredPassword(event)">'+
+ '<div class="field"><label for="v23NewPassword">New password</label>'+
+ '<input id="v23NewPassword" type="password" minlength="12" maxlength="128" autocomplete="new-password" required></div>'+
+ '<div class="field"><label for="v23ConfirmPassword">Confirm new password</label>'+
+ '<input id="v23ConfirmPassword" type="password" minlength="12" maxlength="128" autocomplete="new-password" required></div>'+
+ '<p class="mini">Use at least 12 characters. Do not reuse an existing password.</p>'+
+ '<button class="btn primary" type="submit">Update password</button></form>':
+ (sent?'<p class="mini">Check your inbox and spam folder. The link can only be used for a limited time.</p>':
+ '<form class="form" onsubmit="v23RequestPasswordReset(event)">'+
+ '<div class="field"><label for="v23ResetEmail">Email</label>'+
+ '<input id="v23ResetEmail" type="email" autocomplete="email" required></div>'+
+ '<button class="btn primary" type="submit">Send recovery email</button></form>'))+
+ '<button class="btn" style="width:100%;margin-top:12px" type="button" onclick="v23ReturnFromRecovery()">Back to sign in</button>'+
+ (invalid?'<p class="mini">Expired links do not change your flight records or cloud data.</p>':'')+
+ '</div></div>';
+}
+function v23ShowPasswordHelp(){
+ v23RecoveryStage="request";v23AuthMessage="";
+ v23RecoveryView();
+}
+function v23ReturnFromRecovery(){
+ v23RecoveryStage="signin";v23AuthMessage="";
+ if(window.location?.search?.includes("helilog_recovery=")&&window.history?.replaceState)
+  window.history.replaceState(null,"",window.location.pathname||"/");
+ v23LoginView();
+}
+async function v23RequestPasswordReset(event){
+ event.preventDefault();if(v23AuthBusy)return;
+ const email=document.getElementById("v23ResetEmail")?.value||"";
+ v23AuthBusy=true;v23AuthMessage="";
+ try{
+  await window.HeliLogCloud.sendPasswordReset(email);
+  v23RecoveryStage="sent";
+  v23AuthMessage="If this email address has a HeliLog account, recovery instructions will arrive shortly.";
+ }catch(e){v23RecoveryStage="request";v23AuthMessage=String(e.message||e);}
+ finally{v23AuthBusy=false;v23RecoveryView();}
+}
+async function v23SaveRecoveredPassword(event){
+ event.preventDefault();if(v23AuthBusy||v23RecoveryStage!=="reset")return;
+ const a=document.getElementById("v23NewPassword"),b=document.getElementById("v23ConfirmPassword");
+ const password=a?.value||"",confirmation=b?.value||"";
+ if(a)a.value="";if(b)b.value="";
+ if(password!==confirmation||password.length<12||password.length>128){
+  v23AuthMessage="Passwords must match and contain 12–128 characters.";
+  v23RecoveryView();return;
+ }
+ v23AuthBusy=true;v23AuthMessage="";
+ try{
+  await window.HeliLogCloud.completePasswordRecovery(password);
+  v23RecoveryStage="signin";
+  v23AuthMessage="Password updated. Sign in with your new password.";
+  v23LoginView();
+ }catch(e){v23AuthMessage=String(e.message||e);v23RecoveryView();}
+ finally{v23AuthBusy=false;}
+}
+
 async function v23Boot(){
  if(v23AuthBusy)return;
  v23AuthBusy=true;v23AuthMessage="";
  document.documentElement.classList.add("helilog-locked");
  app.innerHTML='<div class="v23-auth-container"><div class="v23-auth-card" contenteditable="false"><h2>🚁 HeliLog '+HELILOG_TEST_VERSION+'</h2><p>Checking your account…</p></div></div>';
  try{
+  const recovery=await window.HeliLogCloud.beginPasswordRecovery();
+  if(recovery.state!=="none"){
+   v23RecoveryStage=recovery.state==="ready"?"reset":"invalid";
+   v23AuthMessage=recovery.message||"";
+   v23RecoveryView();
+   return;
+  }
   const auth=await window.HeliLogCloud.refresh();
   if(auth.status==="signed_in"&&auth.hasProfile){
    if(TEST_MODE){v23AuthMessage="Exit the old local Test Mode and reload to enter your private cloud workspace. Your sandbox data is preserved.";v23LoginView();}

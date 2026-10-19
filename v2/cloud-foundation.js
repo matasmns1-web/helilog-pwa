@@ -12,6 +12,27 @@
  const config=()=>root.HeliLogCloudConfig||{};
  const sdkUrl="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
  let client=null,loading=null,status="unconfigured",lastError="",user=null,account=null;
+ // Capture the recovery token before Supabase consumes and removes the URL fragment.
+ // A query marker alone never gives permission to reset a password.
+ const recoveryQuery=new URLSearchParams(root.location?.search||"");
+ const recoveryFragment=new URLSearchParams((root.location?.hash||"").replace(/^#/,""));
+ const recoveryRequested=recoveryQuery.get("helilog_recovery")==="1";
+ const recoveryAccessToken=recoveryRequested&&recoveryFragment.get("type")==="recovery"
+  &&recoveryFragment.get("refresh_token")?recoveryFragment.get("access_token"):"";
+ const recoveryLinkError=recoveryQuery.get("error_description")||recoveryFragment.get("error_description")||"";
+ let recoveryVerified=false;
+ function clearRecoveryUrl(){
+  const here=root.location;
+  if(!here||!root.history?.replaceState)return;
+  // Never retain recovery tokens or callback markers in browser history.
+  root.history.replaceState(null,"",here.pathname||"/");
+ }
+ function recoveryRedirectUrl(){
+  if(!root.location||root.location.protocol!=="https:"||
+    !root.location.origin||!root.location.pathname)
+   throw Error("Password recovery requires the secure HeliLog website.");
+  return root.location.origin+root.location.pathname+"?helilog_recovery=1";
+ }
  function validConfig(c=config()){
   if(c.authEnabled!==true || !c.supabaseUrl || !c.publishableKey)return false;
   if(c.environment!=="test"||c.inviteOnly!==true)throw Error("Only invite-only TEST cloud projects are accepted in V2.2.");
@@ -50,7 +71,7 @@
   loading=(async()=>{
    const lib=await loadLibrary();
    client=lib.createClient(config().supabaseUrl,config().publishableKey,{
-    auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:false},
+    auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:recoveryRequested,flowType:"implicit"},
     db:{schema:"public"}
    });
    return client;
@@ -104,6 +125,50 @@
   if(error)throw Error(error.message||"Could not create cloud profile.");
   return refresh();
  }
+ async function sendPasswordReset(email){
+  const address=String(email||"").trim();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address))throw Error("Enter a valid email address.");
+  const db=await connect();
+  const {error}=await db.auth.resetPasswordForEmail(address,{redirectTo:recoveryRedirectUrl()});
+  if(error)throw Error("Recovery email could not be sent. Please wait and try again.");
+  // Keep the response independent of whether an email belongs to an account.
+  return true;
+ }
+ async function beginPasswordRecovery(){
+  if(!recoveryRequested)return {state:"none"};
+  recoveryVerified=false;
+  if(recoveryLinkError||!recoveryAccessToken)
+   return {state:"invalid",message:"This recovery link is invalid or expired. Request a new one."};
+  try{
+   const db=await connect();
+   const {data:sessionData,error:sessionError}=await db.auth.getSession();
+   if(sessionError||!sessionData?.session||sessionData.session.access_token!==recoveryAccessToken)
+    throw Error("Invalid recovery session");
+   const {data:identity,error:identityError}=await db.auth.getUser();
+   if(identityError||!identity?.user||identity.user.id!==sessionData.session.user?.id)
+    throw Error("Unverified recovery account");
+   recoveryVerified=true;
+   return {state:"ready"};
+  }catch{
+   return {state:"invalid",message:"This recovery link could not be verified. It may have expired or already been used. Request a new one."};
+  }
+ }
+ async function completePasswordRecovery(password){
+  if(!recoveryVerified||!recoveryRequested)throw Error("Open a valid recovery email link first.");
+  if(typeof password!=="string"||password.length<12||password.length>128)
+   throw Error("Use a password between 12 and 128 characters.");
+  const db=await connect();
+  const {data:identity,error:identityError}=await db.auth.getUser();
+  if(identityError||!identity?.user)throw Error("Recovery session expired. Request another link.");
+  const {error}=await db.auth.updateUser({password});
+  if(error)throw Error("Password could not be updated. Request another link or retry.");
+  recoveryVerified=false;
+  const {error:signOutError}=await db.auth.signOut({scope:"global"});
+  clearRecoveryUrl();
+  user=null;account=null;status="signed_out";lastError="";
+  if(signOutError)throw Error("Password changed, but sign-out could not finish. Close HeliLog and sign in with your new password.");
+  return true;
+ }
  async function signOut(){
   const db=await connect();
   const {error}=await db.auth.signOut();
@@ -118,6 +183,7 @@
    throw Error("Sign in and complete your private profile before accessing cloud records.");
   return connect();
  }
- return Object.freeze({snapshot,refresh,signIn,initializeProfile,signOut,validConfig,client:verifiedClient,
+ return Object.freeze({snapshot,refresh,signIn,initializeProfile,signOut,sendPasswordReset,
+  beginPasswordRecovery,completePasswordRecovery,validConfig,client:verifiedClient,
   libraryUrl:sdkUrl});
 });
