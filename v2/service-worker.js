@@ -7,6 +7,7 @@ const SHELL=[
   './icon-512.png',
   './apple-touch-icon.png',
   './domain.js',
+  './night-calculation.js?v=2.18-night-1',
   './print.js',
   './endorsement-bridge.js',
   './endorsement-ui.js',
