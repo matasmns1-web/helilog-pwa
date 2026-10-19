@@ -135,9 +135,9 @@ test("monitoring SQL has authenticated owner-only checks and cannot delete backu
  assert.doesNotMatch(sql,/\bdelete\s+from\s+public\.helilog_backup_snapshots\b/i);
 });
 test("PWA V2.17 release includes recovery sandbox and monitoring entry",()=>{
- assert.match(html,/cloud-backups\.js\?v=2\.17-google-1/);
- assert.match(html,/disaster-recovery\.js\?v=2\.17-google-1/);
- assert.match(sw,/disaster-recovery\.js\?v=2\.17-google-1/);
+ assert.match(html,/cloud-backups\.js\?v=2\.17-manual-1/);
+ assert.match(html,/disaster-recovery\.js\?v=2\.17-manual-1/);
+ assert.match(sw,/disaster-recovery\.js\?v=2\.17-manual-1/);
  assert.match(gate,/v210CheckBackupHealth/);
  assert.match(gate,/v210TestEncryptedRecovery/);
  assert.match(gate,/Run isolated recovery drill/);
