@@ -58,7 +58,7 @@ function prepare(){
  const cfg="/* Generated production candidate public configuration; no secret keys. */\n"+
  "window.HeliLogCloudConfig = Object.freeze("+JSON.stringify({
   supabaseUrl:apiOrigin,publishableKey:key,authEnabled:true,environment:"production",
-  inviteOnly:true,productionOrigin:webOrigin
+  inviteOnly:true,googleEnabled:true,productionOrigin:webOrigin
  },null,2)+");\n";
  // The genuine local Test Mode warning remains untouched; this is not regulatory approval.
  index=index.replace("HeliLog V2.15 — Invitation & Auth Readiness","HeliLog V2.15 — Private Beta Candidate")
