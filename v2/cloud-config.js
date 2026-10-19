@@ -13,5 +13,6 @@ window.HeliLogCloudConfig = Object.freeze({
   publishableKey: "sb_publishable_kemdvt9X-20WU3-G-gtnDg_LJxbN9JW",
   authEnabled: true,
   environment: "test",
-  inviteOnly: true
+  inviteOnly: true,
+  googleEnabled: true
 });
