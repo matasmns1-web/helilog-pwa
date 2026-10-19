@@ -1,11 +1,25 @@
-const CACHE='helilog-v1-43-2-shell';
+const CACHE='helilog-v2-17-production-candidate-1';
 const SHELL=[
   './',
   './index.html',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png',
-  './apple-touch-icon.png'
+  './apple-touch-icon.png',
+  './domain.js',
+  './print.js',
+  './endorsement-bridge.js',
+  './endorsement-ui.js',
+  './cloud-config.js?v=2.17-manual-1',
+  './cloud-foundation.js?v=2.17-manual-1',
+  './cloud-view.js?v=2.17-manual-1',
+  './cloud-sync.js?v=2.17-manual-1',
+  './auth-gate.js?v=2.17-manual-1',
+  './cloud-archives.js?v=2.17-manual-1',
+  './archive-integrity.js?v=2.17-manual-1',
+  './recovery.js?v=2.17-manual-1',
+  './cloud-backups.js?v=2.17-manual-1',
+  './disaster-recovery.js?v=2.17-manual-1'
 ];
 
 self.addEventListener('install',event=>{
@@ -41,16 +55,33 @@ self.addEventListener('fetch',event=>{
     return;
   }
 
-  event.respondWith(
-    caches.match(event.request).then(cached=>{
-      const network=fetch(event.request).then(response=>{
+  // A previously installed V2.2 PWA may have cached a cloud foundation
+  // without V2.3's client() method. Always get fresh JS when connected.
+  // The old cache-first policy returned incompatible modules for the first
+  // navigation after deployment, despite receiving a new index.html.
+  if(url.pathname.endsWith('.js')){
+    event.respondWith(
+      fetch(event.request).then(response=>{
         if(response && response.ok){
           const copy=response.clone();
-          caches.open(CACHE).then(cache=>cache.put(event.request,copy));
+          event.waitUntil(caches.open(CACHE).then(cache=>cache.put(event.request,copy)));
         }
         return response;
-      }).catch(()=>cached);
-      return cached||network;
+      }).catch(()=>caches.match(event.request).then(cached=>cached||Response.error()))
+    );
+    return;
+  }
+
+  event.respondWith(
+    caches.match(event.request).then(cached=>{
+      if(cached)return cached;
+      return fetch(event.request).then(response=>{
+        if(response && response.ok){
+          const copy=response.clone();
+          event.waitUntil(caches.open(CACHE).then(cache=>cache.put(event.request,copy)));
+        }
+        return response;
+      });
     })
   );
 });
