@@ -1,5 +1,5 @@
 /* HeliLog V2.3 private login gate. No automatic import of V2.2 local data. */
-const HELILOG_TEST_VERSION='V2.12.1';
+const HELILOG_TEST_VERSION='V2.12.2';
 let v23Unlocked=false,v23AuthBusy=false,v23AuthMessage="";
 let v23RecoveryStage="signin";
 function v23Escape(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
@@ -42,11 +42,11 @@ function v23LoginView(){
  '<button class="btn" type="button" style="width:100%;margin-top:10px" onclick="v23ShowPasswordHelp()">Forgot password?</button>')+
  (TEST_MODE?'<div class="note" style="margin-top:15px">The previous local Test Mode is active. To use cloud login, exit the old sandbox first. Its data remains safely stored.</div>'+
  '<button class="btn" type="button" onclick="v23ExitOldTestMode()">Exit old Test Mode</button>':'')+
- '<p class="mini" style="margin-top:20px">Your cloud workspace starts empty. Existing V2.2 test records stay separately on this device and will not be uploaded automatically.</p>'+
+ '<p class="mini" style="margin-top:20px">Your logbook is private to this account. Aircraft and flights sync across devices signed into the same account; records from other accounts are not imported automatically.</p>'+
  '</div></div>';
 }
 
-/* V2.12.1: recovery is an independent locked screen. Never open a workspace from an email link. */
+/* V2.12.2: recovery is an independent locked screen. Never open a workspace from an email link. */
 function v23RecoveryView(stage=v23RecoveryStage){
  v23Unlocked=false;
  document.documentElement.classList.add("helilog-locked");
@@ -623,7 +623,7 @@ function v29BackupPanel(){
 
 function v23ExitOldTestMode(){
  if(!TEST_MODE)return;
- if(!confirm('Exit the old V2.2 local Test Mode? Your sandbox records will stay saved and will not be uploaded.'))return;
+ if(!confirm('Exit the previous local Test Mode? Your sandbox records will stay saved and will not be uploaded.'))return;
  localStorage.removeItem(MODE_KEY);
  location.reload();
 }

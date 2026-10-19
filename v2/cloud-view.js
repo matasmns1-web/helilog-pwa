@@ -126,7 +126,7 @@ function cloud(){
  }
  const stateText=st.configured?(state==="signed_in"?"Signed in":state==="error"?"Connection needs attention":
    state==="connecting"?"Connecting…":"Ready for private sign-in"):"Cloud not configured";
- app.innerHTML=header('Cloud account','HeliLog V2.12.1 · Synchronization and archive integrity',
+ app.innerHTML=header('Cloud account','HeliLog V2.12.2 · Synchronization and archive integrity',
   `<button class="btn" onclick="go('settings')">← Settings</button>`)+
   '<div class="card" style="margin-bottom:16px"><div class="head"><h2>Connection status</h2></div>'+
   '<div class="pwa-state"><b>'+v22CloudEscape(stateText)+'</b></div>'+
@@ -140,7 +140,7 @@ function cloud(){
   (v23AccountWorkspace()?v23SyncInfo()+'<div class="actions" style="margin-top:14px"><button class="btn primary" type="button" onclick="v23RefreshSync()">Check / sync now</button></div>':
   '<p class="muted">Sign in to synchronize a private cloud workspace.</p>')+
   (v23AccountWorkspace()&&!window.HeliLogV23Sync.extended()?
-   `<div class="note" style="margin-top:12px"><b>V2.4 — One-time setup</b><p>Choose one primary device for your instructor profiles, medical and licence details, endorsements and previous totals. Other devices can then use the cloud copies. A safety snapshot will preserve this device's previous records.</p>
+   `<div class="note" style="margin-top:12px"><b>One-time cloud sync setup</b><p>Choose one primary device for your instructor profiles, medical and licence details, endorsements and previous totals. Other devices can then use the cloud copies. A safety snapshot will preserve this device's previous records.</p>
    <div class="actions"><button class="btn primary" onclick="v24ActivateExtended('upload')">Upload this device's remaining records</button>
    <button class="btn" onclick="v24ActivateExtended('cloud')">Use existing cloud records</button></div></div>`:
    '<p class="mini">Extended cloud synchronization '+(v23AccountWorkspace()?'enabled.':'available after sign-in.')+'</p>')+
