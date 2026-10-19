@@ -1,10 +1,18 @@
 # HeliLog V2 — Development
 
-**Current version: V2.14 — Production candidate packaging and strict environment isolation.** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
+**Current version: V2.15 — Verified email invitation acceptance and production Auth readiness.** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
 
 **Prior release: V2.1.** The complete V1.43.2 interface is restored with V2 endorsement print archiving; installed-app signing is separate from web-only print/archive management. See [FULL-V1-INTERFACE.md](FULL-V1-INTERFACE.md) for parity scope, testing instructions and data safety.
 
 **Earlier modular prototype:** [alpha.html](alpha.html) remains available with its own test data.
+
+## V2.15 — Production Auth and invitations (TEST)
+
+- Add a locked invitation acceptance screen for Supabase email invite callbacks. It verifies the callback token against the live Supabase Auth session and the verified user before offering password setup, signs out after setup, and rejects invalid/expired invitations.
+- Separate invitation acceptance from existing validated password recovery; preserve the six-character account password minimum and encourage longer unique passwords.
+- Automated tests cover invalid tokens, identity mismatch, expired links, successful password setup, and safe cancellation.
+- Dashboard-only production Auth settings (disable public/anonymous signups, site URL/redirects, email templates, SMTP and rate limits) are listed in [V2.15-PRODUCTION-AUTH-SETUP.md](V2.15-PRODUCTION-AUTH-SETUP.md). Supabase leaked-password protection may require a paid plan.
+- HeliLog Test remains separate. No production Auth users are created; V1 `main` and its Render service remain unchanged.
 
 ## V2.14 — Production preparation (TEST)
 

@@ -1,5 +1,5 @@
 /* HeliLog V2.3 private login gate. No automatic import of V2.2 local data. */
-const HELILOG_TEST_VERSION='V2.14';
+const HELILOG_TEST_VERSION='V2.15';
 let v23Unlocked=false,v23AuthBusy=false,v23AuthMessage="";
 let v23RecoveryStage="signin",v23InviteStage="signin";
 function v23Escape(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
@@ -46,7 +46,7 @@ function v23LoginView(){
  '</div></div>';
 }
 
-/* V2.14: recovery is an independent locked screen. Never open a workspace from an email link. */
+/* V2.15: recovery is an independent locked screen. Never open a workspace from an email link. */
 function v23RecoveryView(stage=v23RecoveryStage){
  v23Unlocked=false;
  document.documentElement.classList.add("helilog-locked");
@@ -457,7 +457,7 @@ async function v28InspectCloudRecovery(ev){
 
 /* V2.9 private snapshots, encrypted external exports and missing-only restore. */
 let v29Snapshots=[],v29SelectedId="",v29BackupBusy=false,v29BackupMessage="",v29RestorePlan=null;
-/* V2.14: private UI state must never follow the user into a different account.
+/* V2.15: private UI state must never follow the user into a different account.
  * In-flight callbacks are checked against a generation token before they can
  * update backup history, download files, or open recovery prompts.
  */
