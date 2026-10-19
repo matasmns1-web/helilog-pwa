@@ -11,7 +11,7 @@ const gate=fs.readFileSync(path.join(dir,'auth-gate.js'),'utf8');
 
 test('every cloud script URL matches the offline shell and has a versioned URL',()=>{
  for(const file of ['cloud-config.js','cloud-foundation.js','cloud-view.js','cloud-sync.js','auth-gate.js']){
-  const url='./'+file+'?v=2.12.1-password-1';
+  const url='./'+file+'?v=2.12.2-onboarding-1';
   assert.ok(html.includes('<script src="'+url+'"></script>'),file+' HTML');
   assert.ok(worker.includes("'"+url+"'"),file+' SW');
  }
@@ -28,7 +28,7 @@ test('service worker gets online JS first instead of an incompatible cached modu
  const fetch=async()=>{downloads++;return {ok:true,version:'V2.7',clone(){return this}}};
  const response={error(){return {ok:false}}};
  new Function('self','caches','fetch','Response','URL',worker)(self,caches,fetch,response,URL);
- const url='https://helilog-v2-test.onrender.com/cloud-foundation.js?v=2.12.1-password-1';
+ const url='https://helilog-v2-test.onrender.com/cloud-foundation.js?v=2.12.2-onboarding-1';
  versions.set(url,{ok:true,version:'V2.2',clone(){return this}});
  let out;
  handlers.fetch({request:{method:'GET',mode:'cors',url},respondWith(p){out=p},waitUntil(){}});
