@@ -1,7 +1,7 @@
 /* HeliLog V2.3 private login gate. No automatic import of V2.2 local data. */
-const HELILOG_TEST_VERSION='V2.14';
+const HELILOG_TEST_VERSION='V2.15';
 let v23Unlocked=false,v23AuthBusy=false,v23AuthMessage="";
-let v23RecoveryStage="signin";
+let v23RecoveryStage="signin",v23InviteStage="signin";
 function v23Escape(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function v23AccountWorkspace(){return v23Unlocked && !!window.HeliLogV23Sync.status().owner;}
 function v23SyncInfo(){
@@ -46,7 +46,7 @@ function v23LoginView(){
  '</div></div>';
 }
 
-/* V2.14: recovery is an independent locked screen. Never open a workspace from an email link. */
+/* V2.15: recovery is an independent locked screen. Never open a workspace from an email link. */
 function v23RecoveryView(stage=v23RecoveryStage){
  v23Unlocked=false;
  document.documentElement.classList.add("helilog-locked");
@@ -126,12 +126,76 @@ async function v23SaveRecoveredPassword(event){
  finally{v23AuthBusy=false;}
 }
 
+/* Invitation acceptance is a separate locked Auth flow: never expose the logbook
+ * while Supabase's temporary invitation session is present. */
+function v23InvitationView(stage=v23InviteStage){
+ v23Unlocked=false;
+ document.documentElement.classList.add("helilog-locked");
+ document.documentElement.classList.remove("helilog-cloud-workspace");
+ const ready=stage==="setup";
+ app.innerHTML='<div class="v23-auth-container"><div class="v23-auth-card" contenteditable="false">'+
+ '<div style="font-size:29px;font-weight:800">🚁 HeliLog</div>'+
+ '<div class="muted">'+HELILOG_TEST_VERSION+' · Private pilot logbook test</div>'+
+ '<h1 style="font-size:23px;margin-top:25px">'+(ready?'Welcome to HeliLog':'Invitation link unavailable')+'</h1>'+
+ '<p class="muted">'+(ready?'Your invitation has been verified. Choose a password to activate your private account.':
+ 'This invitation is invalid or expired. Ask the HeliLog administrator for a fresh invitation.')+'</p>'+
+ (v23AuthMessage?'<div class="note" role="status">'+v23Escape(v23AuthMessage)+'</div>':'')+
+ (ready?'<form class="form" onsubmit="v23CompleteInvitation(event)">'+
+ '<div class="field"><label for="v23InvitePassword">Create password</label>'+
+ '<input id="v23InvitePassword" type="password" minlength="6" maxlength="128" autocomplete="new-password" required></div>'+
+ '<div class="field"><label for="v23InvitePasswordConfirm">Confirm password</label>'+
+ '<input id="v23InvitePasswordConfirm" type="password" minlength="6" maxlength="128" autocomplete="new-password" required></div>'+
+ '<p class="mini">Minimum 6 characters. A longer unique password is safer.</p>'+
+ '<button class="btn primary" type="submit">Create account password</button></form>':'')+
+ '<button class="btn" style="width:100%;margin-top:12px" type="button" onclick="v23CancelInvitation()">Back to sign in</button>'+
+ '</div></div>';
+}
+async function v23CancelInvitation(){
+ if(v23AuthBusy)return;
+ v23AuthBusy=true;
+ try{
+  await window.HeliLogCloud.cancelInvitation();
+  v23InviteStage="signin";v23AuthMessage="";
+  v23LoginView();
+ }catch(e){
+  v23InviteStage="invalid";v23AuthMessage=String(e.message||e);
+  v23InvitationView();
+ }finally{v23AuthBusy=false;}
+}
+async function v23CompleteInvitation(event){
+ event.preventDefault();if(v23AuthBusy||v23InviteStage!=="setup")return;
+ const a=document.getElementById("v23InvitePassword"),b=document.getElementById("v23InvitePasswordConfirm");
+ const password=a?.value||"",confirmPassword=b?.value||"";
+ if(a)a.value="";if(b)b.value="";
+ if(password!==confirmPassword||password.length<6||password.length>128){
+  v23AuthMessage="Passwords must match and contain 6–128 characters.";
+  v23InvitationView();return;
+ }
+ v23AuthBusy=true;v23AuthMessage="";
+ try{
+  await window.HeliLogCloud.completeInvitation(password);
+  v23InviteStage="signin";
+  v23AuthMessage="Your account password is ready. Sign in to finish your pilot profile.";
+  v23LoginView();
+ }catch(e){
+  v23AuthMessage=String(e.message||e);
+  v23InvitationView();
+ }finally{v23AuthBusy=false;}
+}
+
 async function v23Boot(){
  if(v23AuthBusy)return;
  v23AuthBusy=true;v23AuthMessage="";
  document.documentElement.classList.add("helilog-locked");
  app.innerHTML='<div class="v23-auth-container"><div class="v23-auth-card" contenteditable="false"><h2>🚁 HeliLog '+HELILOG_TEST_VERSION+'</h2><p>Checking your account…</p></div></div>';
  try{
+  const invitation=await window.HeliLogCloud.beginInvitation();
+  if(invitation.state!=="none"){
+   v23InviteStage=invitation.state==="ready"?"setup":"invalid";
+   v23AuthMessage=invitation.message||"";
+   v23InvitationView();
+   return;
+  }
   const recovery=await window.HeliLogCloud.beginPasswordRecovery();
   if(recovery.state!=="none"){
    v23RecoveryStage=recovery.state==="ready"?"reset":"invalid";
@@ -393,7 +457,7 @@ async function v28InspectCloudRecovery(ev){
 
 /* V2.9 private snapshots, encrypted external exports and missing-only restore. */
 let v29Snapshots=[],v29SelectedId="",v29BackupBusy=false,v29BackupMessage="",v29RestorePlan=null;
-/* V2.14: private UI state must never follow the user into a different account.
+/* V2.15: private UI state must never follow the user into a different account.
  * In-flight callbacks are checked against a generation token before they can
  * update backup history, download files, or open recovery prompts.
  */

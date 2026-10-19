@@ -1,4 +1,4 @@
-/* V2.14 — safe private-beta production packaging and origin/auth gates. */
+/* V2.15 — safe private-beta production packaging and origin/auth gates. */
 "use strict";
 const test=require("node:test"),assert=require("node:assert/strict");
 const fs=require("node:fs"),os=require("node:os"),path=require("node:path");
@@ -61,14 +61,14 @@ test("candidate packages all required relative PWA assets with separate backend"
   assert.doesNotMatch(cfg,/cabfifnsxpaalgsyicbo/);
   assert.match(cfg,/helilog-pwa\.onrender\.com/);
   const html=fs.readFileSync(path.join(built.output,"index.html"),"utf8");
-  assert.match(html,/V2\.14 · PRIVATE BETA/);
+  assert.match(html,/V2\.15 · PRIVATE BETA/);
   assert.match(html,/Private Beta Candidate/);
   const manifest=JSON.parse(fs.readFileSync(path.join(built.output,"manifest.webmanifest"),"utf8"));
   assert.match(manifest.description,/not independently certified/);
   assert.equal(manifest.start_url,"./index.html");
   assert.equal(manifest.scope,"./");
   const worker=fs.readFileSync(path.join(built.output,"service-worker.js"),"utf8");
-  assert.match(worker,/helilog-v2-14-production-candidate-1/);
+  assert.match(worker,/helilog-v2-15-production-candidate-1/);
   assert.ok(fs.existsSync(path.join(root,"index.html")),"the existing V1 root is untouched");
  }finally{fs.rmSync(built.tmp,{recursive:true,force:true});}
 });

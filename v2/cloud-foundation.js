@@ -20,7 +20,14 @@
  const recoveryAccessToken=recoveryRequested&&recoveryFragment.get("type")==="recovery"
   &&recoveryFragment.get("refresh_token")?recoveryFragment.get("access_token"):"";
  const recoveryLinkError=recoveryQuery.get("error_description")||recoveryFragment.get("error_description")||"";
- let recoveryVerified=false;
+ // Dashboard invite links arrive at Site URL with type=invite, access_token and refresh_token.
+ // An error fragment is also handled as a locked invite screen, never as an account login.
+ const inviteAttempted=!recoveryRequested&&(
+  recoveryFragment.get("type")==="invite"||!!recoveryFragment.get("error"));
+ const inviteAccessToken=inviteAttempted&&recoveryFragment.get("type")==="invite"
+  &&recoveryFragment.get("refresh_token")?recoveryFragment.get("access_token"):"";
+ const inviteLinkError=recoveryFragment.get("error_description")||"";
+ let recoveryVerified=false,inviteVerified=false;
  function clearRecoveryUrl(){
   const here=root.location;
   if(!here||!root.history?.replaceState)return;
@@ -81,7 +88,7 @@
   loading=(async()=>{
    const lib=await loadLibrary();
    client=lib.createClient(config().supabaseUrl,config().publishableKey,{
-    auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:recoveryRequested,flowType:"implicit"},
+    auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:recoveryRequested||inviteAttempted,flowType:"implicit"},
     db:{schema:"public"}
    });
    return client;
@@ -189,6 +196,52 @@
   if(signOutError)throw Error("Password changed, but sign-out could not finish. Close HeliLog and sign in with your new password.");
   return true;
  }
+ async function beginInvitation(){
+  if(!inviteAttempted)return {state:"none"};
+  inviteVerified=false;
+  if(inviteLinkError||!inviteAccessToken)
+   return {state:"invalid",message:"This invitation link is invalid or expired. Ask the HeliLog administrator to send a new invitation."};
+  try{
+   const db=await connect();
+   const {data:sessionData,error:sessionError}=await db.auth.getSession();
+   if(sessionError||!sessionData?.session||
+      sessionData.session.access_token!==inviteAccessToken)
+    throw Error("Invitation session does not match the email token");
+   const {data:identity,error:identityError}=await db.auth.getUser();
+   if(identityError||!identity?.user||identity.user.id!==sessionData.session.user?.id)
+    throw Error("Unverified invited account");
+   inviteVerified=true;
+   return {state:"ready"};
+  }catch{
+   return {state:"invalid",message:"This invitation could not be verified. Request a fresh invitation."};
+  }
+ }
+ async function cancelInvitation(){
+  if(!inviteAttempted)return true;
+  inviteVerified=false;
+  const db=await connect();
+  const {error}=await db.auth.signOut({scope:"local"});
+  if(error)throw Error("Could not close the invitation session. Retry before signing in.");
+  user=null;account=null;status="signed_out";lastError="";
+  clearRecoveryUrl();
+  return true;
+ }
+ async function completeInvitation(password){
+  if(!inviteAttempted||!inviteVerified)throw Error("Open and verify an invitation email link first.");
+  if(typeof password!=="string"||password.length<6||password.length>128)
+   throw Error("Use a password between 6 and 128 characters.");
+  const db=await connect();
+  const {data:identity,error:identityError}=await db.auth.getUser();
+  if(identityError||!identity?.user)throw Error("Invitation session expired. Ask for a new link.");
+  const {error}=await db.auth.updateUser({password});
+  if(error)throw Error("Could not set the account password. Please retry or request a new invitation.");
+  inviteVerified=false;
+  const {error:signOutError}=await db.auth.signOut({scope:"global"});
+  clearRecoveryUrl();
+  user=null;account=null;status="signed_out";lastError="";
+  if(signOutError)throw Error("Password saved, but sign-out failed. Close HeliLog and sign in with your new password.");
+  return true;
+ }
  async function signOut(){
   const db=await connect();
   const {error}=await db.auth.signOut();
@@ -204,6 +257,7 @@
   return connect();
  }
  return Object.freeze({snapshot,refresh,signIn,initializeProfile,signOut,sendPasswordReset,
-  beginPasswordRecovery,completePasswordRecovery,cancelPasswordRecovery,validConfig,client:verifiedClient,
+  beginPasswordRecovery,completePasswordRecovery,cancelPasswordRecovery,
+  beginInvitation,cancelInvitation,completeInvitation,validConfig,client:verifiedClient,
   libraryUrl:sdkUrl});
 });

@@ -35,7 +35,7 @@
   const local=clone(data);
   const hash=await digest(JSON.stringify(local));
   return {app:"HeliLog",format:"helilog-cloud-recovery",backupSchema:3,
-   appVersion:"2.14",environment:"cloud-test",accountId:owner,
+   appVersion:"2.15",environment:"cloud-test",accountId:owner,
    exportedAt:new Date().toISOString(),
    integrity:{algorithm:"SHA-256",sha256:hash},
    archiveEvidence:{fingerprint:archiveReport.fingerprint,
