@@ -1,4 +1,4 @@
-/* V2.15 — safe invitation-first account creation, no emails or real users. */
+/* V2.16 — safe invitation-first account creation, no emails or real users. */
 const test=require("node:test");
 const assert=require("node:assert/strict");
 const fs=require("node:fs"),path=require("node:path");
