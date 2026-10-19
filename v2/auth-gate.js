@@ -80,10 +80,20 @@ function v23ShowPasswordHelp(){
  v23RecoveryStage="request";v23AuthMessage="";
  v23RecoveryView();
 }
-function v23ReturnFromRecovery(){
+async function v23ReturnFromRecovery(){
+ if(v23AuthBusy)return;
+ if(window.location?.search?.includes("helilog_recovery=")){
+  v23AuthBusy=true;
+  try{
+   await window.HeliLogCloud.cancelPasswordRecovery();
+  }catch(e){
+   v23RecoveryStage="invalid";
+   v23AuthMessage=String(e.message||e);
+   v23RecoveryView();
+   return;
+  }finally{v23AuthBusy=false;}
+ }
  v23RecoveryStage="signin";v23AuthMessage="";
- if(window.location?.search?.includes("helilog_recovery=")&&window.history?.replaceState)
-  window.history.replaceState(null,"",window.location.pathname||"/");
  v23LoginView();
 }
 async function v23RequestPasswordReset(event){
