@@ -12,15 +12,13 @@
 - New users are created directly by the project administrator through Supabase Authentication → Users → Add user → Create new user, with a unique password. Friends receive a link to HeliLog Test, complete their private pilot profile and use fictional test records only.
 - The Google OAuth settings guide and OAuth regression tests were retired; new regression checks ensure no Google Auth handler or enabled client config remains.
 - **Email limitation:** without custom SMTP, Supabase's default mailer does not send password recovery/invites to arbitrary friends. The administrator must manage temporary credentials securely. Do not share existing user credentials or use real pilot records during this private beta.
-- The production Supabase project and existing V1 Render service are unchanged. Domain registration, SMTP, external signup, Google OAuth and public release are postponed.
+- The production Supabase project and existing V1 Render service are unchanged. Domain registration, SMTP, external signup, Google OAuth and public release are postponed. See [V2.17-FRIENDS-BETA.md](V2.17-FRIENDS-BETA.md) for the account-creation process.
 
-## V2.16 — Google login (TEST)
+## V2.16 — Google OAuth exploration (superseded)
 
-- Add an optional **Continue with Google** button for first-time registration and returning users. Browser Supabase OAuth uses an HTTPS same-origin redirect and the implicit callback must match the issued access token, the live Supabase session and its verified account before returning to the logbook.
-- Existing email/password and secure invite/recovery flows remain available. New Google users complete their own separate pilot profile and start with an empty logbook.
-- Add synthetic OAuth tests covering invalid/expired callbacks, cancellation, account verification, redirect URL pinning, and account type isolation.
-- Stage `googleEnabled:true` in the TEST-only public cloud config. Google Cloud and Supabase Google Provider must be configured manually before the button works; no OAuth client secret is stored in the repository.
-- Future production package also enables Google, but **no production website change** occurs. See [V2.16-GOOGLE-OAUTH-SETUP.md](V2.16-GOOGLE-OAUTH-SETUP.md) for setup instructions and the critical caveat: Google login itself does **not** enforce friends-only registration; a server-side allowlist is needed for that.
+- A Google login prototype was built and tested, but it was **fully retired in V2.17** at the owner's request.
+- There is no Google sign-in button, client OAuth callback, or configured Google client feature in the current TEST or production-candidate build.
+- The domain, SMTP, and any future self-registration model are postponed until after friend beta feedback.
 
 ## V2.15 — Production Auth and invitations (TEST)
 
