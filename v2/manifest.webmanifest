@@ -1,0 +1,30 @@
+{
+  "name": "HeliLog V2.17 — Test",
+  "short_name": "HeliLog V2",
+  "description": "Helicopter pilot logbook V2 test environment. Synthetic data only.",
+  "id": "./",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone"
+  ],
+  "orientation": "any",
+  "background_color": "#f4f6f8",
+  "theme_color": "#111827",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

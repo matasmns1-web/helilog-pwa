@@ -1,7 +1,7 @@
 {
-  "name": "HeliLog \u2013 Helicopter Pilot Logbook",
+  "name": "HeliLog V2.17 — Private Beta",
   "short_name": "HeliLog",
-  "description": "Helicopter pilot logbook prototype with offline-capable PWA shell.",
+  "description": "Private beta helicopter pilot logbook; not independently certified for regulatory recordkeeping.",
   "id": "./",
   "start_url": "./index.html",
   "scope": "./",

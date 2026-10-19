@@ -1,0 +1,175 @@
+/* HeliLog V2 — V1.43.2-inspired interface system.
+   Intentionally mirrors the stable V1 dashboard/cards/navigation; domain/storage stay V2. */
+:root{
+ --bg:#f4f6f8;--surface:#fff;--text:#17202a;--muted:#6b7280;
+ --line:#e5e7eb;--navy:#111827;--blue:#111827;--accent:#111827;
+ --dark:#111827;--soft:#eef2f7
+}
+html,body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,Segoe UI,sans-serif}
+.layout{display:block;min-height:100vh}
+.sidebar{
+ width:230px;position:fixed;inset:0 auto 0 0;z-index:20;
+ background:var(--dark);color:#fff;padding:22px 14px;
+ display:flex;flex-direction:column;gap:0
+}
+.brand{font-size:23px;font-weight:800;padding:7px 10px 24px;letter-spacing:normal}
+.brand small{font-size:11px;color:#94a3b8;font-weight:600;letter-spacing:0}
+.sidebar nav{display:block;flex:none}
+.sidebar nav button{
+ display:block;width:100%;border:0;background:transparent;text-align:left;
+ color:#cbd5e1;padding:11px;border-radius:9px;margin:2px 0;font-size:14px
+}
+.sidebar nav button:hover,.sidebar nav button.active{background:#273244;color:white}
+.sidebar .bottom{margin-top:auto;color:#94a3b8;font-size:11px}
+.content{
+ width:calc(100% - 230px);max-width:1450px;min-height:100vh;
+ margin:0 0 0 230px;padding:28px
+}
+.pagehead{align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.pagehead h1{font-size:27px;font-weight:750;margin:0}
+.pagehead .sub{font-size:14px;color:#6b7280;margin:4px 0 0}
+.card{padding:18px;border-radius:14px;background:#fff;border:1px solid var(--line);box-shadow:none;margin-bottom:0}
+.content>.card,.content>.notice{margin-bottom:16px}
+.content>.grid,.content>.dashboard-actions{margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.grid.two{grid-template-columns:1.5fr 1fr}
+.grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid.stats{grid-template-columns:repeat(4,minmax(0,1fr))}
+.grid .card{min-width:0}
+.head{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px;gap:12px}
+.head h2{font-size:17px;margin:0}
+.card h2{font-size:17px}
+.card p{margin-bottom:12px}
+.card p:last-child{margin-bottom:0}
+.label,.hint{font-size:12px;color:var(--muted)}
+.big,.stat{font-size:27px;font-weight:800;margin-top:7px;font-variant-numeric:tabular-nums}
+.muted,.hint{color:var(--muted)}
+.btn{border:1px solid var(--line);background:#fff;color:#111827;border-radius:9px;padding:10px 14px;font-weight:500}
+.btn:hover{background:#f8fafc}
+.btn.primary{background:#111827;color:#fff;border-color:#111827}
+.btn.primary:hover{background:#273244}
+.btn.small{padding:6px 10px}
+.actions{gap:8px;justify-content:flex-end}
+.formgrid{gap:14px;grid-template-columns:repeat(2,minmax(0,1fr))}
+.field{gap:0;margin-bottom:0}
+.field label{display:block;font-size:13px;font-weight:700;margin:0 0 6px}
+.field input,.field textarea,.field select{border:1px solid #d5dae0;border-radius:9px;padding:10px;background:#fff}
+.field textarea{min-height:90px}
+.field .hint{margin-top:5px}
+.formgrid>.field{margin:0}
+#flight-form,#aircraft-form,#endorsement-form,#amend-form{display:grid;gap:15px}
+#flight-form .formgrid,#aircraft-form .formgrid,#endorsement-form .formgrid,#amend-form .formgrid{gap:14px}
+#flight-form .actions,#aircraft-form .actions,#endorsement-form .actions{
+ border-top:1px solid var(--line);padding-top:15px
+}
+.notice{font-size:13px;background:#f8fafc;border:1px solid var(--line);border-left:4px solid #94a3b8;color:#4b5563;border-radius:9px;padding:11px}
+.notice.warning{background:#fff4f2;border-color:#f3b4aa;border-left-color:#b42318;color:#8a1c12}
+.notice.success{background:#ecfdf3;border-color:#abefc6;border-left-color:#0d8e68;color:#067647}
+.badge{background:#eef2ff;color:#3730a3;font-weight:700;padding:3px 7px}
+.badge.signed{background:#ecfdf3;color:#067647}
+.badge.archive{background:#eef2ff;color:#3730a3}
+.summarybox{background:#f8fafc;border:1px solid var(--line);color:#4b5563}
+.field{position:relative}
+.field input[data-time-field="1"]{padding-right:46px}
+.time-toggle{
+ position:absolute;right:5px;top:29px;width:36px;height:35px;min-height:35px;
+ font-size:19px;border:0;background:transparent;border-radius:7px;color:#4b5563
+}
+.time-toggle:hover{background:#eef2f7}
+.time-selectors[hidden]{display:none!important}
+.time-selectors{
+ position:absolute;z-index:60;right:0;top:70px;display:grid;
+ grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+ background:#fff;border:1px solid #d5dae0;border-radius:10px;
+ padding:10px;min-width:190px;box-shadow:0 10px 25px rgba(0,0,0,.15);
+}
+.time-selectors label{margin:0}
+.time-selectors select{width:100%}
+
+.time-selectors select{border:1px solid #d5dae0}
+.item{padding:12px 0}
+.itemtitle{font-size:15px}
+.details{color:#6b7280;font-size:12px}
+.tag{display:inline-block;border-radius:999px;padding:4px 8px;background:var(--soft);font-size:12px;font-weight:700}
+.table-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:11px 9px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:12px;color:var(--muted)}
+tbody tr:hover{background:#fafbfc}
+.table-tools{display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin:0 0 14px}
+.table-tools .field{flex:1 1 230px;min-width:150px}
+.table-tools .field input,.table-tools .field select{width:100%;padding:9px 10px}
+.table-foot{border-top:1px solid var(--line);padding-top:12px;margin-top:12px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:13px}
+.table-foot b{color:var(--ink,#17202a)}
+.icao{font-size:24px;font-weight:850;line-height:1.4}
+.aircraft-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.aircraft-grid .card{display:flex;flex-direction:column;gap:8px}
+.aircraft-grid .actions{margin-top:auto;padding-top:8px}
+.detail-line{display:flex;justify-content:space-between;gap:12px;padding:6px 0}
+.detail-line:last-child{border:0}
+.detail-line strong{font-weight:700}
+.section-note{font-size:13px;color:#6b7280}
+.dashboard-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 16px}
+.dashboard-actions button{
+ text-align:left;min-height:82px;display:flex;flex-direction:column;justify-content:center;gap:4px
+}
+.dashboard-actions button b{font-size:14px}
+.dashboard-range{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0 14px}
+.dashboard-range button{min-height:34px;padding:7px 10px;font-size:12px}
+.dashboard-range button.active{background:#111827;border-color:#111827;color:white}
+.more-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.more-link{text-align:left;min-height:92px;display:flex;flex-direction:column;justify-content:center;gap:5px}
+.more-link b{font-size:15px}
+.more-link span{font-size:12px}
+.mobile-nav{display:none}
+.mobile-nav button{cursor:pointer}
+@media(max-width:1180px) and (min-width:851px){
+ .sidebar{width:205px}
+ .content{margin-left:205px;width:calc(100% - 205px);padding:24px 20px}
+ .grid.two{grid-template-columns:1fr}
+ .grid.stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .aircraft-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:850px){
+ html,body{overscroll-behavior-y:none;overflow-x:clip}
+ .sidebar{display:none}
+ .content{margin:0;width:100%;max-width:100%;padding:calc(14px + env(safe-area-inset-top)) 12px calc(90px + env(safe-area-inset-bottom))}
+ .grid.stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .grid.two,.grid.three,.aircraft-grid,.formgrid,#flight-form .formgrid,#aircraft-form .formgrid,#endorsement-form .formgrid,#amend-form .formgrid{grid-template-columns:1fr}
+ .card{padding:15px;border-radius:12px}
+ .pagehead{align-items:flex-start;flex-direction:column;margin-bottom:16px}
+ .pagehead h1{font-size:23px}
+ .pagehead .actions{justify-content:flex-start;width:100%}
+ .pagehead .sub{font-size:13px}
+ button,.btn{min-height:44px}
+ input,select,textarea{font-size:16px}
+ .field input,.field select,.field textarea{min-height:46px}
+ .dashboard-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .mobile-nav{
+  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));position:fixed;z-index:50;
+  bottom:0;left:0;right:0;background:rgba(255,255,255,.97);
+  backdrop-filter:blur(14px);border-top:1px solid var(--line);
+  padding:5px 6px calc(5px + env(safe-area-inset-bottom));
+  box-shadow:0 -4px 18px rgba(15,23,42,.06)
+ }
+ .mobile-nav button{
+  border:0;background:transparent;color:#64748b;min-height:52px;border-radius:10px;
+  font-size:10px;font-weight:700;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px
+ }
+ .mobile-nav button.active{background:#eef2f7;color:#111827}
+ body:has(input:focus) .mobile-nav,body:has(textarea:focus) .mobile-nav,
+ body:has(select:focus) .mobile-nav{display:none}
+ body:has(input:focus) .content,body:has(textarea:focus) .content,
+ body:has(select:focus) .content{padding-bottom:calc(22px + env(safe-area-inset-bottom))}
+
+ .mobile-nav .navicon{font-size:19px;line-height:1}
+ .table-scroll{max-width:100%}
+ .actions{justify-content:flex-start}
+ .footer{margin-bottom:10px}
+}
+@media(max-width:480px){
+ .card{padding:13px}
+ .content{padding-left:10px;padding-right:10px}
+ .big,.stat{font-size:23px}
+ .grid.stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+}

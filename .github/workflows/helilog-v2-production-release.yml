@@ -1,0 +1,29 @@
+name: HeliLog production root release gates
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  production:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release candidate
+        uses: actions/checkout@v4
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify root V2 deployment, isolated Supabase and same-origin V1 archive
+        run: node --test scripts/check-live-root.test.cjs
+      - name: Re-run production and manual-account regressions
+        run: |
+          node --test scripts/production-release.test.cjs supabase/production/bootstrap.test.cjs
+          node --test v2/v217-manual-accounts.test.cjs v2/v212-account-recovery.test.cjs v2/v213-private-account-safety.test.cjs
+          node --test v2/v29-backup-recovery.test.cjs v2/v210-backup-health.test.cjs v2/v28-integrity-recovery.test.cjs
+          node --test v2/v24-sync.test.cjs v2/v25-profile-pic.test.cjs v2/v27-cloud-ui.test.cjs
