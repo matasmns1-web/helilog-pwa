@@ -151,6 +151,7 @@ async function v23EnterWorkspace(auth){
  if(TEST_MODE)throw Error("Exit the old local Test Mode before signing in to V2.3.");
  const id=auth.userId;
  if(!/^[0-9a-f-]{36}$/i.test(String(id)))throw Error("A verified account ID is required.");
+ v213ResetPrivateViews(id);
  const key=window.HeliLogV23Sync.recordKey(id);
  const stored=localStorage.getItem(key);
  let workspace;
@@ -241,6 +242,7 @@ async function v23SignOut(){
  const pending=window.HeliLogV23Sync.status().pending;
  if(pending&&!confirm(pending+" unsynchronized change(s) remain saved on this device. Sign out anyway?"))return;
  v23AuthBusy=true;v23Unlocked=false;
+ v213ResetPrivateViews();
  document.documentElement.classList.add("helilog-locked");
  document.documentElement.classList.remove("helilog-cloud-workspace");
  app.innerHTML='<div class="v23-auth-container"><div class="v23-auth-card" contenteditable="false">Signing out…</div></div>';
@@ -391,6 +393,26 @@ async function v28InspectCloudRecovery(ev){
 
 /* V2.9 private snapshots, encrypted external exports and missing-only restore. */
 let v29Snapshots=[],v29SelectedId="",v29BackupBusy=false,v29BackupMessage="",v29RestorePlan=null;
+/* V2.13: private UI state must never follow the user into a different account.
+ * In-flight callbacks are checked against a generation token before they can
+ * update backup history, download files, or open recovery prompts.
+ */
+let v213PrivateViewEpoch=0,v213PrivateViewOwner="";
+function v213ResetPrivateViews(owner=""){
+ v213PrivateViewEpoch++;
+ v213PrivateViewOwner=owner;
+ v28LastAudit=null;v28Busy=false;v28Notice="";
+ v29Snapshots=[];v29SelectedId="";v29BackupBusy=false;
+ v29BackupMessage="";v29RestorePlan=null;
+ v210Health=null;v210Retention=null;v210DrillMessage="";
+ if(typeof v213ResetCloudViewState==="function")v213ResetCloudViewState();
+}
+function v213AssertPrivateView(owner,epoch){
+ if(v213PrivateViewOwner!==owner||v213PrivateViewEpoch!==epoch||
+    !v23AccountWorkspace()||window.HeliLogCloud.snapshot().userId!==owner)
+  throw Error("Cloud account changed. This operation is cancelled without exposing another account's information.");
+}
+
 function v29RequireOwner(){
  if(!v23AccountWorkspace())throw Error("Sign in to your private cloud workspace.");
  const owner=window.HeliLogCloud.snapshot().userId;
@@ -399,14 +421,25 @@ function v29RequireOwner(){
 }
 async function v29Run(label,action){
  if(v29BackupBusy)return;
+ const epoch=v213PrivateViewEpoch,owner=v213PrivateViewOwner;
  v29BackupBusy=true;v29BackupMessage="";v29RestorePlan=null;
- try{await action();}catch(e){v29BackupMessage=label+": "+String(e.message||e);}
- finally{v29BackupBusy=false;if(location.hash==="#backups")backups();}
+ try{await action();}catch(e){
+  if(v213PrivateViewEpoch===epoch&&v213PrivateViewOwner===owner)
+   v29BackupMessage=label+": "+String(e.message||e);
+ }finally{
+  if(v213PrivateViewEpoch===epoch&&v213PrivateViewOwner===owner){
+   v29BackupBusy=false;
+   if(location.hash==="#backups"&&v23AccountWorkspace())backups();
+  }
+ }
 }
 async function v29LoadCloudSnapshots(){
  await v29Run("Backup history",async()=>{
   const owner=v29RequireOwner(),db=await window.HeliLogCloud.client();
-  v29Snapshots=await window.HeliLogV29Backup.list(db,owner);
+  const epoch=v213PrivateViewEpoch;
+  const snapshots=await window.HeliLogV29Backup.list(db,owner);
+  v213AssertPrivateView(owner,epoch);
+  v29Snapshots=snapshots;
   if(!v29Snapshots.some(x=>x.id===v29SelectedId))v29SelectedId=v29Snapshots[0]?.id||"";
   v29BackupMessage=v29Snapshots.length?
    "Loaded "+v29Snapshots.length+" most recent cloud snapshots. Daily backups run at 03:00 UTC.":
@@ -416,15 +449,26 @@ async function v29LoadCloudSnapshots(){
 function v29ChooseSnapshot(id){v29SelectedId=String(id||"");v29RestorePlan=null;}
 async function v29CreateCloudSnapshot(){
  await v29Run("Backup now",async()=>{
-  const owner=v29RequireOwner();
+  const owner=v29RequireOwner(),epoch=v213PrivateViewEpoch;
   await v23RefreshSync();
+  v213AssertPrivateView(owner,epoch);
   if(window.HeliLogV23Sync.status().state!=="synced"||
     window.HeliLogV24Archive.error())
    throw Error("Resolve this browser's pending cloud edits or archive discrepancy first.");
   const db=await window.HeliLogCloud.client();
+  v213AssertPrivateView(owner,epoch);
   const id=await window.HeliLogV29Backup.create(db,owner);
-  v29Snapshots=await window.HeliLogV29Backup.list(db,owner);
+  v213AssertPrivateView(owner,epoch);
+  const snapshots=await window.HeliLogV29Backup.list(db,owner);
+  v213AssertPrivateView(owner,epoch);
+  v29Snapshots=snapshots;
   v29SelectedId=id;
+  const [health,retention]=await Promise.all([
+   window.HeliLogV29Backup.health(db,owner),
+   window.HeliLogV29Backup.retention(db,owner)
+  ]);
+  v213AssertPrivateView(owner,epoch);
+  v210Health=health;v210Retention=retention;
   v29BackupMessage="Created a private, checksum-protected snapshot in the TEST Supabase database. For independent disaster protection, also download an encrypted copy.";
  });
 }
@@ -438,10 +482,13 @@ async function v29DownloadEncryptedSnapshot(){
  await v29Run("Encrypted export",async()=>{
   if(password.length<12)throw Error("Enter a passphrase of at least 12 characters.");
   if(password!==repeated)throw Error("Passphrase confirmation does not match.");
-  const owner=v29RequireOwner(),db=await window.HeliLogCloud.client();
+  const owner=v29RequireOwner(),epoch=v213PrivateViewEpoch,db=await window.HeliLogCloud.client();
+  v213AssertPrivateView(owner,epoch);
   if(!v29SelectedId)throw Error("Select a cloud snapshot first.");
   const source=await window.HeliLogV29Backup.downloadPayload(db,owner,v29SelectedId);
+  v213AssertPrivateView(owner,epoch);
   const encrypted=await window.HeliLogV29Backup.encryptSnapshot(source,password);
+  v213AssertPrivateView(owner,epoch);
   // Do not put the account holder's name, email or account ID in the filename.
   const blob=new Blob([JSON.stringify(encrypted)],{type:"application/json"});
   const url=URL.createObjectURL(blob),link=document.createElement("a");
@@ -461,8 +508,9 @@ async function v29InspectEncryptedSnapshot(ev){
  if(passwordInput)passwordInput.value="";
  await v29Run("Inspect encrypted backup",async()=>{
   if(file.size>100*1024*1024)throw Error("File exceeds the 100 MB verification limit.");
-  const owner=v29RequireOwner();
+  const owner=v29RequireOwner(),epoch=v213PrivateViewEpoch;
   const unlocked=await window.HeliLogV29Backup.decryptSnapshot(JSON.parse(await file.text()),password,owner);
+  v213AssertPrivateView(owner,epoch);
   v29BackupMessage="Encrypted backup decrypted and authenticated: "+unlocked.records+" cloud records, "+
    unlocked.archives+" print batches, "+unlocked.frozen+" frozen originals and "+
    unlocked.addenda+" signed addenda. Inspection is read-only; no records were restored.";
@@ -470,13 +518,15 @@ async function v29InspectEncryptedSnapshot(ev){
 }
 async function v29PreviewCloudRestore(){
  await v29Run("Recovery preview",async()=>{
-  const owner=v29RequireOwner();
+  const owner=v29RequireOwner(),epoch=v213PrivateViewEpoch;
   if(!v29SelectedId)throw Error("Select a backup snapshot.");
   await v23RefreshSync();
+  v213AssertPrivateView(owner,epoch);
   if(window.HeliLogV23Sync.status().state!=="synced"||window.HeliLogV24Archive.error())
    throw Error("Resolve local pending/conflicted sync and archived-record discrepancies first.");
   const db=await window.HeliLogCloud.client();
   const plan=await window.HeliLogV29Backup.preview(db,owner,v29SelectedId);
+  v213AssertPrivateView(owner,epoch);
   v29RestorePlan=plan;
   v29BackupMessage=plan.restorable?
    "Verified snapshot: "+plan.missingUnsigned+" missing unsigned records can be restored. "+
@@ -501,13 +551,18 @@ async function v29RestoreMissingCloudRecords(){
     "A server-side pre-restore snapshot will be captured in the same transaction."))return;
  const plan=v29RestorePlan;
  await v29Run("Restore missing records",async()=>{
-  const owner=v29RequireOwner();
+  const owner=v29RequireOwner(),epoch=v213PrivateViewEpoch;
   if(window.HeliLogV23Sync.status().state!=="synced")
    throw Error("This browser is not fully synchronized.");
   const db=await window.HeliLogCloud.client();
+  v213AssertPrivateView(owner,epoch);
   const result=await window.HeliLogV29Backup.restore(db,owner,plan,phrase);
+  v213AssertPrivateView(owner,epoch);
   await v23RefreshSync();
-  v29Snapshots=await window.HeliLogV29Backup.list(db,owner);
+  v213AssertPrivateView(owner,epoch);
+  const snapshots=await window.HeliLogV29Backup.list(db,owner);
+  v213AssertPrivateView(owner,epoch);
+  v29Snapshots=snapshots;
   v29BackupMessage="Restored "+result.restored+" missing unsigned cloud record(s). "+
    "An independent pre-restore SERVER snapshot was saved in this database. "+
    "Other devices should reconnect and sync before new changes.";
@@ -521,11 +576,12 @@ async function v29RestoreMissingCloudRecords(){
 let v210Health=null,v210Retention=null,v210DrillMessage="";
 async function v210CheckBackupHealth(){
  await v29Run("Backup monitoring",async()=>{
-  const owner=v29RequireOwner(),db=await window.HeliLogCloud.client();
+  const owner=v29RequireOwner(),epoch=v213PrivateViewEpoch,db=await window.HeliLogCloud.client();
   const [status,policy]=await Promise.all([
    window.HeliLogV29Backup.health(db,owner),
    window.HeliLogV29Backup.retention(db,owner)
   ]);
+  v213AssertPrivateView(owner,epoch);
   v210Health=status;v210Retention=policy;
   v29BackupMessage=status.status==="healthy"?
    "Latest cloud snapshot checksum verified; scheduled-job monitoring shows no current backup warning.":
@@ -544,10 +600,12 @@ async function v210TestEncryptedRecovery(ev){
  await v29Run("Isolated recovery drill",async()=>{
   if(file.size>100*1024*1024)
    throw Error("Encrypted file is larger than the 100 MB recovery-drill limit.");
-  const owner=v29RequireOwner();
+  const owner=v29RequireOwner(),epoch=v213PrivateViewEpoch;
   const locked=JSON.parse(await file.text());
   const verified=await window.HeliLogV29Backup.decryptSnapshot(locked,pass,owner);
+  v213AssertPrivateView(owner,epoch);
   const report=await window.HeliLogV210Drill.drill(verified.data,owner);
+  v213AssertPrivateView(owner,epoch);
   if(!report.ok)throw Error("The encrypted snapshot failed the sandbox drill: "+
    report.problems.slice(0,3).join(" | ")+". No data was modified.");
   v210DrillMessage="SUCCESS: Isolated recovery reconstructed "+report.counts.records+
@@ -562,7 +620,7 @@ async function v210TestEncryptedRecovery(ev){
 function v29BackupPanel(){
  if(!v23AccountWorkspace())return "";
  return `<div class="card" style="margin-top:16px">
-  <div class="head"><div><h2>V2.10 · Backup reliability &amp; recovery</h2>
+  <div class="head"><div><h2>Backup reliability &amp; recovery</h2>
    <div class="muted">Private daily server snapshots and passphrase-protected off-device downloads.</div></div></div>
   <p class="mini">Daily snapshots run at 03:00 UTC. They are in the same TEST Supabase database, not independent disaster recovery. Save an encrypted download elsewhere.</p>
   <div class="actions" style="margin-top:10px">
@@ -581,7 +639,7 @@ function v29BackupPanel(){
     <b>Retention preview (no deletion):</b> ${v210Retention.daily} daily, 
     ${v210Retention.manual} manual, ${v210Retention.preRestore} pre-restore backups;
     ${v210Retention.eligibleForFuturePruning} would qualify under a future 90-daily/12-month-anchor policy.
-    All existing backup snapshots are preserved in V2.10.
+    Existing backup snapshots are preserved; retention is preview-only.
   </div>`:''}
   <div class="actions"><button class="btn" onclick="v29LoadCloudSnapshots()" ${v29BackupBusy?'disabled':''}>Refresh backup history</button>
    <button class="btn primary" onclick="v29CreateCloudSnapshot()" ${v29BackupBusy?'disabled':''}>Backup now</button></div>
@@ -601,7 +659,7 @@ function v29BackupPanel(){
     <input id="v29InspectFile" type="file" accept=".json,application/json" style="display:none" onchange="v29InspectEncryptedSnapshot(event)">
     <button class="btn" type="button" onclick="document.getElementById('v29InspectFile').click()" ${v29BackupBusy?'disabled':''}>Inspect encrypted backup</button>
   </div>
-  <div class="note" style="margin-top:14px"><b>V2.10 — Isolated encrypted recovery drill</b>
+  <div class="note" style="margin-top:14px"><b>Isolated encrypted recovery drill</b>
    <p>Decrypt a saved snapshot and reconstruct its original records and signed history in temporary browser memory only. No records are uploaded, deleted or changed. This tests backup consistency, NOT full cloud-provider restoration.</p></div>
   <div class="actions" style="flex-wrap:wrap">
    <div class="field"><label for="v210DrillPass">Backup passphrase</label>
