@@ -3515,6 +3515,9 @@ function v218UpdateNight(){
  if(!outcome.ok){
   status.textContent='Automatic calculation unavailable: '+outcome.reason+
    ' Open the coordinates section, or switch to manual night time.';
+  const details=$('#nightCoordinateDetails');
+  if(details && $('#dep').value.trim().length===4 && $('#arr').value.trim().length===4)
+   details.open=true;
   return;
  }
  field.value=outcome.nightMinutes;
@@ -3543,7 +3546,17 @@ function v218InitNight(existing){
  }
  $('#nightAuto').addEventListener('change',v218UpdateNight);
  for(const field of ['depLat','depLon','arrLat','arrLon']){
-  $('#'+field).addEventListener('input',v218UpdateNight);
+  $('#'+field).addEventListener('input',()=>{
+   // A same-base circuit uses the same position. Copy entered coordinates
+   // only when arrival fields are empty, never overwrite a pilot's override.
+   if(field.startsWith('dep') &&
+      $('#dep').value.trim().toUpperCase()===$('#arr').value.trim().toUpperCase() &&
+      !$('#arrLat').value && !$('#arrLon').value){
+    const p=v218Point('dep');
+    if(p)v218SetPoint('arr',p);
+   }
+   v218UpdateNight();
+  });
  }
  $('#dep').addEventListener('change',()=>v218PlaceChanged('dep'));
  $('#arr').addEventListener('change',()=>v218PlaceChanged('arr'));
