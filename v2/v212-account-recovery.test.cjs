@@ -1,4 +1,4 @@
-/* V2.12 security + password recovery: no emails are sent in these tests. */
+/* V2.12.1 security + password recovery: no emails are sent in these tests. */
 const test=require("node:test");
 const assert=require("node:assert/strict");
 const fs=require("node:fs");
@@ -66,8 +66,9 @@ test("expired recovery callbacks remain locked and never open the logbook",async
 test("a verified reset updates ONLY the credential, revokes sessions and clears the URL",async()=>{
  const f=fixture({callback:"?helilog_recovery=1#access_token=link&refresh_token=refresh&type=recovery",sessionToken:"link"});
  assert.equal((await f.api.beginPasswordRecovery()).state,"ready");
- await assert.rejects(f.api.completePasswordRecovery("too short"),/12 and 128/);
- assert.equal(await f.api.completePasswordRecovery("twelve letters + something"),true);
+ await assert.rejects(f.api.completePasswordRecovery("abcde"),/6 and 128/);
+ await assert.rejects(f.api.completePasswordRecovery("x".repeat(129)),/6 and 128/);
+ assert.equal(await f.api.completePasswordRecovery("abcdef"),true);
  assert.equal(f.calls.filter(x=>x.type==="update").length,1);
  assert.equal(f.calls.find(x=>x.type==="signout").options.scope,"global");
  assert.equal(f.calls.find(x=>x.type==="replaceUrl").url,"/");
@@ -95,10 +96,12 @@ test("sign in provides an accessible recovery request and matching-password form
  assert.match(gate,/v23ShowPasswordHelp/);
  assert.match(gate,/v23RequestPasswordReset/);
  assert.match(gate,/v23SaveRecoveredPassword/);
- assert.match(gate,/id="v23NewPassword" type="password" minlength="12"/);
- assert.match(gate,/id="v23ConfirmPassword" type="password" minlength="12"/);
- assert.match(gate,/if\(password!==confirmation\|\|password.length<12/);
- assert.match(html,/HeliLog V2\.12/);
+ assert.match(gate,/id="v23NewPassword" type="password" minlength="6"/);
+ assert.match(gate,/id="v23ConfirmPassword" type="password" minlength="6"/);
+ assert.match(gate,/if\(password!==confirmation\|\|password.length<6/);
+ assert.match(html,/HeliLog V2\.12\.1/);
+ assert.match(cloud,/password\.length<6\|\|password\.length>128/);
+ assert.match(gate,/Use at least 6 characters/);
 });
 test("six account tables use owner RLS and trigger-only SECURITY DEFINER grants are restricted",()=>{
  for(const name of ["helilog_accounts","helilog_records","helilog_print_archives","helilog_archive_entries","helilog_archive_addenda"])

@@ -1,10 +1,17 @@
 # HeliLog V2 — Development
 
-**Current version: V2.12 — Private beta account-security foundation and password recovery, with existing archived-record protections preserved.** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
+**Current version: V2.12.1 — Six-character minimum for account password recovery, with all V2.12 protections unchanged.** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
 
 **Prior release: V2.1.** The complete V1.43.2 interface is restored with V2 endorsement print archiving; installed-app signing is separate from web-only print/archive management. See [FULL-V1-INTERFACE.md](FULL-V1-INTERFACE.md) for parity scope, testing instructions and data safety.
 
 **Earlier modular prototype:** [alpha.html](alpha.html) remains available with its own test data.
+
+## V2.12.1 — Password reset minimum length (TEST)
+
+- Accept **6–128 characters** for new account passwords in the recovery form and its client-side validation. Password and confirmation must match.
+- Six characters is a minimum, not the recommended length. Encourage longer unique passwords.
+- The unrelated encrypted backup export passphrase remains at a minimum of **12 characters**.
+- Account separation, recovery token verification, signed archive integrity and TEST-only deployment are unchanged. A stricter Supabase Auth password policy will still apply.
 
 ## V2.12 — Multi-account security and password recovery (TEST)
 

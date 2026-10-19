@@ -1,5 +1,5 @@
 /* HeliLog V2.3 private login gate. No automatic import of V2.2 local data. */
-const HELILOG_TEST_VERSION='V2.12';
+const HELILOG_TEST_VERSION='V2.12.1';
 let v23Unlocked=false,v23AuthBusy=false,v23AuthMessage="";
 let v23RecoveryStage="signin";
 function v23Escape(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
@@ -46,7 +46,7 @@ function v23LoginView(){
  '</div></div>';
 }
 
-/* V2.12: recovery is an independent locked screen. Never open a workspace from an email link. */
+/* V2.12.1: recovery is an independent locked screen. Never open a workspace from an email link. */
 function v23RecoveryView(stage=v23RecoveryStage){
  v23Unlocked=false;
  document.documentElement.classList.add("helilog-locked");
@@ -62,10 +62,10 @@ function v23RecoveryView(stage=v23RecoveryStage){
  (ready?
  '<form class="form" onsubmit="v23SaveRecoveredPassword(event)">'+
  '<div class="field"><label for="v23NewPassword">New password</label>'+
- '<input id="v23NewPassword" type="password" minlength="12" maxlength="128" autocomplete="new-password" required></div>'+
+ '<input id="v23NewPassword" type="password" minlength="6" maxlength="128" autocomplete="new-password" required></div>'+
  '<div class="field"><label for="v23ConfirmPassword">Confirm new password</label>'+
- '<input id="v23ConfirmPassword" type="password" minlength="12" maxlength="128" autocomplete="new-password" required></div>'+
- '<p class="mini">Use at least 12 characters. Do not reuse an existing password.</p>'+
+ '<input id="v23ConfirmPassword" type="password" minlength="6" maxlength="128" autocomplete="new-password" required></div>'+
+ '<p class="mini">Use at least 6 characters. A longer, unique password is safer.</p>'+
  '<button class="btn primary" type="submit">Update password</button></form>':
  (sent?'<p class="mini">Check your inbox and spam folder. The link can only be used for a limited time.</p>':
  '<form class="form" onsubmit="v23RequestPasswordReset(event)">'+
@@ -112,8 +112,8 @@ async function v23SaveRecoveredPassword(event){
  const a=document.getElementById("v23NewPassword"),b=document.getElementById("v23ConfirmPassword");
  const password=a?.value||"",confirmation=b?.value||"";
  if(a)a.value="";if(b)b.value="";
- if(password!==confirmation||password.length<12||password.length>128){
-  v23AuthMessage="Passwords must match and contain 12–128 characters.";
+ if(password!==confirmation||password.length<6||password.length>128){
+  v23AuthMessage="Passwords must match and contain 6–128 characters.";
   v23RecoveryView();return;
  }
  v23AuthBusy=true;v23AuthMessage="";
