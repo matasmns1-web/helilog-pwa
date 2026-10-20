@@ -4585,6 +4585,113 @@ function profile(){
    </div>
   </div>`;
 }
+/* Account-owned locations: managed outside Add Flight. */
+function v219LocationsPage(){
+ const sites=[...v219Sites()].sort((a,b)=>a.code.localeCompare(b.code));
+ app.innerHTML=header('Aerodromes & Helipads',
+  'Automatic ICAO coordinates and custom helicopter operating sites',
+  '<button class="btn" type="button" onclick="go(\'settings\')">← Settings</button>')+
+ `<div class="card">
+ <h2>ICAO airport coordinates</h2>
+ <p class="muted">For known ICAO aerodromes, HeliLog finds coordinates automatically in Add Flight. Bundled airfields work offline; other ICAO airports are looked up online using the OpenFlights reference database.</p>
+ <p class="mini">For an off-airport helicopter base or unknown airfield, save its WGS84 coordinates below. Give it a short code such as BASE-1 and use that in Add Flight. These locations sync with your private account.</p>
+ <p class="mini">Reference data: <a href="https://openflights.org/data.php" target="_blank" rel="noopener noreferrer">OpenFlights (ODbL)</a>. Review all airport reference points against the relevant AIP; this is not approved navigation data.</p>
+ </div>
+ <div class="card" style="margin-top:12px">
+ <h2>Add or edit a site</h2>
+ <div class="formgrid">
+ <div class="field"><label for="v219SiteCode">ICAO / custom site code</label><input id="v219SiteCode" maxlength="12" autocapitalize="characters" placeholder="EYVI or BASE-1" oninput="uppercasePlaceInput(this)"></div>
+ <div class="field"><label for="v219SiteName">Site name (optional)</label><input id="v219SiteName" maxlength="90" placeholder="Helicopter operating base"></div>
+ <div class="field"><label for="v219SiteLat">Latitude (WGS84 decimal degrees)</label><input id="v219SiteLat" type="number" min="-90" max="90" step="any"></div>
+ <div class="field"><label for="v219SiteLon">Longitude (WGS84 decimal degrees)</label><input id="v219SiteLon" type="number" min="-180" max="180" step="any"></div>
+ </div>
+ <div id="v219SiteStatus" class="mini" role="status" aria-live="polite" style="margin:10px 0">Look up an ICAO code or enter a helipad’s coordinates manually.</div>
+ <div class="actions">
+ <button class="btn" type="button" onclick="v219LookupSite()">Find ICAO coordinates</button>
+ <button class="btn primary" type="button" onclick="v219SaveSite()">Save site</button>
+ <button class="btn" type="button" onclick="v219ClearSite()">Clear</button>
+ </div>
+ </div>
+ <div class="card" style="margin-top:12px">
+ <h2>Saved locations (${sites.length})</h2>
+ ${sites.length?sites.map(x=>`<div class="profileline" style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+  <div><b>${htmlEscape(x.code)}</b> — ${htmlEscape(x.name||'Custom site')}
+   <div class="mini">${Number(x.lat).toFixed(6)}, ${Number(x.lon).toFixed(6)} · WGS84</div></div>
+  <div style="display:flex;gap:6px">
+   <button class="btn" type="button" onclick="v219EditSite('${x.code}')">Edit</button>
+   <button class="btn" type="button" onclick="v219DeleteSite('${x.code}')">Delete</button>
+  </div></div>`).join(''):'<p class="muted">No custom sites yet. Known ICAO airports do not need to be saved here.</p>'}
+ </div>`;
+}
+function v219Status(message){
+ const el=document.getElementById('v219SiteStatus');
+ if(el)el.textContent=String(message||'');
+}
+function v219ClearSite(){
+ for(const id of ['v219SiteCode','v219SiteName','v219SiteLat','v219SiteLon']){
+  const el=document.getElementById(id);if(el)el.value='';
+ }
+ v219Status('Ready to add a new site.');
+}
+function v219EditSite(code){
+ const x=v219Sites().find(site=>site.code===code);
+ if(!x)return;
+ for(const [id,value] of Object.entries({v219SiteCode:x.code,
+  v219SiteName:x.name||'',v219SiteLat:x.lat,v219SiteLon:x.lon})){
+  const field=document.getElementById(id);if(field)field.value=value;
+ }
+ v219Status('Editing '+code+'. Changes here do not modify existing flights or archived pages.');
+ document.getElementById('v219SiteCode')?.focus();
+}
+async function v219LookupSite(){
+ const input=document.getElementById('v219SiteCode');
+ const code=String(input?.value||'').trim().toUpperCase();
+ if(!/^[A-Z]{4}$/.test(code)){
+  v219Status('Automatic lookup needs a four-letter ICAO code. For a helipad, enter coordinates manually.');return;
+ }
+ v219Status('Finding '+code+' in the reference airport database…');
+ const point=await window.HeliLogAerodromes.lookup(code);
+ if(document.getElementById('v219SiteCode')!==input||input.value.trim().toUpperCase()!==code)return;
+ if(!point){
+  v219Status('Could not find '+code+'. Check your internet connection or enter coordinates manually.');return;
+ }
+ document.getElementById('v219SiteLat').value=point.lat;
+ document.getElementById('v219SiteLon').value=point.lon;
+ const name=document.getElementById('v219SiteName');
+ if(name&&!name.value.trim())name.value=point.name||'';
+ v219Status('Found '+code+' ('+point.source+'). Check the AIP coordinates before saving any override.');
+}
+function v219SaveSite(){
+ const code=String(document.getElementById('v219SiteCode')?.value||'').trim().toUpperCase();
+ const name=String(document.getElementById('v219SiteName')?.value||'').trim();
+ const lat=document.getElementById('v219SiteLat')?.value||'';
+ const lon=document.getElementById('v219SiteLon')?.value||'';
+ if(!/^[A-Z0-9_-]{2,12}$/.test(code)){
+  v219Status('Site code must contain 2–12 letters, digits, hyphens or underscores.');return;
+ }
+ if(!lat.trim()||!lon.trim()){
+  v219Status('Both WGS84 latitude and longitude are required.');return;
+ }
+ const point=window.HeliLogNight.coordinates({lat,lon});
+ if(!point){v219Status('Invalid latitude (−90…90) or longitude (−180…180).');return}
+ const previous=v219Sites().map(x=>({...x}));
+ const existing=previous.some(x=>x.code===code);
+ S.siteLocations=[...previous.filter(x=>x.code!==code),
+  {code,name:name||code,lat:point.lat,lon:point.lon}];
+ if(!save()){S.siteLocations=previous;v219Status('Could not save this site. Previous locations remain unchanged.');return}
+ v219LocationsPage();
+ v219Status((existing?'Updated ':'Saved ')+code+'. This site is available in Add Flight and will sync to your account.');
+}
+function v219DeleteSite(code){
+ if(!v219Sites().some(x=>x.code===code))return;
+ if(!confirm('Remove '+code+' from saved locations? Earlier flights and signed archives remain unchanged.'))return;
+ const previous=[...v219Sites()];
+ S.siteLocations=previous.filter(x=>x.code!==code);
+ if(!save()){S.siteLocations=previous;alert('Could not save. Earlier locations remain.');return;}
+ v219LocationsPage();
+ v219Status('Removed '+code+'. Existing flight records are unchanged.');
+}
+
 function settings(){
  app.innerHTML=header('Settings','Logbook, aerodromes, cloud account, backups and device preferences',
    `<button class="btn" type="button" onclick="go('profile')">← Profile</button>`)+
