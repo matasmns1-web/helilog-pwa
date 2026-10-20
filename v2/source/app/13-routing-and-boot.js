@@ -36,11 +36,11 @@ function render(){
     if(location.hash!=='#endorsements')location.hash='#endorsements';
   }
   try{
-    if(v!=='add') editingFlightId=null;
-    ({dashboard,logbook,add,aircraft,pilots,endorsements,printarchive,endorsementarchive:v2EndorsementArchive,totals,profile,settings,locations:v219LocationsPage,backups,cloud,testmode,mobilemore}[v]||dashboard)();
+    if(v!=='add'&&v!=='quickadd') editingFlightId=null;
+    ({dashboard,logbook,add,quickadd:quickAdd,aircraft,pilots,endorsements,printarchive,endorsementarchive:v2EndorsementArchive,totals,profile,settings,locations:v219LocationsPage,backups,cloud,testmode,mobilemore}[v]||dashboard)();
     let moreViews=['mobilemore','aircraft','pilots','endorsements','endorsementarchive','totals','profile','settings','locations','backups','cloud','testmode'];
     document.querySelectorAll('[data-v]').forEach(b=>{
-      let active=b.dataset.v===v || (b.dataset.v==='settings' && (v==='cloud'||v==='backups'||v==='locations')) || (b.dataset.v==='mobilemore' && moreViews.includes(v));
+      let active=b.dataset.v===v || (b.dataset.v==='quickadd'&&v==='add') || (b.dataset.v==='settings' && (v==='cloud'||v==='backups'||v==='locations')) || (b.dataset.v==='mobilemore' && moreViews.includes(v));
       b.classList.toggle('on',active);
     });
     setTimeout(updatePWAStatus,0);

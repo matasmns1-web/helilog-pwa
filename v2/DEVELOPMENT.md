@@ -35,3 +35,13 @@ The build and checks use only built-in Node.js modules; no package installation 
 GitHub CI reports test status; it is not yet wired as an enforced Render deployment gate. In particular, Render's own automatic deploy settings can run independently of GitHub Actions. The human release check and verification of the deployed commit remain mandatory until a dedicated gated delivery workflow is introduced.
 
 V2.21 is a maintenance milestone; the visible V2.20 version label and cache revision are intentionally unchanged because the generated app code has not changed.
+
+## V2.23 — Quick Flight Entry (test only)
+
+- The mobile **Flight** tab and dashboard **Quick flight** action open `#quickadd`. `#add` is the unchanged full entry route.
+- Both routes render the **same Add Flight form** in `source/app/06-flights-and-night.js`. `setFlightEntryMode()` only hides or reveals optional fields via CSS; switching does not rebuild the form or erase inputs.
+- Quick Entry still shows date, aircraft, departure/arrival places, UTC times, duration, PIC function/name, day/night take-offs, night/IFR time, cross-country and remarks. Full details expose pilot configuration, engine information, independent landings, instructor time and specialised operations.
+- The most recently flown aircraft is preselected if it still exists, but route, times, operation counts and pilot function are **not** guessed. The form shows explicit defaults for fields hidden in Quick Entry.
+- Both modes use `saveFlight()` with identical validation, automated night-time calculation, duplicate detection, archive guards and cloud synchronization. All existing-flight edits and signed correction workflows stay in the full view.
+- `v2/v223-quick-flight.test.cjs` checks navigation, shared form fields, mode toggling without data loss, full editing and save-path safety. This update does not change `print.js`, stored record shape, Supabase schema or production resources.
+- Bumping the PWA cache to `helilog-v2-23-quick-flight-1` prompts installed test apps to refresh. The production candidate packager now derives the release version from verified staging HTML, manifest and cache labels while retaining explicit approval, separate origin and publishable-key guards.

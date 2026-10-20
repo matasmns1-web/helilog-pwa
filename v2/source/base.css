@@ -271,3 +271,15 @@ html.helilog-test-mode aside{border-right:4px solid #e6a816}
 html.helilog-test-mode .brand::after{
   content:"TEST SANDBOX";display:block;color:#f8d56e;font-size:11px;letter-spacing:.08em;margin-top:5px
 }
+/* V2.23: Quick Entry is a view of the ordinary flight form, not a separate form or save path. */
+@media screen {
+  .quick-entry-switch {display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:7px}
+  .quick-entry-switch .btn {flex:1 1 140px;max-width:225px}
+  .quick-entry-description {margin:0 0 10px}
+  .quick-entry-hint {padding:10px 13px;margin:0 0 18px;border-radius:10px;
+    background:var(--soft);border:1px solid var(--line);font-size:12px;line-height:1.5;color:var(--muted)}
+  .quick-entry-hint b {color:var(--ink)}
+  .quick-entry-hint[hidden] {display:none!important}
+  #flightForm.quick-entry-active .quick-entry-advanced {display:none!important}
+  #flightForm.quick-entry-active .section-title {margin-top:18px}
+}

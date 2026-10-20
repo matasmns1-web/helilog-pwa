@@ -52,26 +52,33 @@ function prepare(){
  let gate=fs.readFileSync(path.join(source,"auth-gate.js"),"utf8");
  let manifest=JSON.parse(fs.readFileSync(path.join(source,"manifest.webmanifest"),"utf8"));
  let worker=fs.readFileSync(path.join(source,"service-worker.js"),"utf8");
- must(index.includes("HeliLog V2.20"),"HTML must be V2.20");
- must(manifest.name.includes("V2.20"),"manifest release version mismatch");
- must(worker.includes("helilog-v2-20-dark-cockpit-3"),"offline cache release version mismatch");
+ const titleMatch=index.match(/<title>HeliLog (V2\.\d+(?:\.\d+)?) — ([^<]+) · Test<\/title>/);
+ must(titleMatch,"expected an explicitly labelled test release title");
+ const version=titleMatch[1];
+ must(index.includes('class="brand-version">'+version+' · TEST ENVIRONMENT'),"test release header mismatch");
+ must(manifest.name.startsWith('HeliLog '+version+' —')&&manifest.name.endsWith(' Test'),
+  "manifest release version mismatch");
+ const testCache=worker.match(/^const CACHE='(helilog-v2-[a-z0-9-]+)';/m)?.[1];
+ must(testCache&&testCache.startsWith('helilog-'+version.toLowerCase().replace('.','-')+'-'),
+  "offline cache release version mismatch");
  const cfg="/* Generated production candidate public configuration; no secret keys. */\n"+
  "window.HeliLogCloudConfig = Object.freeze("+JSON.stringify({
   supabaseUrl:apiOrigin,publishableKey:key,authEnabled:true,environment:"production",
   inviteOnly:true,productionOrigin:webOrigin
  },null,2)+");\n";
  // The genuine local Test Mode warning remains untouched; this is not regulatory approval.
- index=index.replace("HeliLog V2.20 — Dark Cockpit · Test","HeliLog V2.20 — Private Beta Candidate")
-   .replace("V2.20 · TEST ENVIRONMENT","V2.20 · PRIVATE BETA");
+ index=index.replace(titleMatch[0],'<title>HeliLog '+version+' — Private Beta Candidate</title>')
+   .replace(version+' · TEST ENVIRONMENT',version+' · PRIVATE BETA');
  gate=gate.replaceAll(" · Private pilot logbook test"," · Private beta logbook")
   .replaceAll("TEST Supabase database","private Supabase database")
   .replaceAll("TEST snapshot","private snapshot");
- manifest.name="HeliLog V2.20 — Private Beta";
+ manifest.name="HeliLog "+version+" — Private Beta";
  manifest.short_name="HeliLog";
  manifest.description="Private beta helicopter pilot logbook; not independently certified for regulatory recordkeeping.";
- worker=worker.replace("const CACHE='helilog-v2-20-dark-cockpit-3';",
-                        "const CACHE='helilog-v2-20-production-candidate-1';");
- must(worker.includes("helilog-v2-20-production-candidate-1"),"distinct production PWA cache missing");
+ const productionCache='helilog-'+version.toLowerCase().replace('.','-')+'-production-candidate-1';
+ worker=worker.replace("const CACHE='"+testCache+"';","const CACHE='"+productionCache+"';");
+ must(worker.includes(productionCache)&&!worker.includes("const CACHE='"+testCache+"';"),
+  "distinct production PWA cache missing");
  // Clean fixed build directory. Never overwrite the V2 source or V1 root.
  if(fs.existsSync(target))fs.rmSync(target,{recursive:true,force:true});
  fs.mkdirSync(target,{recursive:true});
@@ -90,7 +97,7 @@ function prepare(){
  for(const f of styles)must(fs.existsSync(path.join(target,f)),"missing linked stylesheet "+f);
  for(const f of ["index.html","manifest.webmanifest","service-worker.js","cloud-foundation.js"])
   must(fs.statSync(path.join(target,f)).size>50,"empty release asset "+f);
- console.log("HeliLog V2.20 release candidate verified: "+files.length+" static assets");
+ console.log("HeliLog "+version+" release candidate verified: "+files.length+" static assets");
  console.log("Production origin: "+webOrigin+" | distinct Supabase project: "+project[1]);
  console.log("Build output: "+target+" (NOT DEPLOYED)");
 }

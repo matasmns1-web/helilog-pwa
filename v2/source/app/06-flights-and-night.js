@@ -80,7 +80,25 @@ function simulatorDetails(id){
      <p class="mini">Printed only in Synthetic Training Devices and Remarks columns. Does not add to actual helicopter flight time.</p></div>`+
     correctionHistoryMarkup(id);
 }
-function add(editId=null){
+function quickAdd(){add(null,true);}
+function setFlightEntryMode(mode){
+  const form=document.getElementById('flightForm');
+  if(!form || editingFlightId)return;
+  const quick=mode==='quick';
+  form.classList.toggle('quick-entry-active',quick);
+  form.querySelectorAll('[data-entry-mode]').forEach(button=>{
+    const selected=button.dataset.entryMode===(quick?'quick':'full');
+    button.classList.toggle('primary',selected);
+    button.setAttribute('aria-pressed',String(selected));
+  });
+  const hint=document.getElementById('quickEntryHint');
+  if(hint)hint.hidden=!quick;
+  const description=document.getElementById('flightEntryModeDescription');
+  if(description)description.textContent=quick
+    ? 'Essential fields first. Open Full details for multi-pilot, different landing counts or specialist time.'
+    : 'All flight fields are available. Your entries are kept when switching modes.';
+}
+function add(editId=null,quick=false){
 if(editId && isArchivedFlight(editId)&&correctingArchivedId!==editId){
   alert('This flight is in a signed batch. Use Propose correction.');return;
 }
@@ -89,14 +107,23 @@ let existing=editingFlightId?effectiveFlight(S.flights.find(f=>f.id===editingFli
 if(editingFlightId && !existing){editingFlightId=null; return go('logbook');}
 let editing=!!existing;
 app.innerHTML=header(
-  editing?'Edit flight':'Add flight',
-  editing?'Update the existing flight record':'Structured around your paper logbook',
+  editing?'Edit flight':quick?'Quick flight entry':'Add flight',
+  editing?'Update the existing flight record':quick?'A shorter way to record your flight':'Structured around your paper logbook',
   `<button class="btn" onclick="cancelFlightForm('${editing?existing.id:''}')">Cancel</button>`
 )+`<form id="flightForm" class="card form" novalidate>
 <div id="formError" class="errorbox"></div>
 ${(!!editId&&correctingArchivedId===editId)?`<div class="note"><b>Archived correction</b>: the signed page stays unchanged. Revised values only take effect after you print, sign and confirm a correction addendum.</div>`:editing?`<div class="editnotice">Editing an unarchived flight.</div>`:''}
 
-${!editing?`<div class="choice-row" style="margin-bottom:16px">
+${!editing?`<div class="quick-entry-switch" role="group" aria-label="Flight entry mode">
+  <button class="btn" type="button" data-entry-mode="quick" aria-pressed="false" onclick="setFlightEntryMode('quick')">⚡ Quick entry</button>
+  <button class="btn" type="button" data-entry-mode="full" aria-pressed="true" onclick="setFlightEntryMode('full')">Full details</button>
+</div>
+<p class="mini quick-entry-description" id="flightEntryModeDescription"></p>
+<div class="quick-entry-hint" id="quickEntryHint" hidden>
+  <b>Quick-entry defaults:</b> Single-pilot; landing counts follow take-offs; instructor and specialised-operation time are off. Night time is calculated automatically when location data is available. Change any of these under Full details.
+</div>`:''}
+
+${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16px">
    <button class="btn primary" type="button">Helicopter flight ✓</button>
    <button class="btn" type="button" onclick="if(confirmLeaveFlightForm()){clearFlightFormGuard();addSimulator()}">Simulator session</button>
  </div>`:''}
@@ -156,8 +183,8 @@ ${!editing?`<div class="choice-row" style="margin-bottom:16px">
   </div>
 </div>
 
-<div class="section-title">Aircraft and pilot configuration</div>
-<div class="formgrid">
+<div class="section-title quick-entry-advanced">Aircraft and pilot configuration</div>
+<div class="formgrid quick-entry-advanced">
   <div class="field">
     <label>Aircraft engine configuration</label>
     <div id="aircraftEngineInfo" class="engine-indicator"></div>
@@ -177,8 +204,8 @@ ${!editing?`<div class="choice-row" style="margin-bottom:16px">
 <div class="formgrid">
   <div class="field"><label>Take-offs day</label><input id="toDay" type="number" min="0" value="0"></div>
   <div class="field"><label>Take-offs night</label><input id="toNight" type="number" min="0" value="0"></div>
-  <div class="field"><label>Landings day</label><input id="ldgDay" type="number" min="0" value="0"><div class="mini">Automatically follows take-offs unless overwritten.</div></div>
-  <div class="field"><label>Landings night</label><input id="ldgNight" type="number" min="0" value="0"><div class="mini">Automatically follows take-offs unless overwritten.</div></div>
+  <div class="field quick-entry-advanced"><label>Landings day</label><input id="ldgDay" type="number" min="0" value="0"><div class="mini">Automatically follows take-offs unless overwritten.</div></div>
+  <div class="field quick-entry-advanced"><label>Landings night</label><input id="ldgNight" type="number" min="0" value="0"><div class="mini">Automatically follows take-offs unless overwritten.</div></div>
 </div>
 
 <div class="section-title">Operational condition time</div>
@@ -193,14 +220,14 @@ ${!editing?`<div class="choice-row" style="margin-bottom:16px">
 </div>
 
 <div id="nightCalcStatus" class="note" role="status" aria-live="polite" style="margin-top:10px">Enter flight date, UTC times and aerodrome coordinates to calculate night time.</div>
-<div class="mini" style="margin-top:8px">Night is based on the Sun’s centre 6° below the horizon (civil twilight), not sunset. En-route calculations use a direct-line estimate; always check applicable national rules and official twilight data.</div>
+<div class="mini quick-entry-advanced" style="margin-top:8px">Night is based on the Sun’s centre 6° below the horizon (civil twilight), not sunset. En-route calculations use a direct-line estimate; always check applicable national rules and official twilight data.</div>
 
 <div class="checkbox-row">
   <input id="crossCountry" type="checkbox">
   <label for="crossCountry">Cross-country flight</label>
 </div>
 
-<details id="moreDetails"><summary>More details</summary>
+<details id="moreDetails" class="quick-entry-advanced"><summary>More details</summary>
   <div style="border:1px solid var(--line);border-radius:9px;padding:10px;max-width:420px;margin-top:12px">
     <label style="display:flex;gap:8px;align-items:start;cursor:pointer">
       <input id="instructorCheck" type="checkbox" onchange="toggleInstructorTime()">
@@ -278,6 +305,10 @@ if(existing){
   if($('#instructorCheck').checked || Object.keys(existing.specialOps||{}).length) $('#moreDetails').open=true;
 }else{
   $('#date').value=formatDate(new Date().toISOString().slice(0,10));
+  if(quick){
+    const lastFlight=effectiveFlights().filter(f=>!isSimulatorSession(f)).sort(compareFlightsNewest)[0];
+    if(lastFlight && S.aircraft.some(a=>a.id===lastFlight.aid)) $('#aid').value=lastFlight.aid;
+  }
 }
 
 updateSpecialOpsPreview();
@@ -304,6 +335,7 @@ if(flightForm){
   flightForm.addEventListener('change',markFlightFormDirty);
 }
 flightFormDirty=false;
+if(!editing)setFlightEntryMode(quick?'quick':'full');
 }
 function toggleInstructorTime(){
   const checked=!!document.getElementById('instructorCheck')?.checked;
