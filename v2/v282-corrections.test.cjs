@@ -52,10 +52,10 @@ function server(){
 function device(s,keep){
  const store=keep?.store||new Map();
  let data=keep?.data||{aircraft:[],flights:[],printArchive:{firstPage:1,batches:[],corrections:[]},
-  pilot:{},broughtForward:{},broughtForwardByType:[],broughtForwardImported:false,broughtForwardImportedAt:""};
+  pilot:{},broughtForward:{},broughtForwardByType:[],broughtForwardImported:false,broughtForwardImportedAt:"",siteLocations:[]};
  store.set("helilog_v24_ext_"+USER,"true");
  const settings=[["pilot",{}],["broughtForward",{}],["broughtForwardByType",[]],
-  ["broughtForwardImported",false],["broughtForwardImportedAt",""]];
+  ["broughtForwardImported",false],["broughtForwardImportedAt",""],["siteLocations",[]]];
  const versions=store.has("helilog_v23_versions_"+USER)?
   JSON.parse(store.get("helilog_v23_versions_"+USER)):{};
  const mirrors=store.has("helilog_v23_mirror_"+USER)?

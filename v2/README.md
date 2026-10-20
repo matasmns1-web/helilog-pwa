@@ -1,10 +1,28 @@
 # HeliLog V2 — Development
 
-**Current version: V2.17 — Manual account onboarding; email/password only, Google login removed.** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
+**Current version: V2.19 — Aerodromes & Helipads directory, ICAO lookup and explicit UTC flight-time labels.** Authenticated pilots can now explicitly enable sync of profiles, qualifications, medical details, signed endorsements and previous totals, while V2.3 aircraft/flight synchronization continues. Cloud-confirmed paper archives are web-only. Start with [V2.4-TEST-GUIDE.md](V2.4-TEST-GUIDE.md) before activating your devices; old browser data is not imported automatically. This is test-only, not a compliant production release.
 
 **Prior release: V2.1.** The complete V1.43.2 interface is restored with V2 endorsement print archiving; installed-app signing is separate from web-only print/archive management. See [FULL-V1-INTERFACE.md](FULL-V1-INTERFACE.md) for parity scope, testing instructions and data safety.
 
 **Earlier modular prototype:** [alpha.html](alpha.html) remains available with its own test data.
+
+## V2.19 — Aerodrome & Helipad Settings (TEST)
+
+- Moved all coordinate entry out of **Add Flight** to **Settings → Aerodromes & Helipads**. The flight form shows the automatically calculated night minutes and a clear Settings instruction if a site is unknown.
+- Enter a standard **ICAO code** to use bundled WGS84 aerodrome coordinates instantly offline. Other four-letter ICAO airports are resolved online via the [OpenFlights worldwide airport database](https://openflights.org/data.php) (ODbL, reference only; approx. 1 MB downloaded once per app session). An absent/offline or outdated result never silently invents coordinates.
+- Save a custom landing site or helipad code (2–12 safe characters) and WGS84 latitude/longitude once on the Settings page; custom site directory syncs privately per account as a settings record and is available offline thereafter.
+- Existing flight-specific coordinate snapshots remain untouched, and existing flight night time remains manual unless the pilot explicitly enables automatic calculation. The automatic calculation still requires resolvable sites; otherwise enter coordinates in Settings or use the manual override.
+- Added the explicit **Departure time (UTC, 24h)** and **Arrival time (UTC, 24h)** labels, retaining HHmm / HH:mm and the custom 24-hour picker.
+- Adds asynchronous ICAO resolver tests, malformed site validation, private location-sync tests and PWA offline cache coverage. **Production main remains V2.17** until user validation.
+
+## V2.18 — Automatic night time (TEST)
+
+- Calculate NIGHT minutes from the **centre of the Sun 6° below the horizon** (civil twilight) in UTC. Works offline, including local flights, cross-midnight flights and a straight-line departure/arrival position estimate.
+- Bundled aerodrome reference coordinates for EYVI, EYKA, EYPA, EYSA, EYKL, EYMO, EYKS, EYVK, EYPN, EYPR, EYVP, EYRO, EYRD, EYMM, EYNI, EVRA, EETN and EPWA (OurAirports and Lithuania 2026 AIP aerodrome/ATZ coordinates). Other bases use manually entered WGS84 coordinates, preserved in the flight.
+- Live preview shows night minutes, twilight boundaries and distance; each flight stores automatic/manual mode and the reference coordinates. Manual override remains available.
+- **Historical flights remain manual unless opted in.** An automatic save without valid coordinates is blocked instead of silently recording zero. Night landings/take-offs are not changed.
+- Estimates depend on aerodrome locations, a straight-line approximation and the civil-twilight convention; actual track and national authority rules may differ. Test manually against official publications before relying on values.
+- This release updates the TEST website only. Production main remains V2.17 until acceptance tests and separate promotion.
 
 ## V2.17 — Manual friends-only beta (TEST)
 
