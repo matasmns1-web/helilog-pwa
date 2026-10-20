@@ -130,7 +130,7 @@ test("Settings is the only Cloud/Backup top-level navigation entry and nested ro
  assert.doesNotMatch(more,/onclick="go\('cloud'\)"|onclick="go\('backups'\)"/);
  assert.match(html,/totals,profile,settings,locations:v219LocationsPage,backups,cloud,testmode,mobilemore/);
  assert.match(html,/moreViews=\[[^\]]*'settings','locations','backups','cloud'/);
- assert.match(html,/b.dataset.v==='settings' && \(v==='cloud'\|\|v==='backups'\|\|v==='locations'\|\|v==='locations'\)/);
+ assert.match(html,/b.dataset.v==='settings' && \(v==='cloud'\|\|v==='backups'\|\|v==='locations'\)/);
  assert.match(cloud,/go\('settings'\)/);
  assert.match(cloud,/go\(\\'backups\\'\)/);
 });
