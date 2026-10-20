@@ -81,8 +81,8 @@ test("flight form preserves historical night totals and requires opt-in automati
  assert.match(index,/if\(!nightPreview\.ok\) return showFormError/);
  assert.match(index,/function v218PlaceChanged/);
  assert.match(index,/v218InitNight\(existing\)/);
- assert.match(index,/\.\/night-calculation\.js\?v=2\.19-night-1/);
- assert.match(sw,/night-calculation\.js\?v=2\.19-night-1/);
+ assert.match(index,/\.\/night-calculation\.js\?v=2\.19-locations-1/);
+ assert.match(sw,/night-calculation\.js\?v=2\.19-locations-1/);
 });
 
 test("published Lithuania AIP October 2026 Vilnius civil twilight table agrees within five minutes",()=>{
