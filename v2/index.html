@@ -3455,7 +3455,10 @@ function calc(){
  * online, the optional OpenFlights global index. */
 function v219Sites(){
  if(!Array.isArray(S.siteLocations))S.siteLocations=[];
- return S.siteLocations;
+ // Account data is not trusted HTML. Restrict inline action identifiers to
+ // validated site codes and reject malformed cloud/imported location records.
+ return S.siteLocations.filter(x=>x&&typeof x.code==='string'&&
+  /^[A-Z0-9_-]{2,12}$/.test(x.code)&&window.HeliLogNight.coordinates(x));
 }
 const v219Requested=new Set();
 function v219LocalPoint(code){
