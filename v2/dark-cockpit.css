@@ -1,0 +1,490 @@
+/* HeliLog V2.20 — Dark Cockpit
+   Screen-only presentation layer. Never apply to printed logbook pages.
+   Keep functional styles and application behaviour in their original files. */
+@media screen {
+  :root {
+    color-scheme: dark;
+    --bg: #090f1b;
+    --panel: #141f30;
+    --ink: #eaf3fa;
+    --muted: #91a5b9;
+    --line: #2b3c50;
+    --dark: #101b2a;
+    --soft: #1c2b3d;
+    --cockpit-surface: #101a29;
+    --cockpit-raised: #1b2b3d;
+    --cockpit-inset: #0d1826;
+    --cockpit-accent: #43d6c5;
+    --cockpit-accent-bright: #81eee0;
+    --cockpit-cyan: #84bddf;
+    --cockpit-warning: #efc478;
+    --cockpit-radius: 16px;
+  }
+
+  html {background:#090f1b;scrollbar-color:#354c62 #101a29;}
+  body {
+    color:var(--ink);
+    background:
+      radial-gradient(ellipse 65% 48% at 78% -12%,rgba(41,116,135,.19),transparent 75%),
+      linear-gradient(152deg,#0d1725 3%,#09111e 64%,#0b1522);
+    font-family:Inter,"Segoe UI Variable",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    line-height:1.48;
+  }
+  ::selection {background:#257f81;color:#fff;}
+  button,input,select,textarea {font-family:inherit;}
+  :is(button,input,select,textarea,summary):focus-visible {
+    outline:2px solid var(--cockpit-accent-bright);
+    outline-offset:3px;
+  }
+  a {color:var(--cockpit-accent-bright);}
+  a:hover {color:#b7fbf3;}
+
+  /* Navigation — a restrained flight-deck instrument rail. */
+  aside {
+    width:248px;
+    padding:28px 15px 23px;
+    background:linear-gradient(178deg,#152235 0%,#0d1828 57%,#0a1422 100%);
+    border-right:1px solid #314559;
+    box-shadow:12px 0 46px rgba(0,0,0,.17);
+  }
+  .brand {
+    padding:0 12px 24px;
+    border-bottom:1px solid rgba(151,183,207,.15);
+    margin-bottom:23px;
+    color:#f2fbff;
+    font-size:25px;
+    font-weight:800;
+    letter-spacing:-.045em;
+    line-height:1.2;
+  }
+  .brand .brand-symbol {
+    width:41px;height:41px;
+    display:inline-flex;align-items:center;justify-content:center;
+    margin-right:9px;
+    vertical-align:middle;
+    border:1px solid rgba(76,218,202,.47);
+    border-radius:12px;
+    background:linear-gradient(135deg,rgba(51,192,184,.22),rgba(43,101,139,.08));
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.035);
+    font-size:23px;
+  }
+  .brand .brand-wordmark {vertical-align:middle;}
+  .brand .brand-version {
+    display:flex;
+    gap:7px;
+    align-items:center;
+    margin:13px 0 0 2px;
+    color:#93abbc;
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+  }
+  .brand .brand-version::before {
+    content:"";width:7px;height:7px;border-radius:50%;
+    background:var(--cockpit-accent);
+    box-shadow:0 0 12px rgba(67,214,197,.6);
+  }
+  .nav-group-label {
+    margin:25px 12px 9px;
+    color:#647f97;
+    font-size:10px;
+    line-height:1.5;
+    font-weight:800;
+    letter-spacing:.17em;
+    text-transform:uppercase;
+    user-select:none;
+  }
+  aside nav button {
+    position:relative;
+    min-height:43px;
+    margin:3px 0;
+    padding:10px 13px;
+    border:1px solid transparent;
+    border-radius:10px;
+    color:#aabed0;
+    background:transparent;
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:.005em;
+    transition:background .15s ease,border-color .15s ease,color .15s ease;
+  }
+  aside nav button:hover {background:#1b2e42;border-color:#2b4a60;color:#edfaff;}
+  aside nav button.on {
+    background:linear-gradient(95deg,rgba(49,161,159,.18),rgba(31,70,93,.25));
+    border-color:rgba(70,190,184,.25);
+    color:#bdfdf3;
+  }
+  aside nav button.on::before {
+    content:"";position:absolute;left:-15px;top:9px;bottom:9px;width:3px;
+    border-radius:0 3px 3px 0;background:var(--cockpit-accent);
+    box-shadow:0 0 12px rgba(67,214,197,.35);
+  }
+
+  /* Page framework and headings */
+  main {
+    margin-left:248px;
+    width:calc(100% - 248px);
+    max-width:1560px;
+    padding:35px clamp(24px,3vw,46px) 60px;
+    min-height:100vh;
+  }
+  .top {
+    align-items:center;
+    margin-bottom:23px;
+    padding:4px 0 21px;
+    border-bottom:1px solid rgba(143,174,198,.16);
+  }
+  .top h1 {
+    margin:0;
+    color:#f1f8ff;
+    font-size:clamp(25px,2.25vw,34px);
+    font-weight:750;
+    line-height:1.16;
+    letter-spacing:-.04em;
+  }
+  .top .sub {margin-top:8px;color:#94adc1;font-size:13px;}
+  h2,h3 {color:#edf5fa;letter-spacing:-.018em;}
+  p {line-height:1.6;}
+  .muted,.mini,.sub,.label {color:var(--muted);}
+  .mini {line-height:1.6;}
+  .section-title {color:#b2d4e0;font-size:12px;letter-spacing:.09em;text-transform:uppercase;}
+
+  /* Cards and key metrics */
+  .card,.profile-accordion {
+    background:linear-gradient(152deg,#172437,#111d2c 100%);
+    border:1px solid #2a3c50;
+    border-radius:var(--cockpit-radius);
+    box-shadow:0 13px 27px rgba(0,0,0,.11),inset 0 1px rgba(255,255,255,.025);
+  }
+  .card {padding:21px 22px;}
+  .card .card {box-shadow:none;background:linear-gradient(155deg,#1c2f43,#18283a);}
+  .head {gap:12px;}
+  .head h2 {font-size:16px;font-weight:750;letter-spacing:-.018em;}
+  .head .muted {font-size:12px;margin-top:5px;}
+  .grid {gap:15px;}
+  .stats,.kpi-grid {gap:11px;}
+  .stats > .card,.kpi-grid > .card {
+    position:relative;
+    min-width:0;
+    padding:20px;
+    background:linear-gradient(155deg,#203449 0%,#17293b 100%);
+    border:1px solid #365065;
+    overflow:hidden;
+  }
+  .stats > .card::before,.kpi-grid > .card::before {
+    content:"";
+    position:absolute;top:0;left:0;right:0;height:2px;
+    background:linear-gradient(90deg,rgba(67,214,197,.85),rgba(67,214,197,0));
+  }
+  .stats > .card:first-child,.kpi-grid > .card:first-child {
+    background:linear-gradient(130deg,#163c48 0%,#16303b 100%);
+    border-color:#3e7076;
+  }
+  .label {
+    font-size:10px;
+    font-weight:780;
+    letter-spacing:.11em;
+    text-transform:uppercase;
+  }
+  .big {
+    color:#eafdfb;
+    font-size:clamp(25px,2.65vw,33px);
+    font-weight:770;
+    letter-spacing:-.045em;
+    font-variant-numeric:tabular-nums;
+    line-height:1.2;
+  }
+  .stats > .card:first-child .big,.kpi-grid > .card:first-child .big {color:#86f1e2;}
+  .dashboard-range {gap:8px;margin-bottom:16px;}
+  .dashboard-range button.on {background:#265e65;color:#bffff2;border-color:#3f9c9c;}
+  .dashboard-actions {gap:11px;}
+  .dashboard-action {min-height:88px;}
+  .dashboard-action b {font-size:14px;}
+  .reminder-item,.aircraft-summary-row,.endorsement-mini {padding:12px 0;}
+  .reminder-days.soon {color:#f2c678;}
+  .reminder-days.past {color:#ffa69e;}
+  .more-link {transition:border-color .15s,transform .15s,background .15s;}
+  .more-link:hover {border-color:#51a6a8;background:#1d3344;transform:translateY(-1px);}
+
+  /* Tables and rows: readable at density expected of an operational logbook. */
+  table {color:var(--ink);font-variant-numeric:tabular-nums;}
+  th,td {border-bottom:1px solid #2d4052;padding:12px 11px;}
+  th {
+    color:#91acbf;
+    font-size:10px;
+    font-weight:790;
+    text-transform:uppercase;
+    letter-spacing:.07em;
+  }
+  tbody tr {transition:background .12s ease;}
+  tbody tr:nth-child(even) {background:rgba(120,163,191,.035);}
+  tbody tr.click:hover {background:rgba(67,214,197,.085);}
+  td b {color:#f2faff;}
+  .tag,.badge {
+    background:#213a4a;
+    border:1px solid #355d69;
+    color:#9aece0;
+    font-weight:750;
+  }
+  .badge.gray {background:#223246;border-color:#33465a;color:#b6c7d5;}
+  .filtermeta {border-color:var(--line);}
+  .resultcount {color:#daf4f1;}
+
+  /* Buttons, inputs, and focus treatment. */
+  .btn {
+    color:#d9eaf6;
+    background:#1c2b3d;
+    border:1px solid #3a5065;
+    border-radius:10px;
+    padding:10px 15px;
+    font-size:13px;
+    font-weight:720;
+    transition:background .14s,border-color .14s,transform .14s;
+  }
+  .btn:hover {background:#273d50;border-color:#547c8c;}
+  .btn:active {transform:translateY(1px);}
+  .btn.primary,.primary {
+    background:linear-gradient(137deg,#56decb,#2ebcad);
+    color:#052b32;
+    border-color:#5ce9d3;
+    font-weight:810;
+    box-shadow:0 5px 16px rgba(36,164,154,.13);
+  }
+  .btn.primary:hover,.primary:hover {background:linear-gradient(137deg,#82f0df,#4dd2be);border-color:#86f3e1;}
+  .dangerbtn {background:#38252f;border-color:#88505c;color:#ffc0b9;}
+  .dangerbtn:hover {background:#512c36;border-color:#d37d80;}
+  .field label,.filterfield label {
+    color:#b4c9da;
+    font-size:12px;
+    font-weight:730;
+    letter-spacing:.015em;
+  }
+  .filterfield label {font-size:10px;letter-spacing:.08em;}
+  :is(.field input,.field select,.field textarea,.filterfield input,.filterfield select,.timepicker select,.timepicker-actions button) {
+    border:1px solid #354a60;
+    background:#0e1a2a;
+    color:#f1faff;
+    border-radius:9px;
+    box-shadow:inset 0 1px 3px rgba(0,0,0,.1);
+  }
+  /* Existing PIC-role and night-auto handlers set a light inline background.
+     Keep their read-only behaviour, but never let it break the cockpit theme. */
+  .field input:not([type=checkbox]):not([type=radio]),
+  .filterfield input {
+    background:#0e1a2a !important;
+    -webkit-text-fill-color:#f1faff;
+  }
+  .field input[readonly]:not([type=checkbox]):not([type=radio]),
+  .field input:disabled:not([type=checkbox]):not([type=radio]) {
+    background:#203746 !important;
+    color:#bad3dc;
+    -webkit-text-fill-color:#bad3dc;
+    opacity:1;
+  }
+  /* The legacy form assigns width:100% to all inputs, including checkboxes.
+     Restore natural control sizes for touch and keyboard use. */
+  .field input[type=checkbox],.field input[type=radio] {
+    width:18px;
+    height:18px;
+    min-height:18px;
+    flex:0 0 18px;
+    margin:0;
+    padding:0;
+    box-shadow:none;
+  }
+  :is(input,textarea)::placeholder {color:#72899d;opacity:1;}
+  select {color-scheme:dark;}
+  :is(.field input,.field select,.field textarea,.filterfield input,.filterfield select):focus {
+    border-color:#50bbae;
+    background:#122338;
+  }
+  input[type=checkbox],input[type=radio] {accent-color:#43d6c5;}
+  .checkbox-row input[type=checkbox] {accent-color:#43d6c5;}
+  .timebtn {color:#9bd9da;}
+  .timebtn:hover {background:#273f50;}
+  .timepicker {
+    color:#eaf3fa;
+    background:#19293a;
+    border:1px solid #476175;
+    box-shadow:0 16px 42px rgba(0,0,0,.4);
+  }
+  .timepicker-actions .settime {background:#2bbda9;color:#062d34;border-color:#3bddc7;}
+  .helilog-date-icon {color:#8aafc1;}
+  .fileinput {background:#111f2e;border-color:#547185;color:var(--muted);}
+  input[type=file]::file-selector-button {
+    margin-right:12px;border:1px solid #496d7e;
+    border-radius:8px;background:#284255;color:#dff9f7;padding:8px 11px;
+    cursor:pointer;
+  }
+
+  /* Support surfaces, alerts, signatures and archived record cards. */
+  .note,.editnotice,.importsummary,.engine-indicator,.signer-card {
+    color:#bfd3e1;
+    background:#182b3b;
+    border:1px solid #355266;
+    border-radius:10px;
+  }
+  .v23-syncbanner .note {background:#132b36;border-color:#295565;}
+  .v23-syncbanner .note > b {color:#86eddf;}
+  /* Cloud sync sits next to the page heading, not in a full-width banner.
+     Native details/summary provides a touch and keyboard accessible bubble. */
+  .top {gap:16px;flex-wrap:wrap;}
+  .v220-page-heading {
+    display:flex;align-items:center;justify-content:space-between;
+    flex:1 1 400px;min-width:0;gap:15px;
+  }
+  .v220-page-heading > div:first-child {min-width:0;}
+  .v220-top-actions {
+    display:flex;gap:8px;flex-wrap:wrap;
+    justify-content:flex-end;align-items:center;
+  }
+  .v23-syncbanner {margin:0;position:relative;flex:0 0 auto;z-index:65;}
+  details.v220-sync-pop {position:relative;border:0;padding:0;margin:0;background:transparent;}
+  details.v220-sync-pop > summary {
+    display:inline-flex;align-items:center;gap:7px;min-height:34px;
+    list-style:none;cursor:pointer;border:1px solid #387367;
+    border-radius:999px;padding:6px 10px;color:#b8f9e8;
+    background:#173a3d;font-size:12px;font-weight:750;
+    white-space:nowrap;line-height:1.2;
+  }
+  details.v220-sync-pop > summary::-webkit-details-marker {display:none;}
+  details.v220-sync-pop > summary:hover {background:#1c4b4b;border-color:#58a69a;}
+  .v220-sync-icon {font-size:16px;line-height:1;color:#7fe3d5;}
+  .v220-sync-dot {width:6px;height:6px;border-radius:50%;background:#65e3b7;}
+  .v220-sync-chevron {color:#8eacb3;font-size:13px;transition:transform .12s;}
+  details.v220-sync-pop[open] .v220-sync-chevron {transform:rotate(180deg);}
+  details.v220-sync-pop[data-tone="warn"] > summary {
+    background:#40331f;border-color:#8c723e;color:#f5d7a1;
+  }
+  details.v220-sync-pop[data-tone="warn"] .v220-sync-dot {background:#e9b96c;}
+  details.v220-sync-pop[data-tone="problem"] > summary {
+    background:#432a35;border-color:#8d515f;color:#ffc5bd;
+  }
+  details.v220-sync-pop[data-tone="problem"] .v220-sync-dot {background:#ff958a;}
+  details.v220-sync-pop[data-tone="busy"] > summary {
+    background:#20344a;border-color:#526c87;color:#bfdcf4;
+  }
+  details.v220-sync-pop[data-tone="busy"] .v220-sync-dot {background:#86bded;}
+  .v220-sync-bubble {
+    position:absolute;top:calc(100% + 9px);right:0;
+    z-index:80;width:310px;max-width:calc(100vw - 28px);
+    padding:15px 16px;
+    border:1px solid #456278;border-radius:13px;
+    color:#dbe9f4;background:#172a3b;
+    box-shadow:0 20px 48px rgba(0,0,0,.45);
+    white-space:normal;font-size:12px;font-weight:400;
+  }
+  .v220-sync-bubble b {color:#e9f7f8;font-size:13px;}
+  .v220-sync-bubble .mini {margin-top:7px;overflow-wrap:anywhere;}
+  .successbox {background:#10372f;border-color:#256d59;color:#a7f5d4;}
+  .errorbox {background:#422831;border-color:#97505c;color:#ffcac2;}
+  .field-error,.importerrors {color:#ffaaa3;}
+  .signature-placeholder,.empty-state {
+    color:#9db4c4;background:#152637;border-color:#426075;
+  }
+  .qual-item,.endorsement-card,.choice-option {
+    background:#18283a;border-color:#334b60;color:#e6f2f8;
+  }
+  .choice-option:has(input:checked) {background:#1c454a;border-color:#4aada5;}
+  .profile-accordion > summary {color:#e8f7fb;}
+  .profile-accordion > summary:hover {background:rgba(111,164,192,.065);}
+  .profile-accordion-body,.profileline {border-color:var(--line);}
+  details:not(.profile-accordion) {background:#172536;border-color:#354b60;}
+  details:not(.profile-accordion) > summary {color:#dbe9f4;}
+  .modalbackdrop {background:rgba(3,8,16,.78);backdrop-filter:blur(5px);}
+  .modal {
+    background:linear-gradient(160deg,#1b2c3e,#101e2e);
+    border:1px solid #436177;
+    border-radius:18px;
+    box-shadow:0 25px 70px rgba(0,0,0,.52);
+    color:#edf6fb;
+  }
+  .modal p {color:#b1c4d4;}
+  .actions {border-color:#385063;}
+
+  /* The signature drawing canvas deliberately remains white: ink must be
+     visible and the recorded signature image must remain clean for export. */
+  .signature-canvas-wrap,#signatureCanvas {background:#fff;color:#17202a;}
+
+  /* Authentication is the first surface testers encounter. */
+  html.helilog-locked main {background:transparent;}
+  .v23-auth-container {min-height:calc(100vh - 55px);}
+  .v23-auth-card {
+    position:relative;
+    width:min(100%,464px);
+    padding:38px;
+    color:#eff9fc;
+    border:1px solid #416277;
+    border-radius:21px;
+    background:linear-gradient(149deg,#1b3143,#111f30 65%,#0d1a29);
+    box-shadow:0 25px 80px rgba(0,0,0,.34),0 0 0 1px rgba(0,0,0,.1);
+    overflow:hidden;
+  }
+  .v23-auth-card::before {
+    content:"";position:absolute;left:0;right:0;top:0;height:3px;
+    background:linear-gradient(90deg,#319a9a,#7bf0df 56%,#2d728d);
+  }
+  .v23-auth-card h1 {color:#f0fcfc;letter-spacing:-.025em;}
+  .v23-auth-card .btn.primary {min-height:47px;}
+  .v23-auth-card .muted {color:#a5bece;}
+
+  /* Test status must stay unmistakably different from production. */
+  html.helilog-test-mode main::before {
+    background:#43351e;color:#ffe3a2;border-color:#b48e42;
+    letter-spacing:.075em;
+  }
+  html.helilog-test-mode aside {border-right:3px solid #b88f43;}
+  html.helilog-test-mode .brand::after {color:#f4cd7d;}
+
+  /* Compact, thumb-friendly installed app. */
+  @media (max-width:850px) {
+    main {
+      margin:0;
+      width:100%;
+      padding:calc(21px + env(safe-area-inset-top)) 15px calc(104px + env(safe-area-inset-bottom));
+    }
+    .top {margin-bottom:18px;padding-bottom:17px;}
+    .v220-page-heading {flex:1 1 100%;width:100%;gap:8px;align-items:flex-start;}
+    .v23-syncbanner {padding-top:1px;}
+    details.v220-sync-pop > summary {min-height:32px;padding:5px 9px;gap:5px;}
+    .v220-sync-icon {font-size:15px;}
+    .v220-top-actions {width:100%;justify-content:flex-start;}
+    .top h1 {font-size:26px;}
+    .card {padding:17px;border-radius:13px;}
+    .stats > .card,.kpi-grid > .card {padding:15px 13px;}
+    .big {font-size:clamp(23px,6vw,30px);}
+    .mobile {
+      background:rgba(13,25,39,.96);
+      border-top:1px solid #3a556a;
+      box-shadow:0 -14px 42px rgba(0,0,0,.35);
+      backdrop-filter:blur(20px);
+      padding:7px 7px calc(7px + env(safe-area-inset-bottom));
+    }
+    .mobile button {color:#8eaac0;border-radius:11px;}
+    .mobile button.on {
+      background:linear-gradient(150deg,#24544f,#203944);
+      border:1px solid #367e77;
+      color:#a1f5e7;
+    }
+    .mobile button[data-v="add"] {color:#7ce9d8;}
+    .form .actions {background:#152638;border-color:#334e61;}
+    .v23-auth-container {min-height:80vh;padding:12px 0;}
+    .v23-auth-card {padding:29px 24px;}
+  }
+  @media (min-width:851px) and (max-width:1180px) {
+    aside {width:218px;}
+    main {margin-left:218px;width:calc(100% - 218px);padding:28px 20px 50px;}
+  }
+  @media (max-width:480px) {
+    main {padding-left:11px;padding-right:11px;}
+    .card {padding:14px;}
+    .stats > .card,.kpi-grid > .card {padding:14px 11px;}
+    .top h1 {font-size:24px;}
+    .v23-auth-card {padding:26px 20px;}
+  }
+  @media (prefers-reduced-motion:reduce) {
+    .btn,aside nav button,.more-link,tbody tr {transition:none;}
+  }
+}

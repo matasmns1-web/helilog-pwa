@@ -8,10 +8,11 @@ const fs=require("node:fs");
 const path=require("node:path");
 const root=path.resolve(__dirname,"..");
 const read=p=>fs.readFileSync(path.join(root,p),"utf8");
-test("root runs V2.19 private beta, not the V1 landing page",()=>{
+test("root runs V2.20 private beta, not the V1 landing page",()=>{
  const index=read("index.html");
- assert.match(index,/<title>HeliLog V2\.19 — Private Beta Candidate<\/title>/);
- assert.match(index,/V2\.19 · PRIVATE BETA/);
+ assert.match(index,/<title>HeliLog V2\.20 — Private Beta Candidate<\/title>/);
+ assert.match(index,/V2\.20 · PRIVATE BETA/);
+ assert.match(index,/dark-cockpit\.css\?v=2\.20-cockpit-3/);
  assert.match(index,/src="\.\/cloud-foundation\.js\?v=2\.19-locations-1"/);
  assert.match(index,/src="\.\/auth-gate\.js\?v=2\.19-locations-1"/);
  assert.match(index,/src="\.\/night-calculation\.js\?v=2\.19-locations-1"/);
@@ -42,14 +43,23 @@ test("all root app scripts exist and static assets match source",()=>{
 });
 test("production offline cache and manifest are isolated from TEST and V1",()=>{
  const sw=read("service-worker.js");
- assert.match(sw,/const CACHE='helilog-v2-19-production-candidate-1'/);
+ assert.match(sw,/const CACHE='helilog-v2-20-production-candidate-1'/);
+ assert.match(sw,/dark-cockpit\.css\?v=2\.20-cockpit-3/);
  assert.match(sw,/cloud-config\.js\?v=2\.19-locations-1/);
  assert.match(sw,/aerodrome-lookup\.js\?v=2\.19-locations-1/);
  assert.doesNotMatch(sw,/const CACHE='helilog-v2-19-locations-1'/);
  const manifest=JSON.parse(read("manifest.webmanifest"));
- assert.match(manifest.name,/V2\.19 — Private Beta/);
+ assert.match(manifest.name,/V2\.20 — Private Beta/);
  assert.equal(manifest.scope,"./");
  assert.equal(manifest.start_url,"./index.html");
+});
+test("production cloud status is compact and expandable, with unchanged print logic",()=>{
+ const html=read("index.html"),auth=read("auth-gate.js"),css=read("dark-cockpit.css");
+ assert.match(html,/v220-page-heading/);
+ assert.match(auth,/details class="v220-sync-pop"/);
+ assert.match(auth,/v220-sync-bubble/);
+ assert.match(css,/details\.v220-sync-pop/);
+ assert.equal(read("print.js"),read("v2/print.js"));
 });
 test("old same-origin V1 is available for access/export, not migrated automatically",()=>{
  assert.ok(fs.existsSync(path.join(root,"legacy/v1.43.2/index.html")));

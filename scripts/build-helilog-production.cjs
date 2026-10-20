@@ -40,7 +40,7 @@ function prepare(){
  must(target!==root&&target!==path.parse(target).root,
   "build output cannot be the repository root or filesystem root");
  const files=[
-  "index.html","manifest.webmanifest","service-worker.js",
+  "index.html","dark-cockpit.css","manifest.webmanifest","service-worker.js",
   "apple-touch-icon.png","icon-192.png","icon-512.png",
   "domain.js","night-calculation.js","aerodrome-lookup.js","print.js","endorsement-bridge.js","endorsement-ui.js",
   "cloud-config.js","cloud-foundation.js","cloud-view.js","cloud-sync.js",
@@ -52,26 +52,26 @@ function prepare(){
  let gate=fs.readFileSync(path.join(source,"auth-gate.js"),"utf8");
  let manifest=JSON.parse(fs.readFileSync(path.join(source,"manifest.webmanifest"),"utf8"));
  let worker=fs.readFileSync(path.join(source,"service-worker.js"),"utf8");
- must(index.includes("HeliLog V2.19"),"HTML must be V2.19");
- must(manifest.name.includes("V2.19"),"manifest release version mismatch");
- must(worker.includes("helilog-v2-19"),"offline cache release version mismatch");
+ must(index.includes("HeliLog V2.20"),"HTML must be V2.20");
+ must(manifest.name.includes("V2.20"),"manifest release version mismatch");
+ must(worker.includes("helilog-v2-20-dark-cockpit-3"),"offline cache release version mismatch");
  const cfg="/* Generated production candidate public configuration; no secret keys. */\n"+
  "window.HeliLogCloudConfig = Object.freeze("+JSON.stringify({
   supabaseUrl:apiOrigin,publishableKey:key,authEnabled:true,environment:"production",
   inviteOnly:true,productionOrigin:webOrigin
  },null,2)+");\n";
  // The genuine local Test Mode warning remains untouched; this is not regulatory approval.
- index=index.replace("HeliLog V2.19 — Aerodromes & UTC","HeliLog V2.19 — Private Beta Candidate")
-   .replace("V2.19 · TEST","V2.19 · PRIVATE BETA");
+ index=index.replace("HeliLog V2.20 — Dark Cockpit · Test","HeliLog V2.20 — Private Beta Candidate")
+   .replace("V2.20 · TEST ENVIRONMENT","V2.20 · PRIVATE BETA");
  gate=gate.replaceAll(" · Private pilot logbook test"," · Private beta logbook")
   .replaceAll("TEST Supabase database","private Supabase database")
   .replaceAll("TEST snapshot","private snapshot");
- manifest.name="HeliLog V2.19 — Private Beta";
+ manifest.name="HeliLog V2.20 — Private Beta";
  manifest.short_name="HeliLog";
  manifest.description="Private beta helicopter pilot logbook; not independently certified for regulatory recordkeeping.";
- worker=worker.replace("const CACHE='helilog-v2-19-locations-1';",
-                        "const CACHE='helilog-v2-19-production-candidate-1';");
- must(worker.includes("helilog-v2-19-production-candidate-1"),"distinct production PWA cache missing");
+ worker=worker.replace("const CACHE='helilog-v2-20-dark-cockpit-3';",
+                        "const CACHE='helilog-v2-20-production-candidate-1';");
+ must(worker.includes("helilog-v2-20-production-candidate-1"),"distinct production PWA cache missing");
  // Clean fixed build directory. Never overwrite the V2 source or V1 root.
  if(fs.existsSync(target))fs.rmSync(target,{recursive:true,force:true});
  fs.mkdirSync(target,{recursive:true});
@@ -86,9 +86,11 @@ function prepare(){
  }
  const links=[...index.matchAll(/<script[^>]+src="\.\/([^"?]+)(?:\?[^"]*)?"/g)].map(x=>x[1]);
  for(const f of links)must(fs.existsSync(path.join(target,f)),"missing linked script "+f);
+ const styles=[...index.matchAll(/<link[^>]+rel="stylesheet"[^>]+href="\.\/([^"?]+)(?:\?[^\"]*)?"/g)].map(x=>x[1]);
+ for(const f of styles)must(fs.existsSync(path.join(target,f)),"missing linked stylesheet "+f);
  for(const f of ["index.html","manifest.webmanifest","service-worker.js","cloud-foundation.js"])
   must(fs.statSync(path.join(target,f)).size>50,"empty release asset "+f);
- console.log("HeliLog V2.19 release candidate verified: "+files.length+" static assets");
+ console.log("HeliLog V2.20 release candidate verified: "+files.length+" static assets");
  console.log("Production origin: "+webOrigin+" | distinct Supabase project: "+project[1]);
  console.log("Build output: "+target+" (NOT DEPLOYED)");
 }

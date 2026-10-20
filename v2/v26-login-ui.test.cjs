@@ -71,13 +71,13 @@ test("Log out lives in Profile only; it is not in the common header or mobile Mo
  assert.match(auth,/unsynchronized change\(s\) remain saved/);
 });
 
-test("PWA version and references are consistent for the V2.19 update",()=>{
- assert.match(html,/<title>HeliLog V2\.19/);
- assert.match(html,/V2\.19 · TEST/);
- assert.equal(manifest.name,"HeliLog V2.19 — Test");
- assert.match(auth,/HELILOG_TEST_VERSION='V2\.19'/);
+test("PWA version and references are consistent for the V2.20 update",()=>{
+ assert.match(html,/<title>HeliLog V2\.20/);
+ assert.match(html,/V2\.20 · TEST ENVIRONMENT/);
+ assert.equal(manifest.name,"HeliLog V2.20 — Dark Cockpit Test");
+ assert.match(auth,/HELILOG_TEST_VERSION='V2\.20'/);
  assert.match(auth,/<h2>🚁 HeliLog '\+HELILOG_TEST_VERSION/);
- assert.match(worker,/helilog-v2-19-locations-1/);
+ assert.match(worker,/helilog-v2-20-dark-cockpit-3/);
  for(const file of ["cloud-config","cloud-foundation","cloud-view","cloud-sync","auth-gate","cloud-archives"]){
   const ref=file+".js?v=2.19-locations-1";
   assert.ok(html.includes(ref),"Missing version in HTML: "+ref);
