@@ -1,4 +1,4 @@
-/* V2.18 — friends-only manual account beta, no Google OAuth. */
+/* V2.19 — friends-only manual account beta, no Google OAuth. */
 const test=require("node:test"),assert=require("node:assert/strict");
 const fs=require("node:fs"),path=require("node:path");
 const dir=__dirname;
@@ -34,15 +34,15 @@ test("staging stays connected only to existing test backend and private login",(
  assert.match(cloud,/owner|auth\.uid|verifiedClient/i);
 });
 test("version and offline PWA references are coherent",()=>{
- assert.match(page,/<title>HeliLog V2\.18 — Automatic Night Time<\/title>/);
- assert.equal(manifest.name,"HeliLog V2.18 — Test");
- assert.match(worker,/helilog-v2-18-night-1/);
- assert.match(gate,/HELILOG_TEST_VERSION='V2\.18'/);
+ assert.match(page,/<title>HeliLog V2\.19 — Aerodromes & UTC<\/title>/);
+ assert.equal(manifest.name,"HeliLog V2.19 — Test");
+ assert.match(worker,/helilog-v2-19-locations-1/);
+ assert.match(gate,/HELILOG_TEST_VERSION='V2\.19'/);
  for(const asset of ["cloud-config","cloud-foundation","auth-gate","cloud-view","cloud-sync","recovery"]){
-   const ref=asset+".js?v=2.18-night-1";
+   const ref=asset+".js?v=2.19-locations-1";
    assert.ok(page.includes(ref),"HTML missing "+ref);
    assert.ok(worker.includes(ref),"service worker missing "+ref);
  }
- assert.match(production,/helilog-v2-18-production-candidate-1/);
+ assert.match(production,/helilog-v2-19-production-candidate-1/);
  assert.doesNotMatch(production,/helilog-v2-(15|16)-production-candidate/);
 });

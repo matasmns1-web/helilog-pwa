@@ -15,11 +15,11 @@
  const extraKinds=["person","qualification","endorsement","settings","correction_proposal"];
  let types=[...coreKinds],extended=false;
  const plural={aircraft:"aircraft",flight:"flights",person:"people",qualification:"qualifications",endorsement:"endorsements"};
- const settingNames=["pilot","broughtForward","broughtForwardByType","broughtForwardImported","broughtForwardImportedAt"];
+ const settingNames=["pilot","broughtForward","broughtForwardByType","broughtForwardImported","broughtForwardImportedAt","siteLocations"];
  function items(data,kind){
   if(kind==="correction_proposal")return (data?.printArchive?.corrections||[]).filter(c=>c&&!c.confirmedAt);
   if(kind==="settings")return settingNames.map(name=>({id:name,data:clone(data?.[name]??(
-   name==="pilot"?{}:name==="broughtForward"?{}:name==="broughtForwardByType"?[]:name==="broughtForwardImported"?false:""))}));
+   name==="pilot"?{}:name==="broughtForward"?{}:name==="broughtForwardByType"?[]:name==="broughtForwardImported"?false:name==="siteLocations"?[]:""))}));
   return data?.[plural[kind]]||[];
  }
  function putItems(data,kind,arr){
