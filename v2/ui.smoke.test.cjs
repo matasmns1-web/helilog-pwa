@@ -216,9 +216,9 @@ test("UI: V1-style dashboard, totals sections and Logbook filters remain functio
  ui.filter("xc","false");
  ui.navigate("flights");
  assert.doesNotMatch(ui.app.innerHTML,/<td>EYVI<\/td>/);
- assert.match(ui.app.innerHTML,/0 of 1 flights/);
+ assert.match(ui.app.innerHTML,/<b>0<\/b> of 1 flights/);
  ui.click("reset-flight-filters");
- assert.match(ui.app.innerHTML,/1 of 1 flights/);
+ assert.match(ui.app.innerHTML,/<b>1<\/b> of 1 flights/);
  ui.navigate("flight-totals");
  for(const section of [
   "Aircraft engine experience","Pilot configuration time","Additional breakdown",

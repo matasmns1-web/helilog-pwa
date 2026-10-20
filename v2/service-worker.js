@@ -1,4 +1,4 @@
-const CACHE='helilog-v2-20-dark-cockpit-3';
+const CACHE='helilog-v2-24-universal-forms-1';
 const SHELL=[
   './',
   './index.html',

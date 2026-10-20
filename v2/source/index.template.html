@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en" class="helilog-locked">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101b2a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HeliLog">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<title>HeliLog V2.24 — Universal Forms · Test</title>
+<style>
+{{HELILOG_BASE_CSS}}</style>
+<link rel="stylesheet" href="./dark-cockpit.css?v=2.20-cockpit-3" media="screen">
+</head>
+<body><div class="layout">
+<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.24 · TEST ENVIRONMENT</span></div><nav>
+<div class="nav-group-label">Flight operations</div>
+<button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button>
+<div class="nav-group-label">Records &amp; assets</div>
+<button data-v="aircraft">🚁 Aircraft</button><button data-v="pilots">👤 Pilots</button><button data-v="endorsements">✎ Endorsements</button><button data-v="printarchive">▤ Print archive</button>
+<div class="nav-group-label">Account</div>
+<button data-v="profile">○ Profile</button><button data-v="settings">⚙ Settings</button><button data-v="testmode">⚗ Test Mode</button>
+</nav></aside><main id="app"></main>
+<div class="mobile">
+  <button data-v="dashboard"><span class="navicon">⌂</span><span>Home</span></button>
+  <button data-v="logbook"><span class="navicon">▤</span><span>Logbook</span></button>
+  <button data-v="quickadd"><span class="navicon">＋</span><span>Flight</span></button>
+  <button data-v="mobilemore"><span class="navicon">•••</span><span>More</span></button>
+</div>
+</div>
+<div id="deleteModal" class="modalbackdrop" onclick="if(event.target===this)closeDeleteModal()">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="deleteTitle">
+    <h3 id="deleteTitle">Delete flight?</h3>
+    <p id="deleteText">This will remove the flight from the V2 test logbook.</p>
+    <div class="modal-actions">
+      <button class="btn" type="button" onclick="closeDeleteModal()">Cancel</button>
+      <button class="btn dangerbtn" type="button" onclick="confirmDeleteFlight()">Delete flight</button>
+    </div>
+  </div>
+</div>
+
+<div id="importModal" class="modalbackdrop" onclick="if(event.target===this)closeImportModal()">
+  <div class="modal" style="max-width:760px" role="dialog" aria-modal="true" aria-labelledby="importTitle">
+    <h3 id="importTitle">Import flights from CSV</h3>
+    <p>Select a HeliLog-format CSV. The file is checked before anything is added to your logbook.</p>
+    <input id="csvFileInput" class="fileinput" type="file" accept=".csv,text/csv">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+      <button class="btn" type="button" onclick="downloadImportTemplate()">Download blank CSV template</button>
+    </div>
+    <div id="importStatus"></div>
+    <div id="importPreview"></div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn" type="button" onclick="closeImportModal()">Cancel</button>
+      <button id="confirmImportBtn" class="btn primary" type="button" onclick="confirmCSVImport()" disabled>Import flights</button>
+    </div>
+  </div>
+</div>
+
+<div id="exportModal" class="modalbackdrop" onclick="if(event.target===this)closeExportModal()">
+  <div class="modal" style="max-width:620px" role="dialog" aria-modal="true" aria-labelledby="exportTitle">
+    <h3 id="exportTitle">Export logbook</h3>
+    <p>Export all flights, or only the flights currently visible through your Logbook filters.</p>
+
+    <div class="field" style="margin-bottom:14px">
+      <label>Export scope</label>
+      <select id="exportScope" onchange="refreshExportSummary()">
+        <option value="filtered">Current filtered flights</option>
+        <option value="all">All flights</option>
+      </select>
+    </div>
+
+    <div id="exportSummary" class="importsummary"></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px">
+      <button class="btn" type="button" onclick="exportLogbookCSV()">
+        Export CSV
+      </button>
+      <button class="btn primary" type="button" onclick="exportPrintableLogbook()">
+        Print / Save as PDF
+      </button>
+    </div>
+
+    <div class="note" style="margin-top:14px">
+      CSV is compatible with the HeliLog importer. This PDF export is for reviewing or sharing flights and does not register printed pages. For continuous numbered, signed pages, use <b>Print archive</b> on the desktop website.
+    </div>
+
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn" type="button" onclick="closeExportModal()">Close</button>
+    </div>
+  </div>
+</div>
+<script src="./domain.js"></script>
+<script src="./night-calculation.js?v=2.19-locations-1"></script>
+<script src="./aerodrome-lookup.js?v=2.19-locations-1"></script>
+<script src="./print.js"></script>
+<script src="./endorsement-bridge.js"></script>
+<script src="./endorsement-ui.js"></script>
+<script src="./cloud-config.js?v=2.19-locations-1"></script>
+<script src="./cloud-foundation.js?v=2.19-locations-1"></script>
+<script src="./cloud-view.js?v=2.19-locations-1"></script>
+<script src="./cloud-sync.js?v=2.19-locations-1"></script>
+<script src="./auth-gate.js?v=2.19-locations-1"></script>
+<script src="./cloud-archives.js?v=2.19-locations-1"></script>
+<script src="./archive-integrity.js?v=2.19-locations-1"></script>
+<script src="./recovery.js?v=2.19-locations-1"></script>
+<script src="./cloud-backups.js?v=2.19-locations-1"></script>
+<script src="./disaster-recovery.js?v=2.19-locations-1"></script>
+<script>
+{{HELILOG_INLINE_JS}}</script></body></html>

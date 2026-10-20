@@ -1,10 +1,10 @@
 # HeliLog — Pilot logbook private beta
 
-**Stable production version: V2.19**, published from the repository root at [helilog-pwa.onrender.com](https://helilog-pwa.onrender.com). Each pilot account uses the separate **HeliLog Production** Supabase project; no test accounts or records are migrated automatically.
+**Stable production version: V2.24**, published from the repository root at [helilog-pwa.onrender.com](https://helilog-pwa.onrender.com). Each pilot account uses the separate **HeliLog Production** Supabase project; no test accounts or records are migrated automatically.
 
 Development and testing continue separately on branch `v2/development` at [helilog-v2-test.onrender.com](https://helilog-v2-test.onrender.com), connected to the TEST Supabase project.
 
-**V2.19 production update:** Includes V2.18 UTC civil-twilight night-time estimates and V2.19 **Settings → Aerodromes & Helipads** (ICAO airport lookup, privately saved custom landing sites and explicit UTC time labels). Existing recorded night hours and confirmed archive pages are not automatically recalculated. Pilots can keep manual night-time entry; computed values are estimates to verify against applicable official references. No production Supabase schema or user-data migration is part of this release.
+**V2.24 production update:** Dark Cockpit layout and compact cloud-sync indicator (V2.20), maintainable modular sources and complete regression checks (V2.21–V2.22), Quick Flight Entry (V2.23), and universally worded aircraft, endorsement and other form guidance (V2.24). Production and TEST Supabase projects remain separate. Existing records, confirmed paper archives, and the printed logbook format are preserved. No database schema or production-record migration is part of this release.
 
 **Important:** This is a private beta, not an independently EASA-approved electronic pilot logbook. Pilots should keep their authoritative logbooks and separate encrypted backups.
 
