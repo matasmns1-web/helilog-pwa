@@ -19,6 +19,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Verify modular V2 source generates the committed app
+        run: |
+          node scripts/build-helilog-v2.cjs --check
+          node --test scripts/v2-build.test.cjs
       - name: Verify production database overlay is safe
         run: node --test supabase/production/bootstrap.test.cjs
       - name: Test isolated V2 production candidate packaging
