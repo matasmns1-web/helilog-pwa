@@ -1,7 +1,8 @@
-const CACHE='helilog-v2-19-locations-1';
+const CACHE='helilog-v2-20-dark-cockpit-1';
 const SHELL=[
   './',
   './index.html',
+  './dark-cockpit.css?v=2.20-cockpit-1',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png',
