@@ -124,7 +124,7 @@ test("local changes skipped by queue are protected from incoming overwrite",asyn
 });
 test("login gate, offline shell and version labels exist without implicit legacy import",()=>{
  assert.match(html,/<html lang="en" class="helilog-locked">/);
- assert.match(html,/V2\.18 · TEST/);
+ assert.match(html,/V2\.19 · TEST/);
  assert.match(html,/cloud-sync\.js/);
  assert.match(html,/auth-gate\.js/);
  assert.match(html,/let KEY=TEST_MODE/);
@@ -134,7 +134,7 @@ test("login gate, offline shell and version labels exist without implicit legacy
  assert.match(authSource,/freshLogbookData/);
  assert.doesNotMatch(authSource,/setItem\(LIVE_KEY/);
  const sw=fs.readFileSync(path.join(__dirname,"service-worker.js"),"utf8");
- assert.match(sw,/helilog-v2-18-night-1/);
+ assert.match(sw,/helilog-v2-19-locations-1/);
  assert.match(sw,/\.\/auth-gate\.js/);
  assert.match(sw,/\.\/cloud-sync\.js/);
 });
