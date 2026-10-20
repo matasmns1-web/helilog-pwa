@@ -51,3 +51,10 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 - Removes Lithuania-specific registration, authority and aerodrome examples and Cabri/Guimbal-specific suggestions from **Add Aircraft**, **Endorsements**, **Profile/Qualifications**, **Aerodrome Settings**, **Brought-forward Totals**, and **Simulator Session** entry.
 - Field labels and neutral guidance remain; edit values, required-field validation and all saved records are unaffected. Existing demonstration flights and downloadable import examples are intentionally unchanged.
 - `v2/v224-universal-forms.test.cjs` keeps new user-entry placeholders neutral. V2.24 has a distinct test PWA cache so installed devices can refresh; no new data migration, print-layout change or production deployment is included.
+
+## V2.25 — Print Preview Cleanup (test only)
+
+- Removes an internal source-code comment that was inadvertently included as visible text in the printed flight-row HTML. Browsers moved the stray text above the table, repeating it once per printed flight.
+- Both **Export logbook → Print / Save as PDF** and **Print archive** use the same corrected print generator. Existing stored `picName` values, sealed archive records, paper page formats (including legacy 26-column batches), totals, and signatures remain unchanged.
+- `v2/v225-print-cleanup.test.cjs` renders both export and archive HTML to verify the comment is absent, new rows retain 27 cells, legacy rows retain 26 cells, saved PIC names remain unchanged, and rendering does not mutate flight data.
+- The V2.25 test PWA cache is distinct from production. No Supabase schema changes or production deployment.

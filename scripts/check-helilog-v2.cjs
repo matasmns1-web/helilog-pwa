@@ -31,6 +31,7 @@ const GROUPS = Object.freeze([
       'v2/storage.test.cjs',
       'v2/ui.smoke.test.cjs',
       'v2/v223-quick-flight.test.cjs',
+      'v2/v225-print-cleanup.test.cjs',
     ],
   },
   {

@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.24 — Universal Forms · Test</title>
+<title>HeliLog V2.25 — Print Preview Cleanup · Test</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -302,7 +302,7 @@ html.helilog-test-mode .brand::after{
 <link rel="stylesheet" href="./dark-cockpit.css?v=2.20-cockpit-3" media="screen">
 </head>
 <body><div class="layout">
-<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.24 · TEST ENVIRONMENT</span></div><nav>
+<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.25 · TEST ENVIRONMENT</span></div><nav>
 <div class="nav-group-label">Flight operations</div>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button>
 <div class="nav-group-label">Records &amp; assets</div>
@@ -2100,6 +2100,8 @@ function exportPrintableLogbook(options={}){
     let instrVal=functionTime(f,'instructor');
     let cfg=cfgFor(f);
 
+    // Historical archives retain their stored PIC wording; new PIC/SOLO
+    // records use SELF. This note belongs in JS, never in the HTML table.
     return `<tr class="flight-row">
       <td>${displayDate(f.date)}</td>
       <td>${htmlEscape(f.dep||'')}</td>
@@ -2118,8 +2120,6 @@ function exportPrintableLogbook(options={}){
           <td class="num">${flightPilotConfig(f)==='multi'?'':fmt(f.mins||0)}</td>
           <td class="num">${flightPilotConfig(f)==='multi'?fmt(f.mins||0):''}</td>`}
       <td class="num">${fmt(f.mins||0)}</td>
-      // For historical printed records, the original stored PIC value is
-      // retained to keep reprints unchanged. New PIC/SOLO flights store SELF.
       <td class="pic-name">${htmlEscape(f.picName||'')}</td>
 
       <td class="num">${Number(f.takeoffDay||0)||''}</td>

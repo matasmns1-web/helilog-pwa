@@ -1,4 +1,4 @@
-const CACHE='helilog-v2-24-universal-forms-1';
+const CACHE='helilog-v2-25-print-cleanup-1';
 const SHELL=[
   './',
   './index.html',
