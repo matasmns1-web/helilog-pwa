@@ -70,6 +70,7 @@ const GROUPS = Object.freeze([
       'v2/v219-aerodromes-utc.test.cjs',
       'v2/v220-dark-cockpit.test.cjs',
       'v2/v220-sync-pill.test.cjs',
+      'v2/v224-universal-forms.test.cjs',
     ],
   },
   {

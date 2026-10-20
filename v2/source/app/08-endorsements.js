@@ -117,7 +117,7 @@ function endorsementForm(editId=null){
           ${['Skill test','Proficiency check / revalidation','Type rating endorsement','Licence endorsement','Training completion','Other'].map(x=>`<option${e.category===x?' selected':''}>${x}</option>`).join('')}
         </select>
       </div>
-      <div class="field"><label>Title</label><input id="endorseTitle" required value="${htmlEscape(e.title||'')}" placeholder="e.g. Cabri G2 type rating revalidation"></div>
+      <div class="field"><label>Title</label><input id="endorseTitle" required value="${htmlEscape(e.title||'')}" placeholder="Short description of the endorsement"></div>
       <div class="field"><label>Place</label><input id="endorseLocation" value="${htmlEscape(e.location||'')}" placeholder="Optional"></div>
 
       <div class="field"><label>Related licence / rating</label>

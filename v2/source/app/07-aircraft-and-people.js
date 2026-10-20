@@ -34,11 +34,11 @@ function newAircraft(editId=null){
   `<form class="card form" onsubmit="saveAircraft(event)">
     ${existing && linkedFlights?`<div class="note" style="margin-bottom:16px"><b>${linkedFlights} existing flight${linkedFlights===1?'':'s'} use this aircraft.</b><br>Changes to the aircraft details will also be reflected in those flight records and exports. If you change SE ↔ ME, the Single-pilot SE/ME allocation for those flights will change accordingly.</div>`:''}
     <div class="formgrid">
-      <div class="field"><label>Registration</label><input id="reg" placeholder="LY-ABC" required value="${existing?htmlEscape(existing.reg||''):''}"></div>
-      <div class="field"><label>ICAO type designator</label><input id="icao" placeholder="G2CA" required value="${existing?htmlEscape(existing.icao||''):''}"></div>
-      <div class="field"><label>Manufacturer</label><input id="man" placeholder="Guimbal" required value="${existing?htmlEscape(existing.manufacturer||''):''}"></div>
-      <div class="field"><label>Model</label><input id="model" placeholder="Cabri" required value="${existing?htmlEscape(existing.model||''):''}"></div>
-      <div class="field"><label>Variant</label><input id="variant" placeholder="G2" value="${existing?htmlEscape(existing.variant||''):''}"></div>
+      <div class="field"><label>Registration</label><input id="reg" required value="${existing?htmlEscape(existing.reg||''):''}"></div>
+      <div class="field"><label>ICAO type designator</label><input id="icao" required value="${existing?htmlEscape(existing.icao||''):''}"></div>
+      <div class="field"><label>Manufacturer</label><input id="man" required value="${existing?htmlEscape(existing.manufacturer||''):''}"></div>
+      <div class="field"><label>Model</label><input id="model" required value="${existing?htmlEscape(existing.model||''):''}"></div>
+      <div class="field"><label>Variant (optional)</label><input id="variant" value="${existing?htmlEscape(existing.variant||''):''}"></div>
       <div class="field"><label>Engine configuration</label>
         <select id="engine">
           <option value="Single engine"${existing&&engineCode(existing)==='SE'?' selected':''}>Single-engine (SE)</option>

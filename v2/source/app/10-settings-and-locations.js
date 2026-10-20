@@ -83,7 +83,7 @@ function v219LocationsPage(){
  <div class="card" style="margin-top:12px">
  <h2>Add or edit a site</h2>
  <div class="formgrid">
- <div class="field"><label for="v219SiteCode">ICAO / custom site code</label><input id="v219SiteCode" maxlength="12" autocapitalize="characters" placeholder="EYVI or BASE-1" oninput="uppercasePlaceInput(this)"></div>
+ <div class="field"><label for="v219SiteCode">ICAO / custom site code</label><input id="v219SiteCode" maxlength="12" autocapitalize="characters" placeholder="ICAO code or custom site ID" oninput="uppercasePlaceInput(this)"></div>
  <div class="field"><label for="v219SiteName">Site name (optional)</label><input id="v219SiteName" maxlength="90" placeholder="Helicopter operating base"></div>
  <div class="field"><label for="v219SiteLat">Latitude (WGS84 decimal degrees)</label><input id="v219SiteLat" type="number" min="-90" max="90" step="any"></div>
  <div class="field"><label for="v219SiteLon">Longitude (WGS84 decimal degrees)</label><input id="v219SiteLon" type="number" min="-180" max="180" step="any"></div>

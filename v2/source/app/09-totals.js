@@ -137,7 +137,7 @@ function addBroughtForwardTypeRow(icao='',minutes=0){
       <label>ICAO type</label>
       <input class="bf-type-icao uppercase-input" type="text" maxlength="4" autocomplete="off"
         list="bfICAOTypes" autocapitalize="characters" autocorrect="off" spellcheck="false"
-        value="${htmlEscape(icao)}" placeholder="G2CA" oninput="uppercasePlaceInput(this)">
+        value="${htmlEscape(icao)}" placeholder="ICAO designator" oninput="uppercasePlaceInput(this)">
     </div>
     <div class="field" style="flex:1 1 140px;min-width:0">
       <label>Total time</label>
@@ -160,7 +160,7 @@ function saveBroughtForwardTotals(ev){
     let value=parseBroughtForwardMinutes(document.getElementById(id).value);
     if(value===null){
       let box=document.getElementById('bfError');
-      box.textContent='Please enter flight-time totals as H:MM (for example 139:30) or decimal hours.';
+      box.textContent='Please enter flight-time totals in H:MM format or as decimal hours.';
       box.classList.add('show');
       return;
     }

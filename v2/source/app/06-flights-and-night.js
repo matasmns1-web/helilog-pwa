@@ -19,7 +19,7 @@ function addSimulator(editId=null){
          <div class="field"><label>Device category</label><select id="simCategory">
            ${['FNPT I','FNPT II','FTD','FFS','FS','Other'].map(c=>`<option value="${c}"${(old?.simCategory||'FNPT II')===c?' selected':''}>${c}</option>`).join('')}
          </select></div>
-         <div class="field"><label>Device / aircraft type (required for FS/FFS/FTD)</label><input id="simDevice" maxlength="90" placeholder="e.g. H135, AW139, B747-400" value="${htmlEscape(old?.simDevice||'')}"></div>
+         <div class="field"><label>Device / aircraft type (required for FS/FFS/FTD)</label><input id="simDevice" maxlength="90" placeholder="Device or represented aircraft type" value="${htmlEscape(old?.simDevice||'')}"></div>
          <div class="field"><label>Device qualification / ID (optional)</label><input id="simQualification" maxlength="60" placeholder="e.g. Q1234" value="${htmlEscape(old?.simQualification||'')}"></div>
          <div class="field"><label>Total time of session (H:MM)</label><input id="simDuration" inputmode="decimal" placeholder="2:30" value="${old?fmt(old.stdMin||0):''}">
            <div class="mini">Include associated pre- and after-flight checks, per the paper-logbook instructions.</div></div>

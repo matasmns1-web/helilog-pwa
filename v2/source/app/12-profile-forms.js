@@ -7,7 +7,7 @@ function editOwnProfile(){
       <div class="field"><label for="ownLastName">Surname</label><input id="ownLastName" autocomplete="family-name" required value="${htmlEscape(pilotNameParts().lastName)}"></div>
       <div class="field"><label>Licence type</label><input id="ownLicenceType" value="${htmlEscape(S.pilot.licenceType||'')}" placeholder="CPL(H)"></div>
       <div class="field"><label>Licence number</label><input id="ownLicenceNumber" value="${htmlEscape(S.pilot.licenceNumber||'')}" placeholder="Optional"></div>
-      <div class="field"><label>Competent authority</label><input id="ownAuthority" value="${htmlEscape(S.pilot.authority||'')}" placeholder="TKA"></div>
+      <div class="field"><label>Competent authority</label><input id="ownAuthority" value="${htmlEscape(S.pilot.authority||'')}"></div>
     </div>
     <div class="note" style="margin-top:14px">First name and surname are stored separately while your full name remains available for exports. PIC and SOLO flights display SELF in the PIC name field; other commanders retain their entered names.</div>
     <div class="actions"><button class="btn primary">Save profile</button></div>
@@ -114,7 +114,7 @@ function qualificationForm(editId=null){
           ${['Licence','Type rating','Instrument rating','Instructor rating','Other'].map(x=>`<option${q.category===x?' selected':''}>${x}</option>`).join('')}
         </select>
       </div>
-      <div class="field"><label>Name</label><input id="qualName" required value="${htmlEscape(q.name||'')}" placeholder="e.g. Cabri G2, IR(H), FI(H)"></div>
+      <div class="field"><label>Name</label><input id="qualName" required value="${htmlEscape(q.name||'')}" placeholder="Qualification or rating name"></div>
       <div class="field"><label>Licence / rating number</label><input id="qualNumber" value="${htmlEscape(q.number||'')}" placeholder="Optional"></div>
       <div class="field"><label>Issue date</label>${europeanDateField('qualIssue',q.issueDate)}</div>
       <div class="field"><label>Valid until</label>${europeanDateField('qualValid',q.validUntil)}</div>

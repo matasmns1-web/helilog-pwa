@@ -45,3 +45,9 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 - Both modes use `saveFlight()` with identical validation, automated night-time calculation, duplicate detection, archive guards and cloud synchronization. All existing-flight edits and signed correction workflows stay in the full view.
 - `v2/v223-quick-flight.test.cjs` checks navigation, shared form fields, mode toggling without data loss, full editing and save-path safety. This update does not change `print.js`, stored record shape, Supabase schema or production resources.
 - Bumping the PWA cache to `helilog-v2-23-quick-flight-1` prompts installed test apps to refresh. The production candidate packager now derives the release version from verified staging HTML, manifest and cache labels while retaining explicit approval, separate origin and publishable-key guards.
+
+## V2.24 — Universal Forms (test only)
+
+- Removes Lithuania-specific registration, authority and aerodrome examples and Cabri/Guimbal-specific suggestions from **Add Aircraft**, **Endorsements**, **Profile/Qualifications**, **Aerodrome Settings**, **Brought-forward Totals**, and **Simulator Session** entry.
+- Field labels and neutral guidance remain; edit values, required-field validation and all saved records are unaffected. Existing demonstration flights and downloadable import examples are intentionally unchanged.
+- `v2/v224-universal-forms.test.cjs` keeps new user-entry placeholders neutral. V2.24 has a distinct test PWA cache so installed devices can refresh; no new data migration, print-layout change or production deployment is included.
