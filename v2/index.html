@@ -361,6 +361,7 @@ html.helilog-test-mode .brand::after{
 </div>
 <script src="./domain.js"></script>
 <script src="./night-calculation.js?v=2.18-night-1"></script>
+<script src="./aerodrome-lookup.js?v=2.19-locations-1"></script>
 <script src="./print.js"></script>
 <script src="./endorsement-bridge.js"></script>
 <script src="./endorsement-ui.js"></script>
@@ -3085,8 +3086,8 @@ ${!editing?`<div class="choice-row" style="margin-bottom:16px">
   <div class="field"><label>Date</label>${europeanDateField('date','',true)}</div>
   <div class="field"><label>Aircraft</label><select id="aid">${S.aircraft.map(a=>`<option value="${a.id}">${a.icao} — ${a.reg}</option>`).join('')}</select></div>
 
-  <div class="field"><label>Departure place</label><input id="dep" class="uppercase-input" maxlength="4" autocapitalize="characters" autocorrect="off" spellcheck="false" oninput="uppercasePlaceInput(this)"></div>
-  <div class="field"><label>Departure time (24h)</label>
+  <div class="field"><label>Departure place</label><input id="dep" class="uppercase-input" maxlength="12" autocapitalize="characters" autocorrect="off" spellcheck="false" oninput="uppercasePlaceInput(this)"></div>
+  <div class="field"><label>Departure time (UTC, 24h)</label>
     <div class="timewrap">
       <input id="off" type="text" inputmode="numeric" maxlength="5" autocomplete="off">
       <button type="button" class="timebtn" title="Choose time" onclick="toggleTimePicker('offPicker','off')">◷</button>
@@ -3104,8 +3105,8 @@ ${!editing?`<div class="choice-row" style="margin-bottom:16px">
     <div id="offError" class="field-error">Enter a valid 24-hour time.</div>
   </div>
 
-  <div class="field"><label>Arrival place</label><input id="arr" class="uppercase-input" maxlength="4" autocapitalize="characters" autocorrect="off" spellcheck="false" oninput="uppercasePlaceInput(this)"></div>
-  <div class="field"><label>Arrival time (24h)</label>
+  <div class="field"><label>Arrival place</label><input id="arr" class="uppercase-input" maxlength="12" autocapitalize="characters" autocorrect="off" spellcheck="false" oninput="uppercasePlaceInput(this)"></div>
+  <div class="field"><label>Arrival time (UTC, 24h)</label>
     <div class="timewrap">
       <input id="on" type="text" inputmode="numeric" maxlength="5" autocomplete="off">
       <button type="button" class="timebtn" title="Choose time" onclick="toggleTimePicker('onPicker','on')">◷</button>
@@ -3173,16 +3174,6 @@ ${!editing?`<div class="choice-row" style="margin-bottom:16px">
 </div>
 
 <div id="nightCalcStatus" class="note" role="status" aria-live="polite" style="margin-top:10px">Enter flight date, UTC times and aerodrome coordinates to calculate night time.</div>
-<details id="nightCoordinateDetails" style="margin-top:12px">
-  <summary>Departure and arrival coordinates (WGS84)</summary>
-  <div class="mini" style="margin-top:8px">Known aerodromes are filled automatically. For helicopter bases or unknown codes, enter decimal degrees (south/west negative). Coordinates are saved with the flight.</div>
-  <div class="formgrid" style="margin-top:10px">
-    <div class="field"><label>Departure latitude</label><input id="depLat" type="number" min="-90" max="90" step="any" placeholder="54.634102"></div>
-    <div class="field"><label>Departure longitude</label><input id="depLon" type="number" min="-180" max="180" step="any" placeholder="25.285801"></div>
-    <div class="field"><label>Arrival latitude</label><input id="arrLat" type="number" min="-90" max="90" step="any" placeholder="54.634102"></div>
-    <div class="field"><label>Arrival longitude</label><input id="arrLon" type="number" min="-180" max="180" step="any" placeholder="25.285801"></div>
-  </div>
-</details>
 <div class="mini" style="margin-top:8px">Night is based on the Sun’s centre 6° below the horizon (civil twilight), not sunset. En-route calculations use a direct-line estimate; always check applicable national rules and official twilight data.</div>
 
 <div class="checkbox-row">
@@ -3459,39 +3450,62 @@ function calc(){
 
 /* V2.18: optional UTC civil-twilight calculation, never rewrites saved history
  * unless a flight is saved with the automatic switch deliberately enabled. */
-function v218Point(which){
- const lat=$('#'+which+'Lat'),lon=$('#'+which+'Lon');
- if(!lat||!lon)return null;
- return window.HeliLogNight.coordinates({lat:lat.value,lon:lon.value});
+/* V2.19: account-scoped site directory, synchronized as a single private
+ * settings record. ICAO discovery uses the bundled points first and, when
+ * online, the optional OpenFlights global index. */
+function v219Sites(){
+ if(!Array.isArray(S.siteLocations))S.siteLocations=[];
+ return S.siteLocations;
 }
-function v218SetPoint(which,p){
- const lat=$('#'+which+'Lat'),lon=$('#'+which+'Lon');
- if(!lat||!lon)return;
- lat.value=p?p.lat:'';
- lon.value=p?p.lon:'';
+const v219Requested=new Set();
+function v219LocalPoint(code){
+ const key=String(code||'').trim().toUpperCase();
+ const saved=v219Sites().find(x=>x.code===key);
+ const point=saved&&window.HeliLogNight.coordinates(saved);
+ return point?{...point,source:'Saved site',name:saved.name}:null;
 }
 function v218SavedPoint(place){
  const code=String(place||'').trim().toUpperCase();
  if(!code)return null;
+ const custom=v219LocalPoint(code);
+ if(custom)return custom;
+ const builtin=window.HeliLogAerodromes.cached(code);
+ if(builtin)return builtin;
+ // Preserve reference coordinates recorded on older flights.
  for(const f of [...S.flights].reverse()){
   const meta=f.nightCalculation;
   if(!meta)continue;
-  for(const field of ['dep','arr']){
-   if(f[field]===code){
-    const saved=window.HeliLogNight.coordinates(meta[field+'Coordinates']);
-    if(saved)return {...saved,source:'Previously saved flight'};
+  for(const side of ['dep','arr']){
+   if(f[side]===code){
+    const point=window.HeliLogNight.coordinates(meta[side+'Coordinates']);
+    if(point)return {...point,source:'Previously saved flight'};
    }
   }
  }
- return window.HeliLogNight.lookup(code);
+ return null;
+}
+function v218Point(which){
+ const code=$('#'+which)?.value.trim().toUpperCase()||'';
+ if(!code)return null;
+ const current=editingFlightId&&S.flights.find(f=>f.id===editingFlightId);
+ const saved=current?.nightCalculation;
+ const earlier=current?.[which]===code?
+  window.HeliLogNight.coordinates(saved?.[which+'Coordinates']):null;
+ return v219LocalPoint(code)||earlier||v218SavedPoint(code);
+}
+async function v219RequestICAO(code){
+ const key=String(code||'').trim().toUpperCase();
+ if(!/^[A-Z]{4}$/.test(key)||v218SavedPoint(key)||v219Requested.has(key))return;
+ v219Requested.add(key);
+ await window.HeliLogAerodromes.lookup(key);
+ if(document.getElementById('flightForm')&&
+   [$('#dep')?.value.trim().toUpperCase(),$('#arr')?.value.trim().toUpperCase()].includes(key))
+  v218UpdateNight();
 }
 function v218PlaceChanged(which){
- const place=$('#'+which).value.trim().toUpperCase();
- const other=which==='dep'?'arr':'dep';
- let point=v218SavedPoint(place);
- if(!point&&place&&place===$('#'+other).value.trim().toUpperCase())
-  point=v218Point(other);
- v218SetPoint(which,point);
+ const key=$('#'+which)?.value.trim().toUpperCase();
+ if(key && $('#nightAuto')?.checked && !v218SavedPoint(key))
+  void v219RequestICAO(key);
  v218UpdateNight();
 }
 function v218NightResult(){
@@ -3513,11 +3527,12 @@ function v218UpdateNight(){
  const outcome=v218NightResult();
  status.dataset.valid=outcome.ok?'yes':'no';
  if(!outcome.ok){
-  status.textContent='Automatic calculation unavailable: '+outcome.reason+
-   ' Open the coordinates section, or switch to manual night time.';
-  const details=$('#nightCoordinateDetails');
-  if(details && $('#dep').value.trim().length===4 && $('#arr').value.trim().length===4)
-   details.open=true;
+  const depCode=$('#dep').value.trim().toUpperCase();
+  const arrCode=$('#arr').value.trim().toUpperCase();
+  if(depCode&&!v218SavedPoint(depCode))void v219RequestICAO(depCode);
+  if(arrCode&&!v218SavedPoint(arrCode))void v219RequestICAO(arrCode);
+  status.textContent='Automatic night time unavailable: '+outcome.reason+
+    ' Airport ICAO codes are looked up online when needed. For unknown helipads or operating sites, save their coordinates in Settings → Aerodromes & Helipads, or choose manual night time.';
   return;
  }
  field.value=outcome.nightMinutes;
@@ -3541,33 +3556,11 @@ function v218UpdateNight(){
 function v218InitNight(existing){
  const old=existing?.nightCalculation;
  $('#nightAuto').checked=existing?old?.mode==='automatic':true;
- for(const which of ['dep','arr']){
-  const saved=window.HeliLogNight.coordinates(old?.[which+'Coordinates']);
-  const place=$('#'+which).value.trim().toUpperCase();
-  const other=which==='dep'?'arr':'dep';
-  const point=saved||v218SavedPoint(place)||(
-   which==='arr'&&place&&place===$('#'+other).value.trim().toUpperCase()?
-    v218Point(other):null);
-  v218SetPoint(which,point);
- }
  $('#nightAuto').addEventListener('change',v218UpdateNight);
- for(const field of ['depLat','depLon','arrLat','arrLon']){
-  $('#'+field).addEventListener('input',()=>{
-   // A same-base circuit uses the same position. Copy entered coordinates
-   // only when arrival fields are empty, never overwrite a pilot's override.
-   if(field.startsWith('dep') &&
-      $('#dep').value.trim().toUpperCase()===$('#arr').value.trim().toUpperCase() &&
-      !$('#arrLat').value && !$('#arrLon').value){
-    const p=v218Point('dep');
-    if(p)v218SetPoint('arr',p);
-   }
-   v218UpdateNight();
-  });
+ for(const which of ['dep','arr']){
+  $('#'+which).addEventListener('change',()=>v218PlaceChanged(which));
+  $('#'+which).addEventListener('input',()=>v218PlaceChanged(which));
  }
- $('#dep').addEventListener('change',()=>v218PlaceChanged('dep'));
- $('#arr').addEventListener('change',()=>v218PlaceChanged('arr'));
- $('#dep').addEventListener('input',()=>v218PlaceChanged('dep'));
- $('#arr').addEventListener('input',()=>v218PlaceChanged('arr'));
  $('#date').addEventListener('input',v218UpdateNight);
  $('#date').addEventListener('change',v218UpdateNight);
  v218UpdateNight();
@@ -3632,7 +3625,7 @@ function saveFlight(){
   let nightPreview=null;
   if(nightAuto){
    nightPreview=v218NightResult();
-   if(!nightPreview.ok) return showFormError('Night-time calculation unavailable: '+nightPreview.reason+' Enter coordinates or turn off automatic calculation.');
+   if(!nightPreview.ok) return showFormError('Night-time calculation unavailable: '+nightPreview.reason+' Configure the site under Settings → Aerodromes & Helipads, or use manual night time.');
    night=nightPreview.nightMinutes;
    $('#nightMin').value=night;
   }
@@ -3677,7 +3670,7 @@ function saveFlight(){
     nightCalculation:{
       mode:nightAuto?'automatic':'manual',
       convention:'EASA/SERA civil twilight; solar centre below -6 degrees',
-      algorithm:'V2.18 minute-midpoint straight-line approximation',
+      algorithm:'V2.19 minute-midpoint straight-line approximation',
       depCoordinates:v218Point('dep'),
       arrCoordinates:v218Point('arr'),
       distanceKm:nightPreview?.distanceKm??null
@@ -4593,9 +4586,16 @@ function profile(){
   </div>`;
 }
 function settings(){
- app.innerHTML=header('Settings','Logbook, cloud account, backups and device preferences',
+ app.innerHTML=header('Settings','Logbook, aerodromes, cloud account, backups and device preferences',
    `<button class="btn" type="button" onclick="go('profile')">← Profile</button>`)+
    `<div class="settings-grid">
+     <div class="card">
+      <div class="head">
+       <div><h2>Aerodromes &amp; helipads</h2>
+       <div class="muted">Automatic ICAO coordinates and saved custom helicopter operating sites, synced to your account.</div></div>
+       <button class="btn primary" type="button" onclick="go('locations')">Manage locations</button>
+      </div>
+     </div>
      <div class="card">
       <div class="head"><div><h2>Cloud account</h2><div class="muted">Connection, synchronization, conflicts and archive integrity.</div></div>
       <button class="btn" type="button" onclick="go('cloud')">Manage cloud account</button>
@@ -5317,10 +5317,10 @@ function render(){
   }
   try{
     if(v!=='add') editingFlightId=null;
-    ({dashboard,logbook,add,aircraft,pilots,endorsements,printarchive,endorsementarchive:v2EndorsementArchive,totals,profile,settings,backups,cloud,testmode,mobilemore}[v]||dashboard)();
-    let moreViews=['mobilemore','aircraft','pilots','endorsements','endorsementarchive','totals','profile','settings','backups','cloud','testmode'];
+    ({dashboard,logbook,add,aircraft,pilots,endorsements,printarchive,endorsementarchive:v2EndorsementArchive,totals,profile,settings,locations:v219LocationsPage,backups,cloud,testmode,mobilemore}[v]||dashboard)();
+    let moreViews=['mobilemore','aircraft','pilots','endorsements','endorsementarchive','totals','profile','settings','locations','backups','cloud','testmode'];
     document.querySelectorAll('[data-v]').forEach(b=>{
-      let active=b.dataset.v===v || (b.dataset.v==='settings' && (v==='cloud'||v==='backups')) || (b.dataset.v==='mobilemore' && moreViews.includes(v));
+      let active=b.dataset.v===v || (b.dataset.v==='settings' && (v==='cloud'||v==='backups'||v==='locations')) || (b.dataset.v==='mobilemore' && moreViews.includes(v));
       b.classList.toggle('on',active);
     });
     setTimeout(updatePWAStatus,0);
