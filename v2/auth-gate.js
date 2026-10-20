@@ -10,12 +10,24 @@ function v23SyncInfo(){
  st.state==="conflict"?"Conflict: needs attention":st.state==="offline"?"Offline: saved on device":
  st.state==="error"?"Sync error: saved on device":
  st.pending?"Pending upload: "+st.pending+" change(s)":"Checking cloud records…";
- return '<div class="note" role="status"><b>'+v23Escape(label)+'</b>'+
- (st.pending?' · '+st.pending+' pending':'')+
+ const pending=Math.max(0,Number(st.pending)||0);
+ const tone=st.state==="conflict"||st.state==="error"?"problem":
+  st.state==="offline"||pending?"warn":st.state==="synced"?"ok":"busy";
+ const shortLabel=st.state==="conflict"?"Conflict":st.state==="error"?"Sync issue":
+  st.state==="offline"?"Offline":pending?pending+" pending":
+  st.state==="syncing"?"Syncing…":st.state==="synced"?"Synced":"Checking…";
+ return '<details class="v220-sync-pop" data-tone="'+tone+'">'+
+ '<summary class="v220-sync-pill" aria-label="Cloud sync: '+v23Escape(shortLabel)+'. Show details">'+
+ '<span class="v220-sync-icon" aria-hidden="true">☁</span>'+
+ '<span class="v220-sync-dot" aria-hidden="true"></span>'+
+ '<span class="v220-sync-label">'+v23Escape(shortLabel)+'</span>'+
+ '<span class="v220-sync-chevron" aria-hidden="true">⌄</span></summary>'+
+ '<div class="v220-sync-bubble"><b>'+v23Escape(label)+'</b>'+
+ (pending?'<div class="mini">'+pending+' pending change(s)</div>':'')+
  (st.error?'<div class="mini">'+v23Escape(st.error)+'</div>':'')+
  '<div class="mini">'+(window.HeliLogV23Sync.extended()?
   'Aircraft, flights, pilot profiles, qualifications, endorsements, medical records and opening totals are included in cloud sync. Print archive snapshots and signed corrections require separate confirmation.':
-  'Aircraft and flights sync. Enable extended data synchronization in Cloud account to include endorsements, pilot profiles, qualifications and brought-forward totals.')+'</div></div>';
+  'Aircraft and flights sync. Enable extended data synchronization in Cloud account to include endorsements, pilot profiles, qualifications and brought-forward totals.')+'</div></div></details>';
 }
 function v23LoginView(){
  v23Unlocked=false;
@@ -272,7 +284,11 @@ async function v23EnterWorkspace(auth){
 }
 function v23UpdateSyncChip(){
  const el=document.getElementById("v23SyncStatus");
- if(el)el.innerHTML=v23SyncInfo();
+ if(el){
+  const wasOpen=!!el.querySelector('details[open]');
+  el.innerHTML=v23SyncInfo();
+  if(wasOpen)el.querySelector('details')?.setAttribute('open','');
+ }
 }
 async function v23SignIn(event){
  event.preventDefault();if(v23AuthBusy)return;

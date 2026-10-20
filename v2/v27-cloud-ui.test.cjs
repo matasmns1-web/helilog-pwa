@@ -61,7 +61,7 @@ test("V2.7 remains Profile-only logout and ships coherent cache assets",()=>{
  assert.match(html,/V2\.20 · TEST ENVIRONMENT/);
  assert.match(auth,/HELILOG_TEST_VERSION='V2\.20'/);
  assert.equal(manifest.name,"HeliLog V2.20 — Dark Cockpit Test");
- assert.match(worker,/helilog-v2-20-dark-cockpit-2/);
+ assert.match(worker,/helilog-v2-20-dark-cockpit-3/);
  for(const name of ["cloud-view","cloud-sync","auth-gate"]){
   const url=name+".js?v=2.19-locations-1";
   assert.ok(html.includes(url),name+" index");

@@ -21,7 +21,7 @@ test('V2.20 is visibly distinguished as a test-only cockpit release',()=>{
 });
 
 test('Dark Cockpit stylesheet is screen-only and has responsive navigation and accessible focus',()=>{
-  assert.match(html,/<link rel="stylesheet" href="\.\/dark-cockpit\.css\?v=2\.20-cockpit-2" media="screen">/);
+  assert.match(html,/<link rel="stylesheet" href="\.\/dark-cockpit\.css\?v=2\.20-cockpit-3" media="screen">/);
   assert.match(css,/^@media screen \{/m);
   assert.match(css,/--cockpit-accent:\s*#43d6c5/);
   assert.match(css,/:focus-visible/);
@@ -39,8 +39,8 @@ test('Dark Cockpit stylesheet is screen-only and has responsive navigation and a
 });
 
 test('Offline shell includes the new stylesheet and retains every prior functional asset',()=>{
-  assert.match(sw,/helilog-v2-20-dark-cockpit-2/);
-  assert.match(sw,/\.\/dark-cockpit\.css\?v=2\.20-cockpit-2/);
+  assert.match(sw,/helilog-v2-20-dark-cockpit-3/);
+  assert.match(sw,/\.\/dark-cockpit\.css\?v=2\.20-cockpit-3/);
   for(const asset of ['night-calculation','aerodrome-lookup','cloud-config',
     'cloud-foundation','cloud-sync','auth-gate','archive-integrity','cloud-backups']) {
     const ref='./'+asset+'.js?v=2.19-locations-1';

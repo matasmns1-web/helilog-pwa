@@ -287,7 +287,7 @@ html.helilog-test-mode .brand::after{
   content:"TEST SANDBOX";display:block;color:#f8d56e;font-size:11px;letter-spacing:.08em;margin-top:5px
 }
 </style>
-<link rel="stylesheet" href="./dark-cockpit.css?v=2.20-cockpit-2" media="screen">
+<link rel="stylesheet" href="./dark-cockpit.css?v=2.20-cockpit-3" media="screen">
 </head>
 <body><div class="layout">
 <aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.20 · TEST ENVIRONMENT</span></div><nav>
@@ -996,7 +996,7 @@ if('serviceWorker' in navigator && (location.protocol==='https:' || location.hos
 
 function header(title,sub,action=''){
  const banner=v23AccountWorkspace()?'<div id="v23SyncStatus" class="v23-syncbanner">'+v23SyncInfo()+'</div>':'';
- return `<div class="top"><div><h1>${title}</h1><div class="sub">${sub||''}</div></div><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;align-items:center">${action}</div></div>`+banner;
+ return `<div class="top"><div class="v220-page-heading"><div><h1>${title}</h1><div class="sub">${sub||''}</div></div>${banner}</div>${action?`<div class="v220-top-actions">${action}</div>`:''}</div>`;
 }
 
 let flightFormDirty=false;
