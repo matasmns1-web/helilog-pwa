@@ -269,6 +269,31 @@
     border-radius:9px;
     box-shadow:inset 0 1px 3px rgba(0,0,0,.1);
   }
+  /* Existing PIC-role and night-auto handlers set a light inline background.
+     Keep their read-only behaviour, but never let it break the cockpit theme. */
+  .field input:not([type=checkbox]):not([type=radio]),
+  .filterfield input {
+    background:#0e1a2a !important;
+    -webkit-text-fill-color:#f1faff;
+  }
+  .field input[readonly]:not([type=checkbox]):not([type=radio]),
+  .field input:disabled:not([type=checkbox]):not([type=radio]) {
+    background:#203746 !important;
+    color:#bad3dc;
+    -webkit-text-fill-color:#bad3dc;
+    opacity:1;
+  }
+  /* The legacy form assigns width:100% to all inputs, including checkboxes.
+     Restore natural control sizes for touch and keyboard use. */
+  .field input[type=checkbox],.field input[type=radio] {
+    width:18px;
+    height:18px;
+    min-height:18px;
+    flex:0 0 18px;
+    margin:0;
+    padding:0;
+    box-shadow:none;
+  }
   :is(input,textarea)::placeholder {color:#72899d;opacity:1;}
   select {color-scheme:dark;}
   :is(.field input,.field select,.field textarea,.filterfield input,.filterfield select):focus {

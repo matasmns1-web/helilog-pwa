@@ -105,7 +105,7 @@ test("V2.19 installs new assets together while keeping older profile migration e
  assert.match(html,/<title>HeliLog V2\.20/);
  assert.match(html,/V2\.20 · TEST ENVIRONMENT/);
  assert.equal(manifest.name,"HeliLog V2.20 — Dark Cockpit Test");
- assert.match(worker,/helilog-v2-20-dark-cockpit-1/);
+ assert.match(worker,/helilog-v2-20-dark-cockpit-2/);
  assert.match(worker,/cloud-sync\.js\?v=2\.19-locations-1/);
  assert.match(html,/cloud-sync\.js\?v=2\.19-locations-1/);
  assert.match(html,/id="ownFirstName"/);

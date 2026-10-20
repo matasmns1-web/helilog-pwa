@@ -21,7 +21,7 @@ test('V2.20 is visibly distinguished as a test-only cockpit release',()=>{
 });
 
 test('Dark Cockpit stylesheet is screen-only and has responsive navigation and accessible focus',()=>{
-  assert.match(html,/<link rel="stylesheet" href="\.\/dark-cockpit\.css\?v=2\.20-cockpit-1" media="screen">/);
+  assert.match(html,/<link rel="stylesheet" href="\.\/dark-cockpit\.css\?v=2\.20-cockpit-2" media="screen">/);
   assert.match(css,/^@media screen \{/m);
   assert.match(css,/--cockpit-accent:\s*#43d6c5/);
   assert.match(css,/:focus-visible/);
@@ -29,13 +29,18 @@ test('Dark Cockpit stylesheet is screen-only and has responsive navigation and a
   assert.match(css,/\.mobile button\.on/);
   assert.match(css,/\.v23-auth-card/);
   assert.match(css,/#signatureCanvas \{background:#fff/);
+  assert.match(html,/field\.style\.background='#f3f4f6'/);
+  assert.match(css,/\.field input\[readonly\]:not\(\[type=checkbox\]\)/);
+  assert.match(css,/background:#203746 !important/);
+  assert.match(css,/\.field input\[type=checkbox\],\.field input\[type=radio\]/);
+  assert.match(css,/min-height:18px/);
   assert.doesNotMatch(css,/@media\s+print/);
   assert.doesNotMatch(css,/display:\s*none\s*!important\s*;?\s*\}/);
 });
 
 test('Offline shell includes the new stylesheet and retains every prior functional asset',()=>{
-  assert.match(sw,/helilog-v2-20-dark-cockpit-1/);
-  assert.match(sw,/\.\/dark-cockpit\.css\?v=2\.20-cockpit-1/);
+  assert.match(sw,/helilog-v2-20-dark-cockpit-2/);
+  assert.match(sw,/\.\/dark-cockpit\.css\?v=2\.20-cockpit-2/);
   for(const asset of ['night-calculation','aerodrome-lookup','cloud-config',
     'cloud-foundation','cloud-sync','auth-gate','archive-integrity','cloud-backups']) {
     const ref='./'+asset+'.js?v=2.19-locations-1';

@@ -77,7 +77,7 @@ test("PWA version and references are consistent for the V2.20 update",()=>{
  assert.equal(manifest.name,"HeliLog V2.20 — Dark Cockpit Test");
  assert.match(auth,/HELILOG_TEST_VERSION='V2\.20'/);
  assert.match(auth,/<h2>🚁 HeliLog '\+HELILOG_TEST_VERSION/);
- assert.match(worker,/helilog-v2-20-dark-cockpit-1/);
+ assert.match(worker,/helilog-v2-20-dark-cockpit-2/);
  for(const file of ["cloud-config","cloud-foundation","cloud-view","cloud-sync","auth-gate","cloud-archives"]){
   const ref=file+".js?v=2.19-locations-1";
   assert.ok(html.includes(ref),"Missing version in HTML: "+ref);
