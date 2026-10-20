@@ -58,3 +58,4 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 - Both **Export logbook → Print / Save as PDF** and **Print archive** use the same corrected print generator. Existing stored `picName` values, sealed archive records, paper page formats (including legacy 26-column batches), totals, and signatures remain unchanged.
 - `v2/v225-print-cleanup.test.cjs` renders both export and archive HTML to verify the comment is absent, new rows retain 27 cells, legacy rows retain 26 cells, saved PIC names remain unchanged, and rendering does not mutate flight data.
 - The V2.25 test PWA cache is distinct from production. No Supabase schema changes or production deployment.
+- The unified regression runner now selects compatible test flags for both Node 22 (GitHub Actions) and Node 24 (local tooling), repairing a pre-existing staging CI configuration failure.

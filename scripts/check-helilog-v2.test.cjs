@@ -4,9 +4,14 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
-const { GROUPS, LEGACY_FIXTURES } = require('./check-helilog-v2.cjs');
+const { GROUPS, LEGACY_FIXTURES, testRunnerFlags } = require('./check-helilog-v2.cjs');
 
 const root = path.resolve(__dirname, '..');
+
+test('test runner options work with both Node 22 CI and Node 24 local tooling', () => {
+  assert.deepEqual(testRunnerFlags('22.23.3'), ['--test']);
+  assert.deepEqual(testRunnerFlags('24.19.0'), ['--test', '--test-isolation=none']);
+});
 
 test('every V2 regression file is either a release gate or an explicitly listed legacy fixture', () => {
   const included = GROUPS.flatMap(group => group.files);
