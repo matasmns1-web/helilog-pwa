@@ -1,4 +1,4 @@
-const CACHE='helilog-v2-18-night-1';
+const CACHE='helilog-v2-19-locations-1';
 const SHELL=[
   './',
   './index.html',
@@ -7,20 +7,21 @@ const SHELL=[
   './icon-512.png',
   './apple-touch-icon.png',
   './domain.js',
-  './night-calculation.js?v=2.18-night-1',
+  './night-calculation.js?v=2.19-locations-1',
+  './aerodrome-lookup.js?v=2.19-locations-1',
   './print.js',
   './endorsement-bridge.js',
   './endorsement-ui.js',
-  './cloud-config.js?v=2.18-night-1',
-  './cloud-foundation.js?v=2.18-night-1',
-  './cloud-view.js?v=2.18-night-1',
-  './cloud-sync.js?v=2.18-night-1',
-  './auth-gate.js?v=2.18-night-1',
-  './cloud-archives.js?v=2.18-night-1',
-  './archive-integrity.js?v=2.18-night-1',
-  './recovery.js?v=2.18-night-1',
-  './cloud-backups.js?v=2.18-night-1',
-  './disaster-recovery.js?v=2.18-night-1'
+  './cloud-config.js?v=2.19-locations-1',
+  './cloud-foundation.js?v=2.19-locations-1',
+  './cloud-view.js?v=2.19-locations-1',
+  './cloud-sync.js?v=2.19-locations-1',
+  './auth-gate.js?v=2.19-locations-1',
+  './cloud-archives.js?v=2.19-locations-1',
+  './archive-integrity.js?v=2.19-locations-1',
+  './recovery.js?v=2.19-locations-1',
+  './cloud-backups.js?v=2.19-locations-1',
+  './disaster-recovery.js?v=2.19-locations-1'
 ];
 
 self.addEventListener('install',event=>{
