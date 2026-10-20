@@ -54,7 +54,7 @@ function prepare(){
  let worker=fs.readFileSync(path.join(source,"service-worker.js"),"utf8");
  must(index.includes("HeliLog V2.19"),"HTML must be V2.19");
  must(manifest.name.includes("V2.19"),"manifest release version mismatch");
- must(worker.includes("helilog-v2-18"),"offline cache release version mismatch");
+ must(worker.includes("helilog-v2-19"),"offline cache release version mismatch");
  const cfg="/* Generated production candidate public configuration; no secret keys. */\n"+
  "window.HeliLogCloudConfig = Object.freeze("+JSON.stringify({
   supabaseUrl:apiOrigin,publishableKey:key,authEnabled:true,environment:"production",
