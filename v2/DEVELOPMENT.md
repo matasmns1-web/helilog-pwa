@@ -89,3 +89,10 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 - The cloud status bubble now opens the relevant on-device conflict review rather than only routing to the Cloud account heading. With one eligible conflict, it opens the read-only comparison directly; otherwise it focuses an accessible issue list.
 - The conflict panel is displayed immediately below the Cloud account heading, with exact pending count and error explanation. For unresolved protected records no automatic overwrite options are offered.
 - Signature image data is not printed as base64 in comparisons. No changes to archives, flight records, Supabase schema, or production.
+
+## V2.28.2 — iPhone unqueued pilot-profile conflict recovery
+
+- When an existing local `person` record differs from the last verified cloud snapshot without a pending queue operation, mark a *blocked, device-local* review item and durably persist it. Do not upload or replace either record automatically.
+- The normal preview compares local and cloud copies; explicit resolution requires a local recovery snapshot and a fresh cloud revision check. Previously signed endorsement snapshots and print archives remain unchanged.
+- The comparison indicates whether the saved profile signatures match without displaying their raw base64 data. This solves `person:p_owner` showing conflict with zero pending changes.
+- All new behavior is test-only; no production schema, account records or print format modifications.
