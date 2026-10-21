@@ -228,6 +228,8 @@ function exportPrintableLogbook(options={}){
     let instrVal=functionTime(f,'instructor');
     let cfg=cfgFor(f);
 
+    // Historical archives retain their stored PIC wording; new PIC/SOLO
+    // records use SELF. This note belongs in JS, never in the HTML table.
     return `<tr class="flight-row">
       <td>${displayDate(f.date)}</td>
       <td>${htmlEscape(f.dep||'')}</td>
@@ -246,8 +248,6 @@ function exportPrintableLogbook(options={}){
           <td class="num">${flightPilotConfig(f)==='multi'?'':fmt(f.mins||0)}</td>
           <td class="num">${flightPilotConfig(f)==='multi'?fmt(f.mins||0):''}</td>`}
       <td class="num">${fmt(f.mins||0)}</td>
-      // For historical printed records, the original stored PIC value is
-      // retained to keep reprints unchanged. New PIC/SOLO flights store SELF.
       <td class="pic-name">${htmlEscape(f.picName||'')}</td>
 
       <td class="num">${Number(f.takeoffDay||0)||''}</td>

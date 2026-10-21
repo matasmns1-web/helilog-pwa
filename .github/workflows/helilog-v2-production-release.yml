@@ -28,4 +28,4 @@ jobs:
           node --test v2/v218-night-calculation.test.cjs v2/v219-aerodromes-utc.test.cjs
           node --test v2/v29-backup-recovery.test.cjs v2/v210-backup-health.test.cjs v2/v28-integrity-recovery.test.cjs
           node --test v2/v24-sync.test.cjs v2/v25-profile-pic.test.cjs v2/v27-cloud-ui.test.cjs
-          node --test v2/v220-dark-cockpit.test.cjs v2/v220-sync-pill.test.cjs
+          node --test v2/v220-dark-cockpit.test.cjs v2/v220-sync-pill.test.cjs v2/v225-print-cleanup.test.cjs v2/v226-help-guide.test.cjs

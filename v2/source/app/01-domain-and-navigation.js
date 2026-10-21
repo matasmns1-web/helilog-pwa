@@ -624,6 +624,7 @@ function mobilemore(){
     <button class="card more-link" onclick="go('profile')"><span>○</span><b>Profile</b><span class="muted">Pilot details, medical, licences and ratings</span></button>
     <button class="card more-link" onclick="go('settings')"><span>⚙</span><b>Settings</b><span class="muted">Logbook, cloud sync, backups and device</span></button>
     ${!v23AccountWorkspace()?`<button class="card more-link" onclick="go('testmode')"><span>⚗</span><b>Test Mode</b><span class="muted">Separate sandbox and safe reset</span></button>`:''}
+    <button class="card more-link" onclick="go('help')"><span>ⓘ</span><b>Help &amp; User Guide</b><span class="muted">Instructions and new features</span></button>
     <button class="card more-link" onclick="installHeliLog()"><span>▣</span><b>Install HeliLog</b><span class="muted">Home-screen / PWA setup</span></button>
   </div>
   <div id="mobilePWAStatus" class="card" style="margin-top:14px"></div>`;

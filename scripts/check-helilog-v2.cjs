@@ -9,6 +9,13 @@ const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
 
+function testRunnerFlags(nodeVersion = process.versions.node) {
+  // Node 24 supports running test files in the same process, which is useful
+  // in restricted local environments. Node 22 CI uses the default isolation.
+  return Number(nodeVersion.split('.')[0]) >= 24
+    ? ['--test', '--test-isolation=none'] : ['--test'];
+}
+
 // Keep these categories explicit so no flight, print, archive, or security
 // regression silently disappears from the deployment checks.
 const GROUPS = Object.freeze([
@@ -31,6 +38,8 @@ const GROUPS = Object.freeze([
       'v2/storage.test.cjs',
       'v2/ui.smoke.test.cjs',
       'v2/v223-quick-flight.test.cjs',
+      'v2/v225-print-cleanup.test.cjs',
+      'v2/v226-help-guide.test.cjs',
     ],
   },
   {
@@ -116,9 +125,7 @@ function main(args = process.argv.slice(2)) {
 
   for (const group of groups) {
     process.stdout.write(`\n===== ${group.name} =====\n`);
-    // Avoid the node:test child-runner dependency so the check also runs in
-    // restricted developer sandboxes; CI supports the same Node 22 flag.
-    const result = spawnSync(process.execPath, ['--test', '--test-isolation=none', ...group.files], {
+    const result = spawnSync(process.execPath, [...testRunnerFlags(), ...group.files], {
       cwd: ROOT, stdio: 'inherit',
     });
     if (result.error) throw result.error;
@@ -137,4 +144,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { GROUPS, LEGACY_FIXTURES };
+module.exports = { GROUPS, LEGACY_FIXTURES, testRunnerFlags };

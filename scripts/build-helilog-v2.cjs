@@ -24,6 +24,7 @@ const APP_PARTS = Object.freeze([
   '10-settings-and-locations.js',
   '11-sandbox-and-backups.js',
   '12-profile-forms.js',
+  '13-help-guide.js',
   '13-routing-and-boot.js',
 ]);
 

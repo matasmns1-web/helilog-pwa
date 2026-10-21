@@ -17,7 +17,10 @@ test('the Render entrypoint is reproducibly generated from the maintained source
 });
 
 test('feature source order and single-script browser semantics are preserved', () => {
-  assert.equal(APP_PARTS.length, 14);
+  assert.ok(APP_PARTS.length >= 14);
+  assert.ok(APP_PARTS.includes('13-help-guide.js'), 'guide source must be part of the build');
+  assert.ok(APP_PARTS.indexOf('13-help-guide.js') < APP_PARTS.indexOf('13-routing-and-boot.js'));
+
   const script = APP_PARTS.map(name => fs.readFileSync(path.join(source, 'app', name), 'utf8')).join('');
   const rendered = assemble();
   const inline = rendered.match(/<script>\n([\s\S]*?)<\/script><\/body><\/html>\n?$/);
