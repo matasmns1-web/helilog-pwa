@@ -95,6 +95,74 @@ test('simulator time remains independent of actual flight hours and prevents dup
  assert.ok(report.issues.some(i=>i.code==='duplicate-simulator'));
  assert.ok(!report.issues.some(i=>i.code==='batch-total'));
 });
+test('same-day overlapping flights from screenshot produce three critical pairs with both record links',()=>{
+ const a=flight({id:'a',date:'2026-10-20',off:'14:30',on:'18:00',mins:210});
+ const b=flight({id:'b',date:'2026-10-20',off:'15:00',on:'18:00',mins:180});
+ const c=flight({id:'c',date:'2026-10-20',off:'16:00',on:'17:30',mins:90});
+ const prev=flight({id:'prev',date:'2026-10-19',off:'10:00',on:'12:00',mins:120});
+ const report=analyze(draft([prev,a,b,c]),[prev,a,b,c]);
+ const overlaps=report.issues.filter(i=>i.code==='overlapping-flight');
+ assert.equal(overlaps.length,3);
+ assert.ok(overlaps.every(i=>i.severity==='critical'&&i.flightId&&i.otherFlightId));
+ assert.deepEqual(overlaps.map(i=>[i.flightId,i.otherFlightId].sort().join('-')).sort(),['a-b','a-c','b-c']);
+ assert.ok(overlaps.some(i=>i.message.includes('14:30–18:00')&&i.message.includes('15:00–18:00')));
+ assert.ok(!overlaps.some(i=>i.flightId==='prev'||i.otherFlightId==='prev'));
+});
+test('adjacent flights sharing an endpoint are not reported as overlapping',()=>{
+ const a=flight({id:'a',off:'10:00',on:'11:00'});
+ const b=flight({id:'b',off:'11:00',on:'12:00'});
+ const report=analyze(draft([a,b]),[a,b]);
+ assert.ok(!report.issues.some(i=>i.code==='overlapping-flight'));
+});
+test('UTC midnight rollover catches overlap with a flight logged on the following date',()=>{
+ const night=flight({id:'night',date:'2026-10-20',off:'23:30',on:'00:35',mins:65});
+ const morning=flight({id:'morning',date:'2026-10-21',off:'00:20',on:'01:00',mins:40});
+ const report=analyze(draft([night,morning]),[night,morning]);
+ const overlaps=report.issues.filter(i=>i.code==='overlapping-flight');
+ assert.equal(overlaps.length,1);
+ assert.match(overlaps[0].message,/0:15.*next UTC day/);
+});
+test('a new flight overlapping an already archived record outside the selected batch is flagged',()=>{
+ const past=flight({id:'archived',date:'2026-10-20',off:'10:00',on:'11:00'});
+ const upcoming=flight({id:'new',date:'2026-10-20',off:'10:50',on:'11:20',mins:30});
+ const report=analyze(draft([upcoming]),[past,upcoming]);
+ const overlapping=report.issues.filter(i=>i.code==='overlapping-flight');
+ assert.equal(overlapping.length,1);
+ assert.deepEqual([overlapping[0].flightId,overlapping[0].otherFlightId],['new','archived']);
+});
+test('overlapping entries on different aircraft are also flagged in one pilot logbook',()=>{
+ const a=flight({id:'a',off:'10:00',on:'11:00'});
+ const b=flight({id:'b',aid:'a2',off:'10:15',on:'10:45',mins:30});
+ const d=draft([a,b],{aircraft:[...aircraft,{id:'a2',reg:'LY-XYZ',engine:'Single engine'}]});
+ const report=analyze(d,[a,b]);
+ assert.equal(report.issues.filter(i=>i.code==='overlapping-flight').length,1);
+});
+test('simulator or invalid/equal UTC intervals do not produce fabricated overlap',()=>{
+ const a=flight({id:'a',off:'10:00',on:'11:00'});
+ const untimed=flight({id:'untimed',off:'',on:'11:00'});
+ const equal=flight({id:'equal',off:'10:20',on:'10:20',mins:0});
+ const sim={id:'sim',entryType:'simulator',date:'2026-10-21',simCategory:'FNPT II',
+    simDevice:'',simQualification:'G2',stdMin:60,mins:0,off:'10:05',on:'10:55'};
+ const report=analyze(draft([a,untimed,equal,sim]),[a,untimed,equal,sim]);
+ assert.ok(!report.issues.some(i=>i.code==='overlapping-flight'));
+ assert.ok(report.issues.some(i=>i.code==='utc-time'));
+ assert.ok(report.issues.some(i=>i.code==='same-time'));
+});
+test('non-selected overlaps are not incorrectly included in a selected page review',()=>{
+ const a=flight({id:'older1',off:'14:30',on:'18:00',mins:210});
+ const b=flight({id:'older2',off:'15:00',on:'18:00',mins:180});
+ const selected=flight({id:'selected',off:'06:00',on:'07:00'});
+ const report=analyze(draft([selected]),[a,b,selected]);
+ assert.ok(!report.issues.some(i=>i.code==='overlapping-flight'));
+});
+test('cross-flight overlap review stays purely read-only and never changes the input records',()=>{
+ const a=flight({id:'a',off:'14:30',on:'18:00',mins:210});
+ const b=flight({id:'b',off:'15:00',on:'18:00',mins:180});
+ const d=draft([a,b]),all=[a,b],before=JSON.stringify({d,all,people});
+ const report=analyze(d,all);
+ assert.ok(report.critical>=1);
+ assert.equal(JSON.stringify({d,all,people}),before);
+});
 test('selected exact draft must be reviewed, changed page count invalidates review, and print and archive both gate',()=>{
  const s=read('source/app/05-archive-and-corrections.js');
  const lines=s.slice(s.indexOf('function v229ArchiveReviewed('),s.indexOf('function v229OpenReviewFlight('));
@@ -113,17 +181,17 @@ test('selected exact draft must be reviewed, changed page count invalidates revi
 test('Help guide teaches onboarding, cloud sync, recovery, and new pre-archive review',()=>{
  const guide=read('source/app/13-help-guide.js');
  for(const term of ['Pre-archive flight review','Review flights before printing',
-  'Check sign-in connection','one shared cloud logbook','Restore these missing records','V2.29',
+  'Check sign-in connection','one shared cloud logbook','Restore these missing records','V2.29.1',
   'repeat the review','brand-new device'])assert.ok(guide.toLowerCase().includes(term.toLowerCase()),term);
  assert.match(guide,/htmlEscape\(step\)/);
 });
-test('V2.29 external checker is versioned, cached offline and restricted to the test release',()=>{
+test('V2.29.1 external checker is versioned, cached offline and restricted to the test release',()=>{
  const html=read('source/index.template.html');
  const sw=read('service-worker.js');
  assert.match(html,/prearchive-review\.js\?v=2\.29/);
  assert.match(sw,/prearchive-review\.js\?v=2\.29/);
- assert.match(sw,/helilog-v2-29-prearchive-guide-1/);
- assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.29'/);
+ assert.match(sw,/helilog-v2-29-1-flight-overlap-1/);
+ assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.29\.1'/);
  const route=read('source/app/13-routing-and-boot.js');
  assert.match(route,/archivereview:v229PreArchiveReview/);
  assert.match(route,/v==='archivereview'/);

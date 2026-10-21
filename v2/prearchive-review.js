@@ -17,6 +17,56 @@
   const m=/^([01]\d|2[0-3]):([0-5]\d)$/.exec(safeString(v));
   return m?Number(m[1])*60+Number(m[2]):null;
  };
+ // Compare UTC intervals, not rounded/logged flight minutes. A flight with
+ // on < off continues into the next UTC date; touching endpoints do not overlap.
+ // Invalid dates, missing times, simulator sessions and ambiguous equal clocks
+ // are handled by other checks and are not treated as reliable intervals here.
+ const flightInterval=f=>{
+  if(!f||f.entryType==="simulator")return null;
+  const date=safeString(f.date);
+  const match=/^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if(!match)return null;
+  const year=Number(match[1]),month=Number(match[2]),day=Number(match[3]);
+  const base=Date.UTC(year,month-1,day);
+  const parsed=new Date(base);
+  if(!Number.isFinite(base)||parsed.getUTCFullYear()!==year||
+     parsed.getUTCMonth()!==month-1||parsed.getUTCDate()!==day)return null;
+  const off=clock(f.off),on=clock(f.on);
+  if(off===null||on===null||off===on)return null;
+  const start=base/60000+off,end=base/60000+on+(on<off?1440:0);
+  return {start,end};
+ };
+ const flightTimeLabel=f=>safeString(f.date)+" "+
+   safeString(f.off)+"–"+safeString(f.on)+(clock(f.on)<clock(f.off)?" (next UTC day)":"")+" UTC";
+ const findOverlaps=(selected,allFlights)=>{
+  // Use one copy per stable record ID, favouring the exact draft being printed.
+  // That also prevents a selected record from matching itself in allFlights.
+  const originals=new Map();
+  for(const f of allFlights){
+   if(f&&typeof f.id==="string"&&f.id&&!originals.has(f.id))
+    originals.set(f.id,f);
+  }
+  const ids=new Set();
+  for(const f of selected){
+   if(f&&typeof f.id==="string"&&f.id){ids.add(f.id);originals.set(f.id,f);}
+  }
+  const ordered=[...originals.values()].map(f=>({flight:f,time:flightInterval(f)}))
+   .filter(x=>x.time).sort((a,b)=>a.time.start-b.time.start);
+  const overlaps=[];
+  for(let i=0;i<ordered.length;i++){
+   const a=ordered[i];
+   for(let j=i+1;j<ordered.length&&ordered[j].time.start<a.time.end;j++){
+    const b=ordered[j];
+    if(!ids.has(a.flight.id)&&!ids.has(b.flight.id))continue;
+    const shared=Math.min(a.time.end,b.time.end)-Math.max(a.time.start,b.time.start);
+    if(shared<=0)continue;
+    const current=ids.has(a.flight.id)?a.flight:b.flight;
+    const other=current===a.flight?b.flight:a.flight;
+    overlaps.push({current,other,shared});
+   }
+  }
+  return overlaps;
+ };
  const key=(f,aircraft)=>{
   if(f.entryType==="simulator"){
    const parts=["SIM",f.date,f.simCategory,f.simDevice,f.simQualification,f.stdMin,f.remarks];
@@ -44,6 +94,16 @@
     const a=seen.get(fingerprint)||[];
     a.push(f);seen.set(fingerprint,a);
    }
+  }
+  // Same-account helicopter flights cannot occupy overlapping UTC clock
+  // intervals. Include cross-midnight overlaps and prior confirmed batches
+  // present in allFlights. Report each pair exactly once.
+  for(const {current,other,shared} of findOverlaps(draft.flights,allFlights)){
+   const fmt=m=>Math.floor(m/60)+":"+String(m%60).padStart(2,"0");
+   add("critical","overlapping-flight",
+    "Flight time overlaps another logbook entry by "+fmt(shared)+" (HH:mm). "+
+    flightTimeLabel(current)+" conflicts with "+flightTimeLabel(other)+
+    ". Review both entries; nothing was changed.",current,other);
   }
   const members=new Map(people.filter(p=>p&&p.id).map(p=>[p.id,p]));
   const account=safeString(draft.pilot?.name).toLowerCase();

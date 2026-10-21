@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.29 — Pre-archive Flight Review · Test</title>
+<title>HeliLog V2.29.1 — Pre-archive Flight Review · Test</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -303,7 +303,7 @@ html.helilog-test-mode .brand::after{
 <link rel="stylesheet" href="./guide.css?v=2.29" media="screen">
 </head>
 <body><div class="layout">
-<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.29 · TEST ENVIRONMENT</span></div><nav>
+<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.29.1 · TEST ENVIRONMENT</span></div><nav>
 <div class="nav-group-label">Flight operations</div>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button>
 <div class="nav-group-label">Records &amp; assets</div>
@@ -384,7 +384,7 @@ html.helilog-test-mode .brand::after{
 <script src="./night-calculation.js?v=2.19-locations-1"></script>
 <script src="./aerodrome-lookup.js?v=2.19-locations-1"></script>
 <script src="./print.js"></script>
-<script src="./prearchive-review.js?v=2.29"></script>
+<script src="./prearchive-review.js?v=2.29.1"></script>
 <script src="./endorsement-bridge.js"></script>
 <script src="./endorsement-ui.js"></script>
 <script src="./cloud-config.js?v=2.19-locations-1"></script>
@@ -5606,7 +5606,7 @@ function deleteQualification(id){
   save();
   profile();
 }
-/* V2.29. Searchable, offline-friendly guide and current release notes. */
+/* V2.29.1. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
   {
     "category": "Records & signatures",
@@ -5730,6 +5730,7 @@ const HELILOG_GUIDE_TOPICS=[
       "Select Review flights before printing to inspect the selected batch. A possible duplicate is compared with your entire logbook, including earlier archived entries.",
       "Check missing PIC information and pilot links, flight duration versus UTC off/on times (including overnight flights), unusual very short or long flights, Night/IFR/instructor minutes and take-off versus landing counts.",
       "Review the independent calculations of PIC/Co-pilot/Dual, engine and single-/multi-pilot experience, and carried-forward plus closing totals.",
+      "Review overlapping flight intervals, including multiple flights on the same day or an overnight arrival on the next UTC day. Flights that end when another starts are not overlaps.",
       "Use View entry to inspect a flagged flight. Edit only an unarchived entry through its normal form; do not silently change or automatically delete anything.",
       "Acknowledgement allows printing after you have checked exceptions; it is not official certification. If selected pages or flight records change, repeat the review.",
       "Print, verify and sign the paper pages before separately confirming the archive. Archived records remain protected."
@@ -5799,9 +5800,9 @@ const HELILOG_GUIDE_TOPICS=[
 ];
 const HELILOG_GUIDE_UPDATES=[
   {
-    "v": "V2.29",
-    "name": "Pre-archive review and new-user guidance",
-    "detail": "Check likely duplicate or incomplete flight details and time totals before printing. Expanded cloud onboarding, iPhone recovery and backup guidance."
+    "v": "V2.29.1",
+    "name": "Pre-archive review, including overlapping UTC flights",
+    "detail": "Now flags overlapping UTC flight intervals (including overnight and earlier archived entries) as well as duplicates, PIC information and running totals. Expanded onboarding and recovery guidance."
   },
   {
     "v": "V2.28.4",
