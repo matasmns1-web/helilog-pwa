@@ -67,3 +67,10 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 - The guide includes first-time setup, Quick Flight, pilot profiles, UTC/night calculation, totals, PDF/print archive, endorsements, cloud sync, backups and account settings.
 - Its task descriptions are searchable and available offline through the generated page. Visual styling is isolated in screen-only `guide.css`, cached by the service worker. The printed logbook remains unchanged.
 - Run `node scripts/check-helilog-v2.cjs` before staging releases; `v226-help-guide.test.cjs` checks navigation, essential guide content and offline availability.
+
+## V2.27 — Reusable pilot signatures (test environment)
+
+- Save/replace/remove a consented pilot signature via the Pilots page. The profile stores a bounded PNG data URL and capture/consent timestamps. These data can appear in account sync and backups and should be protected as sensitive personal information.
+- Existing endorsements remain unchanged; new signing requires the actual signer's explicit approval per endorsement and separately snapshots the signature, method, name, licence and timestamp.
+- Stored-signature use also requires a separate confirmation dialogue. No auto-signing, no electronic identity verification and no qualified-signature claim.
+- Test with `v2/v227-pilot-signatures.test.cjs`; no production, database schema, print-layout or old archive changes.

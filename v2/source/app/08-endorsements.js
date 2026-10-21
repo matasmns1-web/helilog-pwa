@@ -132,7 +132,7 @@ function endorsementForm(editId=null){
           <option value="">Select saved pilot</option>
           ${signers.map(p=>`<option value="${p.id}"${e.signatoryPersonId===p.id?' selected':''}>${htmlEscape(p.name)}${p.licence?' — '+htmlEscape(p.licence):''}</option>`).join('')}
         </select>
-        <div class="mini">The endorser is linked to a saved pilot profile so a reusable signature can be associated with that profile later.</div>
+        <div class="mini">The endorser is linked to a saved pilot profile. Using a saved signature requires their explicit approval for each endorsement.</div>
       </div>
     </div>
 
@@ -231,6 +231,7 @@ function signEndorsement(id){
 
     <div class="note" style="margin-bottom:12px">Prototype signature capture only. This is not yet presented as a qualified or authority-approved electronic signature. The endorser should review the text above before signing.</div>
 
+    ${v227IsPNG(signer.savedSignatureData)?`<div class="v227-saved-option"><b>Saved signature available</b><p class="muted">The signer may approve applying their profile signature to this specific endorsement.</p><button type="button" class="btn" onclick="v227UseSavedSignature('${e.id}')">Use saved signature</button></div>`:''}
     <div class="signature-canvas-wrap">
       <div style="font-weight:700;margin-bottom:8px">Signature of ${htmlEscape(signer.name)}</div>
       <canvas id="signatureCanvas" width="900" height="260"></canvas>
@@ -239,6 +240,8 @@ function signEndorsement(id){
         <button class="btn primary" type="button" onclick="applyEndorsementSignature('${e.id}')">Apply signature</button>
       </div>
     </div>
+    <label class="v227-confirm"><input type="checkbox" id="v227ApproveSignature"> I confirm that ${htmlEscape(signer.name)} has reviewed this particular endorsement and expressly approves signing it now.</label>
+    <p class="mini">This checkbox is an operator confirmation, not independently verified signatory identity or a qualified electronic signature.</p>
   </div>`;
 
   setupEndorsementSignaturePad();
@@ -305,15 +308,8 @@ function applyEndorsementSignature(id){
   let signer=personById(e.signatoryPersonId);
   if(!signer) return;
 
-  const previous={signatureData:e.signatureData,signedAt:e.signedAt,signedName:e.signedName,signedLicence:e.signedLicence};
-  e.signatureData=canvas.toDataURL('image/png');
-  e.signedAt=new Date().toISOString();
-  e.signedName=signer.name;
-  e.signedLicence=signer.licence||'';
-  if(!save()){
-    Object.assign(e,previous);
-    return;
-  }
+  if(!v227SignerApproved())return;
+  if(!v227WriteEndorsementSignature(e,signer,canvas.toDataURL('image/png'),'drawn'))return;
   v2EndorsementNotice=isStandaloneApp()
    ?'Endorsement signed and saved on this device. With extended cloud sync enabled, it will appear on your other devices after Cloud synced. Printing and archive confirmation remain web-only.'
    :'Endorsement signed and saved in this browser. Awaiting print archive confirmation.';

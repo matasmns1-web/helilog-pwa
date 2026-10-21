@@ -1,9 +1,9 @@
-const CACHE='helilog-v2-26-help-guide-1';
+const CACHE='helilog-v2-27-signatures-1';
 const SHELL=[
   './',
   './index.html',
   './dark-cockpit.css?v=2.20-cockpit-3',
-  './guide.css?v=2.26',
+  './guide.css?v=2.27',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png',

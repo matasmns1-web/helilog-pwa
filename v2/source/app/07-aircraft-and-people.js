@@ -119,10 +119,11 @@ function pilots(){
           ${p.isAccountHolder
             ? `<button class="btn" type="button" onclick="go('profile')">Profile</button>`
             : `<button class="btn" type="button" onclick="editPerson('${p.id}')">Edit</button>`}
+          <button class="btn" type="button" onclick="v227EditSignature('${p.id}')">Signature</button>
         </div>
         <p><b>${linked.length}</b> <span class="muted">flight${linked.length===1?'':'s'} recorded with this person as PIC</span></p>
         ${p.notes?`<div class="muted" style="margin-bottom:10px">${htmlEscape(p.notes)}</div>`:''}
-        <div class="signature-placeholder">Signature profile: planned for V2 — this pilot profile will be the link point for reusable signatures/certifications.</div>
+        <div class="mini"><b>Signature:</b> ${v227IsPNG(p.savedSignatureData)?'Saved to pilot profile':'Not saved'} · Endorsements still require approval for each signing.</div>
       </div>`;
     }).join('');
 
@@ -150,7 +151,7 @@ function newPerson(editId=null){
         <div class="field"><label>Licence / identifier</label><input id="personLicence" value="${existing?htmlEscape(existing.licence||''):''}" placeholder="Optional"></div>
         <div class="field"><label>Notes</label><input id="personNotes" value="${existing?htmlEscape(existing.notes||''):''}" placeholder="Optional"></div>
       </div>
-      <div class="signature-placeholder" style="margin-top:14px">Signature association will be added later in V2. This profile ID is already stored with linked flights so signatures can be attached to the person rather than re-entered each time.</div>
+      <div class="mini" style="margin-top:14px">After saving, use Signature on this pilot’s card to capture or update their signature. It will never be applied automatically.</div>
       <div class="actions"><button class="btn primary">${existing?'Save changes':'Save pilot'}</button></div>
     </form>`;
 }
@@ -202,3 +203,91 @@ function savePerson(e){
 }
 
 
+
+
+/* V2.27 — consent-based pilot profile signatures.
+ * Records are stored as PNG snapshots per person. Endorsements embed a copy,
+ * not a live reference. Not independent identity verification or a QES.
+ */
+function v227IsPNG(x){
+  return typeof x==='string' && x.length<=250000 &&
+    /^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/.test(x);
+}
+function v227EditSignature(id){
+  const person=personById(id);
+  if(!person){go('pilots');return;}
+  const has=v227IsPNG(person.savedSignatureData);
+  app.innerHTML=header('Pilot signature','Manage a reusable signature for '+person.name,
+    '<button class="btn" type="button" onclick="go(\'pilots\')">← Pilots</button>')+
+    '<div class="card v227-signature-view">'+
+    '<h2>'+htmlEscape(person.name)+'</h2>'+
+    '<p class="muted">The named pilot must draw or approve storing their own signature. A saved signature is never applied to an endorsement automatically.</p>'+
+    (has?'<div class="v227-saved-image"><b>Saved signature</b><img alt="Saved pilot signature" src="'+person.savedSignatureData+'">'+
+      '<div class="mini">Saved '+htmlEscape(person.savedSignatureAt?formatDateTime(person.savedSignatureAt):'previously')+'. Existing signed records remain unchanged if you replace or remove this signature.</div></div>':
+      '<div class="note">No saved signature yet.</div>')+
+    '<div class="signature-canvas-wrap"><b>Draw the signature</b><canvas id="signatureCanvas" width="900" height="260"></canvas>'+
+      '<button type="button" class="btn" onclick="clearEndorsementSignature()">Clear</button></div>'+
+    '<label class="v227-confirm"><input type="checkbox" id="v227StoreConsent"> I am the named pilot, or the pilot is present and explicitly agrees to store this signature in their profile.</label>'+
+    '<p class="mini">Saved signatures can be included in cloud synchronization and backups. Treat them as sensitive personal information. Saving a profile signature does not approve signing future records.</p>'+
+    '<div class="actions"><button type="button" class="btn primary" onclick="v227SaveSignature(\''+htmlEscape(person.id)+'\')">'+(has?'Replace signature':'Save signature')+'</button>'+
+    (has?'<button type="button" class="btn dangerbtn" onclick="v227RemoveSignature(\''+htmlEscape(person.id)+'\')">Remove</button>':'')+'</div></div>';
+  setupEndorsementSignaturePad();
+}
+function v227SaveSignature(id){
+  const person=personById(id),canvas=document.getElementById('signatureCanvas');
+  if(!person||!canvas)return;
+  if(!document.getElementById('v227StoreConsent')?.checked){
+    alert('Please confirm the named pilot’s consent to store the signature.');return;
+  }
+  if(!endorsementSignatureDirty){alert('Draw the signature before saving.');return;}
+  const png=canvas.toDataURL('image/png');
+  if(!v227IsPNG(png)){alert('Invalid or oversized signature. Please draw it again.');return;}
+  if(v227IsPNG(person.savedSignatureData)&&
+     !confirm('Replace this saved signature? Already signed endorsements will stay unchanged.'))return;
+  const before={savedSignatureData:person.savedSignatureData,savedSignatureAt:person.savedSignatureAt,savedSignatureConsentAt:person.savedSignatureConsentAt};
+  person.savedSignatureData=png;
+  person.savedSignatureAt=new Date().toISOString();
+  person.savedSignatureConsentAt=person.savedSignatureAt;
+  if(!save()){Object.assign(person,before);return;}
+  v227EditSignature(id);
+}
+function v227RemoveSignature(id){
+  const person=personById(id);
+  if(!person||!v227IsPNG(person.savedSignatureData))return;
+  if(!confirm('Remove this saved signature? Previously signed endorsements will not change.'))return;
+  const before={savedSignatureData:person.savedSignatureData,savedSignatureAt:person.savedSignatureAt,savedSignatureConsentAt:person.savedSignatureConsentAt};
+  delete person.savedSignatureData;delete person.savedSignatureAt;delete person.savedSignatureConsentAt;
+  if(!save()){Object.assign(person,before);return;}
+  v227EditSignature(id);
+}
+function v227SignerApproved(){
+  if(document.getElementById('v227ApproveSignature')?.checked)return true;
+  alert('The named endorser must review and expressly approve signing this particular endorsement.');
+  return false;
+}
+function v227WriteEndorsementSignature(e,person,png,method){
+  if(!e||!person||e.signatoryPersonId!==person.id||e.signatureData||
+    v2ArchiveBridge.isArchived(S,e.id)||!v227IsPNG(png))return false;
+  const before={signatureData:e.signatureData,signedAt:e.signedAt,signedName:e.signedName,
+    signedLicence:e.signedLicence,signedSource:e.signedSource,signedConsentAt:e.signedConsentAt};
+  const now=new Date().toISOString();
+  e.signatureData=png;e.signedAt=now;e.signedName=person.name;
+  e.signedLicence=person.licence||'';e.signedSource=method;e.signedConsentAt=now;
+  if(!save()){Object.assign(e,before);return false;}
+  return true;
+}
+function v227UseSavedSignature(id){
+  const e=endorsementById(id);
+  if(!e||e.signatureData||v2ArchiveBridge.isArchived(S,id)){
+    alert('This endorsement is already signed or archived.');return;
+  }
+  const person=personById(e.signatoryPersonId);
+  if(!person||!v227IsPNG(person.savedSignatureData)){
+    alert('No valid saved signature for this endorser. Draw a new signature instead.');return;
+  }
+  if(!v227SignerApproved())return;
+  if(!confirm('Confirm that '+person.name+' has personally reviewed and approved this exact endorsement: '+e.title+'?'))return;
+  if(!v227WriteEndorsementSignature(e,person,person.savedSignatureData,'saved-profile'))return;
+  v2EndorsementNotice='Endorsement signed with the endorser’s explicit approval using a saved signature. The signature is independently copied to this record.';
+  endorsements();
+}
