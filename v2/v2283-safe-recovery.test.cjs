@@ -144,5 +144,5 @@ test("recovery UI is read-only, hides signature images and gives an explicit dow
  assert.match(ui,/This is a read-only inspection/);
  assert.match(ui,/Download preserved pre-sync data/);
  assert.doesNotMatch(ui,/v283RestorePreservedSetup/);
- assert.match(read("service-worker.js"),/helilog-v2-28-3-safe-recovery-1/);
+ assert.match(read("service-worker.js"),/helilog-v2-28-4-selective-recovery-1/);
 });
