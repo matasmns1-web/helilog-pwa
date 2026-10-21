@@ -47,9 +47,9 @@ test('test-only PWA release labels and offline cache are aligned',()=>{
   const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
   const manifest=JSON.parse(fs.readFileSync(path.join(root,'manifest.webmanifest'),'utf8'));
   const worker=fs.readFileSync(path.join(root,'service-worker.js'),'utf8');
-  assert.match(html,/HeliLog V2\.28\.4 — Selective Records Recovery · Test/);
-  assert.equal(manifest.name,'HeliLog V2.28.4 — Selective Records Recovery Test');
-  assert.match(worker,/helilog-v2-28-4-selective-recovery-1/);
+  assert.match(html,/HeliLog V2\.29 — Pre-archive Flight Review · Test/);
+  assert.equal(manifest.name,'HeliLog V2.29 — Pre-archive Flight Review Test');
+  assert.match(worker,/helilog-v2-29-prearchive-guide-1/);
   assert.match(html,/function quickAdd\(\)/);
   assert.match(html,/function saveFlight\(\)/);
 });
