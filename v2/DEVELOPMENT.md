@@ -59,3 +59,11 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 - `v2/v225-print-cleanup.test.cjs` renders both export and archive HTML to verify the comment is absent, new rows retain 27 cells, legacy rows retain 26 cells, saved PIC names remain unchanged, and rendering does not mutate flight data.
 - The V2.25 test PWA cache is distinct from production. No Supabase schema changes or production deployment.
 - The unified regression runner now selects compatible test flags for both Node 22 (GitHub Actions) and Node 24 (local tooling), repairing a pre-existing staging CI configuration failure.
+
+## V2.26 — Help & User Guide (test only)
+
+- The sidebar and mobile More menu include **Help & User Guide**. The guide works within the existing signed-in app, with no new account permissions or backend tables.
+- All instructions and What's new entries live in `source/app/13-help-guide.js`. Add or revise topic objects there when releasing new features, and add a new changelog entry for each relevant release.
+- The guide includes first-time setup, Quick Flight, pilot profiles, UTC/night calculation, totals, PDF/print archive, endorsements, cloud sync, backups and account settings.
+- Its task descriptions are searchable and available offline through the generated page. Visual styling is isolated in screen-only `guide.css`, cached by the service worker. The printed logbook remains unchanged.
+- Run `node scripts/check-helilog-v2.cjs` before staging releases; `v226-help-guide.test.cjs` checks navigation, essential guide content and offline availability.
