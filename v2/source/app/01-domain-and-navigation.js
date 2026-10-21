@@ -440,10 +440,15 @@ function flightRemarksForDisplay(f){
   return [String(f?.remarks||'').trim(),specialOpsAnnotation(f)].filter(Boolean).join(' | ');
 }
 function specialisedTotals(){
+  const previous=S.broughtForward?.specialOps||{};
   return SPECIAL_OPS.map(op=>{
     const flights=effectiveFlights().filter(f=>Object.prototype.hasOwnProperty.call(f.specialOps||{},op.code));
-    return {...op,flights:flights.length,minutes:flights.reduce((n,f)=>n+Number(f.specialOps[op.code]||0),0)};
-  }).filter(e=>e.flights);
+    const recordedMinutes=flights.reduce((n,f)=>n+Number(f.specialOps[op.code]||0),0);
+    const historical=Number(previous?.[op.code]||0);
+    const previousMinutes=Number.isSafeInteger(historical)&&historical>=0?historical:0;
+    return {...op,flights:flights.length,previousMinutes,recordedMinutes,
+      minutes:previousMinutes+recordedMinutes};
+  }).filter(e=>e.flights||e.previousMinutes>0);
 }
 function broughtForwardInputMinutes(v){return Number(v||0)>0?fmt(Number(v)):'';
 }
