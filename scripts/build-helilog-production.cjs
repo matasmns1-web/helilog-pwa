@@ -59,7 +59,7 @@ function prepare(){
  must(manifest.name.startsWith('HeliLog '+version+' —')&&manifest.name.endsWith(' Test'),
   "manifest release version mismatch");
  const testCache=worker.match(/^const CACHE='(helilog-v2-[a-z0-9-]+)';/m)?.[1];
- must(testCache&&testCache.startsWith('helilog-'+version.toLowerCase().replace('.','-')+'-'),
+ must(testCache&&testCache.startsWith('helilog-'+version.toLowerCase().replace(/\./g,'-')+'-'),
   "offline cache release version mismatch");
  const cfg="/* Generated production candidate public configuration; no secret keys. */\n"+
  "window.HeliLogCloudConfig = Object.freeze("+JSON.stringify({
@@ -75,7 +75,7 @@ function prepare(){
  manifest.name="HeliLog "+version+" — Private Beta";
  manifest.short_name="HeliLog";
  manifest.description="Private beta helicopter pilot logbook; not independently certified for regulatory recordkeeping.";
- const productionCache='helilog-'+version.toLowerCase().replace('.','-')+'-production-candidate-1';
+ const productionCache='helilog-'+version.toLowerCase().replace(/\./g,'-')+'-production-candidate-1';
  worker=worker.replace("const CACHE='"+testCache+"';","const CACHE='"+productionCache+"';");
  must(worker.includes(productionCache)&&!worker.includes("const CACHE='"+testCache+"';"),
   "distinct production PWA cache missing");
