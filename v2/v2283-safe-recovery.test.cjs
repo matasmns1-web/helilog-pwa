@@ -125,7 +125,7 @@ test("a preserved local pilot and signed endorsement are inspectable but never a
 test("read-only pre-sync inspection reports collisions and an absent snapshot safely",async()=>{
  const server=backend(),web=device(server,"Web"),phone=device(server,"iPhone");
  await web.api.refresh();await phone.api.refresh();
- assert.equal(web.api.preservedSetupSummary().available,false);
+ assert.throws(()=>web.api.preservedSetupSummary(),/complete cloud setup/);
  web.data.people.push({id:"shared-pilot",name:"Cloud version"});
  await web.api.activateExtension("upload");await tick();
  phone.data.people.push({id:"shared-pilot",name:"Previous iPhone version"});
