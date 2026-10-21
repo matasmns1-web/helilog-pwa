@@ -96,3 +96,10 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 - The normal preview compares local and cloud copies; explicit resolution requires a local recovery snapshot and a fresh cloud revision check. Previously signed endorsement snapshots and print archives remain unchanged.
 - The comparison indicates whether the saved profile signatures match without displaying their raw base64 data. This solves `person:p_owner` showing conflict with zero pending changes.
 - All new behavior is test-only; no production schema, account records or print format modifications.
+
+## V2.28.3 — safe iPhone totals review and preserved-record inspection
+
+- The previously unqueued local `settings:broughtForward` difference now becomes a blocked on-device conflict with a visible comparison. Choosing which totals to retain requires fresh cloud revision verification and a verified device-local backup. No automatic upload or overwrite occurs.
+- Cloud account can inspect the pre-extension device safety snapshot, showing which pilot profiles and endorsements are missing from the current device and which existing IDs differ. The inspection hides signature image data, makes no changes, and allows the existing JSON recovery download.
+- Missing pilots and signed endorsements are **not yet automatically restored**. Check the preserved snapshot and reconcile account records before implementing an explicit selective restore.
+- This fix is test-only. It does not change the production database schema, printed logbook, flight archive or signed-endorsement records.
