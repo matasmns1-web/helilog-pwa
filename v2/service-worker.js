@@ -1,4 +1,4 @@
-const CACHE='helilog-v2-29-1-flight-overlap-1';
+const CACHE='helilog-v2-30-previous-ops-1';
 const SHELL=[
   './',
   './index.html',
