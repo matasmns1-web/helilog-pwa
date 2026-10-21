@@ -238,7 +238,11 @@
    }
    if(changed){replaceFn(local);baseline=mapOf(snapshotFn());}
    persist();
-   if(conflicts){state="conflict";problem="Some changes were also edited on another device. Neither version was overwritten.";}
+   if(conflicts||pending.some(q=>q.conflict)){
+    state="conflict";
+    problem=conflicts?"Some changes were also edited on another device. Neither version was overwritten.":
+     "One or more records on this device still require manual review. Neither copy was overwritten.";
+   }
    else{state=pending.length?"pending":"synced";problem="";}
    notify();return true;
   }catch(e){problem=String(e.message||e);state=root.navigator?.onLine===false?"offline":"error";notify();return false;}
