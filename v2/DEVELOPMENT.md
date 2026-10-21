@@ -111,3 +111,12 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 - **Preview safe restoration** scans the pre-extension safety copy for people/endorsements missing from both the account cache and current cloud; collision and dangling-reference checks block dangerous merges.
 - After explicit confirmation, **Restore these missing records** writes a verified, private full-workspace safety snapshot; only the inspected missing pilots and signed endorsements are added with their original images and timestamps. Existing cloud records, opened totals, archived documents and owner profiles remain unchanged. Pending sync is revision-protected; a changed cloud or device requires a fresh preview.
 - Test-only release; no schema, production, print layout or archive modification.
+
+
+## V2.29 — pre-archive flight review and first-time guide
+
+- A pure, read-only evaluator (prearchive-review.js) checks the exact next print batch for probable duplicates (including previously archived records), incomplete PIC names/links, unusual time entries (UTC midnight rollover is normal), flight-subtime and movement discrepancies, and independent role/engine/pilot-configuration and carried-forward totals.
+- Before a new print batch can be previewed or confirmed, the web user opens **Review flights before printing** and explicitly acknowledges the findings. The acknowledgement is transient and tied to the exact JSON of the current archive draft; edits or page selection invalidate it. The printed/archive snapshot remains unchanged and the existing post-print confirmation is still required.
+- An advisory is a reason to investigate, not an automatic correction or deletion. Entry links use the existing flight editor; signed records remain protected.
+- Help & User Guide explains first-time account setup, multi-device sync, iPhone-specific safety recovery, offline conflicts, authentication vs synchronization checks and new pre-archive review workflow. Cached offline in the test PWA.
+- No production changes, database migration, automatic flight edits or changes to signed archive formats.

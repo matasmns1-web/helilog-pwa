@@ -1,4 +1,4 @@
-/* V2.26. Maintain topic instructions and release updates here. */
+/* V2.29. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
   {
     "category": "Records & signatures",
@@ -20,10 +20,11 @@ const HELILOG_GUIDE_TOPICS=[
     "title": "First-time setup",
     "summary": "Prepare your profile, aircraft and first entry.",
     "steps": [
-      "Sign in and check your name, licence and authority in Profile.",
-      "Add your helicopter in Aircraft, using its registration and ICAO type designator.",
-      "Add other commanders or instructors under Pilots when relevant.",
-      "Enter a flight, review it in Logbook and wait for the cloud indicator to show Synced."
+      "Sign in to your private HeliLog account. Your first device initializes the shared cloud logbook; a new, clean device joins the same records after signing in.",
+      "In Profile check your name, licence, authority, ratings and medical details. Add your helicopter in Aircraft, including its registration and ICAO type designator.",
+      "Add commanders or instructors under Pilots. Saved signatures require the pilot’s consent and may only be used on endorsements with separate approval.",
+      "If moving from an older paper logbook, enter brought-forward flight totals under Settings and verify them against the paper record before entering new flights.",
+      "Enter a flight using UTC time, review it in Logbook, then use the cloud status pill to confirm Synced. Keep a separate recovery backup of important records."
     ],
     "route": "profile",
     "action": "Open profile"
@@ -103,11 +104,30 @@ const HELILOG_GUIDE_TOPICS=[
     "steps": [
       "On the desktop website, use Logbook → Export for CSV or a printable PDF copy.",
       "Exporting a PDF does not create numbered, permanently archived pages.",
-      "Use Print Archive in a web browser to review and confirm continuous numbered pages and cumulative totals.",
-      "Keep signed records safely; if archived records require changes, use an addendum or correction workflow."
+      "On the web (not the installed iPhone app), open Print Archive and choose the number of pages to include in the next batch.",
+      "Select Review flights before printing. It flags possible duplicate flights, incomplete PIC names, unusual UTC times and discrepancies in totals—without changing any record.",
+      "Open the flagged entries to make corrections if needed. Acknowledge the review for this exact selection; changes to flights or selected pages require another review.",
+      "Only then preview the numbered pages, verify the running totals, print and physically sign them, and separately confirm the printed batch in HeliLog.",
+      "Printing a PDF alone does not create a signed archive. Confirmed pages are locked; amend them through a signed correction addendum."
     ],
     "route": "logbook",
     "action": "Open logbook"
+  },
+  {
+    "category": "Review",
+    "title": "Pre-archive flight review",
+    "summary": "Check the exact flights about to be printed for common issues before signing.",
+    "steps": [
+      "On the web open Print Archive, then choose how many pages to include in the next batch.",
+      "Select Review flights before printing to inspect the selected batch. A possible duplicate is compared with your entire logbook, including earlier archived entries.",
+      "Check missing PIC information and pilot links, flight duration versus UTC off/on times (including overnight flights), unusual very short or long flights, Night/IFR/instructor minutes and take-off versus landing counts.",
+      "Review the independent calculations of PIC/Co-pilot/Dual, engine and single-/multi-pilot experience, and carried-forward plus closing totals.",
+      "Use View entry to inspect a flagged flight. Edit only an unarchived entry through its normal form; do not silently change or automatically delete anything.",
+      "Acknowledgement allows printing after you have checked exceptions; it is not official certification. If selected pages or flight records change, repeat the review.",
+      "Print, verify and sign the paper pages before separately confirming the archive. Archived records remain protected."
+    ],
+    "route": "printarchive",
+    "action": "Open Print Archive"
   },
   {
     "category": "Review",
@@ -127,13 +147,14 @@ const HELILOG_GUIDE_TOPICS=[
     "title": "Cloud sync and offline flights",
     "summary": "Read the compact sync indicator and protect pending changes.",
     "steps": [
-      "The cloud pill indicates Synced, pending changes, offline status or a sync issue. Tap it for details.",
-      "Flights may be entered offline. Reconnect and allow synchronization before using another device.",
-      "Resolve any reported conflicts carefully; do not assume one device always has the correct record.",
-      "One shared cloud logbook belongs to the account. A fresh device joins existing cloud records automatically after signing in.",
-      "If setup finds older local records, review the confirmation and download the preserved pre-sync safety snapshot if needed.",
-      "Conflicts are local to the device where they occurred. Review them on that device; a clean web status does not clear a phone conflict.",
-      "Do not clear browser or app storage while records are pending or troubleshooting sync."
+      "HeliLog uses one shared cloud logbook per account, not a permanent primary or secondary device. All signed-in devices should ultimately use the same cloud records.",
+      "A brand-new device normally joins the existing account automatically. A previously used device with its own local records may need a review before adopting cloud copies.",
+      "Finish cloud setup under Settings → Cloud account. When joining existing cloud data, HeliLog preserves the device’s earlier records in a downloadable pre-sync safety snapshot.",
+      "Synced means the active workspace has completed record synchronization; Pending means unsent edits; Offline means local changes await internet; Conflict means you must review different copies.",
+      "Flights may be entered offline. Reconnect and allow synchronization before editing the same entries on another device.",
+      "The Check sign-in connection button confirms authentication; use Check / sync now to synchronize records. A valid sign-in is not proof that all records are synced.",
+      "Resolve conflicts on the specific device reporting them. Compare copies and choose deliberately; HeliLog never automatically merges conflicting signatures or signed archives.",
+      "Never clear iPhone app data, uninstall your only copy or force-upload while records are unsynced or being recovered."
     ],
     "route": "cloud",
     "action": "Cloud account"
@@ -143,10 +164,13 @@ const HELILOG_GUIDE_TOPICS=[
     "title": "Backups and recovery",
     "summary": "Preserve a safe copy of your logbook and signed records.",
     "steps": [
-      "Settings → Backups shows available backup, verification and recovery functions.",
-      "Keep downloaded packages securely: they may include personal details and signatures.",
-      "Cloud recovery can verify a package without permitting it to overwrite your synced history.",
-      "Avoid resetting the app or deleting storage before preserving records or consulting support."
+      "Settings → Backup & Recovery has download, health-check and restoration tools. Keep independent backups before important archive operations.",
+      "Downloads may include personal details, licences and images of signatures: save them securely and do not publish or share backup files.",
+      "If a pilot or signed endorsement vanishes after joining an existing cloud account, do not reinstall the app or import an old full workspace over the newer one.",
+      "On the original device open Settings → Cloud account → Download preserved pre-sync data. Then choose Review preserved pilots and endorsements.",
+      "After resolving any local sync conflict using Check / sync now, select Preview safe restoration. It checks which records are truly missing from the active device and cloud.",
+      "Read the list and choose Restore these missing records only if it is correct. The recovery creates a device-local safety copy first and syncs the recovered pilot/signature and endorsement without replacing other records.",
+      "Signed endorsements retain their stored signatures and dates. A collision or unavailable signatory cannot be restored automatically and needs separate attention."
     ],
     "route": "backups",
     "action": "Backup & recovery"
@@ -166,6 +190,16 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {
+    "v": "V2.29",
+    "name": "Pre-archive review and new-user guidance",
+    "detail": "Check likely duplicate or incomplete flight details and time totals before printing. Expanded cloud onboarding, iPhone recovery and backup guidance."
+  },
+  {
+    "v": "V2.28.4",
+    "name": "Selective iPhone record recovery",
+    "detail": "Preserved pilots, saved signatures and signed endorsements can be reviewed and restored without replacing existing cloud records."
+  },
   {
     "v": "V2.28",
     "name": "Safer cloud account setup",
@@ -222,7 +256,7 @@ function helpGuide(){
   <div class="guide-topic-body"><ol>${topic.steps.map(step=>`<li>${htmlEscape(step)}</li>`).join('')}</ol><div class="guide-topic-actions"><button class="btn" type="button" onclick="go('${topic.route}')">${htmlEscape(topic.action)} →</button></div></div>
  </details>`).join('');
  app.innerHTML=header('Help & User Guide','Learn the essentials and find instructions for every part of HeliLog')+
- `<section class="card guide-intro"><span class="guide-eyebrow">GETTING STARTED</span><h2>New to HeliLog?</h2><p class="muted">Start with your pilot profile, add your aircraft, enter a flight and check that it is synced.</p>
+ `<section class="card guide-intro"><span class="guide-eyebrow">GETTING STARTED</span><h2>New to HeliLog?</h2><p class="muted">Sign in, complete your pilot profile, add your aircraft, enter a flight and check cloud synchronization. Another new device joins the same account—no primary/secondary setup is required.</p>
   <div class="guide-first-steps">
    <button onclick="go('profile')"><span>01</span><b>Profile</b><small>Check your identity</small></button>
    <button onclick="go('aircraft')"><span>02</span><b>Aircraft</b><small>Save a helicopter</small></button>
