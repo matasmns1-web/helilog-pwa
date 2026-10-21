@@ -209,7 +209,7 @@
       // before its queue was initialized. Preserve it and create an
       // explicitly blocked review item; NEVER upload it automatically.
       // An endorsement/signed archive difference remains protected.
-      if((kind==="person"||(kind==="settings"&&row.record_id==="siteLocations"))
+      if((kind==="person"||(kind==="settings"&&["siteLocations","broughtForward"].includes(row.record_id)))
         &&!pendingKeys.has(k)){
        pending.push({kind,id:row.record_id,action:"put",payload:clone(current),
         baseRevision:Number.isInteger(versions[k])?versions[k]:null,
@@ -319,7 +319,8 @@
   }));
  }
  function isProtectedRecord(kind,id){
-  if(kind==="endorsement"||(kind==="settings"&&id!=="siteLocations"))return true;
+  // Opening totals are reviewable ONLY through explicit, backed-up record comparison.
+  if(kind==="endorsement"||(kind==="settings"&&id!=="siteLocations"&&id!=="broughtForward"))return true;
   if(kind==="flight" && typeof root.isArchivedFlight==="function")return !!root.isArchivedFlight(id);
   if(kind==="aircraft" && typeof root.archivedFlightIdsForAircraft==="function")
    return !!root.archivedFlightIdsForAircraft(id);
@@ -549,6 +550,39 @@
   }
  }
   function ignoreNoChanges(){if(isActive())baseline=mapOf(snapshotFn());}
+ // Read-only inventory of records preserved before this device adopted cloud data.
+ // Nothing here imports, signs, overwrites or queues a record.
+ function preservedSetupSummary(){
+  if(!isActive()||!extended)throw Error("Sign in and complete cloud setup before reviewing preserved records.");
+  const raw=root.localStorage.getItem(savedPreMigration(owner));
+  if(raw===null)return {available:false,missingPeople:[],missingEndorsements:[],differentPeople:[],differentEndorsements:[]};
+  const previous=read(savedPreMigration(owner),null);
+  if(!previous||!Array.isArray(previous.people)||!Array.isArray(previous.endorsements))
+   throw Error("The preserved pre-sync snapshot is incomplete. Do not reset or overwrite it; download the original copy.");
+  const current=snapshotFn();
+  const summaries={};
+  for(const [kind,field] of [["person","people"],["endorsement","endorsements"]]){
+   const present=new Map((Array.isArray(current?.[field])?current[field]:[])
+    .filter(r=>r&&typeof r.id==="string").map(r=>[r.id,r]));
+   const missing=[],different=[];
+   for(const record of previous[field]){
+    if(!record||typeof record.id!=="string"||!record.id)continue;
+    const sameId=present.get(record.id);
+    const summary=kind==="person"
+     ?{id:record.id,name:String(record.name||"Unnamed pilot"),savedSignature:!!record.savedSignatureData}
+     :{id:record.id,title:String(record.title||record.category||"Untitled endorsement"),
+       date:String(record.date||""),signed:!!record.signatureData,
+       signatoryPersonId:String(record.signatoryPersonId||"")};
+    if(!sameId)missing.push(summary);
+    else if(canonical(sameId)!==canonical(record))different.push(summary);
+   }
+   summaries[kind]={missing,different};
+  }
+  return {available:true,previousPeople:previous.people.length,
+    previousEndorsements:previous.endorsements.length,
+    missingPeople:summaries.person.missing,missingEndorsements:summaries.endorsement.missing,
+    differentPeople:summaries.person.different,differentEndorsements:summaries.endorsement.different};
+ }
  async function extensionPreview(){
   if(!isActive())throw Error("Sign in first.");
   if(root.navigator?.onLine===false)throw Error("Connect to the internet to initialize extended synchronization.");
@@ -618,6 +652,6 @@
   return {enabled:true,status:status(),backupKey};
  }
  return Object.freeze({recordKey,start,stop,track,refresh,flush,pull,status,ignoreNoChanges,
-  extended:()=>extended,extensionPreview,accountSetup,activateExtension,
+  extended:()=>extended,preservedSetupSummary,extensionPreview,accountSetup,activateExtension,
   previewPilotConflict,resolvePilotConflict,conflicts,previewRecordConflict,resolveRecordConflict});
 });
