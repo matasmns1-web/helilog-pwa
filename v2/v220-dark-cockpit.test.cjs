@@ -11,7 +11,7 @@ const sw=read('service-worker.js');
 const manifest=JSON.parse(read('manifest.webmanifest'));
 
 test('Dark Cockpit remains visible and the current release is test-only',()=>{
-  assert.match(html,/<title>HeliLog V2\.27 — Help & User Guide · Test<\/title>/);
+  assert.match(html,/<title>HeliLog V2\.27 — Reusable Pilot Signatures · Test<\/title>/);
   assert.match(html,/class="brand-version">V2\.27 · TEST ENVIRONMENT/);
   assert.match(html,/class="nav-group-label">Flight operations/);
   assert.match(html,/class="nav-group-label">Records &amp; assets/);
