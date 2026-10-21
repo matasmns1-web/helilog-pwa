@@ -4,12 +4,12 @@
  */
 let v22CloudNotice="",v22CloudBusy=false;
 let v24PilotConflictPreview=null,v24PilotConflictBusy=false;
-let v27RecordPreview=null,v27RecordBusy=false;
+let v27RecordPreview=null,v27RecordBusy=false,v28SetupBusy=false;
 /* V2.19: do not retain conflict previews or account notices across logins. */
 function v213ResetCloudViewState(){
  v22CloudNotice="";v22CloudBusy=false;
  v24PilotConflictPreview=null;v24PilotConflictBusy=false;
- v27RecordPreview=null;v27RecordBusy=false;
+ v27RecordPreview=null;v27RecordBusy=false;v28SetupBusy=false;
 }
 function v24FlattenProfile(data,prefix="",out={}){
  for(const [key,value] of Object.entries(data&&typeof data==="object"?data:{})){
@@ -63,7 +63,7 @@ function v27ConflictsMarkup(){
  const needsAttention=window.HeliLogV23Sync.status().state==="conflict";
  if(!needsAttention && !rows.length)return "";
  return '<div class="card" style="margin-top:16px"><div class="head"><h2>Offline edit conflicts</h2></div>'+
-  '<p>Edits on different devices affected the same record. HeliLog will not choose a winner or overwrite either copy automatically.</p>'+
+  '<p>These conflicts are stored <b>on this device</b>. They may not appear on your other devices. HeliLog will not automatically choose a copy or overwrite either one.</p>'+
   (rows.length?rows.map(item=>'<div class="qual-item" style="margin-top:10px"><b>'+
    v22CloudEscape(item.kind)+' · '+v22CloudEscape(item.id)+'</b>'+
    '<div class="mini">Pending '+v22CloudEscape(item.action)+(item.note?' · '+v22CloudEscape(item.note):'')+'</div>'+
@@ -132,11 +132,11 @@ function cloud(){
  }
  const stateText=st.configured?(state==="signed_in"?"Signed in":state==="error"?"Connection needs attention":
    state==="connecting"?"Connecting…":"Ready for private sign-in"):"Cloud not configured";
- app.innerHTML=header('Cloud account','HeliLog V2.19 · Synchronization and archive integrity',
+ app.innerHTML=header('Cloud account',(typeof HELILOG_TEST_VERSION==='string'?HELILOG_TEST_VERSION:'HeliLog')+' · Synchronization and archive integrity',
   `<button class="btn" onclick="go('settings')">← Settings</button>`)+
   '<div class="card" style="margin-bottom:16px"><div class="head"><h2>Connection status</h2></div>'+
   '<div class="pwa-state"><b>'+v22CloudEscape(stateText)+'</b></div>'+
-  (st.configured?'<div class="mini">Test environment · Invitation-only accounts</div>':'<div class="mini">Test project is not configured yet.</div>')+
+  (st.configured?'<div class="mini">'+(window.HeliLogCloudConfig?.environment==='production'?'Production':'Test environment')+' · Invitation-only accounts</div>':'<div class="mini">Cloud service is not configured yet.</div>')+
   (st.error?'<div class="note" role="alert">'+v22CloudEscape(st.error)+'</div>':'')+
   (v22CloudNotice?'<div class="note" role="status">'+v22CloudEscape(v22CloudNotice)+'</div>':'')+
   (st.configured?'<button class="btn" type="button" onclick="v22CloudRefresh()"'+(v22CloudBusy?' disabled':'')+'>Check cloud connection</button>':'')+
@@ -146,10 +146,13 @@ function cloud(){
   (v23AccountWorkspace()?v23SyncInfo()+'<div class="actions" style="margin-top:14px"><button class="btn primary" type="button" onclick="v23RefreshSync()">Check / sync now</button></div>':
   '<p class="muted">Sign in to synchronize a private cloud workspace.</p>')+
   (v23AccountWorkspace()&&!window.HeliLogV23Sync.extended()?
-   `<div class="note" style="margin-top:12px"><b>One-time cloud sync setup</b><p>Choose one primary device for your instructor profiles, medical and licence details, endorsements and previous totals. Other devices can then use the cloud copies. A safety snapshot will preserve this device's previous records.</p>
-   <div class="actions"><button class="btn primary" onclick="v24ActivateExtended('upload')">Upload this device's remaining records</button>
-   <button class="btn" onclick="v24ActivateExtended('cloud')">Use existing cloud records</button></div></div>`:
-   '<p class="mini">Extended cloud synchronization '+(v23AccountWorkspace()?'enabled.':'available after sign-in.')+'</p>')+
+   '<div class="note" style="margin-top:12px"><b>Complete cloud setup</b>'+
+   '<p>HeliLog uses one shared cloud logbook for your account, not a primary device on every phone or computer. If the cloud already contains your records, this device can join it. Otherwise this device can initialize your shared records.</p>'+
+   '<p><b>Existing local pilot records are never merged or discarded without a separate confirmation.</b> HeliLog saves a device-local recovery snapshot before adopting cloud copies.</p>'+
+   '<button class="btn primary" type="button" onclick="v28CompleteCloudSetup()"'+(v28SetupBusy?' disabled':'')+'>Continue setup safely</button></div>':
+   '<p class="mini">Full account synchronization '+(v23AccountWorkspace()?'enabled.':'available after sign-in.')+'</p>')+
+  (v23AccountWorkspace()&&localStorage.getItem('helilog_v24_pre_extension_'+window.HeliLogV23Sync.status().owner)?
+   '<div class="mini" style="margin-top:10px">Earlier device records were preserved before setup. <button type="button" class="btn" onclick="v28DownloadPreservedSetup()">Download preserved pre-sync data</button></div>':'')+
   (v23AccountWorkspace()&&window.HeliLogV23Sync.status().state==='conflict'?'<p class="mini">Unresolved conflicts are preserved for review; archives must not be confirmed until synchronized.</p>':'')+
   (v23AccountWorkspace()&&window.HeliLogV23Sync.status().state==="conflict"&&
    window.HeliLogV23Sync.status().error.includes("settings:pilot")?
@@ -168,6 +171,42 @@ function cloud(){
    (v28Notice?'<div class="note" role="status">'+v22CloudEscape(v28Notice)+'</div>':
      '<div class="mini">A successful check is recorded as a device-local evidence baseline. Save a separate recovery package under Settings → Backup &amp; Recovery.</div>')+
    '</div>':'');
+}
+
+async function v28CompleteCloudSetup(){
+ if(v28SetupBusy||!v23AccountWorkspace()||window.HeliLogV23Sync.extended())return;
+ v28SetupBusy=true;v22CloudNotice='';
+ try{
+  const setup=await window.HeliLogV23Sync.accountSetup();
+  const hasCloud=setup.hasCloud;
+  const question=hasCloud?
+   'This account already has shared cloud records. Connect this device to them? Existing local profiles, endorsements, licences and settings will first be preserved in a local safety snapshot. Local differences will NOT be merged automatically. You can download the preserved snapshot from Cloud account.':
+   'Initialize the shared cloud logbook using the records on THIS device? Only do this if the licences, endorsements and previous totals on this device are the records you want to keep. Future new devices will join the existing cloud automatically.';
+  if(!confirm(question))return;
+  const result=await window.HeliLogV23Sync.activateExtension(hasCloud?'cloud':'upload');
+  await v24InitArchive();
+  await v23RefreshSync();
+  const st=window.HeliLogV23Sync.status();
+  v22CloudNotice=st.state==='synced'?'Cloud account setup completed. Other new devices will join the same shared records.':
+   'Your records remain preserved, but cloud synchronization needs attention: '+(st.error||st.state);
+ }catch(error){
+  v22CloudNotice='Setup could not be completed. Do not reset or remove local records: '+(error.message||error);
+ }finally{v28SetupBusy=false;cloud();}
+}
+function v28DownloadPreservedSetup(){
+ if(!v23AccountWorkspace())return;
+ const owner=window.HeliLogV23Sync.status().owner;
+ const raw=localStorage.getItem('helilog_v24_pre_extension_'+owner);
+ if(!raw){alert('No preserved pre-sync snapshot exists on this device.');return;}
+ try{
+  JSON.parse(raw);
+  const blob=new Blob([raw],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const anchor=document.createElement('a');
+  anchor.href=url;anchor.download='helilog-pre-sync-recovery.json';
+  document.body.appendChild(anchor);anchor.click();anchor.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),5000);
+ }catch(e){alert('Unable to download the preserved snapshot. Do not clear app data: '+(e.message||e));}
 }
 function v22CloudError(error){
  v22CloudNotice=String(error?.message||error||'Unknown cloud error');

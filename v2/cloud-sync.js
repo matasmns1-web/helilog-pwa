@@ -1,9 +1,9 @@
 /* HeliLog V2.3 — initial, revision-checked aircraft/flight cloud sync.
  * Cloud workspace is isolated per authenticated Supabase UUID. Legacy local
- * V2.2 data is NEVER automatically imported. Only aircraft and flight rows
- * are included. Other records/print archives are deliberately local-only.
- * This is a TEST release. Offline login and automatic conflict resolution
- * are deferred; pending operations are persisted and never silently dropped.
+ * V2.2 legacy data is NEVER automatically imported. Aircraft/flights are core
+ * synced records; account profile, qualifications, people and endorsements
+ * are also synchronized after safe extended activation. Pending operations
+ * and conflicting device-local records are never silently discarded.
  */
 (function(root,factory){
  const api=factory(root);
@@ -194,7 +194,7 @@
      }
      if(pendingKeys.has(k)){
       const q=pending.find(x=>ident(x.kind,x.id)===k);
-      if(q.baseRevision!==null&&q.baseRevision!==row.revision){q.conflict=true;conflicts++;}
+      if(q.baseRevision===null||q.baseRevision!==row.revision){q.conflict=true;conflicts++;}
       continue;
      }
      const current=byId.get(row.record_id);
@@ -205,7 +205,15 @@
      if(current && (original===undefined?
          (versions[k]!==undefined?localValue!==canonical(row.payload):true):
          localValue!==original)){
-      problem="A local record differs from the last verified cloud copy: "+k+". Nothing was overwritten.";
+      // A previously failed device setup can leave an unqueued local
+      // aerodrome record. Do not overwrite it or falsely call it synced.
+      // Turn it into a reviewable conflict on THIS DEVICE only.
+      if(kind==="settings"&&row.record_id==="siteLocations"&&!pendingKeys.has(k)){
+       pending.push({kind,id:row.record_id,action:"put",payload:clone(current),
+         baseRevision:Number.isInteger(versions[k])?versions[k]:null,generation:1,conflict:true});
+       persist();
+      }
+      problem="A local record differs from the last verified cloud copy: "+k+". Nothing was overwritten. Review the conflict on this device.";
       state="conflict";notify();return false;
      }
      if(!current||canonical(current)!==canonical(row.payload)){
@@ -293,19 +301,20 @@
 
  // V2.7: user-reviewed conflicts for ordinary records only. Signed endorsements,
  // archived flights and pilot settings keep their existing protected workflows.
- const reviewableKinds=["aircraft","flight","person","qualification"];
+ const reviewableKinds=["aircraft","flight","person","qualification","settings"];
  function conflicts(){
   return pending.filter(q=>q.conflict).map(q=>({
    kind:q.kind,id:q.id,action:q.action,
    reviewable:reviewableKinds.includes(q.kind) && !isProtectedRecord(q.kind,q.id),
    note:q.kind==="correction_proposal"?"Pending archived-flight corrections require manual review; do not force overwrite.":
     q.kind==="endorsement"?"Signed endorsements need archive-safe recovery.":
+    q.kind==="settings"&&q.id==="siteLocations"?"Compare aerodrome/location settings on this device before choosing. Neither copy will be discarded without your approval.":
     q.kind==="settings"?"Use the separate pilot-profile workflow or preserve both copies for support.":
     isProtectedRecord(q.kind,q.id)?"Archived records require a separate integrity review.":""
   }));
  }
  function isProtectedRecord(kind,id){
-  if(kind==="endorsement"||kind==="settings")return true;
+  if(kind==="endorsement"||(kind==="settings"&&id!=="siteLocations"))return true;
   if(kind==="flight" && typeof root.isArchivedFlight==="function")return !!root.isArchivedFlight(id);
   if(kind==="aircraft" && typeof root.archivedFlightIdsForAircraft==="function")
    return !!root.archivedFlightIdsForAircraft(id);
@@ -547,6 +556,14 @@
      hasCloud:extras.length>0,enabled:extended};
   }finally{types=old;}
  }
+
+ // Check the shared account, rather than making every device choose a primary.
+ // This read-only probe does not enable sync or modify local/cloud data.
+ async function accountSetup(){
+  const preview=await extensionPreview();
+  return {hasCloud:preview.hasCloud,remoteRecords:preview.remoteRecords,
+    enabled:preview.enabled};
+ }
  async function activateExtension(mode){
   if(!isActive())throw Error("Sign in first.");
   if(extended)return {enabled:true,alreadyEnabled:true};
@@ -596,6 +613,6 @@
   return {enabled:true,status:status(),backupKey};
  }
  return Object.freeze({recordKey,start,stop,track,refresh,flush,pull,status,ignoreNoChanges,
-  extended:()=>extended,extensionPreview,activateExtension,
+  extended:()=>extended,extensionPreview,accountSetup,activateExtension,
   previewPilotConflict,resolvePilotConflict,conflicts,previewRecordConflict,resolveRecordConflict});
 });

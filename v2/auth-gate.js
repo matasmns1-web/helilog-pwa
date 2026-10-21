@@ -1,21 +1,22 @@
 /* HeliLog V2.3 private login gate. No automatic import of V2.2 local data. */
-const HELILOG_TEST_VERSION='V2.27';
+const HELILOG_TEST_VERSION='V2.28';
 let v23Unlocked=false,v23AuthBusy=false,v23AuthMessage="";
 let v23RecoveryStage="signin",v23InviteStage="signin";
 function v23Escape(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function v23AccountWorkspace(){return v23Unlocked && !!window.HeliLogV23Sync.status().owner;}
 function v23SyncInfo(){
  const st=window.HeliLogV23Sync.status();
- const label=st.state==="synced"?"Cloud synced":st.state==="syncing"?"Syncing records…":
+ const label=st.state==="synced"?(window.HeliLogV23Sync.extended()?"Cloud synced":"Cloud setup incomplete"):st.state==="syncing"?"Syncing records…":
  st.state==="conflict"?"Conflict: needs attention":st.state==="offline"?"Offline: saved on device":
  st.state==="error"?"Sync error: saved on device":
  st.pending?"Pending upload: "+st.pending+" change(s)":"Checking cloud records…";
  const pending=Math.max(0,Number(st.pending)||0);
+ const setupNeeded=!window.HeliLogV23Sync.extended() && st.state==="synced";
  const tone=st.state==="conflict"||st.state==="error"?"problem":
-  st.state==="offline"||pending?"warn":st.state==="synced"?"ok":"busy";
+  st.state==="offline"||pending||setupNeeded?"warn":st.state==="synced"?"ok":"busy";
  const shortLabel=st.state==="conflict"?"Conflict":st.state==="error"?"Sync issue":
   st.state==="offline"?"Offline":pending?pending+" pending":
-  st.state==="syncing"?"Syncing…":st.state==="synced"?"Synced":"Checking…";
+  st.state==="syncing"?"Syncing…":setupNeeded?"Finish setup":st.state==="synced"?"Synced":"Checking…";
  return '<details class="v220-sync-pop" data-tone="'+tone+'">'+
  '<summary class="v220-sync-pill" aria-label="Cloud sync: '+v23Escape(shortLabel)+'. Show details">'+
  '<span class="v220-sync-icon" aria-hidden="true">☁</span>'+
@@ -27,7 +28,10 @@ function v23SyncInfo(){
  (st.error?'<div class="mini">'+v23Escape(st.error)+'</div>':'')+
  '<div class="mini">'+(window.HeliLogV23Sync.extended()?
   'Aircraft, flights, pilot profiles, qualifications, endorsements, medical records and opening totals are included in cloud sync. Print archive snapshots and signed corrections require separate confirmation.':
-  'Aircraft and flights sync. Enable extended data synchronization in Cloud account to include endorsements, pilot profiles, qualifications and brought-forward totals.')+'</div></div></details>';
+  'Aircraft and flights sync only. Finish setup in Cloud account to include pilot profiles, endorsements, qualifications and previous totals.')+'</div>'+
+ ((st.state==="conflict"||st.state==="error"||pending||setupNeeded)?
+ '<button type="button" class="btn" onclick="go(\'cloud\')">Review on this device</button>':'')+
+ '</div></details>';
 }
 function v23LoginView(){
  v23Unlocked=false;
@@ -263,7 +267,9 @@ async function v23EnterWorkspace(auth){
      broughtForward:next.broughtForward??S.broughtForward,
      broughtForwardByType:next.broughtForwardByType??S.broughtForwardByType,
      broughtForwardImported:next.broughtForwardImported??S.broughtForwardImported,
-     broughtForwardImportedAt:next.broughtForwardImportedAt??S.broughtForwardImportedAt};
+     broughtForwardImportedAt:next.broughtForwardImportedAt??S.broughtForwardImportedAt,
+     // These settings are synced as a record and must be applied too.
+     siteLocations:next.siteLocations??S.siteLocations};
    // Commit one complete account state, or keep the old one on failure.
    localStorage.setItem(KEY,JSON.stringify(updated));
    S=updated;
@@ -271,6 +277,17 @@ async function v23EnterWorkspace(auth){
   onStatus:()=>v23UpdateSyncChip()
  });
  await window.HeliLogV23Sync.refresh();
+ // A genuinely fresh account cache can safely inherit the existing cloud
+ // source. Do not auto-adopt on a previously used device, which may hold
+ // unsynchronized endorsements or pilot details.
+ if(stored===null && !window.HeliLogV23Sync.extended()){
+  try{
+   const setup=await window.HeliLogV23Sync.accountSetup();
+   if(setup.hasCloud)await window.HeliLogV23Sync.activateExtension("cloud");
+  }catch(error){
+   v22CloudNotice="Automatic account setup needs review. Local data was retained: "+(error.message||error);
+  }
+ }
  if(window.HeliLogV23Sync.extended()){
   window.HeliLogV24Archive.start({userId:id,db:client});
   if(window.HeliLogV23Sync.status().state==="synced")
