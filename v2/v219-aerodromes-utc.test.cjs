@@ -83,5 +83,5 @@ test("previously recorded night coordinates and archived records are left unchan
 test("offline PWA precaches the lookup helper for all devices",()=>{
  assert.match(sw,/\.\/aerodrome-lookup\.js\?v=2\.19-locations-1/);
  assert.match(html,/\.\/aerodrome-lookup\.js\?v=2\.19-locations-1/);
- assert.match(sw,/helilog-v2-28-3-safe-recovery-1/);
+ assert.match(sw,/helilog-v2-28-4-selective-recovery-1/);
 });

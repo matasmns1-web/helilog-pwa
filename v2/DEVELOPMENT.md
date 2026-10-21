@@ -103,3 +103,11 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 - Cloud account can inspect the pre-extension device safety snapshot, showing which pilot profiles and endorsements are missing from the current device and which existing IDs differ. The inspection hides signature image data, makes no changes, and allows the existing JSON recovery download.
 - Missing pilots and signed endorsements are **not yet automatically restored**. Check the preserved snapshot and reconcile account records before implementing an explicit selective restore.
 - This fix is test-only. It does not change the production database schema, printed logbook, flight archive or signed-endorsement records.
+
+## V2.28.4 — selective iPhone recovery and cloud status correction
+
+- Recover a stale unqueued opening-totals conflict **without choosing** only when the current device, queued copy, and cloud copy are exactly equal. This is a verified metadata repair and does not upload or change totals.
+- The **Check sign-in connection** button reports authentication status and the independent record-sync state; it no longer falsely claims every logbook is unsynchronized.
+- **Preview safe restoration** scans the pre-extension safety copy for people/endorsements missing from both the account cache and current cloud; collision and dangling-reference checks block dangerous merges.
+- After explicit confirmation, **Restore these missing records** writes a verified, private full-workspace safety snapshot; only the inspected missing pilots and signed endorsements are added with their original images and timestamps. Existing cloud records, opened totals, archived documents and owner profiles remain unchanged. Pending sync is revision-protected; a changed cloud or device requires a fresh preview.
+- Test-only release; no schema, production, print layout or archive modification.

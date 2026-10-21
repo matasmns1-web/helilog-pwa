@@ -5,13 +5,13 @@
 let v22CloudNotice="",v22CloudBusy=false;
 let v24PilotConflictPreview=null,v24PilotConflictBusy=false;
 let v27RecordPreview=null,v27RecordBusy=false,v28SetupBusy=false;
-let v283RecoverySummary=null;
+let v283RecoverySummary=null,v284RecoveryPlan=null,v284RecoveryBusy=false;
 /* V2.19: do not retain conflict previews or account notices across logins. */
 function v213ResetCloudViewState(){
  v22CloudNotice="";v22CloudBusy=false;
  v24PilotConflictPreview=null;v24PilotConflictBusy=false;
  v27RecordPreview=null;v27RecordBusy=false;v28SetupBusy=false;
- v283RecoverySummary=null;
+ v283RecoverySummary=null;v284RecoveryPlan=null;v284RecoveryBusy=false;
 }
 function v24FlattenProfile(data,prefix="",out={}){
  for(const [key,value] of Object.entries(data&&typeof data==="object"?data:{})){
@@ -109,10 +109,21 @@ function v283RecoveryMarkup(){
   render('Endorsements missing from the current app',r.missingEndorsements,false)+
   ((r.differentPeople.length||r.differentEndorsements.length)?
    '<p class="note">'+r.differentPeople.length+' existing pilot profile(s) and '+r.differentEndorsements.length+' endorsement(s) have the same identifiers but different contents. These were not merged.</p>':'')+
-  '<p class="mini">Preserve the downloaded recovery JSON. Do not import the entire snapshot over your current logbook. Any eventual recovery must compare the current cloud records and preserve existing signed endorsements and totals.</p>'+
+  '<p class="mini">Preserve the downloaded recovery JSON. Do not import the entire snapshot over your current logbook. Recovery will not change the opening totals, cloud pilot profile or existing records.</p>'+
+  ((r.missingPeople.length||r.missingEndorsements.length)?
+    '<div class="actions" style="margin-top:10px"><button type="button" class="btn" onclick="v284PreviewPreservedRecovery()"'+
+     (v284RecoveryBusy?' disabled':'')+'>Preview safe restoration</button></div>':'')+
+  (v284RecoveryPlan?'<div class="note" style="margin-top:14px"><b>Explicit recovery plan</b><p>'+
+    v22CloudEscape(String(v284RecoveryPlan.people.length))+' pilot(s), '+
+    v22CloudEscape(String(v284RecoveryPlan.endorsements.length))+' endorsement(s) would be added. No existing record will be replaced.</p>'+
+    (v284RecoveryPlan.blocked.length?'<p>Skipped for manual review: '+v284RecoveryPlan.blocked.map(v22CloudEscape).join('; ')+'</p>':'')+
+    '<p>A verified private on-device safety copy will be created before restoring. Signed endorsement images and pilot signatures will be copied unchanged. Cloud updates happen only after you confirm, and remain revision-protected.</p>'+
+    '<button type="button" class="btn primary" onclick="v284ApplyPreservedRecovery()"'+
+     (v284RecoveryBusy?' disabled':'')+'>Restore these missing records</button></div>':'')+
   '</div>';
 }
 function v283ReviewPreservedSetup(){
+ v284RecoveryPlan=null;
  if(!v23AccountWorkspace())return;
  try{
   v283RecoverySummary=window.HeliLogV23Sync.preservedSetupSummary();
@@ -122,6 +133,34 @@ function v283ReviewPreservedSetup(){
  cloud();
  const panel=document.getElementById('v283PreservedRecords');
  panel?.scrollIntoView?.({block:'nearest'});
+}
+async function v284PreviewPreservedRecovery(){
+ if(v284RecoveryBusy||!v23AccountWorkspace())return;
+ v284RecoveryBusy=true;v284RecoveryPlan=null;v22CloudNotice="";
+ try{
+  v284RecoveryPlan=await window.HeliLogV23Sync.previewPreservedRecovery();
+  v22CloudNotice="Read-only recovery preview verified. Confirm the specific records below before any data changes.";
+ }catch(e){v22CloudNotice="Safe restoration preview unavailable: "+(e.message||e)+
+   " Your preserved records have not been changed. If needed, use Check / sync now first.";}
+ finally{v284RecoveryBusy=false;cloud();}
+}
+async function v284ApplyPreservedRecovery(){
+ if(v284RecoveryBusy||!v284RecoveryPlan||!v23AccountWorkspace())return;
+ const count=v284RecoveryPlan.people.length+" pilot(s) and "+v284RecoveryPlan.endorsements.length+" endorsement(s)";
+ if(!confirm("Restore "+count+" from this device's PRE-SYNC recovery snapshot? No existing records will be overwritten. A verified on-device safety backup is required, and the recovered copies will be synchronized to your private cloud. Previously signed endorsement images will remain unchanged."))return;
+ v284RecoveryBusy=true;v22CloudNotice="";
+ try{
+  const out=await window.HeliLogV23Sync.restorePreservedRecovery();
+  v284RecoveryPlan=null;v283RecoverySummary=null;
+  await v23RefreshSync();
+  const st=window.HeliLogV23Sync.status();
+  v22CloudNotice="Restored "+out.people+" pilot(s) and "+out.endorsements+
+   " endorsement(s) from the preserved iPhone snapshot. The full pre-recovery workspace remains saved on this device. Cloud sync: "+st.state+
+   (st.state==="synced"?".":". Check / sync now and review any remaining issue.");
+ }catch(e){v284RecoveryPlan=null;
+  v22CloudNotice="Restoration not completed: "+(e.message||e)+
+   ". Keep the pre-sync snapshot and do not reset this device.";}
+ finally{v284RecoveryBusy=false;cloud();}
 }
 async function v27ReviewRecordConflict(kind,id){
  if(v27RecordBusy)return;
@@ -191,7 +230,7 @@ function cloud(){
   (st.configured?'<div class="mini">'+(window.HeliLogCloudConfig?.environment==='production'?'Production':'Test environment')+' · Invitation-only accounts</div>':'<div class="mini">Cloud service is not configured yet.</div>')+
   (st.error?'<div class="note" role="alert">'+v22CloudEscape(st.error)+'</div>':'')+
   (v22CloudNotice?'<div class="note" role="status">'+v22CloudEscape(v22CloudNotice)+'</div>':'')+
-  (st.configured?'<button class="btn" type="button" onclick="v22CloudRefresh()"'+(v22CloudBusy?' disabled':'')+'>Check cloud connection</button>':'')+
+  (st.configured?'<button class="btn" type="button" onclick="v22CloudRefresh()"'+(v22CloudBusy?' disabled':'')+'>Check sign-in connection</button>':'')+
   '</div>'+
   action+
   '<div class="card" style="margin-top:16px"><div class="head"><h2>Aircraft & flight cloud sync</h2></div>'+
@@ -268,7 +307,13 @@ async function v22CloudRefresh(){
  if(v22CloudBusy)return;
  v22CloudBusy=true;v22CloudNotice='';
  try{const state=await window.HeliLogCloud.refresh();
-  if(state.status==="signed_in")v22CloudNotice="Authenticated cloud account found. Local logbook records are still not synchronized.";
+  if(state.status==="signed_in"){
+   const sync=v23AccountWorkspace()?window.HeliLogV23Sync.status():null;
+   v22CloudNotice="Cloud sign-in confirmed. "+(sync?
+     "Logbook sync status: "+sync.state+(sync.pending?" ("+sync.pending+" pending change(s))":"")+
+      ". This button checks authentication only; use Check / sync now below for records.":
+     "Open your account workspace to check logbook synchronization.");
+  } else v22CloudNotice=state.error||"Account authentication needs attention.";
  }catch(e){v22CloudNotice=e.message||String(e)}
  finally{v22CloudBusy=false;cloud()}
 }
