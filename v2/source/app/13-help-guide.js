@@ -1,6 +1,21 @@
 /* V2.26. Maintain topic instructions and release updates here. */
 const HELILOG_GUIDE_TOPICS=[
   {
+    "category": "Records & signatures",
+    "title": "Reusable pilot signatures",
+    "summary": "Capture a profile signature and approve use for each endorsement.",
+    "steps": [
+      "Open Pilots and choose Signature on the relevant person’s card.",
+      "Have the named pilot draw a signature and explicitly consent to saving it.",
+      "Create an endorsement and select the correct saved instructor or examiner.",
+      "The signer must review the record and approve it before applying either their saved signature or a newly drawn signature.",
+      "Every signed endorsement keeps its own copy; updating the profile cannot change previously signed records.",
+      "The capture feature does not independently verify identity or create a qualified electronic signature."
+    ],
+    "route": "pilots",
+    "action": "Manage pilot signatures"
+  },
+  {
     "category": "Start here",
     "title": "First-time setup",
     "summary": "Prepare your profile, aircraft and first entry.",
@@ -148,6 +163,11 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {
+    "v": "V2.27",
+    "name": "Reusable pilot signatures",
+    "detail": "Signatures stored in pilot profiles and applied only with consent on each endorsement."
+  },
   {
     "v": "V2.26",
     "name": "Help & User Guide",

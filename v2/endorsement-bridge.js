@@ -26,7 +26,9 @@
    name:e.signedName||"",
    licence:e.signedLicence||"",
    data:e.signatureData,
-   signedAt:e.signedAt||e.date+"T00:00:00.000Z"
+   signedAt:e.signedAt||e.date+"T00:00:00.000Z",
+   source:e.signedSource||"drawn",
+   approvedAt:e.signedConsentAt||e.signedAt||""
   };
  }
  function convertRecord(e){
