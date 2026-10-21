@@ -1,4 +1,4 @@
-/* V2.29.1. Searchable, offline-friendly guide and current release notes. */
+/* V2.30. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
   {
     "category": "Records & signatures",
@@ -92,6 +92,10 @@ const HELILOG_GUIDE_TOPICS=[
       "Apply date and operation filters; the filtered totals reflect your selection.",
       "Open Totals for PIC, Co-pilot, Dual, aircraft engine and pilot-configuration breakdowns.",
       "Historical paper logbook time can be entered as brought-forward totals in Settings.",
+      "Under Settings → Import previous logbook totals, enter your carried-forward flight time, pilot/engine breakdown and aircraft-type hours.",
+      "For historical specialist operations, use Specialised operations… to open a compact popup. Enter hours for VRLL, HESLO, HEC, NVIS, HHO, offshore and other categories as H:MM or decimal hours.",
+      "Apply the popup values, then confirm Import totals / Save correction on the main form. Cancelling the popup discards only the edits made within the popup.",
+      "On Totals, Previous + Recorded here = Combined specialised-operation hours. Historical hours do not create flights, and overlapping categories are not added to Total flying time.",
       "Review all totals against original documents before using them in official applications."
     ],
     "route": "totals",
@@ -191,6 +195,11 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {
+    "v": "V2.30",
+    "name": "Previous logbook specialised operations",
+    "detail": "Enter historical HESLO, VRLL, HEC, NVIS, hoist and other helicopter activity hours in a popup, with separate previous, recorded and combined totals."
+  },
   {
     "v": "V2.29.1",
     "name": "Pre-archive review, including overlapping UTC flights",

@@ -52,9 +52,9 @@ function totals(){
   </div>
   <div class="card" style="margin-top:16px">
     <div class="head"><h2>Specialised helicopter operations experience</h2></div>
-    <div class="mini" style="margin-bottom:12px">Shows logged participation and activity hours for employment applications. Categories may overlap and do not add to total flight time. Previous paper hours have not been allocated to these categories.</div>
+    <div class="mini" style="margin-bottom:12px">Historical operation hours from your previous logbook are included separately from HeliLog flights. Categories may overlap and must not be added together or added to total flight time.</div>
     ${opsTotals.length?`<div style="overflow-x:auto"><table>
-      <thead><tr><th>Operation</th><th>Flights</th><th>Hours</th><th>By ICAO type</th></tr></thead>
+      <thead><tr><th>Operation</th><th>HeliLog flights</th><th>Previous</th><th>Recorded here</th><th>Combined</th><th>By ICAO type (HeliLog flights only)</th></tr></thead>
       <tbody>${opsTotals.map(op=>{
         const byType=new Map();
         effectiveFlights().filter(f=>Object.prototype.hasOwnProperty.call(f.specialOps||{},op.code)).forEach(f=>{
@@ -62,10 +62,10 @@ function totals(){
           byType.set(type,(byType.get(type)||0)+Number(f.specialOps[op.code]||0));
         });
         return `<tr><td><b>${htmlEscape(op.code)}</b><div class="mini">${htmlEscape(op.label)}</div></td>
-          <td>${op.flights}</td><td><b>${fmt(op.minutes)}</b></td>
+          <td>${op.flights}</td><td>${fmt(op.previousMinutes)}</td><td>${fmt(op.recordedMinutes)}</td><td><b>${fmt(op.minutes)}</b></td>
           <td>${[...byType.entries()].map(([type,mins])=>`${htmlEscape(type)} ${fmt(mins)}`).join(' · ')}</td></tr>`;
       }).join('')}</tbody></table></div>`:
-      '<div class="muted">No specialised operations have been recorded yet. Add them under More details when entering a flight.</div>'}
+      '<div class="muted">No specialised operations recorded yet. Add previous experience through Settings → Import previous logbook totals, or use More details on a new flight.</div>'}
     <div class="mini" style="margin-top:12px">For example, VRLL and HESLO 2 may describe overlapping portions of the same flight. Their category totals must not be added together.</div>
   </div>`;
 }
@@ -112,6 +112,13 @@ function editBroughtForwardTotals(){
       ${countField('bfLdgNight','Landings night','ldgNight')}
     </div>
 
+    <div class="section-title">Previous specialised helicopter operations</div>
+    <div class="mini" style="margin-bottom:10px">Optional historical operation time. These categories describe activities within your previous flight hours, not additional flight time. Individual categories may overlap.</div>
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px">
+      <button type="button" class="btn" onclick="openBroughtForwardSpecialOps()">Specialised operations…</button>
+      <span id="bfSpecialOpsSummary" class="mini"></span>
+    </div>
+
     <div class="section-title">Flight time by aircraft type</div>
     <div class="mini">Optional: enter your paper-logbook hours for each ICAO type. These hours are a breakdown of the Total above, not additional flying time.</div>
     <datalist id="bfICAOTypes">${[...new Set(S.aircraft.map(a=>String(a.icao||'').trim().toUpperCase()).filter(Boolean))]
@@ -121,10 +128,89 @@ function editBroughtForwardTotals(){
 
     <div id="bfError" class="errorbox"></div>
     <div class="actions"><button type="button" class="btn" onclick="go('profile')">Cancel</button><button class="btn primary">${correcting?'Save correction':'Import totals'}</button></div>
-  </form>`;
+  </form>
+  <div id="bfSpecialOpsModal" class="modalbackdrop" role="presentation" onclick="if(event.target===this)closeBroughtForwardSpecialOps()">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="bfSpecialOpsTitle" style="max-width:720px;max-height:85vh;overflow-y:auto">
+      <h3 id="bfSpecialOpsTitle">Previous specialised operations</h3>
+      <p class="mini">Enter hours already included in the previous-logbook total. Values are separate per operation and can overlap. Empty fields mean 0:00.</p>
+      <div class="formgrid">
+        ${SPECIAL_OPS.map(op=>`<div class="field"><label for="bfSpecialOp_${op.code}">${htmlEscape(op.label)}</label>
+          <input id="bfSpecialOp_${op.code}" type="text" inputmode="decimal" placeholder="0:00" autocomplete="off"></div>`).join('')}
+      </div>
+      <div id="bfSpecialOpsError" class="errorbox" role="alert" style="margin-top:12px"></div>
+      <div class="modal-actions" style="margin-top:16px">
+        <button class="btn" type="button" onclick="closeBroughtForwardSpecialOps()">Cancel</button>
+        <button class="btn primary" type="button" onclick="applyBroughtForwardSpecialOps()">Apply to import</button>
+      </div>
+      <p class="mini" style="margin-top:12px">Applying updates only this unsaved form. Use Import totals / Save correction on the main page to confirm and synchronize the values.</p>
+    </div>
+  </div>`;
+  bfSpecialOpsDraft={...validPreviousSpecialOps(S.broughtForward?.specialOps)};
+  updateBroughtForwardSpecialOpsSummary();
   if((S.broughtForwardByType||[]).length){
     S.broughtForwardByType.forEach(e=>addBroughtForwardTypeRow(e.icao,e.minutes));
   }else addBroughtForwardTypeRow();
+}
+
+// Previous operations are kept inside broughtForward, which is already
+// independently revision-checked as one cloud settings record.
+let bfSpecialOpsDraft=null;
+function validPreviousSpecialOps(value){
+  if(!value||typeof value!=='object'||Array.isArray(value))return {};
+  const result={};
+  for(const op of SPECIAL_OPS){
+    if(!Object.prototype.hasOwnProperty.call(value,op.code))continue;
+    const n=Number(value[op.code]);
+    if(Number.isSafeInteger(n)&&n>=0)result[op.code]=n;
+  }
+  return result;
+}
+function updateBroughtForwardSpecialOpsSummary(){
+  const target=document.getElementById('bfSpecialOpsSummary');
+  if(!target)return;
+  const saved=validPreviousSpecialOps(bfSpecialOpsDraft);
+  const count=Object.values(saved).filter(n=>n>0).length;
+  target.textContent=count?count+' operation '+(count===1?'category':'categories')+' entered':'No previous operation time entered';
+}
+function openBroughtForwardSpecialOps(){
+  const modal=document.getElementById('bfSpecialOpsModal');
+  if(!modal||!bfSpecialOpsDraft||S.printArchive?.batches?.length)return;
+  const saved=validPreviousSpecialOps(bfSpecialOpsDraft);
+  for(const op of SPECIAL_OPS){
+    const input=document.getElementById('bfSpecialOp_'+op.code);
+    if(input)input.value=broughtForwardInputMinutes(saved[op.code]||0);
+  }
+  const error=document.getElementById('bfSpecialOpsError');
+  if(error){error.textContent='';error.classList.remove('show');}
+  modal.classList.add('open');
+  document.getElementById('bfSpecialOp_'+SPECIAL_OPS[0].code)?.focus();
+}
+function closeBroughtForwardSpecialOps(){
+  const modal=document.getElementById('bfSpecialOpsModal');
+  if(!modal?.classList.contains('open'))return;
+  modal.classList.remove('open'); // Unsaved edits in the popup are discarded.
+  document.querySelector('[onclick="openBroughtForwardSpecialOps()"]')?.focus();
+}
+function applyBroughtForwardSpecialOps(){
+  const modal=document.getElementById('bfSpecialOpsModal');
+  if(!modal?.classList.contains('open'))return;
+  const next={},error=document.getElementById('bfSpecialOpsError');
+  const total=parseBroughtForwardMinutes(document.getElementById('bfTotal')?.value);
+  if(total===null||!Number.isSafeInteger(total)||total<0){
+    error.textContent='Enter a valid overall previous flight-time total in the main form first.';
+    error.classList.add('show');return;
+  }
+  for(const op of SPECIAL_OPS){
+    const value=parseBroughtForwardMinutes(document.getElementById('bfSpecialOp_'+op.code)?.value);
+    if(value===null||!Number.isSafeInteger(value)||value<0||value>total){
+      error.textContent=op.code+' must be a valid H:MM or decimal-hours value not exceeding the previous flight-time total '+fmt(total)+'.';
+      error.classList.add('show');return;
+    }
+    if(value>0)next[op.code]=value;
+  }
+  bfSpecialOpsDraft=next;
+  updateBroughtForwardSpecialOpsSummary();
+  closeBroughtForwardSpecialOps();
 }
 
 function addBroughtForwardTypeRow(icao='',minutes=0){
@@ -150,6 +236,10 @@ function addBroughtForwardTypeRow(icao='',minutes=0){
 
 function saveBroughtForwardTotals(ev){
   ev.preventDefault();
+  if(S.printArchive?.batches?.length){
+    alert('A confirmed print archive already uses these opening balances. No previous-logbook values were changed.');
+    return;
+  }
   let durationMap={
     total:'bfTotal',engineSE:'bfEngineSE',engineME:'bfEngineME',single:'bfSingle',multi:'bfMulti',
     pic:'bfPIC',copilot:'bfCopilot',dual:'bfDual',instructor:'bfInstructor',
@@ -173,6 +263,15 @@ function saveBroughtForwardTotals(ev){
     error.scrollIntoView({block:'center',behavior:'smooth'});
     return;
   }
+  const previousOps=validPreviousSpecialOps(bfSpecialOpsDraft??S.broughtForward?.specialOps);
+  for(const [code,minutes] of Object.entries(previousOps)){
+    if(minutes>next.total){
+      const error=document.getElementById('bfError');
+      error.textContent='Previous '+code+' time exceeds the overall previous flight time. Adjust the category in Specialised operations.';
+      error.classList.add('show');error.scrollIntoView({block:'center',behavior:'smooth'});return;
+    }
+  }
+  next.specialOps=previousOps;
   // Retain historical SP/SE and SP/ME values for old confirmed archive layouts,
   // but do not mix engine type with pilot configuration for new records.
   next.spSE=Number(S.broughtForward?.spSE||0);
@@ -224,11 +323,16 @@ function saveBroughtForwardTotals(ev){
     : 'Import these paper logbook totals as your brought-forward career totals?\n\nThis is intended as a one-time setup step.');
   if(!ok) return;
 
+  const previousState={broughtForward:S.broughtForward,broughtForwardByType:S.broughtForwardByType,
+    broughtForwardImported:S.broughtForwardImported,broughtForwardImportedAt:S.broughtForwardImportedAt};
   S.broughtForward=next;
   S.broughtForwardByType=typeEntries;
   S.broughtForwardImported=true;
-  if(!S.broughtForwardImportedAt) S.broughtForwardImportedAt=new Date().toISOString();
-  save();
+  if(!S.broughtForwardImportedAt)S.broughtForwardImportedAt=new Date().toISOString();
+  if(!save()){
+    Object.assign(S,previousState);return;
+  }
+  bfSpecialOpsDraft=null;
   settings();
 }
 

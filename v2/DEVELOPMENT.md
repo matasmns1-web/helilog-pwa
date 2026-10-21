@@ -120,3 +120,14 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 - An advisory is a reason to investigate, not an automatic correction or deletion. Entry links use the existing flight editor; signed records remain protected.
 - Help & User Guide explains first-time account setup, multi-device sync, iPhone-specific safety recovery, offline conflicts, authentication vs synchronization checks and new pre-archive review workflow. Cached offline in the test PWA.
 - No production changes, database migration, automatic flight edits or changes to signed archive formats.
+
+
+## V2.30 — compact historical specialised helicopter operations import
+
+- In Settings → Import previous logbook totals / Correct imported totals, the historical operations entry is a compact "Specialised operations…" button. A modal displays all existing HeliLog SPECIAL_OPS categories (VRLL, HESLO 1–4, HEC, NVIS, HHO, offshore, fire, mountain, survey) and accepts whole minutes as H:MM or decimal hours.
+- Modal edits are **staged only**: Cancel/Escape discards popup changes, Apply only updates the unsaved form; the main Import totals / Save correction confirmation performs the account write. Existing imported operation values are prefilled, not overwritten by a blank popup.
+- Each category is a subset of historical flying time and cannot exceed the previous flight-time total; separate categories may overlap and are not summed to determine flight totals. No fictitious flights are created.
+- Historical categories are stored inside the existing revision-checked settings:broughtForward payload as broughtForward.specialOps, with no new database schema, account field or migration. Existing local logbooks with no such record continue working.
+- Totals → Specialised helicopter operations shows **Previous**, **Recorded here**, and **Combined** separately, while the number of flights and ICAO type breakdown reflect actual recorded HeliLog flights only.
+- Data integrity validates the historical category keys and times; existing signed archives still lock opening balances. Save failures restore the previous local totals before reporting a result.
+- This release is test-only. Do not promote to production without the existing production release procedure and explicit approval.

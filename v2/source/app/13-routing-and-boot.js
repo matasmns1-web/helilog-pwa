@@ -1,5 +1,5 @@
 document.addEventListener('keydown',function(e){
-  if(e.key==='Escape'){closeDeleteModal();closeImportModal();closeExportModal();}
+  if(e.key==='Escape'){closeDeleteModal();closeImportModal();closeExportModal();closeBroughtForwardSpecialOps();}
 });
 document.addEventListener('click',function(e){
   if(!e.target.closest('.timewrap')){
