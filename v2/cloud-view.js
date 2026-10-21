@@ -44,6 +44,12 @@ function v24PilotDiffMarkup(){
 function v27RecordDiffMarkup(){
  const p=v27RecordPreview;
  if(!p)return "";
+ const personSignatures=p.kind==="person"?
+  '<div class="note" style="margin-top:12px"><b>Saved pilot signature:</b> Device '+(p.local?.savedSignatureData?'has a saved signature':'has no saved signature')+
+  '; cloud '+(p.cloud?.savedSignatureData?'has a saved signature':'has no saved signature')+
+  (p.local?.savedSignatureData&&p.cloud?.savedSignatureData?
+   '. The stored signatures '+(p.local.savedSignatureData===p.cloud.savedSignatureData?'match.':'are different.')+'.':' .')+
+  ' Signature images are hidden from this comparison. If you select the cloud copy, your existing device profile will first be included in a local safety backup.</div>':'';
  const display=value=>value===null?'<span class="muted">Record deleted / absent</span>':
   '<pre style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto;font-size:12px">'+
   v22CloudEscape(JSON.stringify(value,(key,part)=>key==='savedSignatureData'||key==='signatureData'?'[signature image hidden]':part,2))+'</pre>';
@@ -52,6 +58,7 @@ function v27RecordDiffMarkup(){
   '<p>These copies differ. Nothing has been overwritten. Review both versions before choosing.</p>'+
   '<div class="profilegrid"><div><b>This device</b>'+display(p.local)+'</div>'+
   '<div><b>Current cloud</b>'+display(p.cloud)+'</div></div>'+
+  personSignatures+
   '<div class="note" style="margin-top:12px">Before applying either choice, HeliLog saves a verified device-local safety snapshot of the complete workspace, both records and the pending queue. Keeping this device will attempt a revision-checked upload; if the cloud changes again, it will stop for a fresh review. This is not a remote backup.</div>'+
   '<div class="actions" style="margin-top:12px">'+
   '<button class="btn primary" type="button" onclick="v27ResolveRecordConflict(\'local\')"'+(v27RecordBusy?' disabled':'')+'>Keep this device copy</button>'+
@@ -73,7 +80,7 @@ function v27ConflictsMarkup(){
   '<p>These conflicts are stored <b>on this device</b>. They may not appear on your other devices. HeliLog will not automatically choose a copy or overwrite either one.</p>'+
   (rows.length?rows.map(item=>'<div class="qual-item" style="margin-top:10px"><b>'+
    v22CloudEscape(item.kind)+' · '+v22CloudEscape(item.id)+'</b>'+
-   '<div class="mini">Pending '+v22CloudEscape(item.action)+(item.note?' · '+v22CloudEscape(item.note):'')+'</div>'+
+   '<div class="mini">'+(item.unqueuedRecovery?'Unsent local difference — review required':'Pending '+v22CloudEscape(item.action))+(item.note?' · '+v22CloudEscape(item.note):'')+'</div>'+
    (item.reviewable?'<button class="btn" type="button" style="margin-top:9px" onclick="v27ReviewRecordConflict('+
      v22CloudEscape(JSON.stringify(item.kind))+','+v22CloudEscape(JSON.stringify(item.id))+')">Compare copies</button>':
     '<div class="note" style="margin-top:8px">Not eligible for general conflict resolution. Preserve both copies; do not reset or force-upload.</div>')+

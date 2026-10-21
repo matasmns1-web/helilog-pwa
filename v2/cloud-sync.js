@@ -205,12 +205,16 @@
      if(current && (original===undefined?
          (versions[k]!==undefined?localValue!==canonical(row.payload):true):
          localValue!==original)){
-      // A previously failed device setup can leave an unqueued local
-      // aerodrome record. Do not overwrite it or falsely call it synced.
-      // Turn it into a reviewable conflict on THIS DEVICE only.
-      if(kind==="settings"&&row.record_id==="siteLocations"&&!pendingKeys.has(k)){
+      // A device can retain a pilot profile or aerodrome record edited
+      // before its queue was initialized. Preserve it and create an
+      // explicitly blocked review item; NEVER upload it automatically.
+      // An endorsement/signed archive difference remains protected.
+      if((kind==="person"||(kind==="settings"&&row.record_id==="siteLocations"))
+        &&!pendingKeys.has(k)){
        pending.push({kind,id:row.record_id,action:"put",payload:clone(current),
-         baseRevision:Number.isInteger(versions[k])?versions[k]:null,generation:1,conflict:true});
+        baseRevision:Number.isInteger(versions[k])?versions[k]:null,
+        generation:1,conflict:true,unqueuedRecovery:true});
+       pendingKeys.add(k);
        persist();
       }
       problem="A local record differs from the last verified cloud copy: "+k+". Nothing was overwritten. Review the conflict on this device.";
@@ -304,9 +308,10 @@
  const reviewableKinds=["aircraft","flight","person","qualification","settings"];
  function conflicts(){
   return pending.filter(q=>q.conflict).map(q=>({
-   kind:q.kind,id:q.id,action:q.action,
+   kind:q.kind,id:q.id,action:q.action,unqueuedRecovery:q.unqueuedRecovery===true,
    reviewable:reviewableKinds.includes(q.kind) && !isProtectedRecord(q.kind,q.id),
-   note:q.kind==="correction_proposal"?"Pending archived-flight corrections require manual review; do not force overwrite.":
+   note:q.unqueuedRecovery?"This device has a local difference that was not previously queued. Compare both copies before any upload.": 
+    q.kind==="correction_proposal"?"Pending archived-flight corrections require manual review; do not force overwrite.":
     q.kind==="endorsement"?"Signed endorsements need archive-safe recovery.":
     q.kind==="settings"&&q.id==="siteLocations"?"Compare aerodrome/location settings on this device before choosing. Neither copy will be discarded without your approval.":
     q.kind==="settings"?"Use the separate pilot-profile workflow or preserve both copies for support.":
