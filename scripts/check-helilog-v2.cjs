@@ -41,6 +41,7 @@ const GROUPS = Object.freeze([
       'v2/v225-print-cleanup.test.cjs',
       'v2/v226-help-guide.test.cjs',
       'v2/v227-pilot-signatures.test.cjs',
+      'v2/v228-cloud-onboarding.test.cjs',
     ],
   },
   {

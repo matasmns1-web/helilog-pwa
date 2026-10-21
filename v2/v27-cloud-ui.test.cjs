@@ -52,16 +52,16 @@ test("conflict comparison is explicit and shows both copies without automatic ac
  assert.match(markup,/device-local safety snapshot/);
 });
 test("Cloud Account setup avoids obsolete release labels",()=>{
- assert.match(code,/One-time cloud sync setup/);
- assert.doesNotMatch(code,/V2\.4 — One-time setup/);
+ assert.match(code,/Complete cloud setup/);
+ assert.doesNotMatch(code,/Choose one primary device/);
 });
 test("V2.7 remains Profile-only logout and ships coherent cache assets",()=>{
  assert.doesNotMatch(code,/onclick="v23SignOut\(\)"/);
  assert.match(html,/onclick="v23SignOut\(\)">Log out/);
- assert.match(html,/V2\.27 · TEST ENVIRONMENT/);
- assert.match(auth,/HELILOG_TEST_VERSION='V2\.27'/);
- assert.equal(manifest.name,"HeliLog V2.27 — Reusable Pilot Signatures Test");
- assert.match(worker,/helilog-v2-27-signatures-1/);
+ assert.match(html,/V2\.28 · TEST ENVIRONMENT/);
+ assert.match(auth,/HELILOG_TEST_VERSION='V2\.28'/);
+ assert.equal(manifest.name,"HeliLog V2.28 — Safer Cloud Setup Test");
+ assert.match(worker,/helilog-v2-28-cloud-setup-1/);
  for(const name of ["cloud-view","cloud-sync","auth-gate"]){
   const url=name+".js?v=2.19-locations-1";
   assert.ok(html.includes(url),name+" index");

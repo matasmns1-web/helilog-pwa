@@ -74,3 +74,12 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 - Existing endorsements remain unchanged; new signing requires the actual signer's explicit approval per endorsement and separately snapshots the signature, method, name, licence and timestamp.
 - Stored-signature use also requires a separate confirmation dialogue. No auto-signing, no electronic identity verification and no qualified-signature claim.
 - Test with `v2/v227-pilot-signatures.test.cjs`; no production, database schema, print-layout or old archive changes.
+
+## V2.28 — safer cloud onboarding and on-device conflict review
+
+- An account has one shared cloud source, rather than a primary/secondary choice on every device. A genuinely new device cache automatically adopts existing extended records after an account sign-in; used devices require explicit confirmation before replacing local extended records, with a pre-activation local backup.
+- First device must confirm uploading its existing pilot records to initialize full synchronization. No automatic upload when the cloud already contains extended data.
+- Account downloads must apply `settings:siteLocations` as well as pilot, previous totals, records, and qualifications.
+- Local unqueued aerodrome settings differences are converted to manual reviewable conflicts. Signatures, signed endorsements, archives and other protected settings cannot be force-merged.
+- The cloud pill shows setup incomplete when only aircraft and flights synchronize; conflict review is clearly labelled per-device. Preserved pre-extension snapshot can be downloaded in Cloud account.
+- Production and test remain separate. No schema migrations or printed logbook changes.

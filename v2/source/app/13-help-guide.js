@@ -130,6 +130,9 @@ const HELILOG_GUIDE_TOPICS=[
       "The cloud pill indicates Synced, pending changes, offline status or a sync issue. Tap it for details.",
       "Flights may be entered offline. Reconnect and allow synchronization before using another device.",
       "Resolve any reported conflicts carefully; do not assume one device always has the correct record.",
+      "One shared cloud logbook belongs to the account. A fresh device joins existing cloud records automatically after signing in.",
+      "If setup finds older local records, review the confirmation and download the preserved pre-sync safety snapshot if needed.",
+      "Conflicts are local to the device where they occurred. Review them on that device; a clean web status does not clear a phone conflict.",
       "Do not clear browser or app storage while records are pending or troubleshooting sync."
     ],
     "route": "cloud",
@@ -163,6 +166,11 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {
+    "v": "V2.28",
+    "name": "Safer cloud account setup",
+    "detail": "New devices join existing cloud records automatically; setup conflicts stay visible and reviewable per device."
+  },
   {
     "v": "V2.27",
     "name": "Reusable pilot signatures",
