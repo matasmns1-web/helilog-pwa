@@ -68,6 +68,8 @@ function v27ConflictsMarkup(){
  return '<div id="v2281ConflictReview" role="region" aria-label="Review synchronization on this device" tabindex="-1" class="card" style="margin-top:14px;scroll-margin-top:14px"><div class="head"><h2>'+title+'</h2></div>'+
  '<p class="mini">Status: '+v22CloudEscape(state.state)+' · '+v22CloudEscape(state.pending||0)+' pending change(s)</p>'+
  (state.error?'<div class="note" role="alert">'+v22CloudEscape(state.error)+'</div>':'')+
+ (typeof v22CloudNotice!=="undefined"&&v22CloudNotice?
+  '<div class="note" role="status">'+v22CloudEscape(v22CloudNotice)+'</div>':'')+
   '<p>These conflicts are stored <b>on this device</b>. They may not appear on your other devices. HeliLog will not automatically choose a copy or overwrite either one.</p>'+
   (rows.length?rows.map(item=>'<div class="qual-item" style="margin-top:10px"><b>'+
    v22CloudEscape(item.kind)+' · '+v22CloudEscape(item.id)+'</b>'+
