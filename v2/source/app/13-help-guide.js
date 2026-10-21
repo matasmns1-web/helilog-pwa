@@ -1,4 +1,4 @@
-/* V2.29. Searchable, offline-friendly guide and current release notes. */
+/* V2.29.1. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
   {
     "category": "Records & signatures",
@@ -122,6 +122,7 @@ const HELILOG_GUIDE_TOPICS=[
       "Select Review flights before printing to inspect the selected batch. A possible duplicate is compared with your entire logbook, including earlier archived entries.",
       "Check missing PIC information and pilot links, flight duration versus UTC off/on times (including overnight flights), unusual very short or long flights, Night/IFR/instructor minutes and take-off versus landing counts.",
       "Review the independent calculations of PIC/Co-pilot/Dual, engine and single-/multi-pilot experience, and carried-forward plus closing totals.",
+      "Review overlapping flight intervals, including multiple flights on the same day or an overnight arrival on the next UTC day. Flights that end when another starts are not overlaps.",
       "Use View entry to inspect a flagged flight. Edit only an unarchived entry through its normal form; do not silently change or automatically delete anything.",
       "Acknowledgement allows printing after you have checked exceptions; it is not official certification. If selected pages or flight records change, repeat the review.",
       "Print, verify and sign the paper pages before separately confirming the archive. Archived records remain protected."
@@ -191,9 +192,9 @@ const HELILOG_GUIDE_TOPICS=[
 ];
 const HELILOG_GUIDE_UPDATES=[
   {
-    "v": "V2.29",
-    "name": "Pre-archive review and new-user guidance",
-    "detail": "Check likely duplicate or incomplete flight details and time totals before printing. Expanded cloud onboarding, iPhone recovery and backup guidance."
+    "v": "V2.29.1",
+    "name": "Pre-archive review, including overlapping UTC flights",
+    "detail": "Now flags overlapping UTC flight intervals (including overnight and earlier archived entries) as well as duplicates, PIC information and running totals. Expanded onboarding and recovery guidance."
   },
   {
     "v": "V2.28.4",
