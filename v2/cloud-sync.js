@@ -36,7 +36,7 @@
   }else data[plural[kind]]=arr;
  }
  let owner="",db=null,pending=[],versions={},mirror={},baseline={},state="inactive",problem="",
-  running=false,paused=false,reconciling=false,pilotPreview=null,recordPreview=null,snapshotFn=null,replaceFn=null,listener=null;
+  running=false,paused=false,reconciling=false,pilotPreview=null,recordPreview=null,recoveryPreview=null,snapshotFn=null,replaceFn=null,listener=null;
  const clone=x=>JSON.parse(JSON.stringify(x));
  // PostgreSQL JSONB may reorder object keys. Compare canonical values,
  // otherwise harmless key ordering could produce false sync conflicts.
@@ -78,7 +78,7 @@
  function parseKey(k){const i=k.indexOf(":");return {kind:k.slice(0,i),id:k.slice(i+1)};}
  function stop(){
   owner="";db=null;pending=[];versions={};mirror={};baseline={};state="inactive";problem="";extended=false;types=[...coreKinds];
-  running=false;paused=true;reconciling=false;pilotPreview=null;recordPreview=null;snapshotFn=null;replaceFn=null;notify();
+  running=false;paused=true;reconciling=false;pilotPreview=null;recordPreview=null;recoveryPreview=null;snapshotFn=null;replaceFn=null;notify();
  }
  function start({userId,client,getData,replaceData,onStatus}){
   if(!/^[0-9a-f-]{36}$/i.test(String(userId)))throw Error("A verified Supabase user ID is required.");
@@ -87,7 +87,7 @@
   owner=userId;db=client;snapshotFn=getData;replaceFn=replaceData;listener=onStatus||null;
   extended=read(extKey(owner),false)===true;
   types=extended?[...coreKinds,...extraKinds]:[...coreKinds];
-  paused=false;running=false;reconciling=false;pilotPreview=null;recordPreview=null;pending=read(queueKey(owner),[]);
+  paused=false;running=false;reconciling=false;pilotPreview=null;recordPreview=null;recoveryPreview=null;pending=read(queueKey(owner),[]);
   versions=read(versionKey(owner),{});mirror=read(mirrorKey(owner),{});
   if(!Array.isArray(pending)||!versions||typeof versions!=="object"||Array.isArray(versions)||!mirror||typeof mirror!=="object"||Array.isArray(mirror))throw Error("Saved sync state is invalid. Preserve local data; do not reset.");
   if(pending.some(q=>![...coreKinds,...extraKinds].includes(q.kind)||typeof q.id!=="string"||!["put","delete"].includes(q.action)))throw Error("Saved sync queue contains invalid operations.");
@@ -154,7 +154,13 @@
     const ackPut=q.action==="put"&&row&&canonical(row.payload)===canonical(q.payload)
       &&(q.baseRevision===null||row.revision===q.baseRevision+1);
     const ackDelete=q.action==="delete"&&!row;
-    if(ackPut||ackDelete){
+    // V2.28.4: a previous blocked unqueued difference can become identical
+    // to the cloud (for example opening totals {} on both sides). This is a
+    // verified no-op, NOT an upload or a choice between two different values.
+    const safeEqual=q.unqueuedRecovery===true&&q.conflict===true&&q.action==="put"&&row&&
+      canonical(row.payload)===canonical(q.payload)&&
+      canonical(localRecord(snapshotFn(),q.kind,q.id))===canonical(row.payload);
+    if(ackPut||ackDelete||safeEqual){
      pending=pending.filter(x=>x!==q);
      if(ackPut){versions[k]=row.revision;mirror[k]=canonical(row.payload);}
      else{delete versions[k];delete mirror[k];}
@@ -200,6 +206,13 @@
      const current=byId.get(row.record_id);
      const localValue=current===undefined?null:canonical(current);
      const original=mirror[k];
+     // A stale verified mirror is not a conflict if the two current records
+     // are byte-for-byte equal after canonical JSON normalization.
+     if(current&&localValue===canonical(row.payload)){
+      versions[k]=row.revision;
+      mirror[k]=canonical(row.payload);
+      continue;
+     }
      // Cross-device safety: compare against the LAST VERIFIED CLOUD COPY,
      // not today's startup snapshot (which could contain unsent local edits).
      if(current && (original===undefined?
@@ -587,6 +600,121 @@
     missingPeople:summaries.person.missing,missingEndorsements:summaries.endorsement.missing,
     differentPeople:summaries.person.different,differentEndorsements:summaries.endorsement.different};
  }
+
+ // A recovery plan is read-only and deliberately exposes NO signature bytes.
+ // The older pre-cloud workspace is never rewritten or imported wholesale.
+ function requireSafePreservedRecovery(){
+  if(!isActive()||!extended||root.HeliLogCloud?.snapshot?.().userId!==owner)
+   throw Error("Sign in to the correct HeliLog account and enable full cloud sync.");
+  if(root.navigator?.onLine===false)throw Error("Reconnect before inspecting recovery records.");
+  if(running||reconciling||pending.length||state!=="synced")
+   throw Error("Resolve remaining sync conflicts first using Check / sync now. No recovery records were changed.");
+ }
+ const remoteFingerprint=rows=>canonical(rows.map(r=>[r.kind,r.record_id,Number(r.revision),r.payload])
+    .sort((a,b)=>(a[0]+":"+a[1]).localeCompare(b[0]+":"+b[1])));
+ async function previewPreservedRecovery(){
+  requireSafePreservedRecovery();
+  const previous=read(savedPreMigration(owner),null);
+  if(!previous||!Array.isArray(previous.people)||!Array.isArray(previous.endorsements))
+   throw Error("No complete pre-sync snapshot is available on this device. Keep the original recovery download.");
+  const before=clone(snapshotFn()),ownerAtStart=owner;
+  const cloud=await listRemote(ownerAtStart);
+  requireSafePreservedRecovery();
+  if(owner!==ownerAtStart||canonical(snapshotFn())!==canonical(before))
+   throw Error("This device changed during recovery inspection. Check sync and try again.");
+  const cloudKeys=new Set(cloud.map(r=>ident(r.kind,r.record_id)));
+  const currentPeople=Array.isArray(before.people)?before.people:[];
+  const currentEndorsements=Array.isArray(before.endorsements)?before.endorsements:[];
+  const names=new Set([...currentPeople,...cloud.filter(r=>r.kind==="person").map(r=>r.payload)]
+    .map(p=>String(p?.name||"").trim().toLowerCase()).filter(Boolean));
+  const people=[],endorsements=[],blocked=[];
+  const seen=new Set();
+  for(const p of previous.people){
+   if(!p||typeof p.id!=="string"||!p.id||p.id.length>120||!p.name||p.isAccountHolder)continue;
+   if(currentPeople.some(x=>x.id===p.id))continue;
+   const key=ident("person",p.id),name=String(p.name).trim().toLowerCase();
+   if(seen.has(key)||cloudKeys.has(key)||names.has(name)){
+    blocked.push("Pilot "+String(p.name)+" already exists or has an identifier/name collision.");continue;
+   }
+   people.push(clone(p));seen.add(key);names.add(name);
+  }
+  const validPersonIds=new Set([...currentPeople,...people].map(p=>p.id));
+  const validQualIds=new Set((before.qualifications||[]).map(q=>q.id));
+  for(const e of previous.endorsements){
+   if(!e||typeof e.id!=="string"||!e.id||e.id.length>120)continue;
+   if(currentEndorsements.some(x=>x.id===e.id))continue;
+   const key=ident("endorsement",e.id);
+   const duplicate=currentEndorsements.some(x=>x.title===e.title&&x.date===e.date&&x.signatoryPersonId===e.signatoryPersonId);
+   if(seen.has(key)||cloudKeys.has(key)||duplicate){
+    blocked.push("Endorsement "+String(e.title||e.id)+" already exists or has an identifier/content collision.");continue;
+   }
+   if(!e.signatoryPersonId||!validPersonIds.has(e.signatoryPersonId)){
+    blocked.push("Endorsement "+String(e.title||e.id)+" has an unavailable signatory pilot.");continue;
+   }
+   if(e.qualificationId&&!validQualIds.has(e.qualificationId)){
+    blocked.push("Endorsement "+String(e.title||e.id)+" references a missing qualification.");continue;
+   }
+   endorsements.push(clone(e));seen.add(key);
+  }
+  if(!people.length&&!endorsements.length)
+   throw Error("There are no safely restorable missing records. Collisions require separate manual review.");
+  recoveryPreview={
+   owner,localHash:canonical(before),sourceHash:canonical(previous),
+   remoteHash:remoteFingerprint(cloud),people,endorsements
+  };
+  return {people:people.map(p=>({id:p.id,name:String(p.name),hasSignature:!!p.savedSignatureData})),
+   endorsements:endorsements.map(e=>({id:e.id,title:String(e.title||e.category||"Untitled"),
+      signed:!!e.signatureData,signatoryPersonId:e.signatoryPersonId})),
+   blocked};
+ }
+ async function restorePreservedRecovery(){
+  requireSafePreservedRecovery();
+  const plan=recoveryPreview;
+  if(!plan||plan.owner!==owner)throw Error("Preview the missing records and confirm before restoring.");
+  reconciling=true;
+  const ownerAtStart=owner;
+  try{
+   const remote=await listRemote(ownerAtStart),before=clone(snapshotFn());
+   const original=read(savedPreMigration(ownerAtStart),null);
+   if(!isActive()||owner!==ownerAtStart||root.HeliLogCloud?.snapshot?.().userId!==ownerAtStart||
+      canonical(before)!==plan.localHash||canonical(original)!==plan.sourceHash||
+      remoteFingerprint(remote)!==plan.remoteHash||pending.length)
+    throw Error("Device, snapshot or cloud records changed after preview. Nothing was restored; check sync and preview again.");
+   const both=clone(before);
+   both.people=[...both.people,...clone(plan.people)];
+   both.endorsements=[...both.endorsements,...clone(plan.endorsements)];
+   // The backup contains the complete original account cache and unmodified
+   // signed source records. It must be verified before any workspace edit.
+   const backupKey="helilog_v284_selective_recovery_"+owner+"_"+Date.now();
+   if(root.localStorage.getItem(backupKey)!==null)
+    throw Error("Recovery safety backup identifier already exists. Try again.");
+   const backup=JSON.stringify({reason:"V2.28.4 explicit selective pre-sync recovery",
+    createdAt:new Date().toISOString(),workspace:before,source:original,
+    cloud:remote,pending:clone(pending),versions:clone(versions),mirror:clone(mirror)});
+   root.localStorage.setItem(backupKey,backup);
+   if(root.localStorage.getItem(backupKey)!==backup)
+    throw Error("Verified safety snapshot could not be stored. Nothing was changed.");
+   const previousMeta={pending:clone(pending),versions:{...versions},
+      mirror:{...mirror},baseline:{...baseline}};
+   try{
+    replaceFn(both); // One atomic account-cache write.
+    for(const [kind,arr] of [["person",plan.people],["endorsement",plan.endorsements]])
+     for(const record of arr)pending.push({kind,id:record.id,action:"put",
+       payload:clone(record),baseRevision:null,generation:1});
+    baseline=mapOf(snapshotFn());
+    persist();
+    state="pending";problem="";recoveryPreview=null;notify();
+   }catch(e){
+    pending=previousMeta.pending;versions=previousMeta.versions;
+    mirror=previousMeta.mirror;baseline=previousMeta.baseline;
+    try{replaceFn(before);}catch(error){root.console?.error?.("Recovery rollback failed; verified backup retained",error);}
+    state="error";problem="Selective recovery was interrupted. Verified pre-recovery copy is retained.";
+    notify();throw e;
+   }
+   return {backupKey,people:plan.people.length,endorsements:plan.endorsements.length,
+    pending:pending.length};
+  }finally{reconciling=false;}
+ }
  async function extensionPreview(){
   if(!isActive())throw Error("Sign in first.");
   if(root.navigator?.onLine===false)throw Error("Connect to the internet to initialize extended synchronization.");
@@ -656,6 +784,6 @@
   return {enabled:true,status:status(),backupKey};
  }
  return Object.freeze({recordKey,start,stop,track,refresh,flush,pull,status,ignoreNoChanges,
-  extended:()=>extended,preservedSetupSummary,extensionPreview,accountSetup,activateExtension,
+  extended:()=>extended,preservedSetupSummary,previewPreservedRecovery,restorePreservedRecovery,extensionPreview,accountSetup,activateExtension,
   previewPilotConflict,resolvePilotConflict,conflicts,previewRecordConflict,resolveRecordConflict});
 });
