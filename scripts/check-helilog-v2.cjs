@@ -44,6 +44,7 @@ const GROUPS = Object.freeze([
       'v2/v228-cloud-onboarding.test.cjs',
       'v2/v2281-conflict-review.test.cjs',
       'v2/v2282-person-recovery.test.cjs',
+      'v2/v2283-safe-recovery.test.cjs',
     ],
   },
   {
