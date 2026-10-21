@@ -46,8 +46,8 @@ function v27RecordDiffMarkup(){
  if(!p)return "";
  const display=value=>value===null?'<span class="muted">Record deleted / absent</span>':
   '<pre style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto;font-size:12px">'+
-  v22CloudEscape(JSON.stringify(value,null,2))+'</pre>';
- return '<div class="card" style="margin-top:16px"><div class="head"><h2>Review record conflict</h2></div>'+
+  v22CloudEscape(JSON.stringify(value,(key,part)=>key==='savedSignatureData'||key==='signatureData'?'[signature image hidden]':part,2))+'</pre>';
+ return '<div id="v2281RecordComparison" role="region" aria-label="Compare device and cloud records" tabindex="-1" class="card" style="margin-top:16px;scroll-margin-top:14px"><div class="head"><h2>Review record conflict</h2></div>'+
   '<p><b>'+v22CloudEscape(p.kind)+': '+v22CloudEscape(p.id)+'</b></p>'+
   '<p>These copies differ. Nothing has been overwritten. Review both versions before choosing.</p>'+
   '<div class="profilegrid"><div><b>This device</b>'+display(p.local)+'</div>'+
@@ -60,9 +60,16 @@ function v27RecordDiffMarkup(){
 function v27ConflictsMarkup(){
  if(!v23AccountWorkspace())return "";
  const rows=window.HeliLogV23Sync.conflicts();
- const needsAttention=window.HeliLogV23Sync.status().state==="conflict";
+ const state=window.HeliLogV23Sync.status();
+ const needsAttention=state.state==="conflict"||state.state==="error"||
+  (state.pending>0&&state.state!=="syncing");
  if(!needsAttention && !rows.length)return "";
- return '<div class="card" style="margin-top:16px"><div class="head"><h2>Offline edit conflicts</h2></div>'+
+ const title=state.state==="conflict"?"Offline edit conflicts":"Unsynced changes on this device";
+ return '<div id="v2281ConflictReview" role="region" aria-label="Review synchronization on this device" tabindex="-1" class="card" style="margin-top:14px;scroll-margin-top:14px"><div class="head"><h2>'+title+'</h2></div>'+
+ '<p class="mini">Status: '+v22CloudEscape(state.state)+' · '+v22CloudEscape(state.pending||0)+' pending change(s)</p>'+
+ (state.error?'<div class="note" role="alert">'+v22CloudEscape(state.error)+'</div>':'')+
+ (typeof v22CloudNotice!=="undefined"&&v22CloudNotice?
+  '<div class="note" role="status">'+v22CloudEscape(v22CloudNotice)+'</div>':'')+
   '<p>These conflicts are stored <b>on this device</b>. They may not appear on your other devices. HeliLog will not automatically choose a copy or overwrite either one.</p>'+
   (rows.length?rows.map(item=>'<div class="qual-item" style="margin-top:10px"><b>'+
    v22CloudEscape(item.kind)+' · '+v22CloudEscape(item.id)+'</b>'+
@@ -70,7 +77,9 @@ function v27ConflictsMarkup(){
    (item.reviewable?'<button class="btn" type="button" style="margin-top:9px" onclick="v27ReviewRecordConflict('+
      v22CloudEscape(JSON.stringify(item.kind))+','+v22CloudEscape(JSON.stringify(item.id))+')">Compare copies</button>':
     '<div class="note" style="margin-top:8px">Not eligible for general conflict resolution. Preserve both copies; do not reset or force-upload.</div>')+
-   '</div>').join(''):'<div class="note">The app detected an unqueued local difference or profile conflict. Your records remain on this device. Use the pilot-profile review below when available, or keep both devices intact for assisted recovery.</div>')+
+   '</div>').join(''):'<div class="note">No ordinary record in the queue can be compared automatically. Your local records remain on this device. Protected pilot, endorsement or archive differences require a separate review. Do not clear app data or force-upload.</div>')+
+ (state.error&&state.error.includes("settings:pilot")?
+ '<button class="btn" type="button" onclick="v24ReviewPilotConflict()">Compare pilot profile safely</button>':'')+
   '</div>';
 }
 async function v27ReviewRecordConflict(kind,id){
@@ -78,7 +87,7 @@ async function v27ReviewRecordConflict(kind,id){
  v27RecordBusy=true;v22CloudNotice="";
  try{v27RecordPreview=await window.HeliLogV23Sync.previewRecordConflict(kind,id);}
  catch(e){v27RecordPreview=null;v22CloudNotice="Could not review record: "+(e.message||e);}
- finally{v27RecordBusy=false;cloud();}
+ finally{v27RecordBusy=false;cloud();v2281FocusConflictReview(!!v27RecordPreview);}
 }
 async function v27ResolveRecordConflict(choice){
  if(v27RecordBusy||!v27RecordPreview)return;
@@ -134,6 +143,8 @@ function cloud(){
    state==="connecting"?"Connecting…":"Ready for private sign-in"):"Cloud not configured";
  app.innerHTML=header('Cloud account',(typeof HELILOG_TEST_VERSION==='string'?HELILOG_TEST_VERSION:'HeliLog')+' · Synchronization and archive integrity',
   `<button class="btn" onclick="go('settings')">← Settings</button>`)+
+  // Device-specific issues appear before the ordinary account cards.
+  (v23AccountWorkspace()?v27ConflictsMarkup()+v27RecordDiffMarkup()+v24PilotDiffMarkup():'')+
   '<div class="card" style="margin-bottom:16px"><div class="head"><h2>Connection status</h2></div>'+
   '<div class="pwa-state"><b>'+v22CloudEscape(stateText)+'</b></div>'+
   (st.configured?'<div class="mini">'+(window.HeliLogCloudConfig?.environment==='production'?'Production':'Test environment')+' · Invitation-only accounts</div>':'<div class="mini">Cloud service is not configured yet.</div>')+
@@ -159,7 +170,6 @@ function cloud(){
    '<div class="actions" style="margin-top:12px"><button class="btn primary" type="button" onclick="v24ReviewPilotConflict()"'+
    (v24PilotConflictBusy?' disabled':'')+'>Review pilot profile conflict</button></div>':'')+
   '</div>'+
-  (v23AccountWorkspace()?v27ConflictsMarkup()+v27RecordDiffMarkup()+v24PilotDiffMarkup():'')+
   (v23AccountWorkspace()?'<div class="card" style="margin-top:16px">'+
     '<div class="head"><div><h2>Backup &amp; Recovery</h2><div class="muted">Encrypted downloads, backup health and recovery verification.</div></div>'+
     '<button class="btn primary" type="button" onclick="go(\'backups\')">Manage backups</button></div>':'')+

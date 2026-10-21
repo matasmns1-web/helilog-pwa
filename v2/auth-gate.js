@@ -1,5 +1,5 @@
 /* HeliLog V2.3 private login gate. No automatic import of V2.2 local data. */
-const HELILOG_TEST_VERSION='V2.28';
+const HELILOG_TEST_VERSION='V2.28.1';
 let v23Unlocked=false,v23AuthBusy=false,v23AuthMessage="";
 let v23RecoveryStage="signin",v23InviteStage="signin";
 function v23Escape(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
@@ -30,8 +30,34 @@ function v23SyncInfo(){
   'Aircraft, flights, pilot profiles, qualifications, endorsements, medical records and opening totals are included in cloud sync. Print archive snapshots and signed corrections require separate confirmation.':
   'Aircraft and flights sync only. Finish setup in Cloud account to include pilot profiles, endorsements, qualifications and previous totals.')+'</div>'+
  ((st.state==="conflict"||st.state==="error"||pending||setupNeeded)?
- '<button type="button" class="btn" onclick="go(\'cloud\')">Review on this device</button>':'')+
+ '<button type="button" class="btn" onclick="v2281OpenConflictReview(event)">Review conflicts on this device</button>':'')+
  '</div></details>';
+}
+
+// V2.28.1: the status bubble must open the actual on-device conflict list.
+// The old button navigated to a long Cloud page without showing the review.
+function v2281FocusConflictReview(comparison=false){
+ const target=document.getElementById(comparison?"v2281RecordComparison":"v2281ConflictReview");
+ if(!target)return false;
+ try{target.scrollIntoView({behavior:"smooth",block:"start"});}
+ catch{target.scrollIntoView();}
+ try{target.focus({preventScroll:true});}catch{target.focus();}
+ return true;
+}
+function v2281OpenConflictReview(event){
+ event?.preventDefault?.();event?.stopPropagation?.();
+ if(!v23AccountWorkspace())return;
+ if(location.hash==="#cloud")cloud();
+ else go("cloud");
+ // Hash routing creates the Cloud screen on the next navigation event.
+ setTimeout(()=>{
+  if(!v23AccountWorkspace())return;
+  const status=window.HeliLogV23Sync.status();
+  const reviewable=window.HeliLogV23Sync.conflicts().filter(x=>x.reviewable);
+  if(status.state==="conflict"&&reviewable.length===1&&!v27RecordBusy){
+   void v27ReviewRecordConflict(reviewable[0].kind,reviewable[0].id);
+  }else v2281FocusConflictReview();
+ },90);
 }
 function v23LoginView(){
  v23Unlocked=false;

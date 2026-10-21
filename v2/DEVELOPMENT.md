@@ -83,3 +83,9 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 - Local unqueued aerodrome settings differences are converted to manual reviewable conflicts. Signatures, signed endorsements, archives and other protected settings cannot be force-merged.
 - The cloud pill shows setup incomplete when only aircraft and flights synchronize; conflict review is clearly labelled per-device. Preserved pre-extension snapshot can be downloaded in Cloud account.
 - Production and test remain separate. No schema migrations or printed logbook changes.
+
+## V2.28.1 — fix iPhone sync bubble review
+
+- The cloud status bubble now opens the relevant on-device conflict review rather than only routing to the Cloud account heading. With one eligible conflict, it opens the read-only comparison directly; otherwise it focuses an accessible issue list.
+- The conflict panel is displayed immediately below the Cloud account heading, with exact pending count and error explanation. For unresolved protected records no automatic overwrite options are offered.
+- Signature image data is not printed as base64 in comparisons. No changes to archives, flight records, Supabase schema, or production.
