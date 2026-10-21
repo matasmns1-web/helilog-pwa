@@ -27,17 +27,17 @@ function render(){
   if(v23AccountWorkspace()&&v==='testmode'){
     v='dashboard';if(location.hash!=='#dashboard')location.hash='#dashboard';
   }
-  if(v23AccountWorkspace()&&(v==='printarchive'||v==='endorsementarchive')&&v23PreventUnsupportedArchive()){
+  if(v23AccountWorkspace()&&(v==='printarchive'||v==='archivereview'||v==='endorsementarchive')&&v23PreventUnsupportedArchive()){
     v='dashboard';
     if(location.hash!=='#dashboard')location.hash='#dashboard';
   }
-  if(isStandaloneApp()&&(v==='printarchive'||v==='endorsementarchive')){
+  if(isStandaloneApp()&&(v==='printarchive'||v==='archivereview'||v==='endorsementarchive')){
     v='endorsements';
     if(location.hash!=='#endorsements')location.hash='#endorsements';
   }
   try{
     if(v!=='add'&&v!=='quickadd') editingFlightId=null;
-    ({dashboard,logbook,add,quickadd:quickAdd,aircraft,pilots,endorsements,printarchive,endorsementarchive:v2EndorsementArchive,totals,profile,settings,locations:v219LocationsPage,backups,cloud,testmode,mobilemore,help:helpGuide}[v]||dashboard)();
+    ({dashboard,logbook,add,quickadd:quickAdd,aircraft,pilots,endorsements,printarchive,archivereview:v229PreArchiveReview,endorsementarchive:v2EndorsementArchive,totals,profile,settings,locations:v219LocationsPage,backups,cloud,testmode,mobilemore,help:helpGuide}[v]||dashboard)();
     let moreViews=['mobilemore','aircraft','pilots','endorsements','endorsementarchive','totals','profile','settings','locations','backups','cloud','testmode','help'];
     document.querySelectorAll('[data-v]').forEach(b=>{
       let active=b.dataset.v===v || (b.dataset.v==='quickadd'&&v==='add') || (b.dataset.v==='settings' && (v==='cloud'||v==='backups'||v==='locations')) || (b.dataset.v==='mobilemore' && moreViews.includes(v));
