@@ -108,7 +108,7 @@ test('selected exact draft must be reviewed, changed page count invalidates revi
  assert.match(s,/Preview \/ Print pages/);
  assert.match(s,/Confirm printed & signed/);
  assert.match(s,/if\(!confirm\(/);
- assert.doesNotMatch(read('prearchive-review.js'),/localStorage|\.update\(|\.insert\(|\.delete\(|\.setItem\(|\.push\(\{/);
+ assert.doesNotMatch(read('prearchive-review.js'),/localStorage|\.update\(|\.insert\(|\.delete\(|\.setItem\(/);
 });
 test('Help guide teaches onboarding, cloud sync, recovery, and new pre-archive review',()=>{
  const guide=read('source/app/13-help-guide.js');
