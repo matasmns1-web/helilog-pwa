@@ -14,7 +14,7 @@ test('Guide contains searchable task instructions and release notes',()=>{
 });
 test('Guide is cached offline and does not alter the print engine',()=>{
  const sw=read('v2/service-worker.js'),html=read('v2/source/index.template.html');
- const cssVersion=html.match(/guide\\.css\\?v=([\\d.]+)/)?.[1];
+ const cssVersion=html.match(/guide[.]css[?]v=([0-9.]+)/)?.[1];
  assert.ok(cssVersion,'HTML must specify a guide stylesheet version');
  assert.ok(sw.includes('guide.css?v='+cssVersion),'offline cache must use the same guide stylesheet');
  assert.match(sw,/const CACHE='helilog-v2-[a-z0-9-]+';/);
