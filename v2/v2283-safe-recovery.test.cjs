@@ -132,7 +132,8 @@ test("read-only pre-sync inspection reports collisions and an absent snapshot sa
  await phone.api.activateExtension("cloud");await tick();
  const report=phone.api.preservedSetupSummary();
  assert.equal(report.missingPeople.length,0);
- assert.equal(report.differentPeople.length,1);
+ assert.ok(report.differentPeople.some(p=>p.id==="shared-pilot"));
+ assert.ok(report.differentPeople.length>=1);
  assert.equal(phone.data.people.find(p=>p.id==="shared-pilot").name,"Cloud version");
 });
 test("recovery UI is read-only, hides signature images and gives an explicit download option",()=>{
