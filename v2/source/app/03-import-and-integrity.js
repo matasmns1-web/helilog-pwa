@@ -107,6 +107,18 @@ function inspectHeliLogData(data){
       else seenSignatures.set(sig,f.id);
     }
   }
+  // Historical specialised operations are subtotals within brought-forward
+  // flight time, not new flight entries or additional flying hours.
+  if(data.broughtForward?.specialOps!==undefined){
+    const ops=data.broughtForward.specialOps;
+    const overall=Number(data.broughtForward.total||0);
+    if(!ops||typeof ops!=='object'||Array.isArray(ops))
+      errors.push('Previous specialised-operation totals are malformed.');
+    else for(const [code,mins] of Object.entries(ops)){
+      if(!SPECIAL_OP_KEYS.has(code)||!Number.isSafeInteger(mins)||mins<0||mins>overall)
+        errors.push('Previous specialised operation '+code+' must contain whole, non-negative minutes not exceeding brought-forward flight time.');
+    }
+  }
   const rawCorrections=data.printArchive?.corrections;
   const corrections=Array.isArray(rawCorrections)?rawCorrections:[];
   const batches=data.printArchive?.batches;
