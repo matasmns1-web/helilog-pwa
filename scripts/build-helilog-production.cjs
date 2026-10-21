@@ -40,7 +40,7 @@ function prepare(){
  must(target!==root&&target!==path.parse(target).root,
   "build output cannot be the repository root or filesystem root");
  const files=[
-  "index.html","dark-cockpit.css","manifest.webmanifest","service-worker.js",
+  "index.html","dark-cockpit.css","guide.css","manifest.webmanifest","service-worker.js",
   "apple-touch-icon.png","icon-192.png","icon-512.png",
   "domain.js","night-calculation.js","aerodrome-lookup.js","print.js","endorsement-bridge.js","endorsement-ui.js",
   "cloud-config.js","cloud-foundation.js","cloud-view.js","cloud-sync.js",
