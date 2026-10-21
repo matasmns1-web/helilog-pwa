@@ -34,8 +34,8 @@ test("staging stays connected only to existing test backend and private login",(
  assert.match(cloud,/owner|auth\.uid|verifiedClient/i);
 });
 test("version and offline PWA references are coherent",()=>{
- assert.match(page,/<title>HeliLog V2\.30 — Pre-archive Flight Review · Test<\/title>/);
- assert.equal(manifest.name,"HeliLog V2.30 — Pre-archive Flight Review Test");
+ assert.match(page,/<title>HeliLog V2\.30 — Previous Logbook Operations · Test<\/title>/);
+ assert.equal(manifest.name,"HeliLog V2.30 — Previous Logbook Operations Test");
  assert.match(worker,/helilog-v2-30-previous-ops-1/);
  assert.match(gate,/HELILOG_TEST_VERSION='V2\.30'/);
  for(const asset of ["cloud-config","cloud-foundation","auth-gate","cloud-view","cloud-sync","recovery"]){
