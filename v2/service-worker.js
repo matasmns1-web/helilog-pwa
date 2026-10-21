@@ -1,4 +1,4 @@
-const CACHE='helilog-v2-28-2-pilot-conflict-1';
+const CACHE='helilog-v2-28-3-safe-recovery-1';
 const SHELL=[
   './',
   './index.html',

@@ -5,11 +5,13 @@
 let v22CloudNotice="",v22CloudBusy=false;
 let v24PilotConflictPreview=null,v24PilotConflictBusy=false;
 let v27RecordPreview=null,v27RecordBusy=false,v28SetupBusy=false;
+let v283RecoverySummary=null;
 /* V2.19: do not retain conflict previews or account notices across logins. */
 function v213ResetCloudViewState(){
  v22CloudNotice="";v22CloudBusy=false;
  v24PilotConflictPreview=null;v24PilotConflictBusy=false;
  v27RecordPreview=null;v27RecordBusy=false;v28SetupBusy=false;
+ v283RecoverySummary=null;
 }
 function v24FlattenProfile(data,prefix="",out={}){
  for(const [key,value] of Object.entries(data&&typeof data==="object"?data:{})){
@@ -88,6 +90,38 @@ function v27ConflictsMarkup(){
  (state.error&&state.error.includes("settings:pilot")?
  '<button class="btn" type="button" onclick="v24ReviewPilotConflict()">Compare pilot profile safely</button>':'')+
   '</div>';
+}
+function v283RecoveryMarkup(){
+ const r=v283RecoverySummary;
+ if(!r)return "";
+ const render=(label,items,isPilot)=>{
+  return '<h3 style="margin-top:12px">'+v22CloudEscape(label)+' ('+items.length+')</h3>'+
+   (items.length?'<ul>'+items.map(x=>'<li>'+v22CloudEscape(isPilot?x.name:x.title)+
+    (isPilot?(x.savedSignature?' · saved signature exists':''):
+     (x.signed?' · signed':' · unsigned'))+'</li>').join('')+'</ul>':
+    '<p class="mini">None found in this saved snapshot.</p>');
+ };
+ return '<div class="card" id="v283PreservedRecords" role="region" aria-label="Preserved pre-sync pilot and endorsement records" style="margin-top:14px">'+
+  '<div class="head"><h2>Preserved records on this device</h2></div>'+
+  '<p>This is a read-only inspection of the safety copy stored before cloud setup. It has not imported or uploaded anything.</p>'+
+  '<p class="mini">The saved snapshot contains '+r.previousPeople+' pilot(s) and '+r.previousEndorsements+' endorsement(s). "Missing" means absent from the CURRENT device workspace, not necessarily absent from the cloud.</p>'+
+  render('Pilots missing from the current app',r.missingPeople,true)+
+  render('Endorsements missing from the current app',r.missingEndorsements,false)+
+  ((r.differentPeople.length||r.differentEndorsements.length)?
+   '<p class="note">'+r.differentPeople.length+' existing pilot profile(s) and '+r.differentEndorsements.length+' endorsement(s) have the same identifiers but different contents. These were not merged.</p>':'')+
+  '<p class="mini">Preserve the downloaded recovery JSON. Do not import the entire snapshot over your current logbook. Any eventual recovery must compare the current cloud records and preserve existing signed endorsements and totals.</p>'+
+  '</div>';
+}
+function v283ReviewPreservedSetup(){
+ if(!v23AccountWorkspace())return;
+ try{
+  v283RecoverySummary=window.HeliLogV23Sync.preservedSetupSummary();
+  if(!v283RecoverySummary.available){v283RecoverySummary=null;v22CloudNotice="No pre-sync safety snapshot exists on this device.";}
+  else v22CloudNotice="Preserved records inspected without changing your data.";
+ }catch(e){v283RecoverySummary=null;v22CloudNotice="Could not inspect preserved data: "+(e.message||e);}
+ cloud();
+ const panel=document.getElementById('v283PreservedRecords');
+ panel?.scrollIntoView?.({block:'nearest'});
 }
 async function v27ReviewRecordConflict(kind,id){
  if(v27RecordBusy)return;
@@ -170,7 +204,8 @@ function cloud(){
    '<button class="btn primary" type="button" onclick="v28CompleteCloudSetup()"'+(v28SetupBusy?' disabled':'')+'>Continue setup safely</button></div>':
    '<p class="mini">Full account synchronization '+(v23AccountWorkspace()?'enabled.':'available after sign-in.')+'</p>')+
   (v23AccountWorkspace()&&localStorage.getItem('helilog_v24_pre_extension_'+window.HeliLogV23Sync.status().owner)?
-   '<div class="mini" style="margin-top:10px">Earlier device records were preserved before setup. <button type="button" class="btn" onclick="v28DownloadPreservedSetup()">Download preserved pre-sync data</button></div>':'')+
+   '<div class="mini" style="margin-top:10px">Earlier device records were preserved before setup. <button type="button" class="btn" onclick="v28DownloadPreservedSetup()">Download preserved pre-sync data</button> <button type="button" class="btn" onclick="v283ReviewPreservedSetup()">Review preserved pilots and endorsements</button></div>':'')+
+  (v283RecoverySummary?v283RecoveryMarkup():'')+
   (v23AccountWorkspace()&&window.HeliLogV23Sync.status().state==='conflict'?'<p class="mini">Unresolved conflicts are preserved for review; archives must not be confirmed until synchronized.</p>':'')+
   (v23AccountWorkspace()&&window.HeliLogV23Sync.status().state==="conflict"&&
    window.HeliLogV23Sync.status().error.includes("settings:pilot")?
