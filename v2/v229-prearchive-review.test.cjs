@@ -114,7 +114,7 @@ test('Help guide teaches onboarding, cloud sync, recovery, and new pre-archive r
  const guide=read('source/app/13-help-guide.js');
  for(const term of ['Pre-archive flight review','Review flights before printing',
   'Check sign-in connection','one shared cloud logbook','Restore these missing records','V2.29',
-  'another review','new, clean device'])assert.ok(guide.toLowerCase().includes(term.toLowerCase()),term);
+  'repeat the review','brand-new device'])assert.ok(guide.toLowerCase().includes(term.toLowerCase()),term);
  assert.match(guide,/htmlEscape\(step\)/);
 });
 test('V2.29 external checker is versioned, cached offline and restricted to the test release',()=>{
