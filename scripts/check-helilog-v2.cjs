@@ -47,6 +47,7 @@ const GROUPS = Object.freeze([
       'v2/v2283-safe-recovery.test.cjs',
       'v2/v2284-selective-recovery.test.cjs',
       'v2/v229-prearchive-review.test.cjs',
+      'v2/v230-special-ops-import.test.cjs',
     ],
   },
   {
