@@ -1,4 +1,4 @@
-/* V2.31.4 — device-local unqueued person conflict recovery, with no automatic overwrite. */
+/* V2.32 — device-local unqueued person conflict recovery, with no automatic overwrite. */
 "use strict";
 const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path");
 const read=p=>fs.readFileSync(path.join(__dirname,p),"utf8");
@@ -131,6 +131,6 @@ test("pilot signature comparison never displays raw PNGs and remains explicit",(
  assert.match(v,/Signature images are hidden/);
  assert.match(v,/Unsent local difference — review required/);
  assert.match(v,/v27ReviewRecordConflict/);
- assert.match(read("service-worker.js"),/helilog-v2-31-4-quick-scroll-1/);
- assert.match(read("source/index.template.html"),/V2\.31\.4/);
+ assert.match(read("service-worker.js"),/helilog-v2-32-offline-recovery-1/);
+ assert.match(read("source/index.template.html"),/V2\.32/);
 });
