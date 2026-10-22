@@ -51,6 +51,6 @@ test("drawn and saved signing require approval, and archives record source metad
 test("existing logbook print and archive formats are not modified",()=>{
  assert.doesNotMatch(read("print.js"),/savedSignatureData/);
  assert.doesNotMatch(read("archive-integrity.js"),/savedSignatureData/);
- assert.match(read("source/index.template.html"),/V2\.31\.3/);
- assert.match(read("service-worker.js"),/helilog-v2-31-3-review-navigation-1/);
+ assert.match(read("source/index.template.html"),/V2\.31\.4/);
+ assert.match(read("service-worker.js"),/helilog-v2-31-4-quick-scroll-1/);
 });
