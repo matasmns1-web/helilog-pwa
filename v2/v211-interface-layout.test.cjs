@@ -111,12 +111,11 @@ test("Settings cards fill the main content area without nesting",()=>{
  assert.match(html,/@media\(max-width:1150px\)\{\.settings-grid\{grid-template-columns:1fr\}\}/);
 });
 
-test("Backup page retains legacy and cloud backup/restore tools",()=>{
+test("Backup page retains encrypted cloud verification without legacy V2.8 controls",()=>{
  const f=fixture(),before=JSON.stringify(f.S);f.pages.backups();
  assert.match(f.app.innerHTML,/data-screen="Backup & Recovery"/);
  assert.match(f.app.innerHTML,/id="v29-backup-tools"/);
- for(const name of ["downloadFullBackup","v28DownloadCloudRecovery","v28InspectCloudRecovery",
-  "v232VerifyOfflineFile"])assert.match(f.app.innerHTML,new RegExp(name+"\\("));
+ for(const name of ["downloadFullBackup","v232VerifyOfflineFile"])assert.match(f.app.innerHTML,new RegExp(name+"\\("));
  assert.doesNotMatch(f.app.innerHTML,/handleBackupRestoreFile\(/,"Cloud-backed account must not offer local restore");
  assert.match(f.app.innerHTML,/Encrypted cloud snapshot/);
  assert.doesNotMatch(f.app.innerHTML,/Inspect V2.8 recovery package|Download verified cloud recovery package/);
