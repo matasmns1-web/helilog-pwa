@@ -1,9 +1,9 @@
-const CACHE='helilog-v2-26-help-guide-1';
+const CACHE='helilog-v2-31-4-quick-scroll-1';
 const SHELL=[
   './',
   './index.html',
   './dark-cockpit.css?v=2.20-cockpit-3',
-  './guide.css?v=2.26',
+  './guide.css?v=2.29',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png',
@@ -12,6 +12,7 @@ const SHELL=[
   './night-calculation.js?v=2.19-locations-1',
   './aerodrome-lookup.js?v=2.19-locations-1',
   './print.js',
+  './prearchive-review.js?v=2.29.1',
   './endorsement-bridge.js',
   './endorsement-ui.js',
   './cloud-config.js?v=2.19-locations-1',

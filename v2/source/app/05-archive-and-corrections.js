@@ -212,7 +212,7 @@ function setArchivePageCount(value){
   const n=Number(value);
   if(!Number.isSafeInteger(n)||n<1)return;
   selectedArchivePageCount=n;
-  pendingArchivePreview=null; // A preview must match exactly the selected flight set.
+  pendingArchivePreview=null;pendingArchiveReview=null; // Review and preview must match this exact page selection.
   printarchive();
 }
 function archiveRange(d){
@@ -253,14 +253,110 @@ function saveArchiveSetup(){
   }
   S.printArchive.firstPage=page;
   S.printArchive.paperReference=String(document.getElementById('archivePaperRef')?.value||'').trim().slice(0,120);
-  pendingArchivePreview=null;
+  pendingArchivePreview=null;pendingArchiveReview=null;
   save();
   printarchive();
+}
+
+/* V2.29: this is an acknowledgement of one exact proposed batch only.
+ * Never store a review decision in the logbook or the signed archive.
+ */
+let pendingArchiveReview=null;
+function v229ArchiveReviewed(draft=nextArchiveDraft()){
+ return !!pendingArchiveReview && pendingArchiveReview===JSON.stringify(draft);
+}
+/* V2.31.3: transient return navigation, never persisted or confused with
+ * signed review acknowledgement. The exact batch controls checkbox restore. */
+let v229ReviewReturn=null;
+function v229OpenReviewFlight(id,issueIndex){
+ if(!(S.flights||[]).some(f=>f.id===id))return;
+ v229ReviewReturn={
+  flightId:id,
+  draft:JSON.stringify(nextArchiveDraft()),
+  checked:!!document.getElementById('v229Acknowledge')?.checked,
+  issueIndex:Number.isSafeInteger(issueIndex)?issueIndex:null
+ };
+ flight(id);
+}
+function v229CanReturnToReview(id){
+ return location.hash==='#archivereview'&&
+   !!v229ReviewReturn&&v229ReviewReturn.flightId===id;
+}
+function v229ReturnToReview(){
+ const context=v229ReviewReturn;
+ if(!context)return go('archivereview');
+ const sameDraft=context.draft===JSON.stringify(nextArchiveDraft());
+ v229ReviewReturn=null;
+ go('archivereview');
+ // Only a read-only visit can retain the checkbox and highlighted finding.
+ // Any changed flight/page/totals must be acknowledged again.
+ const checkbox=document.getElementById('v229Acknowledge');
+ if(!checkbox)return;
+ checkbox.checked=!!sameDraft&&!!context.checked;
+ if(sameDraft&&context.issueIndex!==null){
+  const issue=document.getElementById('v229-review-issue-'+context.issueIndex);
+  issue?.scrollIntoView?.({block:'start'});
+ }
+}
+function v229PreArchiveReview(){
+ if(v23PreventUnsupportedArchive()||isStandaloneApp())return;
+ const draft=nextArchiveDraft();
+ if(!draft.flights.length){go("printarchive");return;}
+ if(!window.HeliLogV29Review?.evaluate)
+  throw Error("Pre-archive review module unavailable. Reopen HeliLog online; do not print or archive.");
+ const report=window.HeliLogV29Review.evaluate({draft,allFlights:S.flights,people:S.people});
+ const issueHtml=report.issues.map((issue,issueIndex)=>{
+  const heading=issue.severity==="critical"?"Check carefully":"Check if applicable";
+  const related=issue.otherFlightId?
+   ' · Related record '+htmlEscape(issue.otherFlightId):'';
+  const primary=issue.flightId&&(S.flights||[]).some(f=>f.id===issue.flightId)?
+   '<button class="btn" type="button" onclick="v229OpenReviewFlight('+
+    htmlEscape(JSON.stringify(issue.flightId))+','+issueIndex+')">View entry</button>':'';
+  const other=issue.otherFlightId&&(S.flights||[]).some(f=>f.id===issue.otherFlightId)?
+   '<button class="btn" type="button" onclick="v229OpenReviewFlight('+
+    htmlEscape(JSON.stringify(issue.otherFlightId))+','+issueIndex+')">View related entry</button>':'';
+  return '<div class="card" id="v229-review-issue-'+issueIndex+'" style="margin-top:9px;border-left:3px solid '+
+     (issue.severity==="critical"?'#b42318':'#dd9b2b')+'">'+
+    '<b>'+heading+' · '+htmlEscape(issue.code.replace(/-/g," "))+'</b>'+
+    (issue.flightId?'<div class="mini">'+htmlEscape(issue.date||"Undated")+
+     ' · '+htmlEscape(issue.flightId)+htmlEscape(related)+'</div>':'<div class="mini">Batch totals</div>')+
+    '<p>'+htmlEscape(issue.message)+'</p>'+
+    ((primary||other)?'<div class="actions">'+primary+other+'</div>':'')+'</div>';
+ }).join('');
+ app.innerHTML=header("Pre-archive flight review",
+  "Read-only checks for the exact flights and pages you are about to print.",
+  '<button type="button" class="btn" onclick="go(\'printarchive\')">← Print archive</button>')+
+  '<div class="card"><h2>'+htmlEscape(draft.id)+' · '+htmlEscape(archiveRange(draft))+'</h2>'+
+  '<p>'+report.entries+' selected logbook entries. Recorded actual time '+fmt(draft.flightTotals.total)+
+  ' · simulator '+fmt(draft.flightTotals.std)+'.</p>'+
+  '<div class="grid stats"><div class="card"><div class="label">Check carefully</div><div class="big">'+
+   report.critical+'</div></div><div class="card"><div class="label">Advisories</div><div class="big">'+
+   report.advisory+'</div></div></div>'+
+  '<p class="mini">Possible duplicates are checked against the entire electronic logbook, including previously archived flights. Warnings are review prompts—not proof of an error. Overnight UTC flight times are supported. No entry, total, signature or cloud record was changed.</p>'+
+  '</div>'+
+  (issueHtml||'<div class="card" style="margin-top:14px"><h2>No potential problems detected</h2><p>Review the original flight records and the printed pages nonetheless. Automated checks cannot confirm every operational detail.</p></div>')+
+  '<div class="card" style="margin-top:15px"><h2>Review acknowledgement</h2>'+
+  '<p>Correct any mistakes by opening the relevant entry and editing it in the usual workflow. Otherwise you may continue with intentional or explained exceptions. Do not modify signed or archived records here.</p>'+
+  '<label style="display:flex;gap:10px;align-items:flex-start;margin:12px 0"><input type="checkbox" id="v229Acknowledge" style="margin-top:4px"> '+
+  '<span>I reviewed these findings and the selected flight records. I understand that this review does not certify accuracy and does not modify any record.</span></label>'+
+  '<button type="button" class="btn primary" onclick="v229AcceptReview()">Continue to print archive</button>'+
+  '<div class="mini" style="margin-top:9px">If the selected pages or any entry changes, the review must be repeated. Printing remains separate from confirming signed paper pages.</div>'+
+  '</div>';
+}
+function v229AcceptReview(){
+ if(!document.getElementById("v229Acknowledge")?.checked){
+  alert("Please review the findings and tick the acknowledgement before continuing.");return;
+ }
+ const draft=nextArchiveDraft();
+ if(!draft.flights.length){alert("There are no flights to review.");return;}
+ pendingArchiveReview=JSON.stringify(draft);
+ go("printarchive");
 }
 function previewNextArchive(){
   if(isInstalledTouchApp())return;
   const draft=nextArchiveDraft();
   if(!draft.flights.length){alert('There are no new flights to archive.');return;}
+  if(!v229ArchiveReviewed(draft)){go("archivereview");return;}
   // Preview opens a printable PDF. This DOES NOT mark any flight as printed.
   const opened=exportPrintableLogbook({
     flights:draft.flights,openingTotals:draft.openingTotals,firstPage:draft.firstPage,
@@ -286,6 +382,10 @@ async function confirmPrintedArchive(){
     alert('Preview and print the new pages first. Nothing has been archived yet.');return;
   }
   const draft=nextArchiveDraft();
+  if(!v229ArchiveReviewed(draft)){
+    alert("The reviewed flight batch changed. Review the current pages before confirming any archive.");
+    pendingArchivePreview=null;go("archivereview");return;
+  }
   if(JSON.stringify(draft)!==pendingArchivePreview){
     pendingArchivePreview=null;
     alert('Flights, aircraft or opening balances changed since the preview. Generate a new print preview before confirming.');
@@ -335,7 +435,7 @@ async function confirmPrintedArchive(){
     alert('Could not save the confirmed print archive. Your pages have NOT been marked archived. Export a full backup and check available browser storage before trying again. '+String(e.message||e));
     return;
   }
-  pendingArchivePreview=null;
+  pendingArchivePreview=null;pendingArchiveReview=null;
   selectedArchivePageCount=null; // next batch defaults to all remaining pages
   printarchive();
 }
@@ -506,6 +606,7 @@ function printarchive(){
   const batches=archivedBatches();
   const draft=nextArchiveDraft();
   const previewReady=!!pendingArchivePreview && pendingArchivePreview===JSON.stringify(draft);
+  const reviewReady=v229ArchiveReviewed(draft);
   const canPrint=draft.flights.length>0;
   const first=!batches.length;
   app.innerHTML=header('Print logbook & archive',
@@ -547,6 +648,12 @@ function printarchive(){
         You can also print a partly filled final page; any unused rows will be crossed out with dashes and marked UNUSED.
       </p>
     </div>`:''}
+    ${canPrint?`<div class="card" style="margin-top:14px">
+      <div class="head"><h2>Step 1 — Pre-archive flight review</h2></div>
+      <p>Review possible duplicates, PIC information, unusual UTC times and flight-time totals for these exact pages before printing. Findings never change your records.</p>
+      <div class="mini">${reviewReady?'Review acknowledged for this exact batch. Re-review if you wish.':'Review required before previewing or printing this batch.'}</div>
+      <div class="actions" style="margin-top:10px"><button class="btn ${reviewReady?'':'primary'}" onclick="go('archivereview')">${reviewReady?'Review again':'Review flights before printing'}</button></div>
+    </div>`:''}
     ${draft.demoCount?`<div class="note" style="margin-top:14px;border-color:#b42318">
        <b>Example flights detected:</b> ${draft.demoCount} unchanged demonstration entries are present in this print batch.
        Do not sign these as genuine flight records. You may preview the layout, but archive confirmation is blocked until they are removed.
@@ -560,10 +667,10 @@ function printarchive(){
     <div class="card" style="margin-top:16px">
       <div class="head"><h2>Next print batch</h2></div>
       ${canPrint?
-        `<p class="muted">1. Preview and print the A4 landscape pages. 2. Check totals and sign them. 3. Confirm the printed batch to lock the records.</p>
+        `<p class="muted">1. Review the selected flights. 2. Preview and print the A4 landscape pages. 3. Check totals and sign them. 4. Confirm the printed batch to lock the records.</p>
          <div style="display:flex;flex-wrap:wrap;gap:9px">
-           <button class="btn primary" onclick="previewNextArchive()">Preview / Print pages</button>
-           <button class="btn" ${previewReady?'':'disabled'} onclick="confirmPrintedArchive()">Confirm printed & signed</button>
+           <button class="btn primary" ${reviewReady?'':'disabled'} onclick="previewNextArchive()">Preview / Print pages</button>
+           <button class="btn" ${previewReady&&reviewReady?'':'disabled'} onclick="confirmPrintedArchive()">Confirm printed & signed</button>
          </div>`:
         '<p class="muted">All current flights have been archived. New flights will appear here automatically.</p>'}
       <div id="archivePreviewStatus" style="margin-top:10px"></div>

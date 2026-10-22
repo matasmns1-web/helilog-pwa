@@ -21,7 +21,7 @@ function formHarness(existing=null){
   }));
   for(const button of buttons)button.classList.owner=button;
   const form={
-    classList:{toggle(name,on){if(on)classes.add(name);else classes.delete(name)}},
+    classList:{toggle(name,on){const next=typeof on==='boolean'?on:!classes.has(name);if(next)classes.add(name);else classes.delete(name);return next;}},
     querySelectorAll(sel){return sel==='[data-entry-mode]'?buttons:[]},
     addEventListener(){}
   };
@@ -30,8 +30,8 @@ function formHarness(existing=null){
     markup=value;
     for(const match of markup.matchAll(/\bid="([a-zA-Z][a-zA-Z0-9_]*)"/g)){
       if(!fields.has(match[1]))fields.set(match[1],{
-        value:'',dataset:{},style:{},checked:false,hidden:false,
-        addEventListener(){},classList:{remove(){},add(){}},setAttribute(){}
+        value:'',dataset:{},style:{},checked:false,hidden:false,attrs:{},
+        addEventListener(){},classList:{remove(){},add(){}},setAttribute(name,value){this.attrs[name]=value;}
       });
     }
   }});
@@ -61,6 +61,7 @@ function formHarness(existing=null){
   // are already covered by their own regression tests and should not run in this DOM stub.
   vm.runInContext('v218InitNight=()=>{};updateSpecialOpsPreview=()=>{};updateAircraftEngineInfo=()=>{};roleChanged=()=>{};',browser);
   if(existing)browser.add('f1',true);else browser.quickAdd();
+  if(!existing){fields.get('role').value='PIC';browser.updateQuickPICVisibility();}
   return {browser,fields,form,classes,buttons,get markup(){return markup}};
 }
 
@@ -130,4 +131,50 @@ test('Quick Entry keeps operational safety and printing in the original code pat
   assert.match(source,/if\(!save\(\)\)return/);
   assert.match(source,/let pilotConfig=document\.querySelector\('input\[name="pilotConfig"\]:checked'\)/);
   assert.match(source,/landing counts follow take-offs/i);
+});
+
+test('V2.31.4 Quick view collapses optional fields, without discarding them when switched',()=>{
+  const ui=formHarness();
+  assert.ok(ui.classes.has('quick-pic-self'),'PIC/SOLO must hide the automatic SELF field');
+  assert.match(ui.markup,/id="quickExtraToggle"[^>]*aria-expanded="false"/);
+  assert.match(ui.markup,/id="quickRemarks" class="field quick-entry-optional"/);
+  assert.match(ui.markup,/id="crossCountry"/);
+  ui.fields.get('remarks').value='Airfield training';
+  ui.fields.get('crossCountry').checked=true;
+  ui.browser.toggleQuickEntryExtras();
+  assert.ok(ui.classes.has('quick-entry-extra-open'));
+  assert.equal(ui.fields.get('quickExtraToggle').attrs['aria-expanded'],'true');
+  ui.browser.setFlightEntryMode('full');
+  ui.browser.setFlightEntryMode('quick');
+  assert.equal(ui.fields.get('remarks').value,'Airfield training');
+  assert.equal(ui.fields.get('crossCountry').checked,true);
+  ui.browser.toggleQuickEntryExtras();
+  assert.ok(!ui.classes.has('quick-entry-extra-open'));
+  assert.equal(ui.fields.get('quickExtraToggle').attrs['aria-expanded'],'false');
+});
+test('V2.31.4 Quick PIC field responds to pilot function without changing stored name',()=>{
+  const ui=formHarness();
+  ui.fields.get('picName').value='SELF';
+  assert.ok(ui.classes.has('quick-pic-self'));
+  ui.fields.get('role').value='DUAL';
+  ui.browser.updateQuickPICVisibility();
+  assert.ok(!ui.classes.has('quick-pic-self'));
+  assert.equal(ui.fields.get('picName').value,'SELF',
+    'Compact view helper must never modify PIC data, original roleChanged() retains validation');
+  ui.fields.get('role').value='SOLO';
+  ui.browser.updateQuickPICVisibility();
+  assert.ok(ui.classes.has('quick-pic-self'));
+});
+test('V2.31.4 invalid automatic night is surfaced in compact view when all flight details are entered',()=>{
+  const ui=formHarness();
+  for(const [id,value] of Object.entries({
+    date:'22-10-2026',dep:'EYVI',off:'12:00',arr:'EYVI',on:'12:45'
+  }))ui.fields.get(id).value=value;
+  ui.fields.get('nightAuto').checked=true;
+  ui.browser.updateQuickNightNotice({ok:false,reason:'Site coordinates unavailable'});
+  assert.equal(ui.fields.get('quickNightNotice').hidden,false);
+  assert.match(ui.fields.get('quickNightNotice').textContent,/coordinates unavailable/i);
+  ui.fields.get('nightAuto').checked=false;
+  ui.browser.updateQuickNightNotice({ok:true});
+  assert.equal(ui.fields.get('quickNightNotice').hidden,true);
 });
