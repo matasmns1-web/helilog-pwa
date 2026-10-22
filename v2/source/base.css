@@ -413,7 +413,7 @@ html.helilog-test-mode .brand::after{
     z-index:15;
     bottom:calc(64px + env(safe-area-inset-bottom));
     margin:0 -9px -9px;
-    padding:7px 9px calc(8px + env(safe-area-inset-bottom)*0);
+    padding:7px 9px 8px;
     box-shadow:0 -5px 14px rgba(0,0,0,.12);
   }
   body.keyboard-open #flightForm.quick-entry-active .actions {position:static;}
