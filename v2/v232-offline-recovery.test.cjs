@@ -59,7 +59,7 @@ test('wrong passphrase and changed encrypted ciphertext fail closed',async()=>{
 });
 test('structurally inconsistent printed/signed archive is rejected after decryption',async()=>{
  const f=fixture(),data=payload(),pass='verified full backup passphrase';
- data.content.records[0].payload.mins=999;
+ data.content.records[0].payload={...data.content.records[0].payload,mins:999};
  const enc=await f.backup.encryptSnapshot(data,pass);
  await assert.rejects(()=>f.offline.verifyText(JSON.stringify(enc),pass),/Archived original differs/);
  assert.equal(f.networkCalls,0);
