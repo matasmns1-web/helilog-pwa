@@ -285,6 +285,25 @@ html.helilog-test-mode .brand::after{
 }
 
 
+/* V2.31.4: eliminate accidental page dragging only when compact Quick fits.
+ * The JS removes this class before text keyboard interaction or overflow.
+ * position:fixed prevents iOS standalone rubber-band scrolling (overflow:
+ * hidden alone is insufficient on some Safari versions).
+ */
+@media screen and (max-width:850px) {
+  html.helilog-quick-scroll-locked,
+  html.helilog-quick-scroll-locked body {
+    overflow-y:hidden!important;
+    overscroll-behavior-y:none;
+  }
+  html.helilog-quick-scroll-locked body {
+    position:fixed;
+    inset:0;
+    width:100%;
+    height:100%;
+  }
+}
+
 /* V2.31: condensed Quick Flight view. Same controls, IDs and save path as Full. */
 @media screen {
   #flightForm.quick-entry-active {
