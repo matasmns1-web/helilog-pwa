@@ -1,4 +1,4 @@
-const CACHE='helilog-v2-31-1-one-hand-reach-1';
+const CACHE='helilog-v2-31-2-clear-header-1';
 const SHELL=[
   './',
   './index.html',
