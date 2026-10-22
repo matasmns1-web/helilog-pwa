@@ -1,4 +1,4 @@
-/* V2.31.2. Searchable, offline-friendly guide and current release notes. */
+/* V2.31.3. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
   {
     "category": "Records & signatures",
@@ -131,7 +131,8 @@ const HELILOG_GUIDE_TOPICS=[
       "Check missing PIC information and pilot links, flight duration versus UTC off/on times (including overnight flights), unusual very short or long flights, Night/IFR/instructor minutes and take-off versus landing counts.",
       "Review the independent calculations of PIC/Co-pilot/Dual, engine and single-/multi-pilot experience, and carried-forward plus closing totals.",
       "Review overlapping flight intervals, including multiple flights on the same day or an overnight arrival on the next UTC day. Flights that end when another starts are not overlaps.",
-      "Use View entry to inspect a flagged flight. Edit only an unarchived entry through its normal form; do not silently change or automatically delete anything.",
+      "Use View entry or View related entry to inspect a flagged flight, then select Back to review to return to the same finding. A ticked acknowledgement stays checked only if the selected batch has not changed.",
+      "Edit only an unarchived entry through its normal form. After any flight data or selected page changes, review and acknowledge the updated batch again; never silently change or automatically delete anything.",
       "Acknowledgement allows printing after you have checked exceptions; it is not official certification. If selected pages or flight records change, repeat the review.",
       "Print, verify and sign the paper pages before separately confirming the archive. Archived records remain protected."
     ],
@@ -199,6 +200,11 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {
+    "v": "V2.31.3",
+    "name": "Return from flight review",
+    "detail": "Viewing a flagged flight now offers Back to review, resuming the same warning and the checkbox if the batch remains unchanged. Editing flights or page selection requires renewed acknowledgement."
+  },
   {
     "v": "V2.31.2",
     "name": "Quick Flight header and positioning",
