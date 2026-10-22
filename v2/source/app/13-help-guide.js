@@ -1,4 +1,4 @@
-/* V2.31.1. Searchable, offline-friendly guide and current release notes. */
+/* V2.31.2. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
   {
     "category": "Records & signatures",
@@ -200,7 +200,12 @@ const HELILOG_GUIDE_TOPICS=[
 ];
 const HELILOG_GUIDE_UPDATES=[
   {
-    "v": "V2.31.1",
+    "v": "V2.31.2",
+    "name": "Quick Flight header and positioning",
+    "detail": "Restores the preferred top-aligned Quick Flight screen and gives the iPhone status-bar area more clearance for a clearer heading."
+  },
+  {
+    "v": "V2.31.2",
     "name": "One-hand Quick Flight reach",
     "detail": "On phones, Quick Flight sits lower when spare screen space is available, without hiding fields on shorter displays. Keyboard entry restores normal scrolling."
   },
