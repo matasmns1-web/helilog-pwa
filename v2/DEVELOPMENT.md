@@ -167,3 +167,12 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 - The existing keyboard-open detection immediately releases the lock on focus and restores natural scrolling; closing the keyboard restores the top alignment/lock only if the form still fits. Smaller displays, expanded optional fields, validation banners, and asynchronous night calculation warnings unlock scroll automatically when they exceed available height.
 - Layout is recalculated on changes to Quick/Full mode, advanced fields, night warnings, page navigation and viewport/keyboard size; a ResizeObserver watches form/heading height changes.
 - No database changes, flight validation changes, imported totals changes, cloud sync changes or signed archive changes. TEST-only release.
+
+## V2.32 — encrypted off-provider recovery readiness (first safe increment)
+
+- Preserve V2.9 private scheduled Supabase snapshots and AES-256-GCM/PBKDF2-310k encrypted downloads. In-provider database snapshots are NOT independent disaster-recovery copies.
+- New offline-backup-check.js provides a read-only signed-out file verification workflow on the Sign in screen. Works without a Supabase session/network when app files are locally cached. Reads the existing encrypted-cloud-snapshot v1 format.
+- User chooses an encrypted file and passphrase. WebCrypto AES-GCM authenticates it, the V2.10 in-memory drill checks records, frozen signed archives and addenda, and displays SHA-256 fingerprints and age without names or signatures. Wrong passphrase or invalid file fails closed.
+- No selected file, passphrase or decrypted content is uploaded, saved to localStorage or restored into an account. No database migration or schema changes.
+- This verifies that one user-selected file can be reconstructed. The pilot must separately save a copy outside the Supabase provider/device and compare checksums. Neither automatic offsite storage nor complete provider recovery is implemented yet.
+- Keep test-only until signed-out and network-off testing on iPhone and desktop confirms behavior.

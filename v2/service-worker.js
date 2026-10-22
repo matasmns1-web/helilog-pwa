@@ -1,4 +1,4 @@
-const CACHE='helilog-v2-31-4-quick-scroll-1';
+const CACHE='helilog-v2-32-offline-recovery-1';
 const SHELL=[
   './',
   './index.html',
@@ -24,7 +24,8 @@ const SHELL=[
   './archive-integrity.js?v=2.19-locations-1',
   './recovery.js?v=2.19-locations-1',
   './cloud-backups.js?v=2.19-locations-1',
-  './disaster-recovery.js?v=2.19-locations-1'
+  './disaster-recovery.js?v=2.19-locations-1',
+  './offline-backup-check.js?v=2.32'
 ];
 
 self.addEventListener('install',event=>{

@@ -77,6 +77,7 @@ const GROUPS = Object.freeze([
       'v2/v284-stranded-corrections.test.cjs',
       'v2/v29-backup-recovery.test.cjs',
       'v2/v210-backup-health.test.cjs',
+      'v2/v232-offline-recovery.test.cjs',
     ],
   },
   {
