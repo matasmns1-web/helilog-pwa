@@ -1,4 +1,4 @@
-/* V2.30. Searchable, offline-friendly guide and current release notes. */
+/* V2.31. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
   {
     "category": "Records & signatures",
@@ -50,8 +50,11 @@ const HELILOG_GUIDE_TOPICS=[
       "On mobile tap Flight, or use Quick flight from the dashboard.",
       "Review aircraft and departure/arrival locations and enter the correct flight date.",
       "Enter both times in UTC (24-hour HH:mm or HHmm).",
-      "Choose pilot function, operational conditions, take-offs and remarks, then Save.",
-      "Use Full details for extra fields; switching keeps values you already entered."
+      "The compact Quick Flight screen pairs date/aircraft, departure/UTC time, arrival/UTC time, flight duration/function, take-offs and Night/IFR. Save stays above the phone navigation bar.",
+      "For PIC or SOLO, the Name of PIC is SELF automatically; DUAL, SPIC, PICUS and CO-PILOT show the commander's PIC field.",
+      "Night time stays on automatic UTC/civil-twilight calculation by default. If coordinates are unavailable, an on-screen warning tells you to choose manual night time or set up your site.",
+      "Open Cross-country & remarks only when needed. Use Full details for multi-pilot configuration, independent landing counts, instructor and specialised operations.",
+      "Switching Quick/Full retains anything you entered, and Save still uses exactly the same validation as the full form. Small screens or additional warnings may require scrolling."
     ],
     "route": "quickadd",
     "action": "Open Quick Flight"
@@ -195,6 +198,11 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {
+    "v": "V2.31",
+    "name": "Compact Quick Flight entry",
+    "detail": "Paired fields and reduced vertical space on phones, automatic SELF PIC display, optional cross-country and remarks, and an always-accessible Save control. Existing validation is unchanged."
+  },
   {
     "v": "V2.30",
     "name": "Previous logbook specialised operations",

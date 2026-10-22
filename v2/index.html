@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.30 — Previous Logbook Operations · Test</title>
+<title>HeliLog V2.31 — Compact Quick Flight · Test</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -298,12 +298,151 @@ html.helilog-test-mode .brand::after{
   #flightForm.quick-entry-active .quick-entry-advanced {display:none!important}
   #flightForm.quick-entry-active .section-title {margin-top:18px}
 }
+
+
+/* V2.31: condensed Quick Flight view. Same controls, IDs and save path as Full. */
+@media screen {
+  #flightForm.quick-entry-active {
+    max-width:800px;
+    gap:8px;
+    padding:12px;
+  }
+  #flightForm.quick-entry-active .section-title,
+  #flightForm.quick-entry-active .quick-entry-description,
+  #flightForm.quick-entry-active .quick-entry-hint,
+  #flightForm.quick-entry-active .field > .mini,
+  #flightForm.quick-entry-active #nightCalcStatus {
+    display:none!important;
+  }
+  #flightForm.quick-entry-active .formgrid {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px 10px;
+  }
+  #flightForm.quick-entry-active .field {min-width:0;}
+  #flightForm.quick-entry-active .field > label:first-child {
+    font-size:12px;
+    margin-bottom:3px;
+    line-height:1.2;
+  }
+  #flightForm.quick-entry-active .quick-entry-switch {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    margin:0;
+  }
+  #flightForm.quick-entry-active .quick-entry-switch .btn {
+    flex:auto;
+    max-width:none;
+    padding:7px 10px;
+    min-height:36px;
+  }
+  #flightForm.quick-entry-active .field input:not([type=checkbox]):not([type=radio]),
+  #flightForm.quick-entry-active .field select {
+    min-height:40px;
+    padding:7px 9px;
+  }
+  #flightForm.quick-entry-active .timewrap input[type=text]{padding-right:36px;}
+  #flightForm.quick-entry-active .timebtn{width:30px;height:30px;top:4px;right:4px;}
+  #flightForm.quick-entry-active.quick-pic-self .quick-pic-field {display:none!important;}
+  #flightForm .quick-self-pic-note {display:none;}
+  #flightForm.quick-entry-active.quick-pic-self .quick-self-pic-note {
+    display:block;font-size:11px;line-height:1.25;color:var(--muted);
+  }
+  #flightForm .quick-night-label {display:none;}
+  #flightForm.quick-entry-active .full-night-label {display:none;}
+  #flightForm.quick-entry-active .quick-night-label {display:inline;}
+  #flightForm.quick-entry-active .quick-flight-conditions .field label.mini {
+    margin:4px 0 0!important;
+    gap:5px!important;
+    font-size:11px;
+    line-height:1.2;
+  }
+  #flightForm.quick-entry-active #nightAuto {width:16px;height:16px;min-height:16px;flex:0 0 16px;}
+  #flightForm .quick-entry-extras-switch {display:none;}
+  #flightForm.quick-entry-active .quick-entry-extras-switch {display:block;}
+  #flightForm.quick-entry-active .quick-entry-extras-switch .btn {
+    min-height:32px;padding:5px 9px;font-size:12px;width:100%;text-align:left;
+  }
+  #flightForm.quick-entry-active:not(.quick-entry-extra-open) .quick-entry-optional {display:none!important;}
+  #flightForm.quick-entry-active.quick-entry-extra-open .quick-entry-optional {display:flex;}
+  #flightForm.quick-entry-active.quick-entry-extra-open .field.quick-entry-optional {display:block;}
+  #flightForm .quick-entry-night-note {display:none;}
+  #flightForm.quick-entry-active .quick-entry-night-note:not([hidden]) {
+    display:block;
+    padding:7px 9px;
+    border:1px solid #c88d42;
+    border-radius:8px;
+    font-size:12px;
+    line-height:1.3;
+    color:var(--ink);
+    background:var(--soft);
+  }
+  #flightForm.quick-entry-active .actions {
+    margin:0 -12px -12px;
+    padding:8px 12px 12px;
+    gap:8px;
+    background:var(--panel);
+  }
+  #flightForm.quick-entry-active .quick-entry-cancel {display:none;}
+  #flightForm.quick-entry-active #saveFlightBtn {width:100%;min-height:43px;}
+}
+@media screen and (max-width:850px) {
+  main:has(#flightForm.quick-entry-active) {
+    padding:calc(6px + env(safe-area-inset-top)) 9px calc(78px + env(safe-area-inset-bottom));
+  }
+  main:has(#flightForm.quick-entry-active) .top {
+    flex-direction:row;
+    flex-wrap:nowrap;
+    align-items:center;
+    margin-bottom:7px;
+    padding:0 0 7px;
+    gap:8px;
+  }
+  main:has(#flightForm.quick-entry-active) .top h1 {
+    font-size:19px;
+    line-height:1.15;
+  }
+  main:has(#flightForm.quick-entry-active) .top .sub {display:none;}
+  main:has(#flightForm.quick-entry-active) .top>div:last-child:not(:first-child) {width:auto;}
+  main:has(#flightForm.quick-entry-active) .top .btn {padding:6px 9px;min-height:34px;}
+  #flightForm.quick-entry-active {
+    gap:6px;
+    padding:9px;
+    border-radius:11px;
+  }
+  #flightForm.quick-entry-active .formgrid {gap:6px 8px;}
+  #flightForm.quick-entry-active .field > label:first-child {
+    margin-bottom:2px;
+    font-size:11px;
+  }
+  #flightForm.quick-entry-active .field input:not([type=checkbox]):not([type=radio]),
+  #flightForm.quick-entry-active .field select {
+    min-height:38px;
+    padding:5px 7px;
+    font-size:16px;
+  }
+  #flightForm.quick-entry-active .quick-entry-switch .btn {min-height:33px;padding:5px 8px;}
+  #flightForm.quick-entry-active .timebtn{top:3px;right:3px;}
+  #flightForm.quick-entry-active .actions {
+    position:sticky;
+    z-index:15;
+    bottom:calc(64px + env(safe-area-inset-bottom));
+    margin:0 -9px -9px;
+    padding:7px 9px 8px;
+    box-shadow:0 -5px 14px rgba(0,0,0,.12);
+  }
+  body.keyboard-open #flightForm.quick-entry-active .actions {position:static;}
+}
+@media screen and (max-width:360px) {
+  #flightForm.quick-entry-active .formgrid {gap:5px;}
+  #flightForm.quick-entry-active .field > label:first-child {font-size:10px;}
+}
 </style>
 <link rel="stylesheet" href="./dark-cockpit.css?v=2.20-cockpit-3" media="screen">
 <link rel="stylesheet" href="./guide.css?v=2.29" media="screen">
 </head>
 <body><div class="layout">
-<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.30 · TEST ENVIRONMENT</span></div><nav>
+<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.31 · TEST ENVIRONMENT</span></div><nav>
 <div class="nav-group-label">Flight operations</div>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button>
 <div class="nav-group-label">Records &amp; assets</div>
@@ -3194,8 +3333,36 @@ function setFlightEntryMode(mode){
   if(hint)hint.hidden=!quick;
   const description=document.getElementById('flightEntryModeDescription');
   if(description)description.textContent=quick
-    ? 'Essential fields first. Open Full details for multi-pilot, different landing counts or specialist time.'
+    ? 'Core UTC flight details and Save are together. Expand options only when needed.'
     : 'All flight fields are available. Your entries are kept when switching modes.';
+  updateQuickPICVisibility();
+}
+function updateQuickPICVisibility(){
+  const form=document.getElementById('flightForm');
+  const role=document.getElementById('role')?.value;
+  if(!form||!role)return;
+  form.classList.toggle('quick-pic-self',['PIC','SOLO'].includes(role));
+}
+function toggleQuickEntryExtras(){
+  const form=document.getElementById('flightForm');
+  if(!form||editingFlightId)return;
+  const expanded=form.classList.toggle('quick-entry-extra-open');
+  const button=document.getElementById('quickExtraToggle');
+  if(button){
+    button.setAttribute('aria-expanded',String(expanded));
+    button.textContent=expanded?'− Hide cross-country & remarks':'+ Cross-country & remarks';
+  }
+}
+function updateQuickNightNotice(outcome){
+  const note=document.getElementById('quickNightNotice');
+  if(!note)return;
+  const ready=['date','dep','off','arr','on'].every(id=>
+    String(document.getElementById(id)?.value||'').trim());
+  const show=!!ready&&!!document.getElementById('nightAuto')?.checked&&!outcome?.ok;
+  note.hidden=!show;
+  note.textContent=show?
+    'Automatic night time unavailable: '+String(outcome.reason||'Missing coordinates')+
+    '. Uncheck Auto for manual entry or add the operating site under Settings → Aerodromes & Helipads.':'';
 }
 function add(editId=null,quick=false){
 if(editId && isArchivedFlight(editId)&&correctingArchivedId!==editId){
@@ -3227,7 +3394,7 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
    <button class="btn" type="button" onclick="if(confirmLeaveFlightForm()){clearFlightFormGuard();addSimulator()}">Simulator session</button>
  </div>`:''}
 <div class="section-title">Flight identification</div>
-<div class="formgrid">
+<div class="formgrid quick-flight-identification">
   <div class="field"><label>Date</label>${europeanDateField('date','',true)}</div>
   <div class="field"><label>Aircraft</label><select id="aid">${S.aircraft.map(a=>`<option value="${a.id}">${a.icao} — ${a.reg}</option>`).join('')}</select></div>
 
@@ -3271,16 +3438,17 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
 </div>
 
 <div class="section-title">Flight time and function</div>
-<div class="formgrid">
+<div class="formgrid quick-flight-function">
   <div class="field"><label>Total time of flight (minutes)</label><input id="mins" type="number" min="1"></div>
   <div class="field"><label>Pilot function</label><select id="role" onchange="roleChanged()">${['PIC','CO-PILOT','DUAL','SOLO','SPIC','PICUS'].map(x=>`<option>${x}</option>`).join('')}</select></div>
-  <div class="field">
+  <div class="field quick-pic-field">
     <label>Name of PIC</label>
     <input id="picName" list="picPeopleList" autocomplete="off">
     <datalist id="picPeopleList">${S.people.filter(p=>!p.isAccountHolder).map(p=>`<option value="${htmlEscape(p.name)}"></option>`).join('')}</datalist>
     <div class="mini">Choose a saved pilot or type a new name. New names are saved automatically.</div>
   </div>
 </div>
+<div class="quick-self-pic-note" aria-live="polite">PIC name: SELF (automatic)</div>
 
 <div class="section-title quick-entry-advanced">Aircraft and pilot configuration</div>
 <div class="formgrid quick-entry-advanced">
@@ -3300,7 +3468,7 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
 </div>
 
 <div class="section-title">Take-offs and landings</div>
-<div class="formgrid">
+<div class="formgrid quick-flight-movements">
   <div class="field"><label>Take-offs day</label><input id="toDay" type="number" min="0" value="0"></div>
   <div class="field"><label>Take-offs night</label><input id="toNight" type="number" min="0" value="0"></div>
   <div class="field quick-entry-advanced"><label>Landings day</label><input id="ldgDay" type="number" min="0" value="0"><div class="mini">Automatically follows take-offs unless overwritten.</div></div>
@@ -3308,10 +3476,10 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
 </div>
 
 <div class="section-title">Operational condition time</div>
-<div class="formgrid">
+<div class="formgrid quick-flight-conditions">
   <div class="field"><label>Night time (minutes)</label><input id="nightMin" type="number" min="0" value="0">
   <label class="mini" style="display:flex;gap:8px;align-items:center;margin-top:8px">
-    <input id="nightAuto" type="checkbox" checked> Automatically calculate using civil twilight (UTC)
+    <input id="nightAuto" type="checkbox" checked> <span class="full-night-label">Automatically calculate using civil twilight (UTC)</span><span class="quick-night-label">Auto night (UTC)</span>
   </label>
   <div class="mini">Uncheck to manually override night minutes. Older flights retain their original entries until you opt in.</div>
 </div>
@@ -3319,9 +3487,13 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
 </div>
 
 <div id="nightCalcStatus" class="note" role="status" aria-live="polite" style="margin-top:10px">Enter flight date, UTC times and aerodrome coordinates to calculate night time.</div>
+<div id="quickNightNotice" class="quick-entry-night-note" role="status" aria-live="polite" hidden></div>
 <div class="mini quick-entry-advanced" style="margin-top:8px">Night is based on the Sun’s centre 6° below the horizon (civil twilight), not sunset. En-route calculations use a direct-line estimate; always check applicable national rules and official twilight data.</div>
 
-<div class="checkbox-row">
+<div class="quick-entry-extras-switch">
+  <button id="quickExtraToggle" class="btn" type="button" aria-expanded="false" aria-controls="quickExtraFields quickRemarks" onclick="toggleQuickEntryExtras()">+ Cross-country &amp; remarks</button>
+</div>
+<div id="quickExtraFields" class="checkbox-row quick-entry-optional">
   <input id="crossCountry" type="checkbox">
   <label for="crossCountry">Cross-country flight</label>
 </div>
@@ -3356,9 +3528,9 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
   <div id="specialOpsPreview" class="mini" style="margin-top:8px"></div>
 </details>
 
-<div class="field"><label>Remarks and endorsements</label><textarea id="remarks"></textarea></div>
+<div id="quickRemarks" class="field quick-entry-optional"><label>Remarks and endorsements</label><textarea id="remarks"></textarea></div>
 ${(!!editId&&correctingArchivedId===editId)?`<div class="field"><label>Reason for correction (required)</label><textarea id="correctionReason" placeholder="What was incorrect and why?" required></textarea></div>`:''}
-<div class="actions"><button type="button" class="btn" onclick="cancelFlightForm('${editing?existing.id:''}')">Cancel</button><button type="button" id="saveFlightBtn" class="btn primary" onclick="saveFlight()">${(!!editId&&correctingArchivedId===editId)?'Propose correction':editing?'Save changes':'Save flight'}</button></div>
+<div class="actions"><button type="button" class="btn quick-entry-cancel" onclick="cancelFlightForm('${editing?existing.id:''}')">Cancel</button><button type="button" id="saveFlightBtn" class="btn primary" onclick="saveFlight()">${(!!editId&&correctingArchivedId===editId)?'Propose correction':editing?'Save changes':'Save flight'}</button></div>
 </form>`;
 
 populateTimePicker('offHour','offMinute');
@@ -3675,7 +3847,7 @@ function v218UpdateNight(){
  field.style.background=toggle.checked?'#f3f4f6':'';
  if(!toggle.checked){
   status.textContent='Manual night-time entry: confirm the value against applicable official rules. No automatic correction will be applied.';
-  status.dataset.valid='manual';return;
+  status.dataset.valid='manual';updateQuickNightNotice({ok:true});return;
  }
  const outcome=v218NightResult();
  status.dataset.valid=outcome.ok?'yes':'no';
@@ -3686,6 +3858,7 @@ function v218UpdateNight(){
   if(arrCode&&!v218SavedPoint(arrCode))void v219RequestICAO(arrCode);
   status.textContent='Automatic night time unavailable: '+outcome.reason+
     ' Airport ICAO codes are looked up online when needed. For unknown helipads or operating sites, save their coordinates in Settings → Aerodromes & Helipads, or choose manual night time.';
+  updateQuickNightNotice(outcome);
   return;
  }
  field.value=outcome.nightMinutes;
@@ -3705,6 +3878,7 @@ function v218UpdateNight(){
  }
  if(outcome.distanceKm>250)info+=' Long route: real track/twilight can differ; review manually.';
  status.textContent=info;
+ updateQuickNightNotice(outcome);
 }
 function v218InitNight(existing){
  const old=existing?.nightCalculation;
@@ -3741,6 +3915,7 @@ function roleChanged(){
     field.readOnly=false;
     field.style.background='#fff';
   }
+  if(typeof updateQuickPICVisibility==='function')updateQuickPICVisibility();
 }
 
 function showFormError(msg){
@@ -5727,7 +5902,7 @@ function deleteQualification(id){
   save();
   profile();
 }
-/* V2.30. Searchable, offline-friendly guide and current release notes. */
+/* V2.31. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
   {
     "category": "Records & signatures",
@@ -5779,8 +5954,11 @@ const HELILOG_GUIDE_TOPICS=[
       "On mobile tap Flight, or use Quick flight from the dashboard.",
       "Review aircraft and departure/arrival locations and enter the correct flight date.",
       "Enter both times in UTC (24-hour HH:mm or HHmm).",
-      "Choose pilot function, operational conditions, take-offs and remarks, then Save.",
-      "Use Full details for extra fields; switching keeps values you already entered."
+      "The compact Quick Flight screen pairs date/aircraft, departure/UTC time, arrival/UTC time, flight duration/function, take-offs and Night/IFR. Save stays above the phone navigation bar.",
+      "For PIC or SOLO, the Name of PIC is SELF automatically; DUAL, SPIC, PICUS and CO-PILOT show the commander's PIC field.",
+      "Night time stays on automatic UTC/civil-twilight calculation by default. If coordinates are unavailable, an on-screen warning tells you to choose manual night time or set up your site.",
+      "Open Cross-country & remarks only when needed. Use Full details for multi-pilot configuration, independent landing counts, instructor and specialised operations.",
+      "Switching Quick/Full retains anything you entered, and Save still uses exactly the same validation as the full form. Small screens or additional warnings may require scrolling."
     ],
     "route": "quickadd",
     "action": "Open Quick Flight"
@@ -5924,6 +6102,11 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {
+    "v": "V2.31",
+    "name": "Compact Quick Flight entry",
+    "detail": "Paired fields and reduced vertical space on phones, automatic SELF PIC display, optional cross-country and remarks, and an always-accessible Save control. Existing validation is unchanged."
+  },
   {
     "v": "V2.30",
     "name": "Previous logbook specialised operations",

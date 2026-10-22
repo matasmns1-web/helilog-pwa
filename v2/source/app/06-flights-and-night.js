@@ -95,8 +95,36 @@ function setFlightEntryMode(mode){
   if(hint)hint.hidden=!quick;
   const description=document.getElementById('flightEntryModeDescription');
   if(description)description.textContent=quick
-    ? 'Essential fields first. Open Full details for multi-pilot, different landing counts or specialist time.'
+    ? 'Core UTC flight details and Save are together. Expand options only when needed.'
     : 'All flight fields are available. Your entries are kept when switching modes.';
+  updateQuickPICVisibility();
+}
+function updateQuickPICVisibility(){
+  const form=document.getElementById('flightForm');
+  const role=document.getElementById('role')?.value;
+  if(!form||!role)return;
+  form.classList.toggle('quick-pic-self',['PIC','SOLO'].includes(role));
+}
+function toggleQuickEntryExtras(){
+  const form=document.getElementById('flightForm');
+  if(!form||editingFlightId)return;
+  const expanded=form.classList.toggle('quick-entry-extra-open');
+  const button=document.getElementById('quickExtraToggle');
+  if(button){
+    button.setAttribute('aria-expanded',String(expanded));
+    button.textContent=expanded?'− Hide cross-country & remarks':'+ Cross-country & remarks';
+  }
+}
+function updateQuickNightNotice(outcome){
+  const note=document.getElementById('quickNightNotice');
+  if(!note)return;
+  const ready=['date','dep','off','arr','on'].every(id=>
+    String(document.getElementById(id)?.value||'').trim());
+  const show=!!ready&&!!document.getElementById('nightAuto')?.checked&&!outcome?.ok;
+  note.hidden=!show;
+  note.textContent=show?
+    'Automatic night time unavailable: '+String(outcome.reason||'Missing coordinates')+
+    '. Uncheck Auto for manual entry or add the operating site under Settings → Aerodromes & Helipads.':'';
 }
 function add(editId=null,quick=false){
 if(editId && isArchivedFlight(editId)&&correctingArchivedId!==editId){
@@ -128,7 +156,7 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
    <button class="btn" type="button" onclick="if(confirmLeaveFlightForm()){clearFlightFormGuard();addSimulator()}">Simulator session</button>
  </div>`:''}
 <div class="section-title">Flight identification</div>
-<div class="formgrid">
+<div class="formgrid quick-flight-identification">
   <div class="field"><label>Date</label>${europeanDateField('date','',true)}</div>
   <div class="field"><label>Aircraft</label><select id="aid">${S.aircraft.map(a=>`<option value="${a.id}">${a.icao} — ${a.reg}</option>`).join('')}</select></div>
 
@@ -172,16 +200,17 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
 </div>
 
 <div class="section-title">Flight time and function</div>
-<div class="formgrid">
+<div class="formgrid quick-flight-function">
   <div class="field"><label>Total time of flight (minutes)</label><input id="mins" type="number" min="1"></div>
   <div class="field"><label>Pilot function</label><select id="role" onchange="roleChanged()">${['PIC','CO-PILOT','DUAL','SOLO','SPIC','PICUS'].map(x=>`<option>${x}</option>`).join('')}</select></div>
-  <div class="field">
+  <div class="field quick-pic-field">
     <label>Name of PIC</label>
     <input id="picName" list="picPeopleList" autocomplete="off">
     <datalist id="picPeopleList">${S.people.filter(p=>!p.isAccountHolder).map(p=>`<option value="${htmlEscape(p.name)}"></option>`).join('')}</datalist>
     <div class="mini">Choose a saved pilot or type a new name. New names are saved automatically.</div>
   </div>
 </div>
+<div class="quick-self-pic-note" aria-live="polite">PIC name: SELF (automatic)</div>
 
 <div class="section-title quick-entry-advanced">Aircraft and pilot configuration</div>
 <div class="formgrid quick-entry-advanced">
@@ -201,7 +230,7 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
 </div>
 
 <div class="section-title">Take-offs and landings</div>
-<div class="formgrid">
+<div class="formgrid quick-flight-movements">
   <div class="field"><label>Take-offs day</label><input id="toDay" type="number" min="0" value="0"></div>
   <div class="field"><label>Take-offs night</label><input id="toNight" type="number" min="0" value="0"></div>
   <div class="field quick-entry-advanced"><label>Landings day</label><input id="ldgDay" type="number" min="0" value="0"><div class="mini">Automatically follows take-offs unless overwritten.</div></div>
@@ -209,10 +238,10 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
 </div>
 
 <div class="section-title">Operational condition time</div>
-<div class="formgrid">
+<div class="formgrid quick-flight-conditions">
   <div class="field"><label>Night time (minutes)</label><input id="nightMin" type="number" min="0" value="0">
   <label class="mini" style="display:flex;gap:8px;align-items:center;margin-top:8px">
-    <input id="nightAuto" type="checkbox" checked> Automatically calculate using civil twilight (UTC)
+    <input id="nightAuto" type="checkbox" checked> <span class="full-night-label">Automatically calculate using civil twilight (UTC)</span><span class="quick-night-label">Auto night (UTC)</span>
   </label>
   <div class="mini">Uncheck to manually override night minutes. Older flights retain their original entries until you opt in.</div>
 </div>
@@ -220,9 +249,13 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
 </div>
 
 <div id="nightCalcStatus" class="note" role="status" aria-live="polite" style="margin-top:10px">Enter flight date, UTC times and aerodrome coordinates to calculate night time.</div>
+<div id="quickNightNotice" class="quick-entry-night-note" role="status" aria-live="polite" hidden></div>
 <div class="mini quick-entry-advanced" style="margin-top:8px">Night is based on the Sun’s centre 6° below the horizon (civil twilight), not sunset. En-route calculations use a direct-line estimate; always check applicable national rules and official twilight data.</div>
 
-<div class="checkbox-row">
+<div class="quick-entry-extras-switch">
+  <button id="quickExtraToggle" class="btn" type="button" aria-expanded="false" aria-controls="quickExtraFields quickRemarks" onclick="toggleQuickEntryExtras()">+ Cross-country &amp; remarks</button>
+</div>
+<div id="quickExtraFields" class="checkbox-row quick-entry-optional">
   <input id="crossCountry" type="checkbox">
   <label for="crossCountry">Cross-country flight</label>
 </div>
@@ -257,9 +290,9 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
   <div id="specialOpsPreview" class="mini" style="margin-top:8px"></div>
 </details>
 
-<div class="field"><label>Remarks and endorsements</label><textarea id="remarks"></textarea></div>
+<div id="quickRemarks" class="field quick-entry-optional"><label>Remarks and endorsements</label><textarea id="remarks"></textarea></div>
 ${(!!editId&&correctingArchivedId===editId)?`<div class="field"><label>Reason for correction (required)</label><textarea id="correctionReason" placeholder="What was incorrect and why?" required></textarea></div>`:''}
-<div class="actions"><button type="button" class="btn" onclick="cancelFlightForm('${editing?existing.id:''}')">Cancel</button><button type="button" id="saveFlightBtn" class="btn primary" onclick="saveFlight()">${(!!editId&&correctingArchivedId===editId)?'Propose correction':editing?'Save changes':'Save flight'}</button></div>
+<div class="actions"><button type="button" class="btn quick-entry-cancel" onclick="cancelFlightForm('${editing?existing.id:''}')">Cancel</button><button type="button" id="saveFlightBtn" class="btn primary" onclick="saveFlight()">${(!!editId&&correctingArchivedId===editId)?'Propose correction':editing?'Save changes':'Save flight'}</button></div>
 </form>`;
 
 populateTimePicker('offHour','offMinute');
@@ -576,7 +609,7 @@ function v218UpdateNight(){
  field.style.background=toggle.checked?'#f3f4f6':'';
  if(!toggle.checked){
   status.textContent='Manual night-time entry: confirm the value against applicable official rules. No automatic correction will be applied.';
-  status.dataset.valid='manual';return;
+  status.dataset.valid='manual';updateQuickNightNotice({ok:true});return;
  }
  const outcome=v218NightResult();
  status.dataset.valid=outcome.ok?'yes':'no';
@@ -587,6 +620,7 @@ function v218UpdateNight(){
   if(arrCode&&!v218SavedPoint(arrCode))void v219RequestICAO(arrCode);
   status.textContent='Automatic night time unavailable: '+outcome.reason+
     ' Airport ICAO codes are looked up online when needed. For unknown helipads or operating sites, save their coordinates in Settings → Aerodromes & Helipads, or choose manual night time.';
+  updateQuickNightNotice(outcome);
   return;
  }
  field.value=outcome.nightMinutes;
@@ -606,6 +640,7 @@ function v218UpdateNight(){
  }
  if(outcome.distanceKm>250)info+=' Long route: real track/twilight can differ; review manually.';
  status.textContent=info;
+ updateQuickNightNotice(outcome);
 }
 function v218InitNight(existing){
  const old=existing?.nightCalculation;
@@ -642,6 +677,7 @@ function roleChanged(){
     field.readOnly=false;
     field.style.background='#fff';
   }
+  if(typeof updateQuickPICVisibility==='function')updateQuickPICVisibility();
 }
 
 function showFormError(msg){
