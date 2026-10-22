@@ -49,6 +49,7 @@ const GROUPS = Object.freeze([
       'v2/v229-prearchive-review.test.cjs',
       'v2/v230-special-ops-import.test.cjs',
       'v2/v231-compact-quick.test.cjs',
+      'v2/v2311-onehand-layout.test.cjs',
     ],
   },
   {
