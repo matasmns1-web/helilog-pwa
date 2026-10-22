@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.31.1 — Compact Quick Flight · Test</title>
+<title>HeliLog V2.31.2 — Compact Quick Flight · Test</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -387,17 +387,18 @@ html.helilog-test-mode .brand::after{
   #flightForm.quick-entry-active #saveFlightBtn {width:100%;min-height:43px;}
 }
 @media screen and (max-width:850px) {
-  /* V2.31.1: use only spare portrait height to shift the entire compact
-     entry toward the thumb. Auto margin shrinks to zero for short screens or
-     expanded/error states; never translate or clip editable controls. */
+  /* V2.31.2: keep Quick Entry at the top as in V2.31.
+     Allow a little more space under the iOS translucent status bar so the
+     title and sync controls render on unobscured, crisp page content. */
   main:has(#flightForm.quick-entry-active) {
-    display:flex;
-    flex-direction:column;
-    min-height:100dvh;
-    padding:calc(6px + env(safe-area-inset-top)) 9px calc(88px + env(safe-area-inset-bottom));
+    display:block;
+    padding:calc(14px + env(safe-area-inset-top)) 9px calc(88px + env(safe-area-inset-bottom));
   }
   main:has(#flightForm.quick-entry-active) .top {
-    margin-top:auto;
+    margin-top:0;
+    -webkit-backdrop-filter:none;
+    backdrop-filter:none;
+    filter:none;
     flex-direction:row;
     flex-wrap:nowrap;
     align-items:center;
@@ -439,10 +440,9 @@ html.helilog-test-mode .brand::after{
     box-shadow:0 -5px 14px rgba(0,0,0,.12);
   }
   body.keyboard-open #flightForm.quick-entry-active .actions {position:static;}
-  /* iOS may overlay the keyboard without shrinking CSS dvh. Reset vertical
-     anchoring whenever a typing field is focused so it can scroll into view. */
-  body.keyboard-open main:has(#flightForm.quick-entry-active) {min-height:0;}
-  body.keyboard-open main:has(#flightForm.quick-entry-active) .top {margin-top:0;}
+  /* No bottom anchoring or fixed-height viewport; the form is naturally
+     scrollable when the keyboard opens, including on small iPhones. */
+}
 }
 @media screen and (max-width:360px) {
   #flightForm.quick-entry-active .formgrid {gap:5px;}
@@ -453,7 +453,7 @@ html.helilog-test-mode .brand::after{
 <link rel="stylesheet" href="./guide.css?v=2.29" media="screen">
 </head>
 <body><div class="layout">
-<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.31.1 · TEST ENVIRONMENT</span></div><nav>
+<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.31.2 · TEST ENVIRONMENT</span></div><nav>
 <div class="nav-group-label">Flight operations</div>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button>
 <div class="nav-group-label">Records &amp; assets</div>
@@ -5913,7 +5913,7 @@ function deleteQualification(id){
   save();
   profile();
 }
-/* V2.31.1. Searchable, offline-friendly guide and current release notes. */
+/* V2.31.2. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
   {
     "category": "Records & signatures",
@@ -6115,7 +6115,12 @@ const HELILOG_GUIDE_TOPICS=[
 ];
 const HELILOG_GUIDE_UPDATES=[
   {
-    "v": "V2.31.1",
+    "v": "V2.31.2",
+    "name": "Quick Flight header and positioning",
+    "detail": "Restores the preferred top-aligned Quick Flight screen and gives the iPhone status-bar area more clearance for a clearer heading."
+  },
+  {
+    "v": "V2.31.2",
     "name": "One-hand Quick Flight reach",
     "detail": "On phones, Quick Flight sits lower when spare screen space is available, without hiding fields on shorter displays. Keyboard entry restores normal scrolling."
   },

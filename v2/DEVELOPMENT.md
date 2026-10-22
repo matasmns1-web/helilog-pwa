@@ -146,3 +146,9 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 - Bottom inset reserves 88px plus the device safe area, keeping Save above the mobile navigation controls. On short displays or when optional details/warnings expand, the auto margin uses only available free space and the form remains scrollable—no fixed position or transform is applied.
 - When a mobile typing field has focus, keyboard-open resets the min-height and auto margin to return to natural scroll, while the existing sticky Save action becomes static.
 - Pure CSS layout change. All flight values, PIC selection, night calculations, duplicate checks, archive protection and cloud synchronization are unchanged. Release to the test service only; production remains v2.26.
+
+## V2.31.2 — return Quick Flight to top and clear iOS heading
+
+- Revert the prior one-handed bottom anchoring of V2.31.1 after real iPhone feedback. Quick Flight again begins at the top of the screen, with the same compact two-column layout and original Save behavior.
+- Give the header 14px plus the iOS safe-area inset of top spacing, to keep page heading and cloud status out of translucent native status-bar overlap. Explicitly disable filter/backdrop-filter for the Quick Flight heading only.
+- Keep keyboard-aware static Save action, natural scrolling and all flight validation unchanged. Test-only patch, production untouched.
