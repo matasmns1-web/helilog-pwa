@@ -269,7 +269,7 @@ function backups(){
       <div>
         <p><b>Verify a saved backup — read-only</b></p>
         <p class="muted">HeliLog uses different JSON backup formats. Select the checker that matches the file you downloaded. Inspection never restores or overwrites any logbook records.</p>
-        ${v23AccountWorkspace()?\`
+        ${v23AccountWorkspace()?`
           <details open class="card" style="padding:12px;margin:12px 0">
             <summary style="font-weight:700;cursor:pointer">Encrypted cloud snapshot (V2.9+)</summary>
             <p class="mini">Use for files downloaded with <b>Download encrypted backup</b>. The encrypted file and passphrase stay in your browser. This also works from the sign-in screen without cloud access.</p>
@@ -286,11 +286,11 @@ function backups(){
           <p class="mini">Use only for a file created with <b>Download verified cloud recovery package</b>. This format does not require an encryption passphrase; the exported JSON contains private records and signatures.</p>
           <input id="v28RecoveryInput" type="file" accept=".json,application/json" style="display:none" onchange="v28InspectCloudRecovery(event)">
           <button class="btn" type="button" onclick="document.getElementById('v28RecoveryInput').click()">Inspect V2.8 recovery package</button>
-        \`: \`
+        `: `
           <p class="mini">Local workspace backups can be checked with the legacy local restore flow. This option is disabled for signed-in cloud accounts to protect synchronized history.</p>
           <input id="restoreBackupInput" type="file" accept=".json,application/json" style="display:none" onchange="handleBackupRestoreFile(event)">
           <button class="btn" type="button" onclick="document.getElementById('restoreBackupInput').click()">Choose local backup file</button>
-        \`}
+        `}
       </div>
     </div>
     <div id="backupRestoreStatus" style="margin-top:12px"></div>
