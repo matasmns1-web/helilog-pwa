@@ -677,7 +677,7 @@ function roleChanged(){
     field.readOnly=false;
     field.style.background='#fff';
   }
-  updateQuickPICVisibility();
+  if(typeof updateQuickPICVisibility==='function')updateQuickPICVisibility();
 }
 
 function showFormError(msg){
