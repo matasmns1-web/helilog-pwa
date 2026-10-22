@@ -159,3 +159,11 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 - When opened from this review, flight detail or simulator session detail shows **← Back to review**, rather than only ← Logbook. Returning restores the same issue card and the checked acknowledgement only when the entire draft is still byte-for-byte identical; otherwise it remains unchecked and requires a fresh review.
 - Regular logbook flight details continue to use the Logbook button. Navigation state is transient and never saved, synchronized or treated as an archive approval. Actual print and archive confirmation retain the existing exact-draft safety checks.
 - No changes to flight entries, totals, signatures, printing, archived records or the cloud schema. Test-only patch, production unchanged.
+
+## V2.31.4 — compact Quick Flight stays fixed until keyboard interaction
+
+- In the installed phone app, Quick Flight is pinned in its existing top position (no one-handed bottom alignment). It prevents Safari/iOS elastic page dragging only when every essential form control fits above the fixed mobile navigation bar.
+- A temporary root CSS class freezes page scroll, including on Safari PWA versions where overflow:hidden alone does not stop touch rubber-banding. No user settings are persisted.
+- The existing keyboard-open detection immediately releases the lock on focus and restores natural scrolling; closing the keyboard restores the top alignment/lock only if the form still fits. Smaller displays, expanded optional fields, validation banners, and asynchronous night calculation warnings unlock scroll automatically when they exceed available height.
+- Layout is recalculated on changes to Quick/Full mode, advanced fields, night warnings, page navigation and viewport/keyboard size; a ResizeObserver watches form/heading height changes.
+- No database changes, flight validation changes, imported totals changes, cloud sync changes or signed archive changes. TEST-only release.

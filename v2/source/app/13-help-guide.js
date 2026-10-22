@@ -1,4 +1,4 @@
-/* V2.31.3. Searchable, offline-friendly guide and current release notes. */
+/* V2.31.4. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
   {
     "category": "Records & signatures",
@@ -51,7 +51,7 @@ const HELILOG_GUIDE_TOPICS=[
       "Review aircraft and departure/arrival locations and enter the correct flight date.",
       "Enter both times in UTC (24-hour HH:mm or HHmm).",
       "The compact Quick Flight screen pairs date/aircraft, departure/UTC time, arrival/UTC time, flight duration/function, take-offs and Night/IFR. Save stays above the phone navigation bar.",
-      "The form uses spare height below it to move closer to your thumb. On smaller screens or while typing, it stays scrollable and adapts automatically.",
+      "Quick Flight stays at the top and does not drift when you swipe if all fields fit above the phone navigation. Opening the keyboard unlocks normal scrolling; expanding fields or showing a long warning also permits scrolling whenever needed.",
       "For PIC or SOLO, the Name of PIC is SELF automatically; DUAL, SPIC, PICUS and CO-PILOT show the commander's PIC field.",
       "Night time stays on automatic UTC/civil-twilight calculation by default. If coordinates are unavailable, an on-screen warning tells you to choose manual night time or set up your site.",
       "Open Cross-country & remarks only when needed. Use Full details for multi-pilot configuration, independent landing counts, instructor and specialised operations.",
@@ -200,6 +200,11 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {
+    "v": "V2.31.4",
+    "name": "Quick Flight scroll behavior",
+    "detail": "When the compact Quick Flight form fits on a phone screen, it stays fixed while swiping. Focusing a typing field unlocks normal scrolling; closing the keyboard locks it again if everything fits."
+  },
   {
     "v": "V2.31.3",
     "name": "Return from flight review",

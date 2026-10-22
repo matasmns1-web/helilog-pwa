@@ -100,6 +100,7 @@ function setFlightEntryMode(mode){
     ? 'Core UTC flight details and Save are together. Expand options only when needed.'
     : 'All flight fields are available. Your entries are kept when switching modes.';
   updateQuickPICVisibility();
+  if(typeof scheduleQuickFlightScrollLock==='function')scheduleQuickFlightScrollLock();
 }
 function updateQuickPICVisibility(){
   const form=document.getElementById('flightForm');
@@ -116,6 +117,7 @@ function toggleQuickEntryExtras(){
     button.setAttribute('aria-expanded',String(expanded));
     button.textContent=expanded?'− Hide cross-country & remarks':'+ Cross-country & remarks';
   }
+  if(typeof scheduleQuickFlightScrollLock==='function')scheduleQuickFlightScrollLock();
 }
 function updateQuickNightNotice(outcome){
   const note=document.getElementById('quickNightNotice');
@@ -127,6 +129,7 @@ function updateQuickNightNotice(outcome){
   note.textContent=show?
     'Automatic night time unavailable: '+String(outcome.reason||'Missing coordinates')+
     '. Uncheck Auto for manual entry or add the operating site under Settings → Aerodromes & Helipads.':'';
+  if(typeof scheduleQuickFlightScrollLock==='function')scheduleQuickFlightScrollLock();
 }
 function add(editId=null,quick=false){
 if(editId && isArchivedFlight(editId)&&correctingArchivedId!==editId){
