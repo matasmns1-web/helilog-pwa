@@ -131,3 +131,11 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 - Totals → Specialised helicopter operations shows **Previous**, **Recorded here**, and **Combined** separately, while the number of flights and ICAO type breakdown reflect actual recorded HeliLog flights only.
 - Data integrity validates the historical category keys and times; existing signed archives still lock opening balances. Save failures restore the previous local totals before reporting a result.
 - This release is test-only. Do not promote to production without the existing production release procedure and explicit approval.
+
+
+## V2.31 — compact, viewport-friendly Quick Flight entry
+- Keep the existing Quick/Full entry form, shared field IDs, UTC and night-time computation, validation, duplicate protection and normal cloud sync. No database changes or saved-flight migrations.
+- Quick entry is reflowed into a tightly spaced 2-column grid on phone: date/aircraft, departure/UTC time, arrival/UTC time, duration/function, take-offs, night/IFR. Hide redundant section headings, large help blocks, full diagnostic night explanation and automatic SELF PIC input for PIC/SOLO, but retain the input and its value in the original DOM.
+- Cross-country and remarks are collapsed behind an explicit accessible toggle that expands in-place without losing unsaved values. Full details retain original access to all fields.
+- A concise visible alert is shown when auto-night cannot be calculated after entering a complete flight; the existing save path blocks unsafe submission. Save is sticky above mobile navigation except when the on-screen keyboard is open. Long forms, warnings and smaller phones can still scroll; no important input is clipped by fixed-height containers.
+- Same pilot function-dependent PIC requirement, independent landing-count defaults and offline synchronization are preserved. Test release only.
