@@ -1,14 +1,30 @@
-/* V2.26. Maintain topic instructions and release updates here. */
+/* V2.31.4. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
+  {
+    "category": "Records & signatures",
+    "title": "Reusable pilot signatures",
+    "summary": "Capture a profile signature and approve use for each endorsement.",
+    "steps": [
+      "Open Pilots and choose Signature on the relevant person’s card.",
+      "Have the named pilot draw a signature and explicitly consent to saving it.",
+      "Create an endorsement and select the correct saved instructor or examiner.",
+      "The signer must review the record and approve it before applying either their saved signature or a newly drawn signature.",
+      "Every signed endorsement keeps its own copy; updating the profile cannot change previously signed records.",
+      "The capture feature does not independently verify identity or create a qualified electronic signature."
+    ],
+    "route": "pilots",
+    "action": "Manage pilot signatures"
+  },
   {
     "category": "Start here",
     "title": "First-time setup",
     "summary": "Prepare your profile, aircraft and first entry.",
     "steps": [
-      "Sign in and check your name, licence and authority in Profile.",
-      "Add your helicopter in Aircraft, using its registration and ICAO type designator.",
-      "Add other commanders or instructors under Pilots when relevant.",
-      "Enter a flight, review it in Logbook and wait for the cloud indicator to show Synced."
+      "Sign in to your private HeliLog account. Your first device initializes the shared cloud logbook; a new, clean device joins the same records after signing in.",
+      "In Profile check your name, licence, authority, ratings and medical details. Add your helicopter in Aircraft, including its registration and ICAO type designator.",
+      "Add commanders or instructors under Pilots. Saved signatures require the pilot’s consent and may only be used on endorsements with separate approval.",
+      "If moving from an older paper logbook, enter brought-forward flight totals under Settings and verify them against the paper record before entering new flights.",
+      "Enter a flight using UTC time, review it in Logbook, then use the cloud status pill to confirm Synced. Keep a separate recovery backup of important records."
     ],
     "route": "profile",
     "action": "Open profile"
@@ -34,8 +50,12 @@ const HELILOG_GUIDE_TOPICS=[
       "On mobile tap Flight, or use Quick flight from the dashboard.",
       "Review aircraft and departure/arrival locations and enter the correct flight date.",
       "Enter both times in UTC (24-hour HH:mm or HHmm).",
-      "Choose pilot function, operational conditions, take-offs and remarks, then Save.",
-      "Use Full details for extra fields; switching keeps values you already entered."
+      "The compact Quick Flight screen pairs date/aircraft, departure/UTC time, arrival/UTC time, flight duration/function, take-offs and Night/IFR. Save stays above the phone navigation bar.",
+      "Quick Flight stays at the top and does not drift when you swipe if all fields fit above the phone navigation. Opening the keyboard unlocks normal scrolling; expanding fields or showing a long warning also permits scrolling whenever needed.",
+      "For PIC or SOLO, the Name of PIC is SELF automatically; DUAL, SPIC, PICUS and CO-PILOT show the commander's PIC field.",
+      "Night time stays on automatic UTC/civil-twilight calculation by default. If coordinates are unavailable, an on-screen warning tells you to choose manual night time or set up your site.",
+      "Open Cross-country & remarks only when needed. Use Full details for multi-pilot configuration, independent landing counts, instructor and specialised operations.",
+      "Switching Quick/Full retains anything you entered, and Save still uses exactly the same validation as the full form. Small screens or additional warnings may require scrolling."
     ],
     "route": "quickadd",
     "action": "Open Quick Flight"
@@ -76,6 +96,10 @@ const HELILOG_GUIDE_TOPICS=[
       "Apply date and operation filters; the filtered totals reflect your selection.",
       "Open Totals for PIC, Co-pilot, Dual, aircraft engine and pilot-configuration breakdowns.",
       "Historical paper logbook time can be entered as brought-forward totals in Settings.",
+      "Under Settings → Import previous logbook totals, enter your carried-forward flight time, pilot/engine breakdown and aircraft-type hours.",
+      "For historical specialist operations, use Specialised operations… to open a compact popup. Enter hours for VRLL, HESLO, HEC, NVIS, HHO, offshore and other categories as H:MM or decimal hours.",
+      "Apply the popup values, then confirm Import totals / Save correction on the main form. Cancelling the popup discards only the edits made within the popup.",
+      "On Totals, Previous + Recorded here = Combined specialised-operation hours. Historical hours do not create flights, and overlapping categories are not added to Total flying time.",
       "Review all totals against original documents before using them in official applications."
     ],
     "route": "totals",
@@ -88,11 +112,32 @@ const HELILOG_GUIDE_TOPICS=[
     "steps": [
       "On the desktop website, use Logbook → Export for CSV or a printable PDF copy.",
       "Exporting a PDF does not create numbered, permanently archived pages.",
-      "Use Print Archive in a web browser to review and confirm continuous numbered pages and cumulative totals.",
-      "Keep signed records safely; if archived records require changes, use an addendum or correction workflow."
+      "On the web (not the installed iPhone app), open Print Archive and choose the number of pages to include in the next batch.",
+      "Select Review flights before printing. It flags possible duplicate flights, incomplete PIC names, unusual UTC times and discrepancies in totals—without changing any record.",
+      "Open the flagged entries to make corrections if needed. Acknowledge the review for this exact selection; changes to flights or selected pages require another review.",
+      "Only then preview the numbered pages, verify the running totals, print and physically sign them, and separately confirm the printed batch in HeliLog.",
+      "Printing a PDF alone does not create a signed archive. Confirmed pages are locked; amend them through a signed correction addendum."
     ],
     "route": "logbook",
     "action": "Open logbook"
+  },
+  {
+    "category": "Review",
+    "title": "Pre-archive flight review",
+    "summary": "Check the exact flights about to be printed for common issues before signing.",
+    "steps": [
+      "On the web open Print Archive, then choose how many pages to include in the next batch.",
+      "Select Review flights before printing to inspect the selected batch. A possible duplicate is compared with your entire logbook, including earlier archived entries.",
+      "Check missing PIC information and pilot links, flight duration versus UTC off/on times (including overnight flights), unusual very short or long flights, Night/IFR/instructor minutes and take-off versus landing counts.",
+      "Review the independent calculations of PIC/Co-pilot/Dual, engine and single-/multi-pilot experience, and carried-forward plus closing totals.",
+      "Review overlapping flight intervals, including multiple flights on the same day or an overnight arrival on the next UTC day. Flights that end when another starts are not overlaps.",
+      "Use View entry or View related entry to inspect a flagged flight, then select Back to review to return to the same finding. A ticked acknowledgement stays checked only if the selected batch has not changed.",
+      "Edit only an unarchived entry through its normal form. After any flight data or selected page changes, review and acknowledge the updated batch again; never silently change or automatically delete anything.",
+      "Acknowledgement allows printing after you have checked exceptions; it is not official certification. If selected pages or flight records change, repeat the review.",
+      "Print, verify and sign the paper pages before separately confirming the archive. Archived records remain protected."
+    ],
+    "route": "printarchive",
+    "action": "Open Print Archive"
   },
   {
     "category": "Review",
@@ -112,10 +157,14 @@ const HELILOG_GUIDE_TOPICS=[
     "title": "Cloud sync and offline flights",
     "summary": "Read the compact sync indicator and protect pending changes.",
     "steps": [
-      "The cloud pill indicates Synced, pending changes, offline status or a sync issue. Tap it for details.",
-      "Flights may be entered offline. Reconnect and allow synchronization before using another device.",
-      "Resolve any reported conflicts carefully; do not assume one device always has the correct record.",
-      "Do not clear browser or app storage while records are pending or troubleshooting sync."
+      "HeliLog uses one shared cloud logbook per account, not a permanent primary or secondary device. All signed-in devices should ultimately use the same cloud records.",
+      "A brand-new device normally joins the existing account automatically. A previously used device with its own local records may need a review before adopting cloud copies.",
+      "Finish cloud setup under Settings → Cloud account. When joining existing cloud data, HeliLog preserves the device’s earlier records in a downloadable pre-sync safety snapshot.",
+      "Synced means the active workspace has completed record synchronization; Pending means unsent edits; Offline means local changes await internet; Conflict means you must review different copies.",
+      "Flights may be entered offline. Reconnect and allow synchronization before editing the same entries on another device.",
+      "The Check sign-in connection button confirms authentication; use Check / sync now to synchronize records. A valid sign-in is not proof that all records are synced.",
+      "Resolve conflicts on the specific device reporting them. Compare copies and choose deliberately; HeliLog never automatically merges conflicting signatures or signed archives.",
+      "Never clear iPhone app data, uninstall your only copy or force-upload while records are unsynced or being recovered."
     ],
     "route": "cloud",
     "action": "Cloud account"
@@ -125,10 +174,13 @@ const HELILOG_GUIDE_TOPICS=[
     "title": "Backups and recovery",
     "summary": "Preserve a safe copy of your logbook and signed records.",
     "steps": [
-      "Settings → Backups shows available backup, verification and recovery functions.",
-      "Keep downloaded packages securely: they may include personal details and signatures.",
-      "Cloud recovery can verify a package without permitting it to overwrite your synced history.",
-      "Avoid resetting the app or deleting storage before preserving records or consulting support."
+      "Settings → Backup & Recovery has download, health-check and restoration tools. Keep independent backups before important archive operations.",
+      "Downloads may include personal details, licences and images of signatures: save them securely and do not publish or share backup files.",
+      "If a pilot or signed endorsement vanishes after joining an existing cloud account, do not reinstall the app or import an old full workspace over the newer one.",
+      "On the original device open Settings → Cloud account → Download preserved pre-sync data. Then choose Review preserved pilots and endorsements.",
+      "After resolving any local sync conflict using Check / sync now, select Preview safe restoration. It checks which records are truly missing from the active device and cloud.",
+      "Read the list and choose Restore these missing records only if it is correct. The recovery creates a device-local safety copy first and syncs the recovered pilot/signature and endorsement without replacing other records.",
+      "Signed endorsements retain their stored signatures and dates. A collision or unavailable signatory cannot be restored automatically and needs separate attention."
     ],
     "route": "backups",
     "action": "Backup & recovery"
@@ -148,6 +200,56 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {
+    "v": "V2.31.4",
+    "name": "Quick Flight scroll behavior",
+    "detail": "When the compact Quick Flight form fits on a phone screen, it stays fixed while swiping. Focusing a typing field unlocks normal scrolling; closing the keyboard locks it again if everything fits."
+  },
+  {
+    "v": "V2.31.3",
+    "name": "Return from flight review",
+    "detail": "Viewing a flagged flight now offers Back to review, resuming the same warning and the checkbox if the batch remains unchanged. Editing flights or page selection requires renewed acknowledgement."
+  },
+  {
+    "v": "V2.31.2",
+    "name": "Quick Flight header and positioning",
+    "detail": "Restores the preferred top-aligned Quick Flight screen and gives the iPhone status-bar area more clearance for a clearer heading."
+  },
+  {
+    "v": "V2.31.2",
+    "name": "One-hand Quick Flight reach",
+    "detail": "On phones, Quick Flight sits lower when spare screen space is available, without hiding fields on shorter displays. Keyboard entry restores normal scrolling."
+  },
+  {
+    "v": "V2.31",
+    "name": "Compact Quick Flight entry",
+    "detail": "Paired fields and reduced vertical space on phones, automatic SELF PIC display, optional cross-country and remarks, and an always-accessible Save control. Existing validation is unchanged."
+  },
+  {
+    "v": "V2.30",
+    "name": "Previous logbook specialised operations",
+    "detail": "Enter historical HESLO, VRLL, HEC, NVIS, hoist and other helicopter activity hours in a popup, with separate previous, recorded and combined totals."
+  },
+  {
+    "v": "V2.29.1",
+    "name": "Pre-archive review, including overlapping UTC flights",
+    "detail": "Now flags overlapping UTC flight intervals (including overnight and earlier archived entries) as well as duplicates, PIC information and running totals. Expanded onboarding and recovery guidance."
+  },
+  {
+    "v": "V2.28.4",
+    "name": "Selective iPhone record recovery",
+    "detail": "Preserved pilots, saved signatures and signed endorsements can be reviewed and restored without replacing existing cloud records."
+  },
+  {
+    "v": "V2.28",
+    "name": "Safer cloud account setup",
+    "detail": "New devices join existing cloud records automatically; setup conflicts stay visible and reviewable per device."
+  },
+  {
+    "v": "V2.27",
+    "name": "Reusable pilot signatures",
+    "detail": "Signatures stored in pilot profiles and applied only with consent on each endorsement."
+  },
   {
     "v": "V2.26",
     "name": "Help & User Guide",
@@ -194,7 +296,7 @@ function helpGuide(){
   <div class="guide-topic-body"><ol>${topic.steps.map(step=>`<li>${htmlEscape(step)}</li>`).join('')}</ol><div class="guide-topic-actions"><button class="btn" type="button" onclick="go('${topic.route}')">${htmlEscape(topic.action)} →</button></div></div>
  </details>`).join('');
  app.innerHTML=header('Help & User Guide','Learn the essentials and find instructions for every part of HeliLog')+
- `<section class="card guide-intro"><span class="guide-eyebrow">GETTING STARTED</span><h2>New to HeliLog?</h2><p class="muted">Start with your pilot profile, add your aircraft, enter a flight and check that it is synced.</p>
+ `<section class="card guide-intro"><span class="guide-eyebrow">GETTING STARTED</span><h2>New to HeliLog?</h2><p class="muted">Sign in, complete your pilot profile, add your aircraft, enter a flight and check cloud synchronization. Another new device joins the same account—no primary/secondary setup is required.</p>
   <div class="guide-first-steps">
    <button onclick="go('profile')"><span>01</span><b>Profile</b><small>Check your identity</small></button>
    <button onclick="go('aircraft')"><span>02</span><b>Aircraft</b><small>Save a helicopter</small></button>

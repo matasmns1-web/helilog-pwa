@@ -141,7 +141,8 @@ test("Moved actions return to their new screens",()=>{
  const restore=html.slice(html.indexOf("function restoreCheckedBackup(){"),html.indexOf("function editOwnProfile(){"));
  assert.equal((restore.match(/backups\(\);/g)||[]).length,2);
  const imported=html.slice(html.indexOf("function saveBroughtForwardTotals("),html.indexOf("const profileExpanded="));
- assert.match(imported,/save\(\);\s*settings\(\);/);
+ assert.match(imported,/if\(!save\(\)\)\{/);
+ assert.match(imported,/bfSpecialOpsDraft=null;\s*settings\(\);/);
  assert.match(html,/onsubmit="saveBroughtForwardTotals\(event\)"/);
 });
 test("The UI-only release retains archived-flight handlers and updates PWA cache",()=>{
@@ -149,6 +150,6 @@ test("The UI-only release retains archived-flight handlers and updates PWA cache
   "downloadFullBackup","restoreCheckedBackup","showIntegrityCheck","editMedical",
   "saveMedical","saveQualification","deleteQualification"])
   assert.match(html,new RegExp("function "+name+"\\("));
- assert.match(html,/HeliLog V2\.26 — Help & User Guide · Test/);
- assert.match(worker,/helilog-v2-26-help-guide-1/);
+ assert.match(html,/HeliLog V2\.31\.4 — Compact Quick Flight · Test/);
+ assert.match(worker,/helilog-v2-31-4-quick-scroll-1/);
 });

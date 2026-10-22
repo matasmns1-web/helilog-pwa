@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.26 — Help & User Guide · Test</title>
+<title>HeliLog V2.31.4 — Compact Quick Flight · Test</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -298,12 +298,181 @@ html.helilog-test-mode .brand::after{
   #flightForm.quick-entry-active .quick-entry-advanced {display:none!important}
   #flightForm.quick-entry-active .section-title {margin-top:18px}
 }
+
+
+/* V2.31.4: eliminate accidental page dragging only when compact Quick fits.
+ * The JS removes this class before text keyboard interaction or overflow.
+ * position:fixed prevents iOS standalone rubber-band scrolling (overflow:
+ * hidden alone is insufficient on some Safari versions).
+ */
+@media screen and (max-width:850px) {
+  html.helilog-quick-scroll-locked,
+  html.helilog-quick-scroll-locked body {
+    overflow-y:hidden!important;
+    overscroll-behavior-y:none;
+  }
+  html.helilog-quick-scroll-locked body {
+    position:fixed;
+    inset:0;
+    width:100%;
+    height:100%;
+  }
+}
+
+/* V2.31: condensed Quick Flight view. Same controls, IDs and save path as Full. */
+@media screen {
+  #flightForm.quick-entry-active {
+    max-width:800px;
+    gap:8px;
+    padding:12px;
+  }
+  #flightForm.quick-entry-active .section-title,
+  #flightForm.quick-entry-active .quick-entry-description,
+  #flightForm.quick-entry-active .quick-entry-hint,
+  #flightForm.quick-entry-active .field > .mini,
+  #flightForm.quick-entry-active #nightCalcStatus {
+    display:none!important;
+  }
+  #flightForm.quick-entry-active .formgrid {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px 10px;
+  }
+  #flightForm.quick-entry-active .field {min-width:0;}
+  #flightForm.quick-entry-active .field > label:first-child {
+    font-size:12px;
+    margin-bottom:3px;
+    line-height:1.2;
+  }
+  #flightForm.quick-entry-active .quick-entry-switch {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    margin:0;
+  }
+  #flightForm.quick-entry-active .quick-entry-switch .btn {
+    flex:auto;
+    max-width:none;
+    padding:7px 10px;
+    min-height:36px;
+  }
+  #flightForm.quick-entry-active .field input:not([type=checkbox]):not([type=radio]),
+  #flightForm.quick-entry-active .field select {
+    min-height:40px;
+    padding:7px 9px;
+  }
+  #flightForm.quick-entry-active .timewrap input[type=text]{padding-right:36px;}
+  #flightForm.quick-entry-active .timebtn{width:30px;height:30px;top:4px;right:4px;}
+  #flightForm.quick-entry-active.quick-pic-self .quick-pic-field {display:none!important;}
+  #flightForm .quick-self-pic-note {display:none;}
+  #flightForm.quick-entry-active.quick-pic-self .quick-self-pic-note {
+    display:block;font-size:11px;line-height:1.25;color:var(--muted);
+  }
+  #flightForm .quick-night-label {display:none;}
+  #flightForm.quick-entry-active .full-night-label {display:none;}
+  #flightForm.quick-entry-active .quick-night-label {display:inline;}
+  #flightForm.quick-entry-active .quick-flight-conditions .field label.mini {
+    margin:4px 0 0!important;
+    gap:5px!important;
+    font-size:11px;
+    line-height:1.2;
+  }
+  #flightForm.quick-entry-active #nightAuto {width:16px;height:16px;min-height:16px;flex:0 0 16px;}
+  #flightForm .quick-entry-extras-switch {display:none;}
+  #flightForm.quick-entry-active .quick-entry-extras-switch {display:block;}
+  #flightForm.quick-entry-active .quick-entry-extras-switch .btn {
+    min-height:32px;padding:5px 9px;font-size:12px;width:100%;text-align:left;
+  }
+  #flightForm.quick-entry-active:not(.quick-entry-extra-open) .quick-entry-optional {display:none!important;}
+  #flightForm.quick-entry-active.quick-entry-extra-open .quick-entry-optional {display:flex;}
+  #flightForm.quick-entry-active.quick-entry-extra-open .field.quick-entry-optional {display:block;}
+  #flightForm .quick-entry-night-note {display:none;}
+  #flightForm.quick-entry-active .quick-entry-night-note:not([hidden]) {
+    display:block;
+    padding:7px 9px;
+    border:1px solid #c88d42;
+    border-radius:8px;
+    font-size:12px;
+    line-height:1.3;
+    color:var(--ink);
+    background:var(--soft);
+  }
+  #flightForm.quick-entry-active .actions {
+    margin:0 -12px -12px;
+    padding:8px 12px 12px;
+    gap:8px;
+    background:var(--panel);
+  }
+  #flightForm.quick-entry-active .quick-entry-cancel {display:none;}
+  #flightForm.quick-entry-active #saveFlightBtn {width:100%;min-height:43px;}
+}
+@media screen and (max-width:850px) {
+  /* V2.31.2: keep Quick Entry at the top as in V2.31.
+     Allow a little more space under the iOS translucent status bar so the
+     title and sync controls render on unobscured, crisp page content. */
+  main:has(#flightForm.quick-entry-active) {
+    display:block;
+    padding:calc(14px + env(safe-area-inset-top)) 9px calc(88px + env(safe-area-inset-bottom));
+  }
+  main:has(#flightForm.quick-entry-active) .top {
+    margin-top:0;
+    -webkit-backdrop-filter:none;
+    backdrop-filter:none;
+    filter:none;
+    flex-direction:row;
+    flex-wrap:nowrap;
+    align-items:center;
+    margin-bottom:7px;
+    padding:0 0 7px;
+    gap:8px;
+  }
+  main:has(#flightForm.quick-entry-active) .top h1 {
+    font-size:19px;
+    line-height:1.15;
+  }
+  main:has(#flightForm.quick-entry-active) .top .sub {display:none;}
+  main:has(#flightForm.quick-entry-active) .top>div:last-child:not(:first-child) {width:auto;}
+  main:has(#flightForm.quick-entry-active) .top .btn {padding:6px 9px;min-height:34px;}
+  #flightForm.quick-entry-active {
+    gap:6px;
+    padding:9px;
+    border-radius:11px;
+  }
+  #flightForm.quick-entry-active .formgrid {gap:6px 8px;}
+  #flightForm.quick-entry-active .field > label:first-child {
+    margin-bottom:2px;
+    font-size:11px;
+  }
+  #flightForm.quick-entry-active .field input:not([type=checkbox]):not([type=radio]),
+  #flightForm.quick-entry-active .field select {
+    min-height:38px;
+    padding:5px 7px;
+    font-size:16px;
+  }
+  #flightForm.quick-entry-active .quick-entry-switch .btn {min-height:33px;padding:5px 8px;}
+  #flightForm.quick-entry-active .timebtn{top:3px;right:3px;}
+  #flightForm.quick-entry-active .actions {
+    position:sticky;
+    z-index:15;
+    bottom:calc(64px + env(safe-area-inset-bottom));
+    margin:0 -9px -9px;
+    padding:7px 9px 8px;
+    box-shadow:0 -5px 14px rgba(0,0,0,.12);
+  }
+  body.keyboard-open #flightForm.quick-entry-active .actions {position:static;}
+  /* No bottom anchoring or fixed-height viewport; the form is naturally
+     scrollable when the keyboard opens, including on small iPhones. */
+}
+}
+@media screen and (max-width:360px) {
+  #flightForm.quick-entry-active .formgrid {gap:5px;}
+  #flightForm.quick-entry-active .field > label:first-child {font-size:10px;}
+}
 </style>
 <link rel="stylesheet" href="./dark-cockpit.css?v=2.20-cockpit-3" media="screen">
-<link rel="stylesheet" href="./guide.css?v=2.26" media="screen">
+<link rel="stylesheet" href="./guide.css?v=2.29" media="screen">
 </head>
 <body><div class="layout">
-<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.26 · TEST ENVIRONMENT</span></div><nav>
+<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.31.4 · TEST ENVIRONMENT</span></div><nav>
 <div class="nav-group-label">Flight operations</div>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button>
 <div class="nav-group-label">Records &amp; assets</div>
@@ -384,6 +553,7 @@ html.helilog-test-mode .brand::after{
 <script src="./night-calculation.js?v=2.19-locations-1"></script>
 <script src="./aerodrome-lookup.js?v=2.19-locations-1"></script>
 <script src="./print.js"></script>
+<script src="./prearchive-review.js?v=2.29.1"></script>
 <script src="./endorsement-bridge.js"></script>
 <script src="./endorsement-ui.js"></script>
 <script src="./cloud-config.js?v=2.19-locations-1"></script>
@@ -892,10 +1062,15 @@ function flightRemarksForDisplay(f){
   return [String(f?.remarks||'').trim(),specialOpsAnnotation(f)].filter(Boolean).join(' | ');
 }
 function specialisedTotals(){
+  const previous=S.broughtForward?.specialOps||{};
   return SPECIAL_OPS.map(op=>{
     const flights=effectiveFlights().filter(f=>Object.prototype.hasOwnProperty.call(f.specialOps||{},op.code));
-    return {...op,flights:flights.length,minutes:flights.reduce((n,f)=>n+Number(f.specialOps[op.code]||0),0)};
-  }).filter(e=>e.flights);
+    const recordedMinutes=flights.reduce((n,f)=>n+Number(f.specialOps[op.code]||0),0);
+    const historical=Number(previous?.[op.code]||0);
+    const previousMinutes=Number.isSafeInteger(historical)&&historical>=0?historical:0;
+    return {...op,flights:flights.length,previousMinutes,recordedMinutes,
+      minutes:previousMinutes+recordedMinutes};
+  }).filter(e=>e.flights||e.previousMinutes>0);
 }
 function broughtForwardInputMinutes(v){return Number(v||0)>0?fmt(Number(v)):'';
 }
@@ -1426,6 +1601,18 @@ function inspectHeliLogData(data){
     if(sig){
       if(seenSignatures.has(sig))warnings.push('Possible duplicate flights: '+seenSignatures.get(sig)+' and '+f.id+' ('+f.date+').');
       else seenSignatures.set(sig,f.id);
+    }
+  }
+  // Historical specialised operations are subtotals within brought-forward
+  // flight time, not new flight entries or additional flying hours.
+  if(data.broughtForward?.specialOps!==undefined){
+    const ops=data.broughtForward.specialOps;
+    const overall=Number(data.broughtForward.total||0);
+    if(!ops||typeof ops!=='object'||Array.isArray(ops))
+      errors.push('Previous specialised-operation totals are malformed.');
+    else for(const [code,mins] of Object.entries(ops)){
+      if(!SPECIAL_OP_KEYS.has(code)||!Number.isSafeInteger(mins)||mins<0||mins>overall)
+        errors.push('Previous specialised operation '+code+' must contain whole, non-negative minutes not exceeding brought-forward flight time.');
     }
   }
   const rawCorrections=data.printArchive?.corrections;
@@ -2611,7 +2798,7 @@ function setArchivePageCount(value){
   const n=Number(value);
   if(!Number.isSafeInteger(n)||n<1)return;
   selectedArchivePageCount=n;
-  pendingArchivePreview=null; // A preview must match exactly the selected flight set.
+  pendingArchivePreview=null;pendingArchiveReview=null; // Review and preview must match this exact page selection.
   printarchive();
 }
 function archiveRange(d){
@@ -2652,14 +2839,110 @@ function saveArchiveSetup(){
   }
   S.printArchive.firstPage=page;
   S.printArchive.paperReference=String(document.getElementById('archivePaperRef')?.value||'').trim().slice(0,120);
-  pendingArchivePreview=null;
+  pendingArchivePreview=null;pendingArchiveReview=null;
   save();
   printarchive();
+}
+
+/* V2.29: this is an acknowledgement of one exact proposed batch only.
+ * Never store a review decision in the logbook or the signed archive.
+ */
+let pendingArchiveReview=null;
+function v229ArchiveReviewed(draft=nextArchiveDraft()){
+ return !!pendingArchiveReview && pendingArchiveReview===JSON.stringify(draft);
+}
+/* V2.31.3: transient return navigation, never persisted or confused with
+ * signed review acknowledgement. The exact batch controls checkbox restore. */
+let v229ReviewReturn=null;
+function v229OpenReviewFlight(id,issueIndex){
+ if(!(S.flights||[]).some(f=>f.id===id))return;
+ v229ReviewReturn={
+  flightId:id,
+  draft:JSON.stringify(nextArchiveDraft()),
+  checked:!!document.getElementById('v229Acknowledge')?.checked,
+  issueIndex:Number.isSafeInteger(issueIndex)?issueIndex:null
+ };
+ flight(id);
+}
+function v229CanReturnToReview(id){
+ return location.hash==='#archivereview'&&
+   !!v229ReviewReturn&&v229ReviewReturn.flightId===id;
+}
+function v229ReturnToReview(){
+ const context=v229ReviewReturn;
+ if(!context)return go('archivereview');
+ const sameDraft=context.draft===JSON.stringify(nextArchiveDraft());
+ v229ReviewReturn=null;
+ go('archivereview');
+ // Only a read-only visit can retain the checkbox and highlighted finding.
+ // Any changed flight/page/totals must be acknowledged again.
+ const checkbox=document.getElementById('v229Acknowledge');
+ if(!checkbox)return;
+ checkbox.checked=!!sameDraft&&!!context.checked;
+ if(sameDraft&&context.issueIndex!==null){
+  const issue=document.getElementById('v229-review-issue-'+context.issueIndex);
+  issue?.scrollIntoView?.({block:'start'});
+ }
+}
+function v229PreArchiveReview(){
+ if(v23PreventUnsupportedArchive()||isStandaloneApp())return;
+ const draft=nextArchiveDraft();
+ if(!draft.flights.length){go("printarchive");return;}
+ if(!window.HeliLogV29Review?.evaluate)
+  throw Error("Pre-archive review module unavailable. Reopen HeliLog online; do not print or archive.");
+ const report=window.HeliLogV29Review.evaluate({draft,allFlights:S.flights,people:S.people});
+ const issueHtml=report.issues.map((issue,issueIndex)=>{
+  const heading=issue.severity==="critical"?"Check carefully":"Check if applicable";
+  const related=issue.otherFlightId?
+   ' · Related record '+htmlEscape(issue.otherFlightId):'';
+  const primary=issue.flightId&&(S.flights||[]).some(f=>f.id===issue.flightId)?
+   '<button class="btn" type="button" onclick="v229OpenReviewFlight('+
+    htmlEscape(JSON.stringify(issue.flightId))+','+issueIndex+')">View entry</button>':'';
+  const other=issue.otherFlightId&&(S.flights||[]).some(f=>f.id===issue.otherFlightId)?
+   '<button class="btn" type="button" onclick="v229OpenReviewFlight('+
+    htmlEscape(JSON.stringify(issue.otherFlightId))+','+issueIndex+')">View related entry</button>':'';
+  return '<div class="card" id="v229-review-issue-'+issueIndex+'" style="margin-top:9px;border-left:3px solid '+
+     (issue.severity==="critical"?'#b42318':'#dd9b2b')+'">'+
+    '<b>'+heading+' · '+htmlEscape(issue.code.replace(/-/g," "))+'</b>'+
+    (issue.flightId?'<div class="mini">'+htmlEscape(issue.date||"Undated")+
+     ' · '+htmlEscape(issue.flightId)+htmlEscape(related)+'</div>':'<div class="mini">Batch totals</div>')+
+    '<p>'+htmlEscape(issue.message)+'</p>'+
+    ((primary||other)?'<div class="actions">'+primary+other+'</div>':'')+'</div>';
+ }).join('');
+ app.innerHTML=header("Pre-archive flight review",
+  "Read-only checks for the exact flights and pages you are about to print.",
+  '<button type="button" class="btn" onclick="go(\'printarchive\')">← Print archive</button>')+
+  '<div class="card"><h2>'+htmlEscape(draft.id)+' · '+htmlEscape(archiveRange(draft))+'</h2>'+
+  '<p>'+report.entries+' selected logbook entries. Recorded actual time '+fmt(draft.flightTotals.total)+
+  ' · simulator '+fmt(draft.flightTotals.std)+'.</p>'+
+  '<div class="grid stats"><div class="card"><div class="label">Check carefully</div><div class="big">'+
+   report.critical+'</div></div><div class="card"><div class="label">Advisories</div><div class="big">'+
+   report.advisory+'</div></div></div>'+
+  '<p class="mini">Possible duplicates are checked against the entire electronic logbook, including previously archived flights. Warnings are review prompts—not proof of an error. Overnight UTC flight times are supported. No entry, total, signature or cloud record was changed.</p>'+
+  '</div>'+
+  (issueHtml||'<div class="card" style="margin-top:14px"><h2>No potential problems detected</h2><p>Review the original flight records and the printed pages nonetheless. Automated checks cannot confirm every operational detail.</p></div>')+
+  '<div class="card" style="margin-top:15px"><h2>Review acknowledgement</h2>'+
+  '<p>Correct any mistakes by opening the relevant entry and editing it in the usual workflow. Otherwise you may continue with intentional or explained exceptions. Do not modify signed or archived records here.</p>'+
+  '<label style="display:flex;gap:10px;align-items:flex-start;margin:12px 0"><input type="checkbox" id="v229Acknowledge" style="margin-top:4px"> '+
+  '<span>I reviewed these findings and the selected flight records. I understand that this review does not certify accuracy and does not modify any record.</span></label>'+
+  '<button type="button" class="btn primary" onclick="v229AcceptReview()">Continue to print archive</button>'+
+  '<div class="mini" style="margin-top:9px">If the selected pages or any entry changes, the review must be repeated. Printing remains separate from confirming signed paper pages.</div>'+
+  '</div>';
+}
+function v229AcceptReview(){
+ if(!document.getElementById("v229Acknowledge")?.checked){
+  alert("Please review the findings and tick the acknowledgement before continuing.");return;
+ }
+ const draft=nextArchiveDraft();
+ if(!draft.flights.length){alert("There are no flights to review.");return;}
+ pendingArchiveReview=JSON.stringify(draft);
+ go("printarchive");
 }
 function previewNextArchive(){
   if(isInstalledTouchApp())return;
   const draft=nextArchiveDraft();
   if(!draft.flights.length){alert('There are no new flights to archive.');return;}
+  if(!v229ArchiveReviewed(draft)){go("archivereview");return;}
   // Preview opens a printable PDF. This DOES NOT mark any flight as printed.
   const opened=exportPrintableLogbook({
     flights:draft.flights,openingTotals:draft.openingTotals,firstPage:draft.firstPage,
@@ -2685,6 +2968,10 @@ async function confirmPrintedArchive(){
     alert('Preview and print the new pages first. Nothing has been archived yet.');return;
   }
   const draft=nextArchiveDraft();
+  if(!v229ArchiveReviewed(draft)){
+    alert("The reviewed flight batch changed. Review the current pages before confirming any archive.");
+    pendingArchivePreview=null;go("archivereview");return;
+  }
   if(JSON.stringify(draft)!==pendingArchivePreview){
     pendingArchivePreview=null;
     alert('Flights, aircraft or opening balances changed since the preview. Generate a new print preview before confirming.');
@@ -2734,7 +3021,7 @@ async function confirmPrintedArchive(){
     alert('Could not save the confirmed print archive. Your pages have NOT been marked archived. Export a full backup and check available browser storage before trying again. '+String(e.message||e));
     return;
   }
-  pendingArchivePreview=null;
+  pendingArchivePreview=null;pendingArchiveReview=null;
   selectedArchivePageCount=null; // next batch defaults to all remaining pages
   printarchive();
 }
@@ -2905,6 +3192,7 @@ function printarchive(){
   const batches=archivedBatches();
   const draft=nextArchiveDraft();
   const previewReady=!!pendingArchivePreview && pendingArchivePreview===JSON.stringify(draft);
+  const reviewReady=v229ArchiveReviewed(draft);
   const canPrint=draft.flights.length>0;
   const first=!batches.length;
   app.innerHTML=header('Print logbook & archive',
@@ -2946,6 +3234,12 @@ function printarchive(){
         You can also print a partly filled final page; any unused rows will be crossed out with dashes and marked UNUSED.
       </p>
     </div>`:''}
+    ${canPrint?`<div class="card" style="margin-top:14px">
+      <div class="head"><h2>Step 1 — Pre-archive flight review</h2></div>
+      <p>Review possible duplicates, PIC information, unusual UTC times and flight-time totals for these exact pages before printing. Findings never change your records.</p>
+      <div class="mini">${reviewReady?'Review acknowledged for this exact batch. Re-review if you wish.':'Review required before previewing or printing this batch.'}</div>
+      <div class="actions" style="margin-top:10px"><button class="btn ${reviewReady?'':'primary'}" onclick="go('archivereview')">${reviewReady?'Review again':'Review flights before printing'}</button></div>
+    </div>`:''}
     ${draft.demoCount?`<div class="note" style="margin-top:14px;border-color:#b42318">
        <b>Example flights detected:</b> ${draft.demoCount} unchanged demonstration entries are present in this print batch.
        Do not sign these as genuine flight records. You may preview the layout, but archive confirmation is blocked until they are removed.
@@ -2959,10 +3253,10 @@ function printarchive(){
     <div class="card" style="margin-top:16px">
       <div class="head"><h2>Next print batch</h2></div>
       ${canPrint?
-        `<p class="muted">1. Preview and print the A4 landscape pages. 2. Check totals and sign them. 3. Confirm the printed batch to lock the records.</p>
+        `<p class="muted">1. Review the selected flights. 2. Preview and print the A4 landscape pages. 3. Check totals and sign them. 4. Confirm the printed batch to lock the records.</p>
          <div style="display:flex;flex-wrap:wrap;gap:9px">
-           <button class="btn primary" onclick="previewNextArchive()">Preview / Print pages</button>
-           <button class="btn" ${previewReady?'':'disabled'} onclick="confirmPrintedArchive()">Confirm printed & signed</button>
+           <button class="btn primary" ${reviewReady?'':'disabled'} onclick="previewNextArchive()">Preview / Print pages</button>
+           <button class="btn" ${previewReady&&reviewReady?'':'disabled'} onclick="confirmPrintedArchive()">Confirm printed & signed</button>
          </div>`:
         '<p class="muted">All current flights have been archived. New flights will appear here automatically.</p>'}
       <div id="archivePreviewStatus" style="margin-top:10px"></div>
@@ -3072,7 +3366,9 @@ function simulatorDetails(id){
   editingFlightId=null;
   app.innerHTML=header('Simulator session',formatDate(f.date)+' · '+htmlEscape(f.simCategory),
   `<div style="display:flex;gap:8px;flex-wrap:wrap">
-    <button class="btn" onclick="go('logbook')">← Logbook</button>
+    ${v229CanReturnToReview(id)?
+      '<button class="btn" onclick="v229ReturnToReview()">← Back to review</button>':
+      '<button class="btn" onclick="go(\'logbook\')">← Logbook</button>'}
     <button class="btn primary" onclick="editFlight('${f.id}')">${isArchivedFlight(f.id)?'Propose correction':'Edit session'}</button>
     ${!isArchivedFlight(f.id)?`<button class="btn dangerbtn" onclick="openDeleteModal('${f.id}')">Delete session</button>`:''}</div>`)+
     `<div class="card"><h2>${htmlEscape(simulatorDeviceLabel(f))}</h2>
@@ -3098,8 +3394,39 @@ function setFlightEntryMode(mode){
   if(hint)hint.hidden=!quick;
   const description=document.getElementById('flightEntryModeDescription');
   if(description)description.textContent=quick
-    ? 'Essential fields first. Open Full details for multi-pilot, different landing counts or specialist time.'
+    ? 'Core UTC flight details and Save are together. Expand options only when needed.'
     : 'All flight fields are available. Your entries are kept when switching modes.';
+  updateQuickPICVisibility();
+  if(typeof scheduleQuickFlightScrollLock==='function')scheduleQuickFlightScrollLock();
+}
+function updateQuickPICVisibility(){
+  const form=document.getElementById('flightForm');
+  const role=document.getElementById('role')?.value;
+  if(!form||!role)return;
+  form.classList.toggle('quick-pic-self',['PIC','SOLO'].includes(role));
+}
+function toggleQuickEntryExtras(){
+  const form=document.getElementById('flightForm');
+  if(!form||editingFlightId)return;
+  const expanded=form.classList.toggle('quick-entry-extra-open');
+  const button=document.getElementById('quickExtraToggle');
+  if(button){
+    button.setAttribute('aria-expanded',String(expanded));
+    button.textContent=expanded?'− Hide cross-country & remarks':'+ Cross-country & remarks';
+  }
+  if(typeof scheduleQuickFlightScrollLock==='function')scheduleQuickFlightScrollLock();
+}
+function updateQuickNightNotice(outcome){
+  const note=document.getElementById('quickNightNotice');
+  if(!note)return;
+  const ready=['date','dep','off','arr','on'].every(id=>
+    String(document.getElementById(id)?.value||'').trim());
+  const show=!!ready&&!!document.getElementById('nightAuto')?.checked&&!outcome?.ok;
+  note.hidden=!show;
+  note.textContent=show?
+    'Automatic night time unavailable: '+String(outcome.reason||'Missing coordinates')+
+    '. Uncheck Auto for manual entry or add the operating site under Settings → Aerodromes & Helipads.':'';
+  if(typeof scheduleQuickFlightScrollLock==='function')scheduleQuickFlightScrollLock();
 }
 function add(editId=null,quick=false){
 if(editId && isArchivedFlight(editId)&&correctingArchivedId!==editId){
@@ -3131,7 +3458,7 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
    <button class="btn" type="button" onclick="if(confirmLeaveFlightForm()){clearFlightFormGuard();addSimulator()}">Simulator session</button>
  </div>`:''}
 <div class="section-title">Flight identification</div>
-<div class="formgrid">
+<div class="formgrid quick-flight-identification">
   <div class="field"><label>Date</label>${europeanDateField('date','',true)}</div>
   <div class="field"><label>Aircraft</label><select id="aid">${S.aircraft.map(a=>`<option value="${a.id}">${a.icao} — ${a.reg}</option>`).join('')}</select></div>
 
@@ -3175,16 +3502,17 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
 </div>
 
 <div class="section-title">Flight time and function</div>
-<div class="formgrid">
+<div class="formgrid quick-flight-function">
   <div class="field"><label>Total time of flight (minutes)</label><input id="mins" type="number" min="1"></div>
   <div class="field"><label>Pilot function</label><select id="role" onchange="roleChanged()">${['PIC','CO-PILOT','DUAL','SOLO','SPIC','PICUS'].map(x=>`<option>${x}</option>`).join('')}</select></div>
-  <div class="field">
+  <div class="field quick-pic-field">
     <label>Name of PIC</label>
     <input id="picName" list="picPeopleList" autocomplete="off">
     <datalist id="picPeopleList">${S.people.filter(p=>!p.isAccountHolder).map(p=>`<option value="${htmlEscape(p.name)}"></option>`).join('')}</datalist>
     <div class="mini">Choose a saved pilot or type a new name. New names are saved automatically.</div>
   </div>
 </div>
+<div class="quick-self-pic-note" aria-live="polite">PIC name: SELF (automatic)</div>
 
 <div class="section-title quick-entry-advanced">Aircraft and pilot configuration</div>
 <div class="formgrid quick-entry-advanced">
@@ -3204,7 +3532,7 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
 </div>
 
 <div class="section-title">Take-offs and landings</div>
-<div class="formgrid">
+<div class="formgrid quick-flight-movements">
   <div class="field"><label>Take-offs day</label><input id="toDay" type="number" min="0" value="0"></div>
   <div class="field"><label>Take-offs night</label><input id="toNight" type="number" min="0" value="0"></div>
   <div class="field quick-entry-advanced"><label>Landings day</label><input id="ldgDay" type="number" min="0" value="0"><div class="mini">Automatically follows take-offs unless overwritten.</div></div>
@@ -3212,10 +3540,10 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
 </div>
 
 <div class="section-title">Operational condition time</div>
-<div class="formgrid">
+<div class="formgrid quick-flight-conditions">
   <div class="field"><label>Night time (minutes)</label><input id="nightMin" type="number" min="0" value="0">
   <label class="mini" style="display:flex;gap:8px;align-items:center;margin-top:8px">
-    <input id="nightAuto" type="checkbox" checked> Automatically calculate using civil twilight (UTC)
+    <input id="nightAuto" type="checkbox" checked> <span class="full-night-label">Automatically calculate using civil twilight (UTC)</span><span class="quick-night-label">Auto night (UTC)</span>
   </label>
   <div class="mini">Uncheck to manually override night minutes. Older flights retain their original entries until you opt in.</div>
 </div>
@@ -3223,9 +3551,13 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
 </div>
 
 <div id="nightCalcStatus" class="note" role="status" aria-live="polite" style="margin-top:10px">Enter flight date, UTC times and aerodrome coordinates to calculate night time.</div>
+<div id="quickNightNotice" class="quick-entry-night-note" role="status" aria-live="polite" hidden></div>
 <div class="mini quick-entry-advanced" style="margin-top:8px">Night is based on the Sun’s centre 6° below the horizon (civil twilight), not sunset. En-route calculations use a direct-line estimate; always check applicable national rules and official twilight data.</div>
 
-<div class="checkbox-row">
+<div class="quick-entry-extras-switch">
+  <button id="quickExtraToggle" class="btn" type="button" aria-expanded="false" aria-controls="quickExtraFields quickRemarks" onclick="toggleQuickEntryExtras()">+ Cross-country &amp; remarks</button>
+</div>
+<div id="quickExtraFields" class="checkbox-row quick-entry-optional">
   <input id="crossCountry" type="checkbox">
   <label for="crossCountry">Cross-country flight</label>
 </div>
@@ -3260,9 +3592,9 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
   <div id="specialOpsPreview" class="mini" style="margin-top:8px"></div>
 </details>
 
-<div class="field"><label>Remarks and endorsements</label><textarea id="remarks"></textarea></div>
+<div id="quickRemarks" class="field quick-entry-optional"><label>Remarks and endorsements</label><textarea id="remarks"></textarea></div>
 ${(!!editId&&correctingArchivedId===editId)?`<div class="field"><label>Reason for correction (required)</label><textarea id="correctionReason" placeholder="What was incorrect and why?" required></textarea></div>`:''}
-<div class="actions"><button type="button" class="btn" onclick="cancelFlightForm('${editing?existing.id:''}')">Cancel</button><button type="button" id="saveFlightBtn" class="btn primary" onclick="saveFlight()">${(!!editId&&correctingArchivedId===editId)?'Propose correction':editing?'Save changes':'Save flight'}</button></div>
+<div class="actions"><button type="button" class="btn quick-entry-cancel" onclick="cancelFlightForm('${editing?existing.id:''}')">Cancel</button><button type="button" id="saveFlightBtn" class="btn primary" onclick="saveFlight()">${(!!editId&&correctingArchivedId===editId)?'Propose correction':editing?'Save changes':'Save flight'}</button></div>
 </form>`;
 
 populateTimePicker('offHour','offMinute');
@@ -3579,7 +3911,7 @@ function v218UpdateNight(){
  field.style.background=toggle.checked?'#f3f4f6':'';
  if(!toggle.checked){
   status.textContent='Manual night-time entry: confirm the value against applicable official rules. No automatic correction will be applied.';
-  status.dataset.valid='manual';return;
+  status.dataset.valid='manual';updateQuickNightNotice({ok:true});return;
  }
  const outcome=v218NightResult();
  status.dataset.valid=outcome.ok?'yes':'no';
@@ -3590,6 +3922,7 @@ function v218UpdateNight(){
   if(arrCode&&!v218SavedPoint(arrCode))void v219RequestICAO(arrCode);
   status.textContent='Automatic night time unavailable: '+outcome.reason+
     ' Airport ICAO codes are looked up online when needed. For unknown helipads or operating sites, save their coordinates in Settings → Aerodromes & Helipads, or choose manual night time.';
+  updateQuickNightNotice(outcome);
   return;
  }
  field.value=outcome.nightMinutes;
@@ -3609,6 +3942,7 @@ function v218UpdateNight(){
  }
  if(outcome.distanceKm>250)info+=' Long route: real track/twilight can differ; review manually.';
  status.textContent=info;
+ updateQuickNightNotice(outcome);
 }
 function v218InitNight(existing){
  const old=existing?.nightCalculation;
@@ -3645,6 +3979,7 @@ function roleChanged(){
     field.readOnly=false;
     field.style.background='#fff';
   }
+  if(typeof updateQuickPICVisibility==='function')updateQuickPICVisibility();
 }
 
 function showFormError(msg){
@@ -3764,7 +4099,7 @@ function saveFlight(){
   clearFlightFormGuard();
   flight(f.id);
 }
-function flight(id){const entry=effectiveFlight(S.flights.find(x=>x.id===id));if(isSimulatorSession(entry))return simulatorDetails(id);editingFlightId=null;let f=entry,a=ac(f.aid);app.innerHTML=header('Flight details',`${formatDate(f.date)} · ${a.icao}`,`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="go('logbook')">← Logbook</button><button class="btn primary" onclick="editFlight('${id}')">${isArchivedFlight(id)?'Propose correction':'Edit flight'}</button>${!isArchivedFlight(id)?`<button class="btn dangerbtn" onclick="openDeleteModal('${id}')">Delete flight</button>`:''}</div>`)+`<div class="card">
+function flight(id){const entry=effectiveFlight(S.flights.find(x=>x.id===id));if(isSimulatorSession(entry))return simulatorDetails(id);editingFlightId=null;let f=entry,a=ac(f.aid);app.innerHTML=header('Flight details',`${formatDate(f.date)} · ${a.icao}`,`<div style="display:flex;gap:8px;flex-wrap:wrap">${v229CanReturnToReview(id)?'<button class="btn" onclick="v229ReturnToReview()">← Back to review</button>':'<button class="btn" onclick="go(\'logbook\')">← Logbook</button>'}<button class="btn primary" onclick="editFlight('${id}')">${isArchivedFlight(id)?'Propose correction':'Edit flight'}</button>${!isArchivedFlight(id)?`<button class="btn dangerbtn" onclick="openDeleteModal('${id}')">Delete flight</button>`:''}</div>`)+`<div class="card">
 <div class="icao">${a.icao}</div><div class="muted">${a.reg} · ${a.manufacturer} ${a.model} ${a.variant}</div>
 <h2 style="margin-top:22px">${f.dep} ${f.off||''} → ${f.arr} ${f.on||''}</h2>
 <div class="kpi-grid"><div class="card"><div class="label">Total time</div><div class="big">${fmt(f.mins)}</div></div><div class="card"><div class="label">Pilot function</div><div class="big" style="font-size:20px">${f.role}</div></div><div class="card"><div class="label">Night</div><div class="big">${fmt(f.nightMin||0)}</div></div><div class="card"><div class="label">IFR</div><div class="big">${fmt(f.ifrMin||0)}</div></div></div>
@@ -3932,10 +4267,11 @@ function pilots(){
           ${p.isAccountHolder
             ? `<button class="btn" type="button" onclick="go('profile')">Profile</button>`
             : `<button class="btn" type="button" onclick="editPerson('${p.id}')">Edit</button>`}
+          <button class="btn" type="button" onclick="v227EditSignature('${p.id}')">Signature</button>
         </div>
         <p><b>${linked.length}</b> <span class="muted">flight${linked.length===1?'':'s'} recorded with this person as PIC</span></p>
         ${p.notes?`<div class="muted" style="margin-bottom:10px">${htmlEscape(p.notes)}</div>`:''}
-        <div class="signature-placeholder">Signature profile: planned for V2 — this pilot profile will be the link point for reusable signatures/certifications.</div>
+        <div class="mini"><b>Signature:</b> ${v227IsPNG(p.savedSignatureData)?'Saved to pilot profile':'Not saved'} · Endorsements still require approval for each signing.</div>
       </div>`;
     }).join('');
 
@@ -3963,7 +4299,7 @@ function newPerson(editId=null){
         <div class="field"><label>Licence / identifier</label><input id="personLicence" value="${existing?htmlEscape(existing.licence||''):''}" placeholder="Optional"></div>
         <div class="field"><label>Notes</label><input id="personNotes" value="${existing?htmlEscape(existing.notes||''):''}" placeholder="Optional"></div>
       </div>
-      <div class="signature-placeholder" style="margin-top:14px">Signature association will be added later in V2. This profile ID is already stored with linked flights so signatures can be attached to the person rather than re-entered each time.</div>
+      <div class="mini" style="margin-top:14px">After saving, use Signature on this pilot’s card to capture or update their signature. It will never be applied automatically.</div>
       <div class="actions"><button class="btn primary">${existing?'Save changes':'Save pilot'}</button></div>
     </form>`;
 }
@@ -4015,6 +4351,94 @@ function savePerson(e){
 }
 
 
+
+
+/* V2.27 — consent-based pilot profile signatures.
+ * Records are stored as PNG snapshots per person. Endorsements embed a copy,
+ * not a live reference. Not independent identity verification or a QES.
+ */
+function v227IsPNG(x){
+  return typeof x==='string' && x.length<=250000 &&
+    /^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/.test(x);
+}
+function v227EditSignature(id){
+  const person=personById(id);
+  if(!person){go('pilots');return;}
+  const has=v227IsPNG(person.savedSignatureData);
+  app.innerHTML=header('Pilot signature','Manage a reusable signature for '+person.name,
+    '<button class="btn" type="button" onclick="go(\'pilots\')">← Pilots</button>')+
+    '<div class="card v227-signature-view">'+
+    '<h2>'+htmlEscape(person.name)+'</h2>'+
+    '<p class="muted">The named pilot must draw or approve storing their own signature. A saved signature is never applied to an endorsement automatically.</p>'+
+    (has?'<div class="v227-saved-image"><b>Saved signature</b><img alt="Saved pilot signature" src="'+person.savedSignatureData+'">'+
+      '<div class="mini">Saved '+htmlEscape(person.savedSignatureAt?formatDateTime(person.savedSignatureAt):'previously')+'. Existing signed records remain unchanged if you replace or remove this signature.</div></div>':
+      '<div class="note">No saved signature yet.</div>')+
+    '<div class="signature-canvas-wrap"><b>Draw the signature</b><canvas id="signatureCanvas" width="900" height="260"></canvas>'+
+      '<button type="button" class="btn" onclick="clearEndorsementSignature()">Clear</button></div>'+
+    '<label class="v227-confirm"><input type="checkbox" id="v227StoreConsent"> I am the named pilot, or the pilot is present and explicitly agrees to store this signature in their profile.</label>'+
+    '<p class="mini">Saved signatures can be included in cloud synchronization and backups. Treat them as sensitive personal information. Saving a profile signature does not approve signing future records.</p>'+
+    '<div class="actions"><button type="button" class="btn primary" onclick="v227SaveSignature(\''+htmlEscape(person.id)+'\')">'+(has?'Replace signature':'Save signature')+'</button>'+
+    (has?'<button type="button" class="btn dangerbtn" onclick="v227RemoveSignature(\''+htmlEscape(person.id)+'\')">Remove</button>':'')+'</div></div>';
+  setupEndorsementSignaturePad();
+}
+function v227SaveSignature(id){
+  const person=personById(id),canvas=document.getElementById('signatureCanvas');
+  if(!person||!canvas)return;
+  if(!document.getElementById('v227StoreConsent')?.checked){
+    alert('Please confirm the named pilot’s consent to store the signature.');return;
+  }
+  if(!endorsementSignatureDirty){alert('Draw the signature before saving.');return;}
+  const png=canvas.toDataURL('image/png');
+  if(!v227IsPNG(png)){alert('Invalid or oversized signature. Please draw it again.');return;}
+  if(v227IsPNG(person.savedSignatureData)&&
+     !confirm('Replace this saved signature? Already signed endorsements will stay unchanged.'))return;
+  const before={savedSignatureData:person.savedSignatureData,savedSignatureAt:person.savedSignatureAt,savedSignatureConsentAt:person.savedSignatureConsentAt};
+  person.savedSignatureData=png;
+  person.savedSignatureAt=new Date().toISOString();
+  person.savedSignatureConsentAt=person.savedSignatureAt;
+  if(!save()){Object.assign(person,before);return;}
+  v227EditSignature(id);
+}
+function v227RemoveSignature(id){
+  const person=personById(id);
+  if(!person||!v227IsPNG(person.savedSignatureData))return;
+  if(!confirm('Remove this saved signature? Previously signed endorsements will not change.'))return;
+  const before={savedSignatureData:person.savedSignatureData,savedSignatureAt:person.savedSignatureAt,savedSignatureConsentAt:person.savedSignatureConsentAt};
+  delete person.savedSignatureData;delete person.savedSignatureAt;delete person.savedSignatureConsentAt;
+  if(!save()){Object.assign(person,before);return;}
+  v227EditSignature(id);
+}
+function v227SignerApproved(){
+  if(document.getElementById('v227ApproveSignature')?.checked)return true;
+  alert('The named endorser must review and expressly approve signing this particular endorsement.');
+  return false;
+}
+function v227WriteEndorsementSignature(e,person,png,method){
+  if(!e||!person||e.signatoryPersonId!==person.id||e.signatureData||
+    v2ArchiveBridge.isArchived(S,e.id)||!v227IsPNG(png))return false;
+  const before={signatureData:e.signatureData,signedAt:e.signedAt,signedName:e.signedName,
+    signedLicence:e.signedLicence,signedSource:e.signedSource,signedConsentAt:e.signedConsentAt};
+  const now=new Date().toISOString();
+  e.signatureData=png;e.signedAt=now;e.signedName=person.name;
+  e.signedLicence=person.licence||'';e.signedSource=method;e.signedConsentAt=now;
+  if(!save()){Object.assign(e,before);return false;}
+  return true;
+}
+function v227UseSavedSignature(id){
+  const e=endorsementById(id);
+  if(!e||e.signatureData||v2ArchiveBridge.isArchived(S,id)){
+    alert('This endorsement is already signed or archived.');return;
+  }
+  const person=personById(e.signatoryPersonId);
+  if(!person||!v227IsPNG(person.savedSignatureData)){
+    alert('No valid saved signature for this endorser. Draw a new signature instead.');return;
+  }
+  if(!v227SignerApproved())return;
+  if(!confirm('Confirm that '+person.name+' has personally reviewed and approved this exact endorsement: '+e.title+'?'))return;
+  if(!v227WriteEndorsementSignature(e,person,person.savedSignatureData,'saved-profile'))return;
+  v2EndorsementNotice='Endorsement signed with the endorser’s explicit approval using a saved signature. The signature is independently copied to this record.';
+  endorsements();
+}
 function endorsementById(id){return (S.endorsements||[]).find(e=>e.id===id)}
 // V2.1 - signed on installed app, archived from browser.
 let v2EndorsementNotice='';
@@ -4149,7 +4573,7 @@ function endorsementForm(editId=null){
           <option value="">Select saved pilot</option>
           ${signers.map(p=>`<option value="${p.id}"${e.signatoryPersonId===p.id?' selected':''}>${htmlEscape(p.name)}${p.licence?' — '+htmlEscape(p.licence):''}</option>`).join('')}
         </select>
-        <div class="mini">The endorser is linked to a saved pilot profile so a reusable signature can be associated with that profile later.</div>
+        <div class="mini">The endorser is linked to a saved pilot profile. Using a saved signature requires their explicit approval for each endorsement.</div>
       </div>
     </div>
 
@@ -4248,6 +4672,7 @@ function signEndorsement(id){
 
     <div class="note" style="margin-bottom:12px">Prototype signature capture only. This is not yet presented as a qualified or authority-approved electronic signature. The endorser should review the text above before signing.</div>
 
+    ${v227IsPNG(signer.savedSignatureData)?`<div class="v227-saved-option"><b>Saved signature available</b><p class="muted">The signer may approve applying their profile signature to this specific endorsement.</p><button type="button" class="btn" onclick="v227UseSavedSignature('${e.id}')">Use saved signature</button></div>`:''}
     <div class="signature-canvas-wrap">
       <div style="font-weight:700;margin-bottom:8px">Signature of ${htmlEscape(signer.name)}</div>
       <canvas id="signatureCanvas" width="900" height="260"></canvas>
@@ -4256,6 +4681,8 @@ function signEndorsement(id){
         <button class="btn primary" type="button" onclick="applyEndorsementSignature('${e.id}')">Apply signature</button>
       </div>
     </div>
+    <label class="v227-confirm"><input type="checkbox" id="v227ApproveSignature"> I confirm that ${htmlEscape(signer.name)} has reviewed this particular endorsement and expressly approves signing it now.</label>
+    <p class="mini">This checkbox is an operator confirmation, not independently verified signatory identity or a qualified electronic signature.</p>
   </div>`;
 
   setupEndorsementSignaturePad();
@@ -4322,15 +4749,8 @@ function applyEndorsementSignature(id){
   let signer=personById(e.signatoryPersonId);
   if(!signer) return;
 
-  const previous={signatureData:e.signatureData,signedAt:e.signedAt,signedName:e.signedName,signedLicence:e.signedLicence};
-  e.signatureData=canvas.toDataURL('image/png');
-  e.signedAt=new Date().toISOString();
-  e.signedName=signer.name;
-  e.signedLicence=signer.licence||'';
-  if(!save()){
-    Object.assign(e,previous);
-    return;
-  }
+  if(!v227SignerApproved())return;
+  if(!v227WriteEndorsementSignature(e,signer,canvas.toDataURL('image/png'),'drawn'))return;
   v2EndorsementNotice=isStandaloneApp()
    ?'Endorsement signed and saved on this device. With extended cloud sync enabled, it will appear on your other devices after Cloud synced. Printing and archive confirmation remain web-only.'
    :'Endorsement signed and saved in this browser. Awaiting print archive confirmation.';
@@ -4391,9 +4811,9 @@ function totals(){
   </div>
   <div class="card" style="margin-top:16px">
     <div class="head"><h2>Specialised helicopter operations experience</h2></div>
-    <div class="mini" style="margin-bottom:12px">Shows logged participation and activity hours for employment applications. Categories may overlap and do not add to total flight time. Previous paper hours have not been allocated to these categories.</div>
+    <div class="mini" style="margin-bottom:12px">Historical operation hours from your previous logbook are included separately from HeliLog flights. Categories may overlap and must not be added together or added to total flight time.</div>
     ${opsTotals.length?`<div style="overflow-x:auto"><table>
-      <thead><tr><th>Operation</th><th>Flights</th><th>Hours</th><th>By ICAO type</th></tr></thead>
+      <thead><tr><th>Operation</th><th>HeliLog flights</th><th>Previous</th><th>Recorded here</th><th>Combined</th><th>By ICAO type (HeliLog flights only)</th></tr></thead>
       <tbody>${opsTotals.map(op=>{
         const byType=new Map();
         effectiveFlights().filter(f=>Object.prototype.hasOwnProperty.call(f.specialOps||{},op.code)).forEach(f=>{
@@ -4401,10 +4821,10 @@ function totals(){
           byType.set(type,(byType.get(type)||0)+Number(f.specialOps[op.code]||0));
         });
         return `<tr><td><b>${htmlEscape(op.code)}</b><div class="mini">${htmlEscape(op.label)}</div></td>
-          <td>${op.flights}</td><td><b>${fmt(op.minutes)}</b></td>
+          <td>${op.flights}</td><td>${fmt(op.previousMinutes)}</td><td>${fmt(op.recordedMinutes)}</td><td><b>${fmt(op.minutes)}</b></td>
           <td>${[...byType.entries()].map(([type,mins])=>`${htmlEscape(type)} ${fmt(mins)}`).join(' · ')}</td></tr>`;
       }).join('')}</tbody></table></div>`:
-      '<div class="muted">No specialised operations have been recorded yet. Add them under More details when entering a flight.</div>'}
+      '<div class="muted">No specialised operations recorded yet. Add previous experience through Settings → Import previous logbook totals, or use More details on a new flight.</div>'}
     <div class="mini" style="margin-top:12px">For example, VRLL and HESLO 2 may describe overlapping portions of the same flight. Their category totals must not be added together.</div>
   </div>`;
 }
@@ -4451,6 +4871,13 @@ function editBroughtForwardTotals(){
       ${countField('bfLdgNight','Landings night','ldgNight')}
     </div>
 
+    <div class="section-title">Previous specialised helicopter operations</div>
+    <div class="mini" style="margin-bottom:10px">Optional historical operation time. These categories describe activities within your previous flight hours, not additional flight time. Individual categories may overlap.</div>
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px">
+      <button type="button" class="btn" onclick="openBroughtForwardSpecialOps()">Specialised operations…</button>
+      <span id="bfSpecialOpsSummary" class="mini"></span>
+    </div>
+
     <div class="section-title">Flight time by aircraft type</div>
     <div class="mini">Optional: enter your paper-logbook hours for each ICAO type. These hours are a breakdown of the Total above, not additional flying time.</div>
     <datalist id="bfICAOTypes">${[...new Set(S.aircraft.map(a=>String(a.icao||'').trim().toUpperCase()).filter(Boolean))]
@@ -4460,10 +4887,89 @@ function editBroughtForwardTotals(){
 
     <div id="bfError" class="errorbox"></div>
     <div class="actions"><button type="button" class="btn" onclick="go('profile')">Cancel</button><button class="btn primary">${correcting?'Save correction':'Import totals'}</button></div>
-  </form>`;
+  </form>
+  <div id="bfSpecialOpsModal" class="modalbackdrop" role="presentation" onclick="if(event.target===this)closeBroughtForwardSpecialOps()">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="bfSpecialOpsTitle" style="max-width:720px;max-height:85vh;overflow-y:auto">
+      <h3 id="bfSpecialOpsTitle">Previous specialised operations</h3>
+      <p class="mini">Enter hours already included in the previous-logbook total. Values are separate per operation and can overlap. Empty fields mean 0:00.</p>
+      <div class="formgrid">
+        ${SPECIAL_OPS.map(op=>`<div class="field"><label for="bfSpecialOp_${op.code}">${htmlEscape(op.label)}</label>
+          <input id="bfSpecialOp_${op.code}" type="text" inputmode="decimal" placeholder="0:00" autocomplete="off"></div>`).join('')}
+      </div>
+      <div id="bfSpecialOpsError" class="errorbox" role="alert" style="margin-top:12px"></div>
+      <div class="modal-actions" style="margin-top:16px">
+        <button class="btn" type="button" onclick="closeBroughtForwardSpecialOps()">Cancel</button>
+        <button class="btn primary" type="button" onclick="applyBroughtForwardSpecialOps()">Apply to import</button>
+      </div>
+      <p class="mini" style="margin-top:12px">Applying updates only this unsaved form. Use Import totals / Save correction on the main page to confirm and synchronize the values.</p>
+    </div>
+  </div>`;
+  bfSpecialOpsDraft={...validPreviousSpecialOps(S.broughtForward?.specialOps)};
+  updateBroughtForwardSpecialOpsSummary();
   if((S.broughtForwardByType||[]).length){
     S.broughtForwardByType.forEach(e=>addBroughtForwardTypeRow(e.icao,e.minutes));
   }else addBroughtForwardTypeRow();
+}
+
+// Previous operations are kept inside broughtForward, which is already
+// independently revision-checked as one cloud settings record.
+let bfSpecialOpsDraft=null;
+function validPreviousSpecialOps(value){
+  if(!value||typeof value!=='object'||Array.isArray(value))return {};
+  const result={};
+  for(const op of SPECIAL_OPS){
+    if(!Object.prototype.hasOwnProperty.call(value,op.code))continue;
+    const n=Number(value[op.code]);
+    if(Number.isSafeInteger(n)&&n>=0)result[op.code]=n;
+  }
+  return result;
+}
+function updateBroughtForwardSpecialOpsSummary(){
+  const target=document.getElementById('bfSpecialOpsSummary');
+  if(!target)return;
+  const saved=validPreviousSpecialOps(bfSpecialOpsDraft);
+  const count=Object.values(saved).filter(n=>n>0).length;
+  target.textContent=count?count+' operation '+(count===1?'category':'categories')+' entered':'No previous operation time entered';
+}
+function openBroughtForwardSpecialOps(){
+  const modal=document.getElementById('bfSpecialOpsModal');
+  if(!modal||!bfSpecialOpsDraft||S.printArchive?.batches?.length)return;
+  const saved=validPreviousSpecialOps(bfSpecialOpsDraft);
+  for(const op of SPECIAL_OPS){
+    const input=document.getElementById('bfSpecialOp_'+op.code);
+    if(input)input.value=broughtForwardInputMinutes(saved[op.code]||0);
+  }
+  const error=document.getElementById('bfSpecialOpsError');
+  if(error){error.textContent='';error.classList.remove('show');}
+  modal.classList.add('open');
+  document.getElementById('bfSpecialOp_'+SPECIAL_OPS[0].code)?.focus();
+}
+function closeBroughtForwardSpecialOps(){
+  const modal=document.getElementById('bfSpecialOpsModal');
+  if(!modal?.classList.contains('open'))return;
+  modal.classList.remove('open'); // Unsaved edits in the popup are discarded.
+  document.querySelector('[onclick="openBroughtForwardSpecialOps()"]')?.focus();
+}
+function applyBroughtForwardSpecialOps(){
+  const modal=document.getElementById('bfSpecialOpsModal');
+  if(!modal?.classList.contains('open'))return;
+  const next={},error=document.getElementById('bfSpecialOpsError');
+  const total=parseBroughtForwardMinutes(document.getElementById('bfTotal')?.value);
+  if(total===null||!Number.isSafeInteger(total)||total<0){
+    error.textContent='Enter a valid overall previous flight-time total in the main form first.';
+    error.classList.add('show');return;
+  }
+  for(const op of SPECIAL_OPS){
+    const value=parseBroughtForwardMinutes(document.getElementById('bfSpecialOp_'+op.code)?.value);
+    if(value===null||!Number.isSafeInteger(value)||value<0||value>total){
+      error.textContent=op.code+' must be a valid H:MM or decimal-hours value not exceeding the previous flight-time total '+fmt(total)+'.';
+      error.classList.add('show');return;
+    }
+    if(value>0)next[op.code]=value;
+  }
+  bfSpecialOpsDraft=next;
+  updateBroughtForwardSpecialOpsSummary();
+  closeBroughtForwardSpecialOps();
 }
 
 function addBroughtForwardTypeRow(icao='',minutes=0){
@@ -4489,6 +4995,10 @@ function addBroughtForwardTypeRow(icao='',minutes=0){
 
 function saveBroughtForwardTotals(ev){
   ev.preventDefault();
+  if(S.printArchive?.batches?.length){
+    alert('A confirmed print archive already uses these opening balances. No previous-logbook values were changed.');
+    return;
+  }
   let durationMap={
     total:'bfTotal',engineSE:'bfEngineSE',engineME:'bfEngineME',single:'bfSingle',multi:'bfMulti',
     pic:'bfPIC',copilot:'bfCopilot',dual:'bfDual',instructor:'bfInstructor',
@@ -4512,6 +5022,15 @@ function saveBroughtForwardTotals(ev){
     error.scrollIntoView({block:'center',behavior:'smooth'});
     return;
   }
+  const previousOps=validPreviousSpecialOps(bfSpecialOpsDraft??S.broughtForward?.specialOps);
+  for(const [code,minutes] of Object.entries(previousOps)){
+    if(minutes>next.total){
+      const error=document.getElementById('bfError');
+      error.textContent='Previous '+code+' time exceeds the overall previous flight time. Adjust the category in Specialised operations.';
+      error.classList.add('show');error.scrollIntoView({block:'center',behavior:'smooth'});return;
+    }
+  }
+  next.specialOps=previousOps;
   // Retain historical SP/SE and SP/ME values for old confirmed archive layouts,
   // but do not mix engine type with pilot configuration for new records.
   next.spSE=Number(S.broughtForward?.spSE||0);
@@ -4563,11 +5082,16 @@ function saveBroughtForwardTotals(ev){
     : 'Import these paper logbook totals as your brought-forward career totals?\n\nThis is intended as a one-time setup step.');
   if(!ok) return;
 
+  const previousState={broughtForward:S.broughtForward,broughtForwardByType:S.broughtForwardByType,
+    broughtForwardImported:S.broughtForwardImported,broughtForwardImportedAt:S.broughtForwardImportedAt};
   S.broughtForward=next;
   S.broughtForwardByType=typeEntries;
   S.broughtForwardImported=true;
-  if(!S.broughtForwardImportedAt) S.broughtForwardImportedAt=new Date().toISOString();
-  save();
+  if(!S.broughtForwardImportedAt)S.broughtForwardImportedAt=new Date().toISOString();
+  if(!save()){
+    Object.assign(S,previousState);return;
+  }
+  bfSpecialOpsDraft=null;
   settings();
 }
 
@@ -5442,17 +5966,33 @@ function deleteQualification(id){
   save();
   profile();
 }
-/* V2.26. Maintain topic instructions and release updates here. */
+/* V2.31.4. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
+  {
+    "category": "Records & signatures",
+    "title": "Reusable pilot signatures",
+    "summary": "Capture a profile signature and approve use for each endorsement.",
+    "steps": [
+      "Open Pilots and choose Signature on the relevant person’s card.",
+      "Have the named pilot draw a signature and explicitly consent to saving it.",
+      "Create an endorsement and select the correct saved instructor or examiner.",
+      "The signer must review the record and approve it before applying either their saved signature or a newly drawn signature.",
+      "Every signed endorsement keeps its own copy; updating the profile cannot change previously signed records.",
+      "The capture feature does not independently verify identity or create a qualified electronic signature."
+    ],
+    "route": "pilots",
+    "action": "Manage pilot signatures"
+  },
   {
     "category": "Start here",
     "title": "First-time setup",
     "summary": "Prepare your profile, aircraft and first entry.",
     "steps": [
-      "Sign in and check your name, licence and authority in Profile.",
-      "Add your helicopter in Aircraft, using its registration and ICAO type designator.",
-      "Add other commanders or instructors under Pilots when relevant.",
-      "Enter a flight, review it in Logbook and wait for the cloud indicator to show Synced."
+      "Sign in to your private HeliLog account. Your first device initializes the shared cloud logbook; a new, clean device joins the same records after signing in.",
+      "In Profile check your name, licence, authority, ratings and medical details. Add your helicopter in Aircraft, including its registration and ICAO type designator.",
+      "Add commanders or instructors under Pilots. Saved signatures require the pilot’s consent and may only be used on endorsements with separate approval.",
+      "If moving from an older paper logbook, enter brought-forward flight totals under Settings and verify them against the paper record before entering new flights.",
+      "Enter a flight using UTC time, review it in Logbook, then use the cloud status pill to confirm Synced. Keep a separate recovery backup of important records."
     ],
     "route": "profile",
     "action": "Open profile"
@@ -5478,8 +6018,12 @@ const HELILOG_GUIDE_TOPICS=[
       "On mobile tap Flight, or use Quick flight from the dashboard.",
       "Review aircraft and departure/arrival locations and enter the correct flight date.",
       "Enter both times in UTC (24-hour HH:mm or HHmm).",
-      "Choose pilot function, operational conditions, take-offs and remarks, then Save.",
-      "Use Full details for extra fields; switching keeps values you already entered."
+      "The compact Quick Flight screen pairs date/aircraft, departure/UTC time, arrival/UTC time, flight duration/function, take-offs and Night/IFR. Save stays above the phone navigation bar.",
+      "Quick Flight stays at the top and does not drift when you swipe if all fields fit above the phone navigation. Opening the keyboard unlocks normal scrolling; expanding fields or showing a long warning also permits scrolling whenever needed.",
+      "For PIC or SOLO, the Name of PIC is SELF automatically; DUAL, SPIC, PICUS and CO-PILOT show the commander's PIC field.",
+      "Night time stays on automatic UTC/civil-twilight calculation by default. If coordinates are unavailable, an on-screen warning tells you to choose manual night time or set up your site.",
+      "Open Cross-country & remarks only when needed. Use Full details for multi-pilot configuration, independent landing counts, instructor and specialised operations.",
+      "Switching Quick/Full retains anything you entered, and Save still uses exactly the same validation as the full form. Small screens or additional warnings may require scrolling."
     ],
     "route": "quickadd",
     "action": "Open Quick Flight"
@@ -5520,6 +6064,10 @@ const HELILOG_GUIDE_TOPICS=[
       "Apply date and operation filters; the filtered totals reflect your selection.",
       "Open Totals for PIC, Co-pilot, Dual, aircraft engine and pilot-configuration breakdowns.",
       "Historical paper logbook time can be entered as brought-forward totals in Settings.",
+      "Under Settings → Import previous logbook totals, enter your carried-forward flight time, pilot/engine breakdown and aircraft-type hours.",
+      "For historical specialist operations, use Specialised operations… to open a compact popup. Enter hours for VRLL, HESLO, HEC, NVIS, HHO, offshore and other categories as H:MM or decimal hours.",
+      "Apply the popup values, then confirm Import totals / Save correction on the main form. Cancelling the popup discards only the edits made within the popup.",
+      "On Totals, Previous + Recorded here = Combined specialised-operation hours. Historical hours do not create flights, and overlapping categories are not added to Total flying time.",
       "Review all totals against original documents before using them in official applications."
     ],
     "route": "totals",
@@ -5532,11 +6080,32 @@ const HELILOG_GUIDE_TOPICS=[
     "steps": [
       "On the desktop website, use Logbook → Export for CSV or a printable PDF copy.",
       "Exporting a PDF does not create numbered, permanently archived pages.",
-      "Use Print Archive in a web browser to review and confirm continuous numbered pages and cumulative totals.",
-      "Keep signed records safely; if archived records require changes, use an addendum or correction workflow."
+      "On the web (not the installed iPhone app), open Print Archive and choose the number of pages to include in the next batch.",
+      "Select Review flights before printing. It flags possible duplicate flights, incomplete PIC names, unusual UTC times and discrepancies in totals—without changing any record.",
+      "Open the flagged entries to make corrections if needed. Acknowledge the review for this exact selection; changes to flights or selected pages require another review.",
+      "Only then preview the numbered pages, verify the running totals, print and physically sign them, and separately confirm the printed batch in HeliLog.",
+      "Printing a PDF alone does not create a signed archive. Confirmed pages are locked; amend them through a signed correction addendum."
     ],
     "route": "logbook",
     "action": "Open logbook"
+  },
+  {
+    "category": "Review",
+    "title": "Pre-archive flight review",
+    "summary": "Check the exact flights about to be printed for common issues before signing.",
+    "steps": [
+      "On the web open Print Archive, then choose how many pages to include in the next batch.",
+      "Select Review flights before printing to inspect the selected batch. A possible duplicate is compared with your entire logbook, including earlier archived entries.",
+      "Check missing PIC information and pilot links, flight duration versus UTC off/on times (including overnight flights), unusual very short or long flights, Night/IFR/instructor minutes and take-off versus landing counts.",
+      "Review the independent calculations of PIC/Co-pilot/Dual, engine and single-/multi-pilot experience, and carried-forward plus closing totals.",
+      "Review overlapping flight intervals, including multiple flights on the same day or an overnight arrival on the next UTC day. Flights that end when another starts are not overlaps.",
+      "Use View entry or View related entry to inspect a flagged flight, then select Back to review to return to the same finding. A ticked acknowledgement stays checked only if the selected batch has not changed.",
+      "Edit only an unarchived entry through its normal form. After any flight data or selected page changes, review and acknowledge the updated batch again; never silently change or automatically delete anything.",
+      "Acknowledgement allows printing after you have checked exceptions; it is not official certification. If selected pages or flight records change, repeat the review.",
+      "Print, verify and sign the paper pages before separately confirming the archive. Archived records remain protected."
+    ],
+    "route": "printarchive",
+    "action": "Open Print Archive"
   },
   {
     "category": "Review",
@@ -5556,10 +6125,14 @@ const HELILOG_GUIDE_TOPICS=[
     "title": "Cloud sync and offline flights",
     "summary": "Read the compact sync indicator and protect pending changes.",
     "steps": [
-      "The cloud pill indicates Synced, pending changes, offline status or a sync issue. Tap it for details.",
-      "Flights may be entered offline. Reconnect and allow synchronization before using another device.",
-      "Resolve any reported conflicts carefully; do not assume one device always has the correct record.",
-      "Do not clear browser or app storage while records are pending or troubleshooting sync."
+      "HeliLog uses one shared cloud logbook per account, not a permanent primary or secondary device. All signed-in devices should ultimately use the same cloud records.",
+      "A brand-new device normally joins the existing account automatically. A previously used device with its own local records may need a review before adopting cloud copies.",
+      "Finish cloud setup under Settings → Cloud account. When joining existing cloud data, HeliLog preserves the device’s earlier records in a downloadable pre-sync safety snapshot.",
+      "Synced means the active workspace has completed record synchronization; Pending means unsent edits; Offline means local changes await internet; Conflict means you must review different copies.",
+      "Flights may be entered offline. Reconnect and allow synchronization before editing the same entries on another device.",
+      "The Check sign-in connection button confirms authentication; use Check / sync now to synchronize records. A valid sign-in is not proof that all records are synced.",
+      "Resolve conflicts on the specific device reporting them. Compare copies and choose deliberately; HeliLog never automatically merges conflicting signatures or signed archives.",
+      "Never clear iPhone app data, uninstall your only copy or force-upload while records are unsynced or being recovered."
     ],
     "route": "cloud",
     "action": "Cloud account"
@@ -5569,10 +6142,13 @@ const HELILOG_GUIDE_TOPICS=[
     "title": "Backups and recovery",
     "summary": "Preserve a safe copy of your logbook and signed records.",
     "steps": [
-      "Settings → Backups shows available backup, verification and recovery functions.",
-      "Keep downloaded packages securely: they may include personal details and signatures.",
-      "Cloud recovery can verify a package without permitting it to overwrite your synced history.",
-      "Avoid resetting the app or deleting storage before preserving records or consulting support."
+      "Settings → Backup & Recovery has download, health-check and restoration tools. Keep independent backups before important archive operations.",
+      "Downloads may include personal details, licences and images of signatures: save them securely and do not publish or share backup files.",
+      "If a pilot or signed endorsement vanishes after joining an existing cloud account, do not reinstall the app or import an old full workspace over the newer one.",
+      "On the original device open Settings → Cloud account → Download preserved pre-sync data. Then choose Review preserved pilots and endorsements.",
+      "After resolving any local sync conflict using Check / sync now, select Preview safe restoration. It checks which records are truly missing from the active device and cloud.",
+      "Read the list and choose Restore these missing records only if it is correct. The recovery creates a device-local safety copy first and syncs the recovered pilot/signature and endorsement without replacing other records.",
+      "Signed endorsements retain their stored signatures and dates. A collision or unavailable signatory cannot be restored automatically and needs separate attention."
     ],
     "route": "backups",
     "action": "Backup & recovery"
@@ -5592,6 +6168,56 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {
+    "v": "V2.31.4",
+    "name": "Quick Flight scroll behavior",
+    "detail": "When the compact Quick Flight form fits on a phone screen, it stays fixed while swiping. Focusing a typing field unlocks normal scrolling; closing the keyboard locks it again if everything fits."
+  },
+  {
+    "v": "V2.31.3",
+    "name": "Return from flight review",
+    "detail": "Viewing a flagged flight now offers Back to review, resuming the same warning and the checkbox if the batch remains unchanged. Editing flights or page selection requires renewed acknowledgement."
+  },
+  {
+    "v": "V2.31.2",
+    "name": "Quick Flight header and positioning",
+    "detail": "Restores the preferred top-aligned Quick Flight screen and gives the iPhone status-bar area more clearance for a clearer heading."
+  },
+  {
+    "v": "V2.31.2",
+    "name": "One-hand Quick Flight reach",
+    "detail": "On phones, Quick Flight sits lower when spare screen space is available, without hiding fields on shorter displays. Keyboard entry restores normal scrolling."
+  },
+  {
+    "v": "V2.31",
+    "name": "Compact Quick Flight entry",
+    "detail": "Paired fields and reduced vertical space on phones, automatic SELF PIC display, optional cross-country and remarks, and an always-accessible Save control. Existing validation is unchanged."
+  },
+  {
+    "v": "V2.30",
+    "name": "Previous logbook specialised operations",
+    "detail": "Enter historical HESLO, VRLL, HEC, NVIS, hoist and other helicopter activity hours in a popup, with separate previous, recorded and combined totals."
+  },
+  {
+    "v": "V2.29.1",
+    "name": "Pre-archive review, including overlapping UTC flights",
+    "detail": "Now flags overlapping UTC flight intervals (including overnight and earlier archived entries) as well as duplicates, PIC information and running totals. Expanded onboarding and recovery guidance."
+  },
+  {
+    "v": "V2.28.4",
+    "name": "Selective iPhone record recovery",
+    "detail": "Preserved pilots, saved signatures and signed endorsements can be reviewed and restored without replacing existing cloud records."
+  },
+  {
+    "v": "V2.28",
+    "name": "Safer cloud account setup",
+    "detail": "New devices join existing cloud records automatically; setup conflicts stay visible and reviewable per device."
+  },
+  {
+    "v": "V2.27",
+    "name": "Reusable pilot signatures",
+    "detail": "Signatures stored in pilot profiles and applied only with consent on each endorsement."
+  },
   {
     "v": "V2.26",
     "name": "Help & User Guide",
@@ -5638,7 +6264,7 @@ function helpGuide(){
   <div class="guide-topic-body"><ol>${topic.steps.map(step=>`<li>${htmlEscape(step)}</li>`).join('')}</ol><div class="guide-topic-actions"><button class="btn" type="button" onclick="go('${topic.route}')">${htmlEscape(topic.action)} →</button></div></div>
  </details>`).join('');
  app.innerHTML=header('Help & User Guide','Learn the essentials and find instructions for every part of HeliLog')+
- `<section class="card guide-intro"><span class="guide-eyebrow">GETTING STARTED</span><h2>New to HeliLog?</h2><p class="muted">Start with your pilot profile, add your aircraft, enter a flight and check that it is synced.</p>
+ `<section class="card guide-intro"><span class="guide-eyebrow">GETTING STARTED</span><h2>New to HeliLog?</h2><p class="muted">Sign in, complete your pilot profile, add your aircraft, enter a flight and check cloud synchronization. Another new device joins the same account—no primary/secondary setup is required.</p>
   <div class="guide-first-steps">
    <button onclick="go('profile')"><span>01</span><b>Profile</b><small>Check your identity</small></button>
    <button onclick="go('aircraft')"><span>02</span><b>Aircraft</b><small>Save a helicopter</small></button>
@@ -5656,7 +6282,7 @@ function helpGuide(){
  <p class="guide-disclaimer">HeliLog helps maintain records. Pilots remain responsible for accurate entries and meeting the rules of their competent authority.</p>`;
 }
 document.addEventListener('keydown',function(e){
-  if(e.key==='Escape'){closeDeleteModal();closeImportModal();closeExportModal();}
+  if(e.key==='Escape'){closeDeleteModal();closeImportModal();closeExportModal();closeBroughtForwardSpecialOps();}
 });
 document.addEventListener('click',function(e){
   if(!e.target.closest('.timewrap')){
@@ -5670,8 +6296,74 @@ function isMobileTypingField(el){
   let type=String(el.type||'text').toLowerCase();
   return !['button','submit','reset','checkbox','radio','file','date','time','month','week','color','range','hidden'].includes(type);
 }
+/* V2.31.4: prevent unused-space rubber-band scrolling in compact Quick.
+ * Never lock a form that would need scrolling, including expanded options and
+ * warnings. Release immediately for keyboard focus and on route changes.
+ * State is ephemeral: no changes to flight data or account storage. */
+let quickViewportObserver=null,quickViewportObservedForm=null;
+let quickScrollUpdatePending=false;
+function syncQuickFlightScrollLock(){
+  const root=document.documentElement;
+  const form=document.getElementById('flightForm');
+  const quick=!!form?.classList.contains('quick-entry-active');
+  const mobile=window.innerWidth<=850;
+  const typing=document.body.classList.contains('keyboard-open')||
+    isMobileTypingField(document.activeElement);
+  const eligible=mobile&&quick&&!typing;
+  const nav=document.querySelector('.mobile');
+  let fits=false;
+  if(eligible&&nav){
+    const navStyle=window.getComputedStyle?.(nav);
+    if(navStyle?.display!=='none'){
+      const availableBottom=nav.getBoundingClientRect().top;
+      const scrollY=window.scrollY||document.documentElement.scrollTop||0;
+      // Compare at the top of the page, regardless of current scroll.
+      const formBottom=form.getBoundingClientRect().bottom+scrollY;
+      const heading=document.querySelector('#app > .top');
+      const headingTop=heading?.getBoundingClientRect().top??0;
+      fits=Number.isFinite(formBottom)&&Number.isFinite(availableBottom)&&
+        formBottom<=availableBottom-8&&headingTop+scrollY>=0;
+    }
+  }
+  const shouldLock=eligible&&fits;
+  if(!shouldLock){
+    root.classList.remove('helilog-quick-scroll-locked');
+  }else{
+    // Reset a residual scroll from keyboard input before locking the body.
+    // Never do this if expanded content actually needs scrolling.
+    if(!root.classList.contains('helilog-quick-scroll-locked')){
+      window.scrollTo(0,0);
+      root.classList.add('helilog-quick-scroll-locked');
+    }
+  }
+  if(typeof ResizeObserver==='function'){
+    if(!quickViewportObserver){
+      quickViewportObserver=new ResizeObserver(()=>scheduleQuickFlightScrollLock());
+    }
+    if(quickViewportObservedForm!==form){
+      quickViewportObserver.disconnect();
+      quickViewportObservedForm=quick?form:null;
+      if(quickViewportObservedForm){
+        quickViewportObserver.observe(quickViewportObservedForm);
+        const heading=document.querySelector('#app > .top');
+        if(heading)quickViewportObserver.observe(heading);
+      }
+    }
+  }
+}
+function scheduleQuickFlightScrollLock(){
+  if(quickScrollUpdatePending)return;
+  quickScrollUpdatePending=true;
+  window.requestAnimationFrame(()=>{
+    quickScrollUpdatePending=false;
+    syncQuickFlightScrollLock();
+  });
+}
 function updateMobileKeyboardUI(){
   document.body.classList.toggle('keyboard-open',isMobileTypingField(document.activeElement));
+  // Focus must release the locked viewport before iOS scrolls the input
+  // above its keyboard; refreeze only after it closes and the form fits.
+  syncQuickFlightScrollLock();
 }
 document.addEventListener('focusin',updateMobileKeyboardUI);
 document.addEventListener('focusout',()=>setTimeout(updateMobileKeyboardUI,60));
@@ -5679,29 +6371,32 @@ window.addEventListener('resize',updateMobileKeyboardUI);
 if(window.visualViewport) window.visualViewport.addEventListener('resize',updateMobileKeyboardUI);
 
 function render(){
+  document.documentElement.classList.remove('helilog-quick-scroll-locked');
   if(!v23Unlocked){v23LoginView();return;}
   let v=location.hash.slice(1)||'dashboard';
   if(v23AccountWorkspace()&&v==='testmode'){
     v='dashboard';if(location.hash!=='#dashboard')location.hash='#dashboard';
   }
-  if(v23AccountWorkspace()&&(v==='printarchive'||v==='endorsementarchive')&&v23PreventUnsupportedArchive()){
+  if(v23AccountWorkspace()&&(v==='printarchive'||v==='archivereview'||v==='endorsementarchive')&&v23PreventUnsupportedArchive()){
     v='dashboard';
     if(location.hash!=='#dashboard')location.hash='#dashboard';
   }
-  if(isStandaloneApp()&&(v==='printarchive'||v==='endorsementarchive')){
+  if(isStandaloneApp()&&(v==='printarchive'||v==='archivereview'||v==='endorsementarchive')){
     v='endorsements';
     if(location.hash!=='#endorsements')location.hash='#endorsements';
   }
   try{
     if(v!=='add'&&v!=='quickadd') editingFlightId=null;
-    ({dashboard,logbook,add,quickadd:quickAdd,aircraft,pilots,endorsements,printarchive,endorsementarchive:v2EndorsementArchive,totals,profile,settings,locations:v219LocationsPage,backups,cloud,testmode,mobilemore,help:helpGuide}[v]||dashboard)();
+    ({dashboard,logbook,add,quickadd:quickAdd,aircraft,pilots,endorsements,printarchive,archivereview:v229PreArchiveReview,endorsementarchive:v2EndorsementArchive,totals,profile,settings,locations:v219LocationsPage,backups,cloud,testmode,mobilemore,help:helpGuide}[v]||dashboard)();
     let moreViews=['mobilemore','aircraft','pilots','endorsements','endorsementarchive','totals','profile','settings','locations','backups','cloud','testmode','help'];
     document.querySelectorAll('[data-v]').forEach(b=>{
       let active=b.dataset.v===v || (b.dataset.v==='quickadd'&&v==='add') || (b.dataset.v==='settings' && (v==='cloud'||v==='backups'||v==='locations')) || (b.dataset.v==='mobilemore' && moreViews.includes(v));
       b.classList.toggle('on',active);
     });
     setTimeout(updatePWAStatus,0);
+    scheduleQuickFlightScrollLock();
   }catch(e){
+    document.documentElement.classList.remove('helilog-quick-scroll-locked');
     app.innerHTML=`<div class="card"><h2>HeliLog could not load this screen</h2><p class="muted">${String(e)}</p></div>`;
   }
 }

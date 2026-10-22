@@ -13,8 +13,10 @@ test('Guide contains searchable task instructions and release notes',()=>{
  assert.match(s,/data-help-topic/);
 });
 test('Guide is cached offline and does not alter the print engine',()=>{
- assert.match(read('v2/service-worker.js'),/helilog-v2-26-help-guide-1/);
- assert.match(read('v2/service-worker.js'),/guide\.css\?v=2\.26/);
- assert.match(read('v2/source/index.template.html'),/guide\.css\?v=2\.26/);
+ const sw=read('v2/service-worker.js'),html=read('v2/source/index.template.html');
+ const cssVersion=html.match(/guide[.]css[?]v=([0-9.]+)/)?.[1];
+ assert.ok(cssVersion,'HTML must specify a guide stylesheet version');
+ assert.ok(sw.includes('guide.css?v='+cssVersion),'offline cache must use the same guide stylesheet');
+ assert.match(sw,/const CACHE='helilog-v2-[a-z0-9-]+';/);
  assert.match(read('scripts/build-helilog-v2.cjs'),/13-help-guide\.js/);
 });
