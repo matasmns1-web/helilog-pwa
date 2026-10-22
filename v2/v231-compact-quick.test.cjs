@@ -11,7 +11,8 @@ test('compact mobile Quick form keeps paired fields, UTC controls and visible pr
  assert.match(src,/class="formgrid quick-flight-function"/);
  assert.match(src,/class="formgrid quick-flight-movements"/);
  assert.match(src,/class="formgrid quick-flight-conditions"/);
- for(const field of ['date','aid','dep','off','arr','on','mins','role','toDay','toNight','nightMin','ifrMin'])
+ assert.match(src,/europeanDateField\('date','',true\)/);
+ for(const field of ['aid','dep','off','arr','on','mins','role','toDay','toNight','nightMin','ifrMin'])
   assert.match(src,new RegExp('id="'+field+'"'),field);
  assert.match(src,/id="saveFlightBtn"[^>]*onclick="saveFlight\(\)"/);
  assert.match(css,/#flightForm\.quick-entry-active \.formgrid\s*\{\s*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
@@ -52,7 +53,7 @@ test('full flight entry and editing are unaffected by the quick-only selectors',
  assert.match(css,/#flightForm\.quick-entry-active \.section-title/);
  assert.match(src,/if\(!editing\)setFlightEntryMode\(quick\?'quick':'full'\)/);
  assert.match(src,/if\(!form \|\| editingFlightId\)return/);
- assert.match(css,/#flightForm:not\(\.quick-entry-active\) \.quick-entry-extras-switch/);
+ assert.match(css,/#flightForm \.quick-entry-extras-switch \{display:none;\}/);
  assert.match(src,/saveFlight\(\)/);
 });
 test('Help Guide explains compact and full entry limitations without promising all screen sizes',()=>{
