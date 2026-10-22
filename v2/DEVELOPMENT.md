@@ -139,3 +139,10 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 - Cross-country and remarks are collapsed behind an explicit accessible toggle that expands in-place without losing unsaved values. Full details retain original access to all fields.
 - A concise visible alert is shown when auto-night cannot be calculated after entering a complete flight; the existing save path blocks unsafe submission. Save is sticky above mobile navigation except when the on-screen keyboard is open. Long forms, warnings and smaller phones can still scroll; no important input is clipped by fixed-height containers.
 - Same pilot function-dependent PIC requirement, independent landing-count defaults and offline synchronization are preserved. Test release only.
+
+## V2.31.1 — adaptive one-handed Quick Flight positioning
+
+- Mobile Quick Flight uses the existing blank area below its compact card: flex column with a minimum dynamic viewport height and an auto top margin to bring the form toward the bottom of the usable screen.
+- Bottom inset reserves 88px plus the device safe area, keeping Save above the mobile navigation controls. On short displays or when optional details/warnings expand, the auto margin uses only available free space and the form remains scrollable—no fixed position or transform is applied.
+- When a mobile typing field has focus, keyboard-open resets the min-height and auto margin to return to natural scroll, while the existing sticky Save action becomes static.
+- Pure CSS layout change. All flight values, PIC selection, night calculations, duplicate checks, archive protection and cloud synchronization are unchanged. Release to the test service only; production remains v2.26.
