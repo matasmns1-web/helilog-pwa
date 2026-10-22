@@ -69,7 +69,9 @@ function simulatorDetails(id){
   editingFlightId=null;
   app.innerHTML=header('Simulator session',formatDate(f.date)+' · '+htmlEscape(f.simCategory),
   `<div style="display:flex;gap:8px;flex-wrap:wrap">
-    <button class="btn" onclick="go('logbook')">← Logbook</button>
+    ${v229CanReturnToReview(id)?
+      '<button class="btn" onclick="v229ReturnToReview()">← Back to review</button>':
+      '<button class="btn" onclick="go(\'logbook\')">← Logbook</button>'}
     <button class="btn primary" onclick="editFlight('${f.id}')">${isArchivedFlight(f.id)?'Propose correction':'Edit session'}</button>
     ${!isArchivedFlight(f.id)?`<button class="btn dangerbtn" onclick="openDeleteModal('${f.id}')">Delete session</button>`:''}</div>`)+
     `<div class="card"><h2>${htmlEscape(simulatorDeviceLabel(f))}</h2>
@@ -797,7 +799,7 @@ function saveFlight(){
   clearFlightFormGuard();
   flight(f.id);
 }
-function flight(id){const entry=effectiveFlight(S.flights.find(x=>x.id===id));if(isSimulatorSession(entry))return simulatorDetails(id);editingFlightId=null;let f=entry,a=ac(f.aid);app.innerHTML=header('Flight details',`${formatDate(f.date)} · ${a.icao}`,`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="go('logbook')">← Logbook</button><button class="btn primary" onclick="editFlight('${id}')">${isArchivedFlight(id)?'Propose correction':'Edit flight'}</button>${!isArchivedFlight(id)?`<button class="btn dangerbtn" onclick="openDeleteModal('${id}')">Delete flight</button>`:''}</div>`)+`<div class="card">
+function flight(id){const entry=effectiveFlight(S.flights.find(x=>x.id===id));if(isSimulatorSession(entry))return simulatorDetails(id);editingFlightId=null;let f=entry,a=ac(f.aid);app.innerHTML=header('Flight details',`${formatDate(f.date)} · ${a.icao}`,`<div style="display:flex;gap:8px;flex-wrap:wrap">${v229CanReturnToReview(id)?'<button class="btn" onclick="v229ReturnToReview()">← Back to review</button>':'<button class="btn" onclick="go(\'logbook\')">← Logbook</button>'}<button class="btn primary" onclick="editFlight('${id}')">${isArchivedFlight(id)?'Propose correction':'Edit flight'}</button>${!isArchivedFlight(id)?`<button class="btn dangerbtn" onclick="openDeleteModal('${id}')">Delete flight</button>`:''}</div>`)+`<div class="card">
 <div class="icao">${a.icao}</div><div class="muted">${a.reg} · ${a.manufacturer} ${a.model} ${a.variant}</div>
 <h2 style="margin-top:22px">${f.dep} ${f.off||''} → ${f.arr} ${f.on||''}</h2>
 <div class="kpi-grid"><div class="card"><div class="label">Total time</div><div class="big">${fmt(f.mins)}</div></div><div class="card"><div class="label">Pilot function</div><div class="big" style="font-size:20px">${f.role}</div></div><div class="card"><div class="label">Night</div><div class="big">${fmt(f.nightMin||0)}</div></div><div class="card"><div class="label">IFR</div><div class="big">${fmt(f.ifrMin||0)}</div></div></div>

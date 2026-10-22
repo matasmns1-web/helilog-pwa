@@ -152,3 +152,10 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 - Revert the prior one-handed bottom anchoring of V2.31.1 after real iPhone feedback. Quick Flight again begins at the top of the screen, with the same compact two-column layout and original Save behavior.
 - Give the header 14px plus the iOS safe-area inset of top spacing, to keep page heading and cloud status out of translucent native status-bar overlap. Explicitly disable filter/backdrop-filter for the Quick Flight heading only.
 - Keep keyboard-aware static Save action, natural scrolling and all flight validation unchanged. Test-only patch, production untouched.
+
+## V2.31.3 — pre-archive review return navigation
+
+- On browser Print archive → Pre-archive flight review, View entry / View related entry now remember the exact selected draft, which review warning was opened and the current acknowledgement checkbox state.
+- When opened from this review, flight detail or simulator session detail shows **← Back to review**, rather than only ← Logbook. Returning restores the same issue card and the checked acknowledgement only when the entire draft is still byte-for-byte identical; otherwise it remains unchecked and requires a fresh review.
+- Regular logbook flight details continue to use the Logbook button. Navigation state is transient and never saved, synchronized or treated as an archive approval. Actual print and archive confirmation retain the existing exact-draft safety checks.
+- No changes to flight entries, totals, signatures, printing, archived records or the cloud schema. Test-only patch, production unchanged.

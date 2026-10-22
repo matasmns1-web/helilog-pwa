@@ -265,9 +265,38 @@ let pendingArchiveReview=null;
 function v229ArchiveReviewed(draft=nextArchiveDraft()){
  return !!pendingArchiveReview && pendingArchiveReview===JSON.stringify(draft);
 }
-function v229OpenReviewFlight(id){
+/* V2.31.3: transient return navigation, never persisted or confused with
+ * signed review acknowledgement. The exact batch controls checkbox restore. */
+let v229ReviewReturn=null;
+function v229OpenReviewFlight(id,issueIndex){
  if(!(S.flights||[]).some(f=>f.id===id))return;
+ v229ReviewReturn={
+  flightId:id,
+  draft:JSON.stringify(nextArchiveDraft()),
+  checked:!!document.getElementById('v229Acknowledge')?.checked,
+  issueIndex:Number.isSafeInteger(issueIndex)?issueIndex:null
+ };
  flight(id);
+}
+function v229CanReturnToReview(id){
+ return location.hash==='#archivereview'&&
+   !!v229ReviewReturn&&v229ReviewReturn.flightId===id;
+}
+function v229ReturnToReview(){
+ const context=v229ReviewReturn;
+ if(!context)return go('archivereview');
+ const sameDraft=context.draft===JSON.stringify(nextArchiveDraft());
+ v229ReviewReturn=null;
+ go('archivereview');
+ // Only a read-only visit can retain the checkbox and highlighted finding.
+ // Any changed flight/page/totals must be acknowledged again.
+ const checkbox=document.getElementById('v229Acknowledge');
+ if(!checkbox)return;
+ checkbox.checked=!!sameDraft&&!!context.checked;
+ if(sameDraft&&context.issueIndex!==null){
+  const issue=document.getElementById('v229-review-issue-'+context.issueIndex);
+  issue?.scrollIntoView?.({block:'start'});
+ }
 }
 function v229PreArchiveReview(){
  if(v23PreventUnsupportedArchive()||isStandaloneApp())return;
@@ -276,17 +305,17 @@ function v229PreArchiveReview(){
  if(!window.HeliLogV29Review?.evaluate)
   throw Error("Pre-archive review module unavailable. Reopen HeliLog online; do not print or archive.");
  const report=window.HeliLogV29Review.evaluate({draft,allFlights:S.flights,people:S.people});
- const issueHtml=report.issues.map(issue=>{
+ const issueHtml=report.issues.map((issue,issueIndex)=>{
   const heading=issue.severity==="critical"?"Check carefully":"Check if applicable";
   const related=issue.otherFlightId?
    ' · Related record '+htmlEscape(issue.otherFlightId):'';
   const primary=issue.flightId&&(S.flights||[]).some(f=>f.id===issue.flightId)?
    '<button class="btn" type="button" onclick="v229OpenReviewFlight('+
-    htmlEscape(JSON.stringify(issue.flightId))+')">View entry</button>':'';
+    htmlEscape(JSON.stringify(issue.flightId))+','+issueIndex+')">View entry</button>':'';
   const other=issue.otherFlightId&&(S.flights||[]).some(f=>f.id===issue.otherFlightId)?
    '<button class="btn" type="button" onclick="v229OpenReviewFlight('+
-    htmlEscape(JSON.stringify(issue.otherFlightId))+')">View related entry</button>':'';
-  return '<div class="card" style="margin-top:9px;border-left:3px solid '+
+    htmlEscape(JSON.stringify(issue.otherFlightId))+','+issueIndex+')">View related entry</button>':'';
+  return '<div class="card" id="v229-review-issue-'+issueIndex+'" style="margin-top:9px;border-left:3px solid '+
      (issue.severity==="critical"?'#b42318':'#dd9b2b')+'">'+
     '<b>'+heading+' · '+htmlEscape(issue.code.replace(/-/g," "))+'</b>'+
     (issue.flightId?'<div class="mini">'+htmlEscape(issue.date||"Undated")+
