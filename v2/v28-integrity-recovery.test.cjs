@@ -149,7 +149,7 @@ test("UI removes five dashboard cards and old Cloud Account information",()=>{
  assert.doesNotMatch(view,/Local logbook protection/);
  assert.match(view,/Verify archives/);
  assert.match(html,/Download verified cloud recovery package/);
- assert.match(html,/Inspect cloud recovery file/);
+ assert.match(html,/Inspect V2.8 recovery package/);
 });
 
 test("new flight print snapshots must exactly match synchronized cloud originals",async()=>{
