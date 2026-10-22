@@ -267,11 +267,30 @@ function backups(){
         ${v23AccountWorkspace()?'<button class="btn" style="margin-left:8px" type="button" onclick="v28DownloadCloudRecovery()">Download verified cloud recovery package</button>':''}
       </div>
       <div>
-        <p><b>Restore from backup</b></p>
-        <p class="muted">${v23AccountWorkspace()?'Cloud account replacement is blocked for safety. You can inspect a recovery package without modifying any records.':'Select a backup to verify it first. HeliLog requires a safety copy before restoring.'}</p>
-        ${v23AccountWorkspace()?'<input id="v28RecoveryInput" type="file" accept=".json,application/json" style="display:none" onchange="v28InspectCloudRecovery(event)"><button class="btn" type="button" onclick="document.getElementById(\'v28RecoveryInput\').click()">Inspect cloud recovery file</button>':''}
-        <input id="restoreBackupInput" type="file" accept=".json,application/json" style="display:none" onchange="handleBackupRestoreFile(event)">
-        <button class="btn" type="button" onclick="document.getElementById('restoreBackupInput').click()" ${v23AccountWorkspace()?'disabled title="Restore will be available after cloud-safe migration"':''}>Choose backup file</button>
+        <p><b>Verify a saved backup — read-only</b></p>
+        <p class="muted">HeliLog uses different JSON backup formats. Select the checker that matches the file you downloaded. Inspection never restores or overwrites any logbook records.</p>
+        ${v23AccountWorkspace()?\`
+          <details open class="card" style="padding:12px;margin:12px 0">
+            <summary style="font-weight:700;cursor:pointer">Encrypted cloud snapshot (V2.9+)</summary>
+            <p class="mini">Use for files downloaded with <b>Download encrypted backup</b>. The encrypted file and passphrase stay in your browser. This also works from the sign-in screen without cloud access.</p>
+            <form class="form" onsubmit="v232VerifyOfflineFile(event)">
+              <div class="field"><label for="v232OfflineFile">Encrypted snapshot JSON</label>
+                <input id="v232OfflineFile" type="file" accept=".json,application/json" required></div>
+              <div class="field"><label for="v232OfflinePass">Encryption passphrase</label>
+                <input id="v232OfflinePass" type="password" autocomplete="off" minlength="12" required></div>
+              <button class="btn primary" id="v232OfflineButton" type="submit">Verify encrypted backup offline</button>
+            </form>
+            <div id="v232OfflineResult" class="note" role="status" aria-live="polite" hidden></div>
+          </details>
+          <p><b>Verified cloud recovery package (V2.8)</b></p>
+          <p class="mini">Use only for a file created with <b>Download verified cloud recovery package</b>. This format does not require an encryption passphrase; the exported JSON contains private records and signatures.</p>
+          <input id="v28RecoveryInput" type="file" accept=".json,application/json" style="display:none" onchange="v28InspectCloudRecovery(event)">
+          <button class="btn" type="button" onclick="document.getElementById('v28RecoveryInput').click()">Inspect V2.8 recovery package</button>
+        \`: \`
+          <p class="mini">Local workspace backups can be checked with the legacy local restore flow. This option is disabled for signed-in cloud accounts to protect synchronized history.</p>
+          <input id="restoreBackupInput" type="file" accept=".json,application/json" style="display:none" onchange="handleBackupRestoreFile(event)">
+          <button class="btn" type="button" onclick="document.getElementById('restoreBackupInput').click()">Choose local backup file</button>
+        \`}
       </div>
     </div>
     <div id="backupRestoreStatus" style="margin-top:12px"></div>
