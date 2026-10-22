@@ -1,4 +1,4 @@
-/* V2.31.4. Searchable, offline-friendly guide and current release notes. */
+/* V2.32. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
   {
     "category": "Records & signatures",
@@ -14,6 +14,22 @@ const HELILOG_GUIDE_TOPICS=[
     ],
     "route": "pilots",
     "action": "Manage pilot signatures"
+  },
+  {
+    "category": "Safety",
+    "title": "Verify an independent encrypted backup offline",
+    "summary": "Check a saved encrypted file even if Supabase or your account is unavailable.",
+    "steps": [
+      "When signed in, open Settings → Backup & Recovery, make a fresh cloud snapshot, and choose Download encrypted backup. Select a strong passphrase and store it separately from the encrypted file.",
+      "Copy the downloaded encrypted JSON file to independently managed storage such as a secure drive or a separate storage provider. HeliLog does not upload it elsewhere automatically.",
+      "On the sign-in screen expand Verify an encrypted backup without signing in. Select the saved encrypted file and enter its passphrase. The checker works offline once HeliLog's application files are cached.",
+      "A successful check confirms the file decrypted, its archived records and signed addenda passed structural checks, and its contents reconstructed with matching SHA-256 fingerprints in memory. No data is uploaded or restored.",
+      "Review the backup date, age and encrypted-file SHA-256 fingerprint. Check that the file you stored independently has the same fingerprint and is recent enough for your needs.",
+      "If a check fails, keep the original file unchanged and make a fresh encrypted backup when the cloud is available. Never uninstall your only working app or overwrite live records while troubleshooting.",
+      "An independent verified file is useful for future disaster recovery, but actually rebuilding a lost Supabase project remains a separate supervised process; this screen is not a restore tool."
+    ],
+    "route": "backups",
+    "action": "Open Backup & Recovery"
   },
   {
     "category": "Start here",
@@ -200,6 +216,11 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {
+    "v": "V2.32",
+    "name": "Offline encrypted recovery verification",
+    "detail": "Verify a separately saved encrypted snapshot from the sign-in screen even without access to the cloud. Decrypts and checks archive consistency in memory; never restores records."
+  },
   {
     "v": "V2.31.4",
     "name": "Quick Flight scroll behavior",
