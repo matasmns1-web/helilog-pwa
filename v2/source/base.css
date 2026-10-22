@@ -283,3 +283,142 @@ html.helilog-test-mode .brand::after{
   #flightForm.quick-entry-active .quick-entry-advanced {display:none!important}
   #flightForm.quick-entry-active .section-title {margin-top:18px}
 }
+
+
+/* V2.31: condensed Quick Flight view. Same controls, IDs and save path as Full. */
+@media screen {
+  #flightForm.quick-entry-active {
+    max-width:800px;
+    gap:8px;
+    padding:12px;
+  }
+  #flightForm.quick-entry-active .section-title,
+  #flightForm.quick-entry-active .quick-entry-description,
+  #flightForm.quick-entry-active .quick-entry-hint,
+  #flightForm.quick-entry-active .field > .mini,
+  #flightForm.quick-entry-active #nightCalcStatus {
+    display:none!important;
+  }
+  #flightForm.quick-entry-active .formgrid {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px 10px;
+  }
+  #flightForm.quick-entry-active .field {min-width:0;}
+  #flightForm.quick-entry-active .field > label:first-child {
+    font-size:12px;
+    margin-bottom:3px;
+    line-height:1.2;
+  }
+  #flightForm.quick-entry-active .quick-entry-switch {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    margin:0;
+  }
+  #flightForm.quick-entry-active .quick-entry-switch .btn {
+    flex:auto;
+    max-width:none;
+    padding:7px 10px;
+    min-height:36px;
+  }
+  #flightForm.quick-entry-active .field input:not([type=checkbox]):not([type=radio]),
+  #flightForm.quick-entry-active .field select {
+    min-height:40px;
+    padding:7px 9px;
+  }
+  #flightForm.quick-entry-active .timewrap input[type=text]{padding-right:36px;}
+  #flightForm.quick-entry-active .timebtn{width:30px;height:30px;top:4px;right:4px;}
+  #flightForm.quick-entry-active.quick-pic-self .quick-pic-field {display:none!important;}
+  #flightForm .quick-self-pic-note {display:none;}
+  #flightForm.quick-entry-active.quick-pic-self .quick-self-pic-note {
+    display:block;font-size:11px;line-height:1.25;color:var(--muted);
+  }
+  #flightForm .quick-night-label {display:none;}
+  #flightForm.quick-entry-active .full-night-label {display:none;}
+  #flightForm.quick-entry-active .quick-night-label {display:inline;}
+  #flightForm.quick-entry-active .quick-flight-conditions .field label.mini {
+    margin:4px 0 0!important;
+    gap:5px!important;
+    font-size:11px;
+    line-height:1.2;
+  }
+  #flightForm.quick-entry-active #nightAuto {width:16px;height:16px;min-height:16px;flex:0 0 16px;}
+  #flightForm .quick-entry-extras-switch {display:none;}
+  #flightForm.quick-entry-active .quick-entry-extras-switch {display:block;}
+  #flightForm.quick-entry-active .quick-entry-extras-switch .btn {
+    min-height:32px;padding:5px 9px;font-size:12px;width:100%;text-align:left;
+  }
+  #flightForm.quick-entry-active:not(.quick-entry-extra-open) .quick-entry-optional {display:none!important;}
+  #flightForm.quick-entry-active.quick-entry-extra-open .quick-entry-optional {display:flex;}
+  #flightForm.quick-entry-active.quick-entry-extra-open .field.quick-entry-optional {display:block;}
+  #flightForm .quick-entry-night-note {display:none;}
+  #flightForm.quick-entry-active .quick-entry-night-note:not([hidden]) {
+    display:block;
+    padding:7px 9px;
+    border:1px solid #c88d42;
+    border-radius:8px;
+    font-size:12px;
+    line-height:1.3;
+    color:var(--ink);
+    background:var(--soft);
+  }
+  #flightForm.quick-entry-active .actions {
+    margin:0 -12px -12px;
+    padding:8px 12px 12px;
+    gap:8px;
+    background:var(--panel);
+  }
+  #flightForm.quick-entry-active .quick-entry-cancel {display:none;}
+  #flightForm.quick-entry-active #saveFlightBtn {width:100%;min-height:43px;}
+}
+@media screen and (max-width:850px) {
+  main:has(#flightForm.quick-entry-active) {
+    padding:calc(6px + env(safe-area-inset-top)) 9px calc(78px + env(safe-area-inset-bottom));
+  }
+  main:has(#flightForm.quick-entry-active) .top {
+    flex-direction:row;
+    flex-wrap:nowrap;
+    align-items:center;
+    margin-bottom:7px;
+    padding:0 0 7px;
+    gap:8px;
+  }
+  main:has(#flightForm.quick-entry-active) .top h1 {
+    font-size:19px;
+    line-height:1.15;
+  }
+  main:has(#flightForm.quick-entry-active) .top .sub {display:none;}
+  main:has(#flightForm.quick-entry-active) .top>div:last-child:not(:first-child) {width:auto;}
+  main:has(#flightForm.quick-entry-active) .top .btn {padding:6px 9px;min-height:34px;}
+  #flightForm.quick-entry-active {
+    gap:6px;
+    padding:9px;
+    border-radius:11px;
+  }
+  #flightForm.quick-entry-active .formgrid {gap:6px 8px;}
+  #flightForm.quick-entry-active .field > label:first-child {
+    margin-bottom:2px;
+    font-size:11px;
+  }
+  #flightForm.quick-entry-active .field input:not([type=checkbox]):not([type=radio]),
+  #flightForm.quick-entry-active .field select {
+    min-height:38px;
+    padding:5px 7px;
+    font-size:16px;
+  }
+  #flightForm.quick-entry-active .quick-entry-switch .btn {min-height:33px;padding:5px 8px;}
+  #flightForm.quick-entry-active .timebtn{top:3px;right:3px;}
+  #flightForm.quick-entry-active .actions {
+    position:sticky;
+    z-index:15;
+    bottom:calc(64px + env(safe-area-inset-bottom));
+    margin:0 -9px -9px;
+    padding:7px 9px calc(8px + env(safe-area-inset-bottom)*0);
+    box-shadow:0 -5px 14px rgba(0,0,0,.12);
+  }
+  body.keyboard-open #flightForm.quick-entry-active .actions {position:static;}
+}
+@media screen and (max-width:360px) {
+  #flightForm.quick-entry-active .formgrid {gap:5px;}
+  #flightForm.quick-entry-active .field > label:first-child {font-size:10px;}
+}
