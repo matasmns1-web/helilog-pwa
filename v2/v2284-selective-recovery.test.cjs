@@ -64,7 +64,7 @@ async function makeRecovery(){
  await iphone.api.refresh();await tick();
  return {server,web,iphone};
 }
-test("V2.31.1 heals a queued ghost conflict when local and cloud totals are literally identical",async()=>{
+test("V2.31.2 heals a queued ghost conflict when local and cloud totals are literally identical",async()=>{
  const server=backend(),web=device(server,"Web"),iphone=device(server,"iPhone");
  await web.api.refresh();await iphone.api.refresh();
  await web.api.activateExtension("upload");await tick();
@@ -85,7 +85,7 @@ test("V2.31.1 heals a queued ghost conflict when local and cloud totals are lite
  assert.equal(iphone.api.conflicts().length,0);
  assert.equal(server.writes,beforeWrites);
 });
-test("V2.31.1 restores only saved pilot and signed endorsement without modifying originals or totals",async()=>{
+test("V2.31.2 restores only saved pilot and signed endorsement without modifying originals or totals",async()=>{
  const {server,iphone}=await makeRecovery();
  const original=JSON.stringify(iphone.data),previous=JSON.parse(iphone.store.get("helilog_v24_pre_extension_"+uid));
  const beforeWrites=server.writes;
@@ -117,7 +117,7 @@ test("V2.31.1 restores only saved pilot and signed endorsement without modifying
    "data:image/png;base64,SIGNED");
  assert.deepEqual(JSON.parse(iphone.store.get("helilog_v24_pre_extension_"+uid)),previous);
 });
-test("V2.31.1 preview refuses unresolved conflict and never forces an upload",async()=>{
+test("V2.31.2 preview refuses unresolved conflict and never forces an upload",async()=>{
  const {iphone,server}=await makeRecovery();
  const before=server.writes;
  iphone.data.broughtForward={total:1234};
@@ -126,7 +126,7 @@ test("V2.31.1 preview refuses unresolved conflict and never forces an upload",as
  await assert.rejects(()=>iphone.api.previewPreservedRecovery(),/Resolve remaining sync conflicts/);
  assert.equal(server.writes,before);
 });
-test("V2.31.1 stale cloud revision blocks the restore before local changes",async()=>{
+test("V2.31.2 stale cloud revision blocks the restore before local changes",async()=>{
  const {server,iphone}=await makeRecovery();
  await iphone.api.previewPreservedRecovery();
  const local=JSON.stringify(iphone.data),before=server.writes;
@@ -136,7 +136,7 @@ test("V2.31.1 stale cloud revision blocks the restore before local changes",asyn
  assert.equal(JSON.stringify(iphone.data),local);
  assert.equal(server.writes,before);
 });
-test("V2.31.1 blocked independent safety backup refuses local restoration",async()=>{
+test("V2.31.2 blocked independent safety backup refuses local restoration",async()=>{
  const {iphone,server}=await makeRecovery();
  await iphone.api.previewPreservedRecovery();
  const before=server.writes,local=JSON.stringify(iphone.data);
@@ -147,7 +147,7 @@ test("V2.31.1 blocked independent safety backup refuses local restoration",async
  assert.equal(JSON.stringify(iphone.data),local);
  assert.equal(server.writes,before);
 });
-test("V2.31.1 recovery is explicit and cloud connection copy does not claim unsynchronized records",()=>{
+test("V2.31.2 recovery is explicit and cloud connection copy does not claim unsynchronized records",()=>{
  const view=read("cloud-view.js"),sync=read("cloud-sync.js");
  assert.match(view,/Preview safe restoration/);
  assert.match(view,/Restore these missing records/);
@@ -157,5 +157,5 @@ test("V2.31.1 recovery is explicit and cloud connection copy does not claim unsy
  assert.doesNotMatch(view,/Local logbook records are still not synchronized/);
  assert.match(sync,/verified no-op, NOT an upload/);
  assert.match(sync,/remoteFingerprint/);
- assert.match(read("service-worker.js"),/helilog-v2-31-1-one-hand-reach-1/);
+ assert.match(read("service-worker.js"),/helilog-v2-31-2-clear-header-1/);
 });
