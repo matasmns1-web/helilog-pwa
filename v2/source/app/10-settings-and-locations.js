@@ -280,12 +280,13 @@ function backups(){
                 <input id="v232OfflinePass" type="password" autocomplete="off" minlength="12" required></div>
               <button class="btn primary" id="v232OfflineButton" type="submit">Verify encrypted backup offline</button>
             </form>
-            <div id="v232OfflineResult" class="note" role="status" aria-live="polite" hidden></div>
+            <div id="v232OfflineResult" class="note" role="status" aria-live="polite" style="overflow-wrap:anywhere;margin-top:10px" hidden></div>
           </details>
           <p><b>Verified cloud recovery package (V2.8)</b></p>
           <p class="mini">Use only for a file created with <b>Download verified cloud recovery package</b>. This format does not require an encryption passphrase; the exported JSON contains private records and signatures.</p>
           <input id="v28RecoveryInput" type="file" accept=".json,application/json" style="display:none" onchange="v28InspectCloudRecovery(event)">
           <button class="btn" type="button" onclick="document.getElementById('v28RecoveryInput').click()">Inspect V2.8 recovery package</button>
+          ${v28Notice?`<div class="note" role="status" style="margin-top:10px;overflow-wrap:anywhere">${htmlEscape(v28Notice)}</div>`:''}
         `: `
           <p class="mini">Local workspace backups can be checked with the legacy local restore flow. This option is disabled for signed-in cloud accounts to protect synchronized history.</p>
           <input id="restoreBackupInput" type="file" accept=".json,application/json" style="display:none" onchange="handleBackupRestoreFile(event)">
@@ -294,7 +295,7 @@ function backups(){
       </div>
     </div>
     <div id="backupRestoreStatus" style="margin-top:12px"></div>
-    ${v23AccountWorkspace()?'<div class="mini" style="margin-top:12px">Cloud recovery packages are SHA-256 verified and should be stored securely off-device. Downloads contain personal details and signatures. This version inspects files but intentionally does not overwrite synced cloud history.</div>'+ (v28Notice?'<div class="note" role="status" style="margin-top:8px">'+htmlEscape(v28Notice)+'</div>':''):''}
+    ${v23AccountWorkspace()?'<div class="mini" style="margin-top:12px">V2.8 recovery packages are unencrypted and contain private details and signatures. Encrypted snapshots use AES-256-GCM and a separate passphrase. Both checks are read-only and neither proves an offsite copy has been saved.</div>':''}
   </div>
 
 
