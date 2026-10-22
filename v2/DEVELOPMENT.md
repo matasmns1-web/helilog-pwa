@@ -176,3 +176,10 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 - No selected file, passphrase or decrypted content is uploaded, saved to localStorage or restored into an account. No database migration or schema changes.
 - This verifies that one user-selected file can be reconstructed. The pilot must separately save a copy outside the Supabase provider/device and compare checksums. Neither automatic offsite storage nor complete provider recovery is implemented yet.
 - Keep test-only until signed-out and network-off testing on iPhone and desktop confirms behavior.
+
+## V2.32.1 — distinguish backup formats in the signed-in UI
+
+- Signed-in Settings → Backup & Recovery now presents three clearly identified formats instead of one ambiguous Restore box: encrypted cloud snapshots (V2.9+), unencrypted verified cloud recovery packages (V2.8), and a separate local-workspace backup. The local-only restore control is available only outside a cloud account.
+- The encrypted snapshot verifier, previously accessible from Sign in only, is now also accessible while signed in. It reuses the V2.32 no-cloud, in-memory verification handler and never persists a passphrase or modifies active data.
+- The V2.8 inspector recognizes an encrypted-cloud-snapshot or helilog-full-backup JSON and provides format-specific guidance instead of the generic unsupported backup error. Existing V2.8 SHA-256 verification remains read-only.
+- There are no database/Supabase migrations, new cloud permissions, automatic restores, or changed production records. Test deployment only; production remains v2.31.4.
