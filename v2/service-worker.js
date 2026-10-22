@@ -1,4 +1,4 @@
-const CACHE='helilog-v2-32-1-backup-formats-1';
+const CACHE='helilog-v2-32-2-backup-simplify-1';
 const SHELL=[
   './',
   './index.html',

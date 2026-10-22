@@ -1,4 +1,4 @@
-/* V2.32.1. Searchable, offline-friendly guide and current release notes. */
+/* V2.32.2. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
   {
     "category": "Records & signatures",
@@ -23,7 +23,7 @@ const HELILOG_GUIDE_TOPICS=[
       "When signed in, open Settings → Backup & Recovery, make a fresh cloud snapshot, and choose Download encrypted backup. Select a strong passphrase and store it separately from the encrypted file.",
       "Copy the downloaded encrypted JSON file to independently managed storage such as a secure drive or a separate storage provider. HeliLog does not upload it elsewhere automatically.",
       "On the sign-in screen expand Verify an encrypted backup without signing in, or while signed in use Backup & Recovery → Verify encrypted backup offline. Both accept the saved encrypted cloud snapshot JSON and its original passphrase.",
-      "The separately labeled Inspect V2.8 recovery package button accepts only an older, unencrypted verified cloud recovery package—not an encrypted snapshot. A Full HeliLog backup is a third format. None of these file checks restores data.",
+      "Use the encrypted snapshot verifier only for files downloaded through Download encrypted backup. Full HeliLog backups are a separate JSON format and cannot be checked with this verifier. Checking a file does not restore data.",
       "A successful check confirms the file decrypted, its archived records and signed addenda passed structural checks, and its contents reconstructed with matching SHA-256 fingerprints in memory. No data is uploaded or restored.",
       "Review the backup date, age and encrypted-file SHA-256 fingerprint. Check that the file you stored independently has the same fingerprint and is recent enough for your needs.",
       "If a check fails, keep the original file unchanged and make a fresh encrypted backup when the cloud is available. Never uninstall your only working app or overwrite live records while troubleshooting.",
@@ -218,9 +218,14 @@ const HELILOG_GUIDE_TOPICS=[
 ];
 const HELILOG_GUIDE_UPDATES=[
   {
+    "v": "V2.32.2",
+    "name": "Simpler backup verification",
+    "detail": "Removed legacy unencrypted V2.8 recovery-package download and inspection controls from Backup & Restore. The encrypted snapshot verifier and cloud archive safeguards remain available."
+  },
+  {
     "v": "V2.32.1",
     "name": "Clear backup format selection",
-    "detail": "Backup & Recovery now offers a separate encrypted-file verifier while signed in and clearly labels older V2.8 recovery packages and unencrypted local backups. The wrong checker explains which format was selected."
+    "detail": "Added signed-in encrypted-file verification with format-specific errors. Inspections remain read-only and never restore data."
   },
   {
     "v": "V2.32",

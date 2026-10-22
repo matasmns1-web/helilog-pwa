@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.32.1 — Backup Verification · Test</title>
+<title>HeliLog V2.32.2 — Backup Verification · Test</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -472,7 +472,7 @@ html.helilog-test-mode .brand::after{
 <link rel="stylesheet" href="./guide.css?v=2.29" media="screen">
 </head>
 <body><div class="layout">
-<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.32.1 · TEST ENVIRONMENT</span></div><nav>
+<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.32.2 · TEST ENVIRONMENT</span></div><nav>
 <div class="nav-group-label">Flight operations</div>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button>
 <div class="nav-group-label">Records &amp; assets</div>
@@ -5363,14 +5363,13 @@ function backups(){
         <p><b>Full HeliLog backup</b></p>
         <p class="muted">Includes flights, aircraft, pilots, specialised-operation hours, imported totals, print archive snapshots, endorsements and signatures. JSON backups include a SHA-256 checksum.</p>
         <button class="btn primary" type="button" onclick="downloadFullBackup()">Download backup</button>
-        ${v23AccountWorkspace()?'<button class="btn" style="margin-left:8px" type="button" onclick="v28DownloadCloudRecovery()">Download verified cloud recovery package</button>':''}
       </div>
       <div>
         <p><b>Verify a saved backup — read-only</b></p>
-        <p class="muted">HeliLog uses different JSON backup formats. Select the checker that matches the file you downloaded. Inspection never restores or overwrites any logbook records.</p>
+        <p class="muted">Verify a downloaded encrypted cloud snapshot here. Full HeliLog backups use a separate format and cannot be checked with this verifier. Inspection never restores or overwrites logbook records.</p>
         ${v23AccountWorkspace()?`
           <details open class="card" style="padding:12px;margin:12px 0">
-            <summary style="font-weight:700;cursor:pointer">Encrypted cloud snapshot (V2.9+)</summary>
+            <summary style="font-weight:700;cursor:pointer">Encrypted cloud snapshot</summary>
             <p class="mini">Use for files downloaded with <b>Download encrypted backup</b>. The encrypted file and passphrase stay in your browser. This also works from the sign-in screen without cloud access.</p>
             <form class="form" onsubmit="v232VerifyOfflineFile(event)">
               <div class="field"><label for="v232OfflineFile">Encrypted snapshot JSON</label>
@@ -5381,11 +5380,6 @@ function backups(){
             </form>
             <div id="v232OfflineResult" class="note" role="status" aria-live="polite" style="overflow-wrap:anywhere;margin-top:10px" hidden></div>
           </details>
-          <p><b>Verified cloud recovery package (V2.8)</b></p>
-          <p class="mini">Use only for a file created with <b>Download verified cloud recovery package</b>. This format does not require an encryption passphrase; the exported JSON contains private records and signatures.</p>
-          <input id="v28RecoveryInput" type="file" accept=".json,application/json" style="display:none" onchange="v28InspectCloudRecovery(event)">
-          <button class="btn" type="button" onclick="document.getElementById('v28RecoveryInput').click()">Inspect V2.8 recovery package</button>
-          ${v28Notice?`<div class="note" role="status" style="margin-top:10px;overflow-wrap:anywhere">${htmlEscape(v28Notice)}</div>`:''}
         `: `
           <p class="mini">Local workspace backups can be checked with the legacy local restore flow. This option is disabled for signed-in cloud accounts to protect synchronized history.</p>
           <input id="restoreBackupInput" type="file" accept=".json,application/json" style="display:none" onchange="handleBackupRestoreFile(event)">
@@ -5394,7 +5388,7 @@ function backups(){
       </div>
     </div>
     <div id="backupRestoreStatus" style="margin-top:12px"></div>
-    ${v23AccountWorkspace()?'<div class="mini" style="margin-top:12px">V2.8 recovery packages are unencrypted and contain private details and signatures. Encrypted snapshots use AES-256-GCM and a separate passphrase. Both checks are read-only and neither proves an offsite copy has been saved.</div>':''}
+    ${v23AccountWorkspace()?'<div class="mini" style="margin-top:12px">Encrypted snapshots use AES-256-GCM with a separate passphrase. Verification is read-only and does not prove the file has been stored independently; keep a copy outside HeliLog and away from this device.</div>':''}
   </div>
 
 
@@ -5987,7 +5981,7 @@ function deleteQualification(id){
   save();
   profile();
 }
-/* V2.32.1. Searchable, offline-friendly guide and current release notes. */
+/* V2.32.2. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
   {
     "category": "Records & signatures",
@@ -6012,7 +6006,7 @@ const HELILOG_GUIDE_TOPICS=[
       "When signed in, open Settings → Backup & Recovery, make a fresh cloud snapshot, and choose Download encrypted backup. Select a strong passphrase and store it separately from the encrypted file.",
       "Copy the downloaded encrypted JSON file to independently managed storage such as a secure drive or a separate storage provider. HeliLog does not upload it elsewhere automatically.",
       "On the sign-in screen expand Verify an encrypted backup without signing in, or while signed in use Backup & Recovery → Verify encrypted backup offline. Both accept the saved encrypted cloud snapshot JSON and its original passphrase.",
-      "The separately labeled Inspect V2.8 recovery package button accepts only an older, unencrypted verified cloud recovery package—not an encrypted snapshot. A Full HeliLog backup is a third format. None of these file checks restores data.",
+      "Use the encrypted snapshot verifier only for files downloaded through Download encrypted backup. Full HeliLog backups are a separate JSON format and cannot be checked with this verifier. Checking a file does not restore data.",
       "A successful check confirms the file decrypted, its archived records and signed addenda passed structural checks, and its contents reconstructed with matching SHA-256 fingerprints in memory. No data is uploaded or restored.",
       "Review the backup date, age and encrypted-file SHA-256 fingerprint. Check that the file you stored independently has the same fingerprint and is recent enough for your needs.",
       "If a check fails, keep the original file unchanged and make a fresh encrypted backup when the cloud is available. Never uninstall your only working app or overwrite live records while troubleshooting.",
@@ -6207,9 +6201,14 @@ const HELILOG_GUIDE_TOPICS=[
 ];
 const HELILOG_GUIDE_UPDATES=[
   {
-    "v": "V2.32.1",
+    "v": "V2.32.2",
+    "name": "Simpler backup verification",
+    "detail": "Removed legacy unencrypted V2.8 recovery-package download and inspection controls from Backup & Restore. The encrypted snapshot verifier and cloud archive safeguards remain available."
+  },
+  {
+    "v": "V2.32.2",
     "name": "Clear backup format selection",
-    "detail": "Backup & Recovery now offers a separate encrypted-file verifier while signed in and clearly labels older V2.8 recovery packages and unencrypted local backups. The wrong checker explains which format was selected."
+    "detail": "Added signed-in encrypted-file verification with format-specific errors. Inspections remain read-only and never restore data."
   },
   {
     "v": "V2.32",

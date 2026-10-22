@@ -49,15 +49,17 @@ test('valid V2.8 package continues to use the original read-only checksum verifi
   assert.match(vm.runInContext('v28Notice',f.ctx),/Recovery file SHA-256 verified/);
   assert.match(vm.runInContext('v28Notice',f.ctx),/READ-ONLY/);
 });
-test('signed-in backup screen has separate correctly labeled encrypted and V2.8 checkers',()=>{
+test('signed-in backup screen verifies encrypted snapshots without legacy V2.8 controls',()=>{
   for(const s of [
-    'Verify a saved backup — read-only','Encrypted cloud snapshot (V2.9+)',
-    'Verified cloud recovery package (V2.8)','v232VerifyOfflineFile(event)',
-    'id="v232OfflineFile"','id="v232OfflinePass"','id="v232OfflineResult"',
-    'id="v232OfflineButton"','Verify encrypted backup offline',
-    'Inspect V2.8 recovery package','Download encrypted backup',
-    'V2.8 recovery packages are unencrypted'
+    'Verify a saved backup — read-only','Encrypted cloud snapshot',
+    'v232VerifyOfflineFile(event)','id="v232OfflineFile"','id="v232OfflinePass"',
+    'id="v232OfflineResult"','id="v232OfflineButton"',
+    'Verify encrypted backup offline','Download encrypted backup'
   ])assert.ok(ui.includes(s),s);
+  for(const legacy of [
+    'Verified cloud recovery package (V2.8)','Inspect V2.8 recovery package',
+    'Download verified cloud recovery package','v28RecoveryInput','htmlEscape(v28Notice)'
+  ])assert.ok(!ui.includes(legacy),'Legacy control still exposed: '+legacy);
   assert.match(ui,/v23AccountWorkspace\(\)\?[\s\S]*v232VerifyOfflineFile/);
   assert.match(gate,/const report=await window\.HeliLogV232OfflineCheck\.verifyText\(await file\.text\(\),password\)/);
 });
@@ -67,12 +69,12 @@ test('error and verifier outputs do not expose signatures or persist a passphras
   assert.match(code,/if\(passInput\)passInput\.value="";/);
   assert.match(code,/if\(fileInput\)fileInput\.value="";/);
   assert.doesNotMatch(code,/localStorage|sessionStorage|fetch\(|\.rpc\(|\.from\(|replaceData|save\(/);
-  assert.match(ui,/htmlEscape\(v28Notice\)/);
+  assert.doesNotMatch(ui,/htmlEscape\(v28Notice\)/);
   assert.match(ui,/overflow-wrap:anywhere/);
 });
 test('release cache, version and production guards are not confused with data migration',()=>{
-  assert.match(read('service-worker.js'),/helilog-v2-32-1-backup-formats-1/);
-  assert.match(gate,/HELILOG_TEST_VERSION='V2\.32\.1'/);
-  assert.match(read('source/index.template.html'),/HeliLog V2\.32\.1/);
+  assert.match(read('service-worker.js'),/helilog-v2-32-2-backup-simplify-1/);
+  assert.match(gate,/HELILOG_TEST_VERSION='V2\.32\.2'/);
+  assert.match(read('source/index.template.html'),/HeliLog V2\.32\.2/);
   assert.doesNotMatch(ui,/helilog_create_backup_now|helilog_restore_missing_records/);
 });

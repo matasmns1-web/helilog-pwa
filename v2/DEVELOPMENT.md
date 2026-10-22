@@ -177,9 +177,15 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 - This verifies that one user-selected file can be reconstructed. The pilot must separately save a copy outside the Supabase provider/device and compare checksums. Neither automatic offsite storage nor complete provider recovery is implemented yet.
 - Keep test-only until signed-out and network-off testing on iPhone and desktop confirms behavior.
 
-## V2.32.1 — distinguish backup formats in the signed-in UI
+## V2.32.2 — distinguish backup formats in the signed-in UI
 
 - Signed-in Settings → Backup & Recovery now presents three clearly identified formats instead of one ambiguous Restore box: encrypted cloud snapshots (V2.9+), unencrypted verified cloud recovery packages (V2.8), and a separate local-workspace backup. The local-only restore control is available only outside a cloud account.
 - The encrypted snapshot verifier, previously accessible from Sign in only, is now also accessible while signed in. It reuses the V2.32 no-cloud, in-memory verification handler and never persists a passphrase or modifies active data.
 - The V2.8 inspector recognizes an encrypted-cloud-snapshot or helilog-full-backup JSON and provides format-specific guidance instead of the generic unsupported backup error. Existing V2.8 SHA-256 verification remains read-only.
 - There are no database/Supabase migrations, new cloud permissions, automatic restores, or changed production records. Test deployment only; production remains v2.31.4.
+
+## V2.32.2 — Remove legacy V2.8 backup controls (test only)
+
+- The Backup & Restore page now offers the full JSON backup and the read-only AES-256-GCM encrypted cloud-snapshot checker; the legacy V2.8 unencrypted recovery-package download and inspect buttons are hidden from the user interface.
+- Existing archive-integrity audits, historical V2.8 data compatibility functions, encrypted snapshot downloads and offline verification (including the sign-in screen) remain unchanged. Signed-in cloud accounts still cannot use local full-backup restore to overwrite cloud records.
+- The Help & Guide, staged regression assertions, app version, and service-worker cache were updated together. No Supabase migrations, storage mutations, or production changes. Independent offsite storage and end-to-end isolated disaster restoration are still future tasks.

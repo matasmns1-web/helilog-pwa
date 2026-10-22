@@ -57,12 +57,12 @@ test('full flight entry and editing are unaffected by the quick-only selectors',
  assert.match(src,/saveFlight\(\)/);
 });
 test('Help Guide explains compact and full entry limitations without promising all screen sizes',()=>{
- for(const word of ['V2.32.1','compact Quick Flight','Small screens','Save stays above','Cross-country & remarks'])
+ for(const word of ['V2.32.2','compact Quick Flight','Small screens','Save stays above','Cross-country & remarks'])
   assert.ok(guide.includes(word),word);
 });
 test('PWA is versioned for Quick Flight update and production remains gated',()=>{
  const html=read('source/index.template.html'),worker=read('service-worker.js');
- assert.match(html,/HeliLog V2\.32\.1 — Backup Verification · Test/);
- assert.match(worker,/helilog-v2-32-1-backup-formats-1/);
- assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.32\.1'/);
+ assert.match(html,/HeliLog V2\.32\.2 — Backup Verification · Test/);
+ assert.match(worker,/helilog-v2-32-2-backup-simplify-1/);
+ assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.32\.2'/);
 });
