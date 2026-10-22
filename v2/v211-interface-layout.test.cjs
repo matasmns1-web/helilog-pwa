@@ -116,7 +116,10 @@ test("Backup page retains legacy and cloud backup/restore tools",()=>{
  assert.match(f.app.innerHTML,/data-screen="Backup & Recovery"/);
  assert.match(f.app.innerHTML,/id="v29-backup-tools"/);
  for(const name of ["downloadFullBackup","v28DownloadCloudRecovery","v28InspectCloudRecovery",
-  "handleBackupRestoreFile"])assert.match(f.app.innerHTML,new RegExp(name+"\\("));
+  "v232VerifyOfflineFile"])assert.match(f.app.innerHTML,new RegExp(name+"\\("));
+ assert.doesNotMatch(f.app.innerHTML,/handleBackupRestoreFile\(/,"Cloud-backed account must not offer local restore");
+ assert.match(f.app.innerHTML,/Encrypted cloud snapshot/);
+ assert.match(f.app.innerHTML,/Inspect V2.8 recovery package/);
  assert.match(f.app.innerHTML,/id="backupRestoreStatus"/);
  assert.equal(JSON.stringify(f.S),before);
  assert.doesNotMatch(f.app.innerHTML,/Existing logbook import|id="medicalSection"/);
@@ -150,6 +153,6 @@ test("The UI-only release retains archived-flight handlers and updates PWA cache
   "downloadFullBackup","restoreCheckedBackup","showIntegrityCheck","editMedical",
   "saveMedical","saveQualification","deleteQualification"])
   assert.match(html,new RegExp("function "+name+"\\("));
- assert.match(html,/HeliLog V2\.32 — Compact Quick Flight · Test/);
- assert.match(worker,/helilog-v2-32-offline-recovery-1/);
+ assert.match(html,/HeliLog V2\.32\.1 — Backup Verification · Test/);
+ assert.match(worker,/helilog-v2-32-1-backup-formats-1/);
 });

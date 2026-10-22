@@ -1,5 +1,5 @@
 /* HeliLog V2.3 private login gate. No automatic import of V2.2 local data. */
-const HELILOG_TEST_VERSION='V2.32';
+const HELILOG_TEST_VERSION='V2.32.1';
 let v23Unlocked=false,v23AuthBusy=false,v23AuthMessage="";
 let v23RecoveryStage="signin",v23InviteStage="signin";
 function v23Escape(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
@@ -550,6 +550,16 @@ async function v28InspectCloudRecovery(ev){
   if(!v23AccountWorkspace())throw Error("Sign in to the account that owns the backup.");
   if(file.size>100*1024*1024)throw Error("File exceeds the 100 MB read-only verification limit.");
   const parsed=JSON.parse(await file.text());
+  // Never attempt to interpret other backup formats as a V2.8 workspace.
+  // The encrypted checker needs an explicit passphrase; it never restores.
+  if(parsed?.app==="HeliLog"&&parsed?.format==="encrypted-cloud-snapshot"){
+   v28Notice="This is an ENCRYPTED cloud snapshot (V2.9+), not a V2.8 recovery package. Use 'Verify encrypted backup offline' above and enter its passphrase. Your file is unchanged.";
+   return;
+  }
+  if(parsed?.app==="HeliLog"&&parsed?.format==="helilog-full-backup"){
+   v28Notice="This is a FULL LOCAL HeliLog backup, not a V2.8 recovery package. Cloud-account replacement is disabled. Keep this file securely; nothing was restored.";
+   return;
+  }
   const result=await window.HeliLogV28Recovery.verify(parsed,window.HeliLogCloud.snapshot().userId);
   const n=result.counts;
   v28Notice="Recovery file SHA-256 verified ("+n.flights+" flights, "+n.aircraft+" aircraft, "+
