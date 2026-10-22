@@ -253,7 +253,7 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
 <div class="mini quick-entry-advanced" style="margin-top:8px">Night is based on the Sun’s centre 6° below the horizon (civil twilight), not sunset. En-route calculations use a direct-line estimate; always check applicable national rules and official twilight data.</div>
 
 <div class="quick-entry-extras-switch">
-  <button id="quickExtraToggle" class="btn" type="button" aria-expanded="false" aria-controls="quickExtraFields" onclick="toggleQuickEntryExtras()">+ Cross-country &amp; remarks</button>
+  <button id="quickExtraToggle" class="btn" type="button" aria-expanded="false" aria-controls="quickExtraFields quickRemarks" onclick="toggleQuickEntryExtras()">+ Cross-country &amp; remarks</button>
 </div>
 <div id="quickExtraFields" class="checkbox-row quick-entry-optional">
   <input id="crossCountry" type="checkbox">
@@ -290,7 +290,7 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
   <div id="specialOpsPreview" class="mini" style="margin-top:8px"></div>
 </details>
 
-<div class="field quick-entry-optional"><label>Remarks and endorsements</label><textarea id="remarks"></textarea></div>
+<div id="quickRemarks" class="field quick-entry-optional"><label>Remarks and endorsements</label><textarea id="remarks"></textarea></div>
 ${(!!editId&&correctingArchivedId===editId)?`<div class="field"><label>Reason for correction (required)</label><textarea id="correctionReason" placeholder="What was incorrect and why?" required></textarea></div>`:''}
 <div class="actions"><button type="button" class="btn quick-entry-cancel" onclick="cancelFlightForm('${editing?existing.id:''}')">Cancel</button><button type="button" id="saveFlightBtn" class="btn primary" onclick="saveFlight()">${(!!editId&&correctingArchivedId===editId)?'Propose correction':editing?'Save changes':'Save flight'}</button></div>
 </form>`;
