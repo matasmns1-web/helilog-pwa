@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.31.3 — Compact Quick Flight · Test</title>
+<title>HeliLog V2.31.4 — Compact Quick Flight · Test</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -300,6 +300,25 @@ html.helilog-test-mode .brand::after{
 }
 
 
+/* V2.31.4: eliminate accidental page dragging only when compact Quick fits.
+ * The JS removes this class before text keyboard interaction or overflow.
+ * position:fixed prevents iOS standalone rubber-band scrolling (overflow:
+ * hidden alone is insufficient on some Safari versions).
+ */
+@media screen and (max-width:850px) {
+  html.helilog-quick-scroll-locked,
+  html.helilog-quick-scroll-locked body {
+    overflow-y:hidden!important;
+    overscroll-behavior-y:none;
+  }
+  html.helilog-quick-scroll-locked body {
+    position:fixed;
+    inset:0;
+    width:100%;
+    height:100%;
+  }
+}
+
 /* V2.31: condensed Quick Flight view. Same controls, IDs and save path as Full. */
 @media screen {
   #flightForm.quick-entry-active {
@@ -453,7 +472,7 @@ html.helilog-test-mode .brand::after{
 <link rel="stylesheet" href="./guide.css?v=2.29" media="screen">
 </head>
 <body><div class="layout">
-<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.31.3 · TEST ENVIRONMENT</span></div><nav>
+<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.31.4 · TEST ENVIRONMENT</span></div><nav>
 <div class="nav-group-label">Flight operations</div>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button>
 <div class="nav-group-label">Records &amp; assets</div>
@@ -3378,6 +3397,7 @@ function setFlightEntryMode(mode){
     ? 'Core UTC flight details and Save are together. Expand options only when needed.'
     : 'All flight fields are available. Your entries are kept when switching modes.';
   updateQuickPICVisibility();
+  if(typeof scheduleQuickFlightScrollLock==='function')scheduleQuickFlightScrollLock();
 }
 function updateQuickPICVisibility(){
   const form=document.getElementById('flightForm');
@@ -3394,6 +3414,7 @@ function toggleQuickEntryExtras(){
     button.setAttribute('aria-expanded',String(expanded));
     button.textContent=expanded?'− Hide cross-country & remarks':'+ Cross-country & remarks';
   }
+  if(typeof scheduleQuickFlightScrollLock==='function')scheduleQuickFlightScrollLock();
 }
 function updateQuickNightNotice(outcome){
   const note=document.getElementById('quickNightNotice');
@@ -3405,6 +3426,7 @@ function updateQuickNightNotice(outcome){
   note.textContent=show?
     'Automatic night time unavailable: '+String(outcome.reason||'Missing coordinates')+
     '. Uncheck Auto for manual entry or add the operating site under Settings → Aerodromes & Helipads.':'';
+  if(typeof scheduleQuickFlightScrollLock==='function')scheduleQuickFlightScrollLock();
 }
 function add(editId=null,quick=false){
 if(editId && isArchivedFlight(editId)&&correctingArchivedId!==editId){
@@ -5944,7 +5966,7 @@ function deleteQualification(id){
   save();
   profile();
 }
-/* V2.31.3. Searchable, offline-friendly guide and current release notes. */
+/* V2.31.4. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
   {
     "category": "Records & signatures",
@@ -5997,7 +6019,7 @@ const HELILOG_GUIDE_TOPICS=[
       "Review aircraft and departure/arrival locations and enter the correct flight date.",
       "Enter both times in UTC (24-hour HH:mm or HHmm).",
       "The compact Quick Flight screen pairs date/aircraft, departure/UTC time, arrival/UTC time, flight duration/function, take-offs and Night/IFR. Save stays above the phone navigation bar.",
-      "The form uses spare height below it to move closer to your thumb. On smaller screens or while typing, it stays scrollable and adapts automatically.",
+      "Quick Flight stays at the top and does not drift when you swipe if all fields fit above the phone navigation. Opening the keyboard unlocks normal scrolling; expanding fields or showing a long warning also permits scrolling whenever needed.",
       "For PIC or SOLO, the Name of PIC is SELF automatically; DUAL, SPIC, PICUS and CO-PILOT show the commander's PIC field.",
       "Night time stays on automatic UTC/civil-twilight calculation by default. If coordinates are unavailable, an on-screen warning tells you to choose manual night time or set up your site.",
       "Open Cross-country & remarks only when needed. Use Full details for multi-pilot configuration, independent landing counts, instructor and specialised operations.",
@@ -6147,6 +6169,11 @@ const HELILOG_GUIDE_TOPICS=[
 ];
 const HELILOG_GUIDE_UPDATES=[
   {
+    "v": "V2.31.4",
+    "name": "Quick Flight scroll behavior",
+    "detail": "When the compact Quick Flight form fits on a phone screen, it stays fixed while swiping. Focusing a typing field unlocks normal scrolling; closing the keyboard locks it again if everything fits."
+  },
+  {
     "v": "V2.31.3",
     "name": "Return from flight review",
     "detail": "Viewing a flagged flight now offers Back to review, resuming the same warning and the checkbox if the batch remains unchanged. Editing flights or page selection requires renewed acknowledgement."
@@ -6269,8 +6296,74 @@ function isMobileTypingField(el){
   let type=String(el.type||'text').toLowerCase();
   return !['button','submit','reset','checkbox','radio','file','date','time','month','week','color','range','hidden'].includes(type);
 }
+/* V2.31.4: prevent unused-space rubber-band scrolling in compact Quick.
+ * Never lock a form that would need scrolling, including expanded options and
+ * warnings. Release immediately for keyboard focus and on route changes.
+ * State is ephemeral: no changes to flight data or account storage. */
+let quickViewportObserver=null,quickViewportObservedForm=null;
+let quickScrollUpdatePending=false;
+function syncQuickFlightScrollLock(){
+  const root=document.documentElement;
+  const form=document.getElementById('flightForm');
+  const quick=!!form?.classList.contains('quick-entry-active');
+  const mobile=window.innerWidth<=850;
+  const typing=document.body.classList.contains('keyboard-open')||
+    isMobileTypingField(document.activeElement);
+  const eligible=mobile&&quick&&!typing;
+  const nav=document.querySelector('.mobile');
+  let fits=false;
+  if(eligible&&nav){
+    const navStyle=window.getComputedStyle?.(nav);
+    if(navStyle?.display!=='none'){
+      const availableBottom=nav.getBoundingClientRect().top;
+      const scrollY=window.scrollY||document.documentElement.scrollTop||0;
+      // Compare at the top of the page, regardless of current scroll.
+      const formBottom=form.getBoundingClientRect().bottom+scrollY;
+      const heading=document.querySelector('#app > .top');
+      const headingTop=heading?.getBoundingClientRect().top??0;
+      fits=Number.isFinite(formBottom)&&Number.isFinite(availableBottom)&&
+        formBottom<=availableBottom-8&&headingTop+scrollY>=0;
+    }
+  }
+  const shouldLock=eligible&&fits;
+  if(!shouldLock){
+    root.classList.remove('helilog-quick-scroll-locked');
+  }else{
+    // Reset a residual scroll from keyboard input before locking the body.
+    // Never do this if expanded content actually needs scrolling.
+    if(!root.classList.contains('helilog-quick-scroll-locked')){
+      window.scrollTo(0,0);
+      root.classList.add('helilog-quick-scroll-locked');
+    }
+  }
+  if(typeof ResizeObserver==='function'){
+    if(!quickViewportObserver){
+      quickViewportObserver=new ResizeObserver(()=>scheduleQuickFlightScrollLock());
+    }
+    if(quickViewportObservedForm!==form){
+      quickViewportObserver.disconnect();
+      quickViewportObservedForm=quick?form:null;
+      if(quickViewportObservedForm){
+        quickViewportObserver.observe(quickViewportObservedForm);
+        const heading=document.querySelector('#app > .top');
+        if(heading)quickViewportObserver.observe(heading);
+      }
+    }
+  }
+}
+function scheduleQuickFlightScrollLock(){
+  if(quickScrollUpdatePending)return;
+  quickScrollUpdatePending=true;
+  window.requestAnimationFrame(()=>{
+    quickScrollUpdatePending=false;
+    syncQuickFlightScrollLock();
+  });
+}
 function updateMobileKeyboardUI(){
   document.body.classList.toggle('keyboard-open',isMobileTypingField(document.activeElement));
+  // Focus must release the locked viewport before iOS scrolls the input
+  // above its keyboard; refreeze only after it closes and the form fits.
+  syncQuickFlightScrollLock();
 }
 document.addEventListener('focusin',updateMobileKeyboardUI);
 document.addEventListener('focusout',()=>setTimeout(updateMobileKeyboardUI,60));
@@ -6278,6 +6371,7 @@ window.addEventListener('resize',updateMobileKeyboardUI);
 if(window.visualViewport) window.visualViewport.addEventListener('resize',updateMobileKeyboardUI);
 
 function render(){
+  document.documentElement.classList.remove('helilog-quick-scroll-locked');
   if(!v23Unlocked){v23LoginView();return;}
   let v=location.hash.slice(1)||'dashboard';
   if(v23AccountWorkspace()&&v==='testmode'){
@@ -6300,7 +6394,9 @@ function render(){
       b.classList.toggle('on',active);
     });
     setTimeout(updatePWAStatus,0);
+    scheduleQuickFlightScrollLock();
   }catch(e){
+    document.documentElement.classList.remove('helilog-quick-scroll-locked');
     app.innerHTML=`<div class="card"><h2>HeliLog could not load this screen</h2><p class="muted">${String(e)}</p></div>`;
   }
 }
