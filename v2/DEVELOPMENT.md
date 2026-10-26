@@ -189,3 +189,10 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 - The Backup & Restore page now offers the full JSON backup and the read-only AES-256-GCM encrypted cloud-snapshot checker; the legacy V2.8 unencrypted recovery-package download and inspect buttons are hidden from the user interface.
 - Existing archive-integrity audits, historical V2.8 data compatibility functions, encrypted snapshot downloads and offline verification (including the sign-in screen) remain unchanged. Signed-in cloud accounts still cannot use local full-backup restore to overwrite cloud records.
 - The Help & Guide, staged regression assertions, app version, and service-worker cache were updated together. No Supabase migrations, storage mutations, or production changes. Independent offsite storage and end-to-end isolated disaster restoration are still future tasks.
+
+## V2.33 — FCL.060 recent-experience Phase 1 (TEST)
+
+- A dedicated Recency page (desktop navigation/mobile More) and short dashboard card show rolling 90-calendar-day pilot-flying evidence separately for each helicopter ICAO type and pilot configuration, without automatic cross-type credit.
+- Only explicitly checked complete take-off, approach and landing PF sequences entered under Full Flight Entry → More details count. Night sequences also contribute to the general 3-sequence requirement. Unverified historic movements and simulator time remain excluded.
+- Outputs say "Documented" / "Not established", NEVER issue an operational authorisation. IR night alternative, approved FFS credits, 120-day CAT supervised extension, multiple-type credit, licence/operator conditions and specialised recency require independent assessment.
+- No schema changes, silent backfill, write to signed archives or production migration. Test-only; V2.31.4 production remains unchanged.
