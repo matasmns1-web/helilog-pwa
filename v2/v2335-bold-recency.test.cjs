@@ -22,7 +22,7 @@ test('recency page emphasizes operation labels grouped beneath the helicopter ty
  assert.match(html,/recency-detail-type/);
  assert.match(html,/<b class="recency-kind">Night PIC<\/b>/);
  assert.match(html,/<b class="recency-kind">Passenger-carrying<\/b>/);
- assert.doesNotMatch(html,/Single-pilot/);
+ assert.doesNotMatch(html,/class="recency-pilot-note"/);
  assert.equal(JSON.stringify(f.flights),f.before);
 });
 test('dashboard labels operations in bold below a single type heading',()=>{
