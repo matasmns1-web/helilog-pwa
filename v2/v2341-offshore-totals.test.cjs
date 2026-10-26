@@ -70,7 +70,7 @@ test('offshore entry form uses concise day/night landing labels and is not auto-
  assert.match(tot,/countText/);
  const ui=fs.readFileSync(path.join(__dirname,'source/app/09-recency.js'),'utf8');
  assert.match(ui,/Offshore landings/);
- assert.match(ui,/all\|/);
+ assert.match(ui,/single\|multi\|all/);
 });
 test('prior SP and MP local NVIS/HHO indicator selections map to consolidated same-type selection',()=>{
  const source=fs.readFileSync(path.join(__dirname,'source/app/09-recency.js'),'utf8');
