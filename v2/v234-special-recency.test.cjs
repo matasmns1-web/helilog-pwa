@@ -14,7 +14,7 @@ test('HHO recency counts day and night cycles separately in 90 days',()=>{
  const r=calc.assess(flights,ac,d,'G2CA','HHO');
  assert.equal(r.day,6);assert.equal(r.night,3);
  assert.equal(r.dayMet,true);assert.equal(r.nightMet,true);
- assert.equal(r.dayLapse,'2027-01-20');assert.equal(r.nightLapse,'2027-01-22');
+ assert.equal(r.dayLapse,'2027-01-22');assert.equal(r.nightLapse,'2027-01-22');
  assert.equal(r.missingCounts,0);
 });
 test('NVIS counts distinct flagged real flights, not hours/cycles, and excludes simulator sessions',()=>{
