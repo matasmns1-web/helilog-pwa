@@ -218,3 +218,10 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 - Show status (requirement documented / threshold met as estimate / below recorded threshold), not an ever-increasing 8/3 headline; counts remain contextual evidence only.
 - If a recorded threshold is met, show the projected date on which it would first fall below the minimum **if there are no further qualifying flights**. Window is the preceding rolling 90 days, not a new fixed 90-day validity certificate.
 - Preserve each account's existing dashboard selections and all original flights, archives, recency calculation and protected records.
+
+## V2.33.4 — Compact recency cards (TEST)
+
+- Dashboard displays pinned recency as a short status list beside Upcoming dates, rather than a full-width nested card. If nothing is selected, no recency card is shown.
+- Recency page displays one compact All recencies list with expandable details, avoiding repeating full cards for each aircraft configuration and operation.
+- Keep the colour distinctions (confirmed / auto-estimated / not met), account/device-scoped dashboard selection, 90-day movement arithmetic, and private/signed flight history unchanged.
+- No database migrations, automatic recency backfill or production deployment.

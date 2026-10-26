@@ -83,13 +83,13 @@ function dashboard(){
     </div>
   </div>
 
-  ${recencySummaryMarkup()}
-
   <div class="grid two" style="margin-top:16px">
     <div class="card">
       <div class="head"><h2>Recent flights</h2><button class="btn" onclick="go('logbook')">View all</button></div>
       <div style="overflow:auto"><table><thead><tr><th>Date</th><th>Type</th><th>Route</th><th>Time</th><th>Function</th></tr></thead><tbody>${fs.slice(0,6).map(row).join('')}</tbody></table></div>
     </div>
+    <div class="dashboard-side-stack">
+    ${recencySummaryMarkup()}
     <div class="card">
       <div class="head"><h2>Upcoming dates</h2><button class="btn" onclick="go('profile')">Profile</button></div>
       <div class="reminder-list">
@@ -100,7 +100,8 @@ function dashboard(){
           return `<div class="reminder-item"><div><b>${htmlEscape(r.label)}</b><div class="muted">${htmlEscape(r.type)} · ${displayDate(r.date)}</div></div><div class="reminder-days ${cls}">${txt}</div></div>`;
         }).join(''):'<div class="muted">No medical or qualification validity dates recorded.</div>'}
       </div>
-      <div class="mini" style="margin-top:10px">Date reminders only. See Recency for documented flight evidence; HeliLog cannot certify legal flying privileges.</div>
+      <div class="mini" style="margin-top:10px">Date reminders only. See Recency for flight evidence; HeliLog cannot certify flying privileges.</div>
+    </div>
     </div>
   </div>
 

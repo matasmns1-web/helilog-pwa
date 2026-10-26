@@ -503,3 +503,36 @@ html.helilog-test-mode .brand::after{
  .recency-picker-card .recency-dashboard-choice{padding:11px 12px}
  .recency-state{font-size:19px}
 }
+
+/* V2.33.4 — compact recency alongside Upcoming dates, no nested status cards */
+.dashboard-side-stack{display:grid;align-content:start;gap:14px;min-width:0}
+.dashboard-recency-card{min-width:0}
+.dashboard-recency-card .head{margin-bottom:3px}
+.recency-dashboard-list{display:grid}
+.recency-dashboard-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.recency-dashboard-row:last-child{border-bottom:0}
+.recency-dashboard-row-text{min-width:0}
+.recency-dashboard-row-text>b{font-size:13px}
+.recency-dashboard-row-text>.muted{font-size:12px;margin-top:3px;line-height:1.4}
+.recency-compact-status{display:inline-flex;justify-content:center;align-items:center;white-space:nowrap;border:1px solid currentColor;border-radius:999px;padding:4px 9px;font-size:11px;font-weight:750;letter-spacing:.01em;flex-shrink:0}
+.recency-compact-status.recency-tone-met{color:var(--cockpit-accent-bright,#43d6c5)}
+.recency-compact-status.recency-tone-estimated{color:var(--cockpit-cyan,#84bddf)}
+.recency-compact-status.recency-tone-below{color:var(--cockpit-warning,#efc478)}
+.recency-dashboard-disclaimer{margin-top:6px;font-size:11px;line-height:1.4}
+.recency-detail-card .head{margin-bottom:5px}
+.recency-detail-list{display:grid}
+.recency-detail-row{border-bottom:1px solid var(--line);min-width:0}
+.recency-detail-row:last-child{border-bottom:0}
+.recency-detail-row>summary{display:flex;align-items:center;gap:13px;cursor:pointer;list-style:none;padding:13px 0}
+.recency-detail-row>summary::-webkit-details-marker{display:none}
+.recency-detail-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;font-size:13px}
+.recency-detail-main>.muted{font-size:12px;line-height:1.45}
+.recency-expand-cue{font-size:16px;color:var(--muted);transition:transform .15s}
+.recency-detail-row[open] .recency-expand-cue{transform:rotate(180deg)}
+.recency-detail-expanded{margin:0 0 13px;padding:10px 13px;border-left:2px solid var(--line);background:rgba(0,0,0,.07);border-radius:0 8px 8px 0;color:var(--muted);font-size:12px;line-height:1.5}
+.recency-detail-expanded p{margin:0 0 7px}
+.recency-detail-expanded p:last-child{margin-bottom:0}
+@media(max-width:700px){
+ .recency-detail-row>summary{gap:9px}
+ .recency-compact-status{font-size:10px;padding:4px 7px}
+}
