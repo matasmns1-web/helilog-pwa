@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.33.2 — Flight Recency · Test</title>
+<title>HeliLog V2.33.3 — Flight Recency · Test</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -488,12 +488,42 @@ html.helilog-test-mode .brand::after{
 .recency-mini-label{min-width:0}
 .recency-mini-label .muted{font-size:12px;margin-top:3px}
 @media(max-width:650px){.recency-choice-grid{grid-template-columns:1fr}}
+
+/* V2.33.3: simple dashboard selector and rolling recency status */
+.recency-picker-card .recency-choice-grid{gap:7px 11px}
+.recency-picker-card .recency-dashboard-choice{padding:10px 12px;min-height:57px;gap:10px}
+.recency-choice-name{flex:1;min-width:0;font-size:13px}
+.recency-choice-name>b{font-size:13px}
+.recency-choice-title{font-size:12px;margin-top:2px}
+.recency-choice-status{flex:0 0 auto;margin-left:auto;font-size:11px;font-weight:700;border:1px solid var(--line);border-radius:999px;padding:3px 9px;white-space:nowrap}
+.recency-tone-met .recency-state,.recency-tone-met .recency-choice-status,.recency-tone-met.recency-choice-status{color:var(--cockpit-accent-bright,#43d6c5)}
+.recency-tone-estimated .recency-state,.recency-tone-estimated .recency-choice-status,.recency-tone-estimated.recency-choice-status{color:var(--cockpit-cyan,#84bddf)}
+.recency-tone-below .recency-state,.recency-tone-below .recency-choice-status,.recency-tone-below.recency-choice-status{color:var(--cockpit-warning,#efc478)}
+.recency-panel-label{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.recency-panel-label>.mini{margin:0}
+.recency-state{font-size:21px;font-weight:800;line-height:1.25;margin-top:15px;letter-spacing:-.02em}
+.recency-count-detail{color:var(--muted);font-size:13px;line-height:1.55;margin:7px 0}
+.recency-lapse{display:flex;flex-direction:column;gap:3px;border-top:1px solid var(--line);margin-top:14px;padding-top:11px;font-size:12px;color:var(--muted)}
+.recency-lapse>b{font-size:13px;color:var(--ink);font-weight:700}
+.recency-indicator{display:flex;flex-direction:column;align-items:stretch;gap:9px;padding:14px;min-height:125px}
+.recency-indicator-status{display:flex;flex-direction:column;align-items:flex-start;gap:5px}
+.recency-indicator-status>strong{font-size:18px;line-height:1.25}
+.recency-tone-met .recency-indicator-status>strong{color:var(--cockpit-accent-bright,#43d6c5)}
+.recency-tone-estimated .recency-indicator-status>strong{color:var(--cockpit-cyan,#84bddf)}
+.recency-tone-below .recency-indicator-status>strong{color:var(--cockpit-warning,#efc478)}
+.recency-indicator-status>span{font-size:12px;line-height:1.45;color:var(--muted)}
+.recency-indicator .recency-lapse{margin-top:auto}
+@media(max-width:700px){
+ .recency-choice-grid{grid-template-columns:1fr}
+ .recency-picker-card .recency-dashboard-choice{padding:11px 12px}
+ .recency-state{font-size:19px}
+}
 </style>
 <link rel="stylesheet" href="./dark-cockpit.css?v=2.20-cockpit-3" media="screen">
 <link rel="stylesheet" href="./guide.css?v=2.29" media="screen">
 </head>
 <body><div class="layout">
-<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.33.2 · TEST ENVIRONMENT</span></div><nav>
+<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.33.3 · TEST ENVIRONMENT</span></div><nav>
 <div class="nav-group-label">Flight operations</div>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="recency">◷ Recency</button>
 <div class="nav-group-label">Records &amp; assets</div>
@@ -5197,7 +5227,7 @@ function saveBroughtForwardTotals(ev){
 }
 
 const profileExpanded={medical:false,qualifications:false};
-/* HeliLog V2.33.1 — read-only automatic FCL.060 estimates.
+/* HeliLog V2.33.3 — rolling FCL.060 status presentation.
  * "CAT" is not a flight classification: FCL.060 applies to passenger/CAT
  * operations, but qualifying prior PF movements may be private/training.
  */
@@ -5218,7 +5248,25 @@ function recencyStatus(row,kind){
  const change=kind==='night'?row.nextNightLoss:row.nextGeneralLoss;
  const days=recencyDaysTo(change);
  return {count,target,confirmed,threshold,change,days,
-   text:confirmed?'Confirmed evidence':threshold?'Estimated from logbook':'Below threshold'};
+   text:confirmed?'Requirement met':threshold?'90-day threshold met':'Threshold not met',
+   tone:confirmed?'met':threshold?'estimated':'below',
+   short:confirmed?'Met':threshold?'Estimated':'Below threshold'};
+}
+function recencyStatusDetails(status){
+ const n=status.count;
+ const source=status.confirmed?'confirmed PF sequence':'recorded movement pair';
+ const plural=n===1?'':'s';
+ const counted=n+' '+source+plural+' in the preceding 90 days.';
+ if(status.threshold)return counted;
+ return counted+' '+Math.max(0,status.target-n)+' more needed to reach the recorded threshold.';
+}
+function recencyLapseMarkup(status){
+ if(!status.threshold||!status.change)return '';
+ const days=status.days;
+ return `<div class="recency-lapse"><span>If no further qualifying flights:</span>
+   <b>Threshold falls below minimum on ${displayDate(status.change)}</b>
+   ${days!==null?`<span>In ${days} day${days===1?'':'s'}</span>`:''}
+ </div>`;
 }
 // View preferences only. Per-account and per-device: no logbook mutation,
 // cloud schema migration, or cross-account sharing of dashboard choices.
@@ -5272,19 +5320,25 @@ function recencySummaryMarkup(){
  const chosen=recencyDashboardOptions(recencyRows()).filter(o=>selected.has(o.key));
  if(!chosen.length)return '';
  const item=({row,kind})=>{
-   const s=recencyStatus(row,kind);
-   return `<div class="recency-mini">
-      <div class="recency-mini-label"><b>${htmlEscape(row.type)}</b> · ${row.config==='multi'?'Multi-pilot':'Single-pilot'}
+   const status=recencyStatus(row,kind);
+   return `<div class="recency-mini recency-indicator">
+      <div class="recency-mini-label">
+        <b>${htmlEscape(row.type)}</b> · ${row.config==='multi'?'Multi-pilot':'Single-pilot'}
         <div class="muted">${kind==='night'?'Night PIC':'Passenger-carrying'}</div>
       </div>
-      <b>${s.count}/${s.target}</b><span class="mini">${s.text}</span>
+      <div class="recency-indicator-status recency-tone-${status.tone}">
+         <strong>${status.text}</strong>
+         <span>${recencyStatusDetails(status)}</span>
+      </div>
+      ${recencyLapseMarkup(status)}
     </div>`;
  };
  return `<div class="card" style="margin-top:16px">
-   <div class="head"><div><h2>Recent experience</h2><div class="muted">Your selected FCL.060 indicators · rolling 90 days</div></div>
+   <div class="head"><div><h2>Recent experience</h2>
+      <div class="muted">Selected FCL.060 indicators · rolling 90 days</div></div>
      <button class="btn" onclick="go('recency')">Customize</button></div>
    <div class="recency-mini-grid">${chosen.map(item).join('')}</div>
-   <div class="mini" style="margin-top:10px">Movement-pair counts may be estimates, not confirmed legal recency. Review approaches, IR alternatives and operator requirements.</div>
+   <div class="mini" style="margin-top:10px">Automatic paired movements are estimates, not independent confirmation of approaches or legal flying privileges.</div>
  </div>`;
 }
 function recency(){
@@ -5298,28 +5352,29 @@ function recency(){
    const status=recencyStatus(o.row,o.kind);
    return `<label class="recency-dashboard-choice">
      <input type="checkbox" data-recency-key="${o.key}" ${enabled.has(o.key)?'checked':''} onchange="recencySetDashboardIndicator(this)">
-     <span><b>${htmlEscape(o.row.type)}</b> · ${configuration}<span class="recency-choice-title">${title} · ${status.count}/${status.target}</span></span>
+     <span class="recency-choice-name"><b>${htmlEscape(o.row.type)}</b> · ${configuration}<span class="recency-choice-title">${title}</span></span>
+     <span class="recency-choice-status recency-tone-${status.tone}">${status.short}</span>
    </label>`;
  }).join('');
  const renderOne=row=>{
    const gen=recencyStatus(row,'general'),night=recencyStatus(row,'night');
-   const cell=(title,v)=>`<div class="recency-panel">
-     <b>${title}</b><div class="recency-count">${v.count}/${v.target}</div>
-     <div class="mini">${v.text}</div>
-     ${v.change?`<div class="mini">Next 90-day change: ${displayDate(v.change)}${v.days!==null&&v.days<=30?' ('+v.days+' days)':''}</div>`:''}
+   const cell=(title,rule,status)=>`<div class="recency-panel recency-tone-${status.tone}">
+     <div class="recency-panel-label"><b>${title}</b><span class="mini">${rule}</span></div>
+     <div class="recency-state">${status.text}</div>
+     <p class="recency-count-detail">${recencyStatusDetails(status)}</p>
+     ${status.tone==='estimated'?'<div class="mini">Based on automatic PIC/SOLO movement pairs. Approaches are not independently verified.</div>':''}
+     ${recencyLapseMarkup(status)}
    </div>`;
    return `<div class="card" style="margin-top:14px">
      <div class="head"><h2>${htmlEscape(row.type)} <span class="muted" style="font-size:14px">· ${row.config==='multi'?'Multi-pilot':'Single-pilot'}</span></h2></div>
-     <div class="recency-grid">${cell('Passenger-carrying — FCL.060(b)(1)',gen)}${row.nightApplicable?cell('Night PIC — FCL.060(b)(2)',night):''}</div>
-     <div class="mini" style="margin-top:12px">${row.estimatedFlights?row.estimatedFlights+' single-pilot PIC/SOLO flight(s) automatically estimated from paired movements. ':''}${row.unverifiedFlights?
-       row.unverifiedFlights+' flight(s) with up to '+row.unverifiedPotential+' unverified take-off/landing pairs require PF evidence.':
-       'No additional unverified PF movement pairs in this 90-day window.'}</div>
+     <div class="recency-grid">${cell('Passenger-carrying','FCL.060(b)(1)',gen)}${row.nightApplicable?cell('Night PIC','FCL.060(b)(2)',night):''}</div>
+     ${row.unverifiedFlights?`<div class="mini" style="margin-top:12px">${row.unverifiedFlights} flight(s) have unverified PF movement pairs excluded from the estimate.</div>`:''}
    </div>`;
  };
  app.innerHTML=header('Recency','Select which recencies you want on the dashboard and view the full breakdown below',
     '<button class="btn" onclick="go(\'dashboard\')">← Dashboard</button>')+
    `<div class="card recency-picker-card">
-     <div class="head"><div><h2>Show on dashboard</h2><div class="muted">Tick only the recencies you want to see at a glance.</div></div>
+     <div class="head"><div><h2>Show on dashboard</h2><div class="muted">Choose which recencies appear on your dashboard.</div></div>
        <span class="mini" id="recencyDashboardSelectionCount">${selectedCount} selected</span></div>
      ${dashboardOptions.length?`<div class="recency-choice-grid">${chooser}</div>`:'<p class="muted">Add flights first to choose recency indicators.</p>'}
      <div class="mini" style="margin-top:12px" id="recencyDashboardSaveMessage">Choices are saved on this device only. Unticking every option removes the recency card from the dashboard.</div>
@@ -5330,7 +5385,7 @@ function recency(){
      <p class="mini">Single-pilot PIC/SOLO movements are estimated from recorded take-offs and landings. Earlier private and training flights can contribute, but HeliLog does not independently verify the approach, type/FFS alternatives, or legal privileges. Multi-pilot, other pilot functions, licence and operator requirements need separate assessment.</p>
      <p class="mini"><a target="_blank" rel="noopener noreferrer" href="https://www.easa.europa.eu/en/document-library/easy-access-rules/online-publications/easy-access-rules-aircrew-regulation-eu-no-11782011">EASA Aircrew Rules · FCL.060</a></p>
    </details>
-   <div class="recency-section-heading" style="margin-top:20px"><h2>All recencies</h2><p class="mini">Everything remains visible here, even if it is hidden from your dashboard.</p></div>
+   <div class="recency-section-heading" style="margin-top:20px"><h2>All recencies</h2><p class="mini">Detailed rolling 90-day status · independent of dashboard selections.</p></div>
    ${rows.length?rows.map(renderOne).join(''):'<div class="card" style="margin-top:14px">No flights recorded yet. Recency is hidden until you have flying history.</div>'}
 `;
 }
@@ -6218,7 +6273,7 @@ function deleteQualification(id){
   save();
   profile();
 }
-/* V2.33.2. Searchable, offline-friendly guide and current release notes. */
+/* V2.33.3. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
   {
     "category": "Flight operations",
@@ -6227,6 +6282,8 @@ const HELILOG_GUIDE_TOPICS=[
     "steps": [
       "Open Recency from the desktop navigation, the mobile More menu, or the dashboard Recent experience summary.",
       "Under Show on dashboard, tick any combination of Passenger-carrying and Night PIC recency for each aircraft type and pilot configuration. Choices save automatically on this device; if none is selected, no recency card appears on the dashboard.",
+      "Recency follows a rolling preceding 90-day window, not a fixed certificate. The dashboard and details show a status instead of an ever-increasing x/3 counter; when enough qualifying movements are recorded, HeliLog shows when the recorded threshold would lapse if you make no further qualifying flights.",
+      "A threshold inferred automatically from take-offs and landings is labelled Estimated; only explicitly confirmed pilot-flying sequences get a documented requirement-met status. HeliLog does not certify privileges.",
       "Review each type separately; single-pilot and multi-pilot flying are not automatically combined.",
       "For single-pilot PIC/SOLO, normal day/night take-off and landing counts automatically provide a recency estimate, including earlier logbook flights. There is no need to enter the same movements again.",
       "To exclude an exceptional PIC/SOLO flight from the estimate, edit the unsigned flight and tick Exclude from automatic recency estimate under Full details → More details. Other pilot functions and multi-pilot operations still offer manual PF evidence fields.",
@@ -6453,6 +6510,11 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {
+    "v": "V2.33.3",
+    "name": "Clear rolling recency statuses",
+    "detail": "Condensed dashboard selector; replace growing x/3 counters with requirement/threshold statuses, supporting recorded counts, and the date the 90-day threshold is projected to lapse if no further qualifying flights occur."
+  },
   {
     "v": "V2.33.2",
     "name": "Choose dashboard recency indicators",
