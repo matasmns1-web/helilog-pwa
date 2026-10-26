@@ -1,4 +1,4 @@
-/* V2.33.3. Searchable, offline-friendly guide and current release notes. */
+/* V2.33.4. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
   {
     "category": "Flight operations",
@@ -8,6 +8,7 @@ const HELILOG_GUIDE_TOPICS=[
       "Open Recency from the desktop navigation, the mobile More menu, or the dashboard Recent experience summary.",
       "Under Show on dashboard, tick any combination of Passenger-carrying and Night PIC recency for each aircraft type and pilot configuration. Choices save automatically on this device; if none is selected, no recency card appears on the dashboard.",
       "Recency follows a rolling preceding 90-day window, not a fixed certificate. The dashboard and details show a status instead of an ever-increasing x/3 counter; when enough qualifying movements are recorded, HeliLog shows when the recorded threshold would lapse if you make no further qualifying flights.",
+      "The Dashboard shows compact recent-experience rows next to Upcoming dates. On the Recency page, expand an item under All recencies to see counts, rule references and more detailed qualification notes.",
       "A threshold inferred automatically from take-offs and landings is labelled Estimated; only explicitly confirmed pilot-flying sequences get a documented requirement-met status. HeliLog does not certify privileges.",
       "Review each type separately; single-pilot and multi-pilot flying are not automatically combined.",
       "For single-pilot PIC/SOLO, normal day/night take-off and landing counts automatically provide a recency estimate, including earlier logbook flights. There is no need to enter the same movements again.",
@@ -235,6 +236,11 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {
+    "v": "V2.33.4",
+    "name": "Compact recent-experience dashboard and Recency page",
+    "detail": "Move selected recency into a compact list alongside Upcoming dates, with concise colour-coded statuses. Show all recencies as expandable rows, keeping details and explanations out of the default view."
+  },
   {
     "v": "V2.33.3",
     "name": "Clear rolling recency statuses",
