@@ -1,5 +1,20 @@
-/* V2.33.6. Searchable, offline-friendly guide and current release notes. */
+/* V2.34. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
+  {
+    "category": "Flight operations",
+    "title": "Specialised operations — cycles and recent experience",
+    "summary": "Record operational cycles alongside hours, then review the dedicated NVIS, HHO and offshore 90-day counters.",
+    "steps": [
+      "Open Full Flight Entry → More details → Specialised helicopter operations.",
+      "Tick the operations flown and enter Operation time (H:MM). For operations with cycles, enter completed Day cycles and Night cycles; OFFSHORE fields represent complete offshore take-off/departure/approach/landing sequences instead.",
+      "A flight marked NVIS counts as one NVIS flight for the 90-day indicator, even if its operation-time entry is zero. NVIS does not use a cycle counter.",
+      "For HHO, only count hoist cycles containing a transition to and from hover. Night counts require recorded night flight time. Old entries without cycle counts remain unknown and are never silently credited.",
+      "Open Recency to see NVIS, Hoist and Offshore rules for types with recorded specialised activity. Select individual items under Show on dashboard if desired.",
+      "These are record-based indicators, not authorisations. Operator approval, relevant crew role, training/checking, supervised operations and approved simulator alternatives must be checked separately."
+    ],
+    "route": "recency",
+    "action": "Open Recency"
+  },
   {
     "category": "Flight operations",
     "title": "Recent experience — passenger and night (FCL.060)",
@@ -237,6 +252,11 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {
+    "v": "V2.34",
+    "name": "Specialised operations cycles and recency (Phase 2)",
+    "detail": "Full Flight Entry now stores day/night cycles next to operation hours, and complete offshore sequences where appropriate. NVIS counts one flight automatically. Recency shows recorded NVIS, hoist and offshore 90-day thresholds without overwriting historic entries or certifying legal privileges."
+  },
   {
     "v": "V2.33.6",
     "name": "Recency grouped by helicopter type",

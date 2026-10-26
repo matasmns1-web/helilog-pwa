@@ -1,8 +1,9 @@
-const CACHE='helilog-v2-33-6-group-by-type-1';
+const CACHE='helilog-v2-34-special-cycles-1';
 const SHELL=[
   './',
   './index.html',
   './recency.js?v=2.33.1',
+  './special-recency.js?v=2.34',
   './dark-cockpit.css?v=2.20-cockpit-3',
   './guide.css?v=2.29',
   './manifest.webmanifest',
