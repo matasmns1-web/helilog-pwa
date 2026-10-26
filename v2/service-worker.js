@@ -1,4 +1,4 @@
-const CACHE='helilog-v2-33-5-bold-recency-1';
+const CACHE='helilog-v2-33-6-group-by-type-1';
 const SHELL=[
   './',
   './index.html',

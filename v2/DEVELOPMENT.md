@@ -230,3 +230,10 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 
 - Bold the **Passenger-carrying** and **Night PIC** recency labels in both the compact dashboard rows and the expandable Recency list, plus the dashboard-selection labels. Dates and status descriptions remain normal weight.
 - Presentation-only. Keeps recorded counts, rolling FCL.060 evidence, current selection preferences, account isolation, flights, signed archive and production unaffected.
+
+## V2.33.6 — Group Recency by aircraft type (TEST)
+
+- Dashboard shows one heading per ICAO helicopter type; under it, labels are **Passenger-carrying** and **Night PIC** rather than repeating the single-/multi-pilot configuration.
+- Recency page groups both dashboard-selector checkboxes and full expandable Recency entries under matching type headings.
+- Where a type has both single-/multi-pilot evidence for the same recency kind, a small crew-configuration qualifier is retained to distinguish separate legally relevant calculations. All stored preference keys remain unchanged.
+- Display-only. No automatic writes/backfills, no changes to the FCL.060 90-day calculation, cloud or signed archive histories, or production.

@@ -16,22 +16,24 @@ function run(){
  const call=code=>vm.runInContext(code,ctx);
  return {ctx,call,flights,before};
 }
-test('bold Night PIC and Passenger-carrying names in Recency list and selector only',()=>{
+test('recency page emphasizes operation labels grouped beneath the helicopter type',()=>{
  const f=run();f.call('recency()');const html=f.ctx.app.innerHTML;
- assert.match(html,/<strong class="recency-kind">Night PIC<\/strong> ·/);
- assert.match(html,/<strong class="recency-kind">Passenger-carrying<\/strong> ·/);
- assert.match(html,/recency-choice-title recency-kind">Night PIC recency/);
- assert.match(html,/recency-choice-title recency-kind">Passenger-carrying recency/);
- assert.doesNotMatch(html,/<strong class="recency-kind">Threshold until/);
+ assert.match(html,/recency-picker-type/);
+ assert.match(html,/recency-detail-type/);
+ assert.match(html,/<b class="recency-kind">Night PIC<\/b>/);
+ assert.match(html,/<b class="recency-kind">Passenger-carrying<\/b>/);
+ assert.doesNotMatch(html,/Single-pilot/);
  assert.equal(JSON.stringify(f.flights),f.before);
 });
-test('dashboard remains compact while highlighting only the recency operation names',()=>{
+test('dashboard labels operations in bold below a single type heading',()=>{
  const f=run();
  f.call('recencySetDashboardIndicator({dataset:{recencyKey:"G2CA|single|night"},checked:true})');
  f.call('recencySetDashboardIndicator({dataset:{recencyKey:"G2CA|single|general"},checked:true})');
  const card=f.call('recencySummaryMarkup()');
- assert.match(card,/<strong class="recency-kind">Night PIC<\/strong> ·/);
- assert.match(card,/<strong class="recency-kind">Passenger-carrying<\/strong> ·/);
+ assert.equal((card.match(/class="recency-type-heading"/g)||[]).length,1);
+ assert.match(card,/<b class="recency-kind">Night PIC<\/b>/);
+ assert.match(card,/<b class="recency-kind">Passenger-carrying<\/b>/);
+ assert.doesNotMatch(card,/Single-pilot/);
  assert.match(card,/Threshold until/);
  assert.equal((card.match(/class="recency-dashboard-row"/g)||[]).length,2);
  assert.equal((card.match(/class="card /g)||[]).length,1);
