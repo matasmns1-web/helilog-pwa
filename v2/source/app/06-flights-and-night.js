@@ -486,7 +486,7 @@ function collectSpecialOpCycles(nightMinutes){
     const nightInput=document.getElementById('specialNightCycles_'+op.code);
     const rawDay=String(dayInput?.value??'').trim(),rawNight=String(nightInput?.value??'').trim();
     const day=Number(rawDay),night=Number(rawNight);
-    if(!/^\\d{1,4}$/.test(rawDay)||!/^\\d{1,4}$/.test(rawNight)||
+    if(!/^\d{1,4}$/.test(rawDay)||!/^\d{1,4}$/.test(rawNight)||
       !Number.isSafeInteger(day)||!Number.isSafeInteger(night)||
       day<0||night<0||day>9999||night>9999||(night>0&&nightMinutes<=0)){
       $('#moreDetails').open=true;
