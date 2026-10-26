@@ -539,3 +539,18 @@ html.helilog-test-mode .brand::after{
 
 /* V2.33.5 — prominent operation names without adding vertical height. */
 .recency-kind{font-weight:750;color:var(--ink)}
+
+/* V2.33.6 — group recency indicators beneath the aircraft type */
+.recency-type-heading{font-size:13px;font-weight:800;line-height:1.35;color:var(--ink);padding:10px 0 3px}
+.recency-dashboard-list .recency-type-group+.recency-type-group{border-top:1px solid var(--line);margin-top:6px;padding-top:6px}
+.recency-dashboard-list .recency-type-heading{padding:10px 0 0}
+.recency-type-group .recency-dashboard-row{padding:8px 0}
+.recency-type-group .recency-dashboard-row:last-child{border-bottom:0}
+.recency-dashboard-row-text>b.recency-kind{font-size:13px}
+.recency-pilot-note{font-size:11px;color:var(--muted);margin-left:8px;white-space:nowrap}
+.recency-picker-type+.recency-picker-type{border-top:1px solid var(--line);padding-top:8px;margin-top:8px}
+.recency-picker-type .recency-type-heading{margin-bottom:7px}
+.recency-detail-type+.recency-detail-type{border-top:1px solid var(--line);margin-top:8px;padding-top:8px}
+.recency-detail-type .recency-type-heading{font-size:14px;padding-top:9px}
+.recency-detail-main>b.recency-kind{font-size:13px}
+@media(max-width:520px){.recency-pilot-note{font-size:10px;margin-left:5px}}

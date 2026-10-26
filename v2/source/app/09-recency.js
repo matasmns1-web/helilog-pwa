@@ -1,4 +1,4 @@
-/* HeliLog V2.33.5 — bold recency labels in compact rows.
+/* HeliLog V2.33.6 — recency grouped by helicopter type.
  * "CAT" is not a flight classification: FCL.060 applies to passenger/CAT
  * operations, but qualifying prior PF movements may be private/training.
  */
@@ -66,6 +66,25 @@ function recencyDashboardOptions(rows){
  }
  return result;
 }
+// Presentation groups only: the underlying single-/multi-pilot calculations
+// and account/device dashboard preference keys remain separate.
+function recencyTypeGroups(options){
+ const groups=new Map();
+ for(const option of options){
+   if(!groups.has(option.row.type))groups.set(option.row.type,[]);
+   groups.get(option.row.type).push(option);
+ }
+ return [...groups].sort((a,b)=>a[0].localeCompare(b[0])).map(([type,items])=>({
+   type,
+   items:items.sort((a,b)=>(a.kind==='general'?0:1)-(b.kind==='general'?0:1)||
+     (a.row.config==='single'?0:1)-(b.row.config==='single'?0:1))
+ }));
+}
+function recencyPilotNote(all,option){
+ return all.some(other=>other!==option&&other.row.type===option.row.type&&
+   other.kind===option.kind&&other.row.config!==option.row.config)
+     ?(option.row.config==='multi'?'Multi-pilot':'Single-pilot'):'';
+}
 function recencySetDashboardIndicator(input){
  const key=String(input?.dataset?.recencyKey||'');
  const options=recencyDashboardOptions(recencyRows());
@@ -94,22 +113,29 @@ function recencyCompactLabel(status){
  return status.tone==='met'?'Met':status.tone==='estimated'?'Estimated met':'Below threshold';
 }
 function recencySummaryMarkup(){
+ const options=recencyDashboardOptions(recencyRows());
  const selected=new Set(recencyDashboardKeys());
- const chosen=recencyDashboardOptions(recencyRows()).filter(o=>selected.has(o.key));
+ const chosen=options.filter(o=>selected.has(o.key));
  if(!chosen.length)return '';
- const item=({row,kind})=>{
-   const status=recencyStatus(row,kind);
+ const item=option=>{
+   const {row,kind}=option,status=recencyStatus(row,kind);
+   const pilot=recencyPilotNote(options,option);
    return `<div class="recency-dashboard-row">
      <div class="recency-dashboard-row-text">
-       <b>${htmlEscape(row.type)} · ${row.config==='multi'?'Multi-pilot':'Single-pilot'}</b>
-       <div class="muted"><strong class="recency-kind">${kind==='night'?'Night PIC':'Passenger-carrying'}</strong> · ${recencyCompactDate(status)}</div>
+       <b class="recency-kind">${kind==='night'?'Night PIC':'Passenger-carrying'}</b>
+       ${pilot?`<span class="recency-pilot-note">${pilot}</span>`:''}
+       <div class="muted">${recencyCompactDate(status)}</div>
      </div>
      <span class="recency-compact-status recency-tone-${status.tone}">${recencyCompactLabel(status)}</span>
    </div>`;
  };
+ const groups=recencyTypeGroups(chosen).map(group=>`<section class="recency-type-group">
+   <div class="recency-type-heading">${htmlEscape(group.type)}</div>
+   <div class="recency-type-rows">${group.items.map(item).join('')}</div>
+ </section>`).join('');
  return `<div class="card dashboard-recency-card">
    <div class="head"><h2>Recent experience</h2><button class="btn" onclick="go('recency')">Customize</button></div>
-   <div class="recency-dashboard-list">${chosen.map(item).join('')}</div>
+   <div class="recency-dashboard-list">${groups}</div>
    <div class="mini recency-dashboard-disclaimer">Estimates only · Confirm approaches and privileges in Recency.</div>
  </div>`;
 }
@@ -118,25 +144,29 @@ function recency(){
  const dashboardOptions=recencyDashboardOptions(rows);
  const enabled=new Set(recencyDashboardKeys());
  const selectedCount=dashboardOptions.filter(o=>enabled.has(o.key)).length;
- const chooser=dashboardOptions.map(o=>{
-   const title=o.kind==='night'?'Night PIC recency':'Passenger-carrying recency';
-   const configuration=o.row.config==='multi'?'Multi-pilot':'Single-pilot';
+ const chooserItem=o=>{
+   const title=o.kind==='night'?'Night PIC':'Passenger-carrying';
+   const pilot=recencyPilotNote(dashboardOptions,o);
    const status=recencyStatus(o.row,o.kind);
    return `<label class="recency-dashboard-choice">
      <input type="checkbox" data-recency-key="${o.key}" ${enabled.has(o.key)?'checked':''} onchange="recencySetDashboardIndicator(this)">
-     <span class="recency-choice-name"><b>${htmlEscape(o.row.type)}</b> · ${configuration}<span class="recency-choice-title recency-kind">${title}</span></span>
+     <span class="recency-choice-name"><b class="recency-kind">${title}</b>${pilot?`<span class="recency-pilot-note">${pilot}</span>`:''}</span>
      <span class="recency-choice-status recency-tone-${status.tone}">${status.short}</span>
    </label>`;
- }).join('');
- const renderOne=({row,kind})=>{
-   const status=recencyStatus(row,kind);
+ };
+ const typeChooser=recencyTypeGroups(dashboardOptions).map(group=>`<section class="recency-picker-type">
+   <div class="recency-type-heading">${htmlEscape(group.type)}</div>
+   <div class="recency-choice-grid">${group.items.map(chooserItem).join('')}</div>
+ </section>`).join('');
+ const renderOne=option=>{
+   const {row,kind}=option,status=recencyStatus(row,kind);
    const headerTitle=kind==='night'?'Night PIC':'Passenger-carrying';
-   const configuration=row.config==='multi'?'Multi-pilot':'Single-pilot';
+   const pilot=recencyPilotNote(dashboardOptions,option);
    return `<details class="recency-detail-row">
      <summary>
        <span class="recency-detail-main">
-         <b>${htmlEscape(row.type)} · ${configuration}</b>
-         <span class="muted"><strong class="recency-kind">${headerTitle}</strong> · ${recencyCompactDate(status)}</span>
+         <b class="recency-kind">${headerTitle}</b>${pilot?`<span class="recency-pilot-note">${pilot}</span>`:''}
+         <span class="muted">${recencyCompactDate(status)}</span>
        </span>
        <span class="recency-compact-status recency-tone-${status.tone}">${recencyCompactLabel(status)}</span>
        <span class="recency-expand-cue" aria-hidden="true">⌄</span>
@@ -150,12 +180,16 @@ function recency(){
      </div>
    </details>`;
  };
+ const allGroups=recencyTypeGroups(dashboardOptions).map(group=>`<section class="recency-detail-type">
+   <div class="recency-type-heading">${htmlEscape(group.type)}</div>
+   <div class="recency-detail-list">${group.items.map(renderOne).join('')}</div>
+ </section>`).join('');
  app.innerHTML=header('Recency','Select which recencies you want on the dashboard and view the full breakdown below',
     '<button class="btn" onclick="go(\'dashboard\')">← Dashboard</button>')+
    `<div class="card recency-picker-card">
      <div class="head"><div><h2>Show on dashboard</h2><div class="muted">Choose which recencies appear on your dashboard.</div></div>
        <span class="mini" id="recencyDashboardSelectionCount">${selectedCount} selected</span></div>
-     ${dashboardOptions.length?`<div class="recency-choice-grid">${chooser}</div>`:'<p class="muted">Add flights first to choose recency indicators.</p>'}
+     ${dashboardOptions.length?typeChooser:'<p class="muted">Add flights first to choose recency indicators.</p>'}
      <div class="mini" style="margin-top:12px" id="recencyDashboardSaveMessage">Choices are saved on this device only. Unticking every option removes the recency card from the dashboard.</div>
    </div>
    <details class="card recency-method" style="margin-top:14px">
@@ -166,7 +200,7 @@ function recency(){
    </details>
    <div class="card recency-detail-card" style="margin-top:14px">
      <div class="head"><div><h2>All recencies</h2><div class="muted">Rolling 90 days · Select a row for details</div></div></div>
-     ${dashboardOptions.length?`<div class="recency-detail-list">${dashboardOptions.map(renderOne).join('')}</div>`:'<p class="muted">No flights recorded yet.</p>'}
+     ${dashboardOptions.length?allGroups:'<p class="muted">No flights recorded yet.</p>'}
    </div>
 `;
 }
