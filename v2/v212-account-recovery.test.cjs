@@ -99,7 +99,7 @@ test("sign in provides an accessible recovery request and matching-password form
  assert.match(gate,/id="v23NewPassword" type="password" minlength="6"/);
  assert.match(gate,/id="v23ConfirmPassword" type="password" minlength="6"/);
  assert.match(gate,/if\(password!==confirmation\|\|password.length<6/);
- assert.match(html,/HeliLog V2\.33\.6/);
+ assert.match(html,/HeliLog V2\.34/);
  assert.match(cloud,/password\.length<6\|\|password\.length>128/);
  assert.match(gate,/Use at least 6 characters/);
 });

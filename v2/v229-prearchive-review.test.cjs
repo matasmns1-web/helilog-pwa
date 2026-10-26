@@ -181,17 +181,17 @@ test('selected exact draft must be reviewed, changed page count invalidates revi
 test('Help guide teaches onboarding, cloud sync, recovery, and new pre-archive review',()=>{
  const guide=read('source/app/13-help-guide.js');
  for(const term of ['Pre-archive flight review','Review flights before printing',
-  'Check sign-in connection','one shared cloud logbook','Restore these missing records','V2.33.6',
+  'Check sign-in connection','one shared cloud logbook','Restore these missing records','V2.34',
   'repeat the review','brand-new device'])assert.ok(guide.toLowerCase().includes(term.toLowerCase()),term);
  assert.match(guide,/htmlEscape\(step\)/);
 });
-test('V2.33.6 external checker is versioned, cached offline and restricted to the test release',()=>{
+test('V2.34 external checker is versioned, cached offline and restricted to the test release',()=>{
  const html=read('source/index.template.html');
  const sw=read('service-worker.js');
  assert.match(html,/prearchive-review\.js\?v=2\.29/);
  assert.match(sw,/prearchive-review\.js\?v=2\.29/);
- assert.match(sw,/helilog-v2-33-6-group-by-type-1/);
- assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.33\.6'/);
+ assert.match(sw,/helilog-v2-34-special-cycles-1/);
+ assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.34'/);
  const route=read('source/app/13-routing-and-boot.js');
  assert.match(route,/archivereview:v229PreArchiveReview/);
  assert.match(route,/v==='archivereview'/);
