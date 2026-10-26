@@ -563,3 +563,9 @@ html.helilog-test-mode .brand::after{
 .special-nvis-auto{display:flex;flex-direction:column;gap:4px;grid-column:span 2}
 .special-nvis-auto strong{font-size:13px;color:var(--ink)}
 @media(max-width:520px){.special-count-fields{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.special-nvis-auto{grid-column:auto}}
+
+/* V2.34.1 compact offshore landing entry */
+.special-count-fields{grid-template-columns:minmax(0,1fr) repeat(2,minmax(0,.82fr));column-gap:6px}
+.special-count-fields label{font-size:11px;min-height:15px}
+.special-count-fields input[type="number"]{text-align:center;padding-inline:4px;font-variant-numeric:tabular-nums}
+@media(max-width:520px){.special-count-fields{grid-template-columns:minmax(0,1fr) repeat(2,minmax(0,.82fr));column-gap:5px}.special-count-fields label{font-size:10px}}

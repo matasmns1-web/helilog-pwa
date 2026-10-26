@@ -1,4 +1,4 @@
-/* HeliLog V2.34 TEST — specialised operations recent-experience counters.
+/* HeliLog V2.34.1 TEST — specialised operations recent-experience counters.
  * Read-only calculator over documented flights. No automatic certification:
  * training, hover transitions, operational approval, personnel roles,
  * aircraft/FFS credits, and offshore full sequences require independent checks.
@@ -11,7 +11,7 @@
  const kinds=Object.freeze([
   {id:'NVIS',code:'NVIS',title:'NVIS',source:'flights',dayTarget:3,rule:'SPA.NVIS.130(d)'},
   {id:'HHO',code:'HHO',title:'Hoist (HHO)',source:'cycles',dayTarget:3,nightTarget:3,rule:'SPA.HHO.130(d)'},
-  {id:'OFFSHORE',code:'OFFSHORE',title:'Offshore',source:'sequences',dayTarget:3,nightTarget:3,rule:'SPA.HOFO.170(b)'}
+  {id:'OFFSHORE',code:'OFFSHORE',title:'Offshore landings',source:'landings',dayTarget:3,nightTarget:3,rule:'SPA.HOFO.170(b)'}
  ]);
  const whole=x=>Number.isSafeInteger(x)&&x>=0&&x<=9999;
  const validDate=v=>typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v)&&
@@ -45,9 +45,12 @@
   if(!validDate(asOf))throw Error('Invalid reference date');
   const kind=kinds.find(k=>k.id===kindId);
   if(!kind)throw Error('Unknown specialised recency');
+  // NVIS/HHO have no SP/MP split in their operation recency provision.
+  // Offshore must remain separated by intended pilot configuration.
+  const groupConfig=kind.id==='OFFSHORE'?configuration:'all';
   const start=shift(asOf,-89);
   const matching=(flights||[]).filter(f=>isRealFlight(f)&&f.date<=asOf&&
-    typeCode(f,aircraft)===type&&config(f)===configuration&&
+    typeCode(f,aircraft)===type&&(groupConfig==='all'||config(f)===groupConfig)&&
     Object.prototype.hasOwnProperty.call(f.specialOps||{},kind.code));
   const history=matching.length>0;
   const within=matching.filter(f=>f.date>=start);
@@ -62,7 +65,7 @@
   const nightHistory=kind.nightTarget?matching.some(f=>cycles(f,kind.code).night>0):false;
   const full=entries.map(e=>({date:e.date,count:e.day+e.night}));
   const dark=entries.map(e=>({date:e.date,count:e.night}));
-  return Object.freeze({type,config:configuration,id:kind.id,title:kind.title,
+  return Object.freeze({type,config:groupConfig,id:kind.id,title:kind.title,
     rule:kind.rule,source:kind.source,start,asOf,history,
     day,night,nightHistory,dayTarget:kind.dayTarget,nightTarget:kind.nightTarget||0,
     dayMet:day>=kind.dayTarget,nightMet:!!kind.nightTarget&&night>=kind.nightTarget,
@@ -79,7 +82,7 @@
    const type=typeCode(f,aircraft);
    if(!/^[A-Z0-9]{2,8}$/.test(type))return;
    for(const kind of kinds)if(Object.prototype.hasOwnProperty.call(f.specialOps||{},kind.code))
-     by.add(type+'|'+config(f)+'|'+kind.id);
+     by.add(type+'|'+(kind.id==='OFFSHORE'?config(f):'all')+'|'+kind.id);
   });
   return [...by].map(s=>{
    const [type,cfg,id]=s.split('|');

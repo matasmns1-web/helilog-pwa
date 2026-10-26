@@ -45,6 +45,7 @@ const GROUPS = Object.freeze([
       'v2/v2335-bold-recency.test.cjs',
       'v2/v2336-grouped-recency.test.cjs',
       'v2/v234-special-recency.test.cjs',
+      'v2/v2341-offshore-totals.test.cjs',
       'v2/v225-print-cleanup.test.cjs',
       'v2/v226-help-guide.test.cjs',
       'v2/v227-pilot-signatures.test.cjs',
