@@ -1,7 +1,6 @@
 /* HeliLog V2.33 TEST — FCL.060 summary and per-type details.
  * Values are documented evidence, NOT a legal determination of privileges.
  */
-function recencyToday(){return new Date().toLocaleDateString('en-CA',{timeZone:'Europe/Vilnius'}).replace(/\//g,'-');}
 function recencyCurrent(){
  const today=new Date(),yyyy=today.getFullYear(),mm=String(today.getMonth()+1).padStart(2,'0'),dd=String(today.getDate()).padStart(2,'0');
  return yyyy+'-'+mm+'-'+dd;
