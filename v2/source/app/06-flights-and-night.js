@@ -299,7 +299,7 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
     </div>
   </details>
   <div class="section-title">Specialised helicopter operations</div>
-  <div class="mini">Tick an operation performed during this flight to reveal its duration in H:MM. These hours are experience breakdowns and do not increase your total flight time.</div>
+  <div class="mini">Select the operations performed. Record operation time and, where applicable, completed cycles or offshore sequences. These are separate experience counters and do not increase total flight time.</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:10px;margin-top:12px">
     ${SPECIAL_OPS.map(op=>`<div style="border:1px solid var(--line);border-radius:9px;padding:10px">
       <label style="display:flex;gap:8px;align-items:start;cursor:pointer">
@@ -307,12 +307,19 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
         <span>${htmlEscape(op.label)}</span>
       </label>
       <div id="specialWrap_${op.code}" style="display:none;margin-top:9px">
-        <label for="specialTime_${op.code}" class="mini">Operation time (H:MM)</label>
-        <input id="specialTime_${op.code}" type="text" inputmode="decimal" placeholder="0:00" value="0:00" oninput="updateSpecialOpsPreview()">
+        <div class="special-count-fields">
+          <div><label for="specialTime_${op.code}" class="mini">Operation time (H:MM)</label>
+             <input id="specialTime_${op.code}" type="text" inputmode="decimal" placeholder="0:00" value="0:00" oninput="updateSpecialOpsPreview()"></div>
+          ${op.code==='NVIS'?'<div class="special-nvis-auto"><span class="mini">NVIS flights</span><strong>1 per flight</strong><span class="mini">Counted automatically</span></div>':`
+          <div><label for="specialDayCycles_${op.code}" class="mini">${op.code==='OFFSHORE'?'Day sequences':'Day cycles'}</label>
+             <input id="specialDayCycles_${op.code}" type="number" min="0" max="9999" step="1" value="0" inputmode="numeric"></div>
+          <div><label for="specialNightCycles_${op.code}" class="mini">${op.code==='OFFSHORE'?'Night sequences':'Night cycles'}</label>
+             <input id="specialNightCycles_${op.code}" type="number" min="0" max="9999" step="1" value="0" inputmode="numeric"></div>`}
+        </div>
       </div>
     </div>`).join('')}
   </div>
-  <div class="mini" style="margin-top:10px">Ticked activities with unknown duration may remain 0:00; they count as a flight but not as credited hours. Activities can overlap.</div>
+  <div class="mini" style="margin-top:10px">Unknown duration or counts may remain 0. For HHO, record only completed hoist cycles with transitions to and from hover. For offshore recency, record only complete offshore take-off, departure, approach and landing sequences. Night cycles must have occurred at night. NVIS uses flights, not cycles. Activities may overlap.</div>
   <div id="specialOpsPreview" class="mini" style="margin-top:8px"></div>
 </details>
 
@@ -365,6 +372,10 @@ if(existing){
     if(Object.prototype.hasOwnProperty.call(existing.specialOps||{},op.code)){
       $('#specialCheck_'+op.code).checked=true;
       $('#specialTime_'+op.code).value=fmt(existing.specialOps[op.code]);
+      if(op.code!=='NVIS'){
+        $('#specialDayCycles_'+op.code).value=Number(existing.specialOpsCycles?.[op.code]?.day||0);
+        $('#specialNightCycles_'+op.code).value=Number(existing.specialOpsCycles?.[op.code]?.night||0);
+      }
       toggleSpecialOp(op.code);
     }
   });
@@ -437,6 +448,10 @@ function toggleSpecialOp(code){
   if(!checked){
     const field=document.getElementById('specialTime_'+code);
     if(field)field.value='0:00';
+    for(const id of ['specialDayCycles_','specialNightCycles_']){
+      const count=document.getElementById(id+code);
+      if(count)count.value='0';
+    }
   }
   updateSpecialOpsPreview();
 }
@@ -462,6 +477,30 @@ function collectSpecialOps(totalMinutes){
     ops[op.code]=minutes;
   }
   return ops;
+}
+function collectSpecialOpCycles(nightMinutes){
+  const result={};
+  for(const op of SPECIAL_OPS){
+    if(op.code==='NVIS'||!document.getElementById('specialCheck_'+op.code)?.checked)continue;
+    const dayInput=document.getElementById('specialDayCycles_'+op.code);
+    const nightInput=document.getElementById('specialNightCycles_'+op.code);
+    const rawDay=String(dayInput?.value??'').trim(),rawNight=String(nightInput?.value??'').trim();
+    const day=Number(rawDay),night=Number(rawNight);
+    if(!/^\\d{1,4}$/.test(rawDay)||!/^\\d{1,4}$/.test(rawNight)||
+      !Number.isSafeInteger(day)||!Number.isSafeInteger(night)||
+      day<0||night<0||day>9999||night>9999||(night>0&&nightMinutes<=0)){
+      $('#moreDetails').open=true;
+      if(dayInput)dayInput.classList.add('time-input-invalid');
+      if(nightInput)nightInput.classList.add('time-input-invalid');
+      showFormError(op.code+' needs whole, non-negative day/night cycle counts (0–9999). Night counts require recorded night flight time.');
+      (night>0&&nightMinutes<=0?nightInput:dayInput)?.focus();
+      return null;
+    }
+    dayInput?.classList.remove('time-input-invalid');
+    nightInput?.classList.remove('time-input-invalid');
+    if(day||night)result[op.code]={day,night};
+  }
+  return result;
 }
 function toggleRecencyEvidence(){
   const role=document.getElementById('role')?.value;
@@ -798,6 +837,8 @@ function saveFlight(){
 
   const specialOps=collectSpecialOps(m);
   if(specialOps===null)return;
+  const specialOpsCycles=collectSpecialOpCycles(night);
+  if(specialOpsCycles===null)return;
   const instructorTime=collectInstructorTime(m);
   if(instructorTime===null)return;
   let pilotConfig=document.querySelector('input[name="pilotConfig"]:checked')?.value||'single';
@@ -856,6 +897,7 @@ function saveFlight(){
     stdMin:Number(original?.stdMin||0),
     crossCountry:$('#crossCountry').checked,
     specialOps,
+    specialOpsCycles,
     recency:recencyEvidence,
     remarks:$('#remarks').value.trim(),
     createdAt:original?.createdAt||new Date().toISOString(),
@@ -885,7 +927,8 @@ function flight(id){const entry=effectiveFlight(S.flights.find(x=>x.id===id));if
 <p><b>FCL.060 recency:</b> <span class="muted">${(()=>{const e=window.HeliLogV233Recency.evidence(f);return e.source==='excluded'?'Excluded from automatic estimate':e.source==='unverified'?'PF evidence not established':e.source==='estimated'?'Automatically estimated day '+e.day+' · night '+e.night+' movements':'Confirmed day '+e.day+' · night '+e.night+' PF sequences';})()}</span></p>
 <p><b>Remarks / endorsements</b><br><span class="muted">${htmlEscape(flightRemarksForDisplay(f)||'—')}</span></p>
 ${Object.keys(f.specialOps||{}).length?`<div class="card" style="margin-top:16px"><h3>Specialised helicopter operations</h3>
-${SPECIAL_OPS.filter(op=>Object.prototype.hasOwnProperty.call(f.specialOps||{},op.code)).map(op=>`<div class="profileline"><div class="k">${htmlEscape(op.label)}</div><b>${fmt(f.specialOps[op.code])}</b></div>`).join('')}
+${SPECIAL_OPS.filter(op=>Object.prototype.hasOwnProperty.call(f.specialOps||{},op.code)).map(op=>`<div class="profileline"><div class="k">${htmlEscape(op.label)}</div>
+ <b>${fmt(f.specialOps[op.code])}${op.code==='NVIS'?' · NVIS flight':f.specialOpsCycles?.[op.code]?' · Day '+Number(f.specialOpsCycles[op.code].day)+' / Night '+Number(f.specialOpsCycles[op.code].night):''}</b></div>`).join('')}
 <div class="mini">Breakdown only — no additional flight-time credit.</div></div>`:''}</div>`+
   correctionHistoryMarkup(id)}
 

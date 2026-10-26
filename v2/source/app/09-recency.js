@@ -1,4 +1,4 @@
-/* HeliLog V2.33.6 — recency grouped by helicopter type.
+/* HeliLog V2.34 — phase 2 specialised-operation recency.
  * "CAT" is not a flight classification: FCL.060 applies to passenger/CAT
  * operations, but qualifying prior PF movements may be private/training.
  */
@@ -25,7 +25,9 @@ function recencyStatus(row,kind){
 }
 function recencyStatusDetails(status){
  const n=status.count;
- const source=status.confirmed?'confirmed PF sequence':'recorded movement pair';
+ const source=status.source==='flights'?'NVIS flight':status.source==='cycles'?'hoist cycle':
+   status.source==='sequences'?'offshore sequence':
+   status.confirmed?'confirmed PF sequence':'recorded movement pair';
  const plural=n===1?'':'s';
  const counted=n+' '+source+plural+' in the preceding 90 days.';
  if(status.threshold)return counted;
@@ -54,7 +56,7 @@ function recencyDashboardKeys(){
    const value=JSON.parse(raw);
    if(!Array.isArray(value)||value.length>100)return [];
    return [...new Set(value.filter(x=>typeof x==='string'&&
-     /^[A-Z0-9]{2,8}\|(single|multi)\|(general|night)$/.test(x)))];
+     /^[A-Z0-9]{2,8}\|(single|multi)\|(general|night|nvis|hho|hhoNight|offshore|offshoreNight)$/.test(x)))];
  }catch{return [];}
 }
 function recencyDashboardOptions(rows){
@@ -64,7 +66,32 @@ function recencyDashboardOptions(rows){
      result.push({row,kind,key:row.type+'|'+row.config+'|'+kind});
    }
  }
+ const specialised=window.HeliLogV234SpecialRecency?.groups(effectiveFlights(),S.aircraft,recencyCurrent())||[];
+ for(const item of specialised){
+   const row={...item,special:true};
+   const prefix=item.id==='NVIS'?'nvis':item.id==='HHO'?'hho':'offshore';
+   result.push({row,kind:prefix,key:row.type+'|'+row.config+'|'+prefix});
+   if(item.nightTarget&&item.nightHistory)
+     result.push({row,kind:prefix+'Night',key:row.type+'|'+row.config+'|'+prefix+'Night'});
+ }
  return result;
+}
+function recencyOperationLabel(kind){
+ return ({general:'Passenger-carrying',night:'Night PIC',
+   nvis:'NVIS',hho:'Hoist (HHO)',hhoNight:'Hoist (night)',
+   offshore:'Offshore',offshoreNight:'Offshore (night)'})[kind]||kind;
+}
+function recencyOptionStatus(option){
+ if(!option.row.special)return recencyStatus(option.row,option.kind);
+ const {row,kind}=option,night=kind.endsWith('Night');
+ const count=night?row.night:row.day;
+ const target=night?row.nightTarget:row.dayTarget;
+ const met=count>=target;
+ const change=night?row.nightLapse:row.dayLapse;
+ return {count,target,change,days:recencyDaysTo(change),
+  threshold:met,confirmed:false,tone:met?'estimated':'below',
+  text:met?'Recorded threshold met':'Below recorded threshold',
+  short:met?'Recorded':'Below threshold',source:row.source};
 }
 // Presentation groups only: the underlying single-/multi-pilot calculations
 // and account/device dashboard preference keys remain separate.
@@ -118,11 +145,11 @@ function recencySummaryMarkup(){
  const chosen=options.filter(o=>selected.has(o.key));
  if(!chosen.length)return '';
  const item=option=>{
-   const {row,kind}=option,status=recencyStatus(row,kind);
+   const {row,kind}=option,status=recencyOptionStatus(option);
    const pilot=recencyPilotNote(options,option);
    return `<div class="recency-dashboard-row">
      <div class="recency-dashboard-row-text">
-       <b class="recency-kind">${kind==='night'?'Night PIC':'Passenger-carrying'}</b>
+       <b class="recency-kind">${recencyOperationLabel(kind)}</b>
        ${pilot?`<span class="recency-pilot-note">${pilot}</span>`:''}
        <div class="muted">${recencyCompactDate(status)}</div>
      </div>
@@ -145,9 +172,9 @@ function recency(){
  const enabled=new Set(recencyDashboardKeys());
  const selectedCount=dashboardOptions.filter(o=>enabled.has(o.key)).length;
  const chooserItem=o=>{
-   const title=o.kind==='night'?'Night PIC':'Passenger-carrying';
+   const title=recencyOperationLabel(o.kind);
    const pilot=recencyPilotNote(dashboardOptions,o);
-   const status=recencyStatus(o.row,o.kind);
+   const status=recencyOptionStatus(o);
    return `<label class="recency-dashboard-choice">
      <input type="checkbox" data-recency-key="${o.key}" ${enabled.has(o.key)?'checked':''} onchange="recencySetDashboardIndicator(this)">
      <span class="recency-choice-name"><b class="recency-kind">${title}</b>${pilot?`<span class="recency-pilot-note">${pilot}</span>`:''}</span>
@@ -159,8 +186,8 @@ function recency(){
    <div class="recency-choice-grid">${group.items.map(chooserItem).join('')}</div>
  </section>`).join('');
  const renderOne=option=>{
-   const {row,kind}=option,status=recencyStatus(row,kind);
-   const headerTitle=kind==='night'?'Night PIC':'Passenger-carrying';
+   const {row,kind}=option,status=recencyOptionStatus(option);
+   const headerTitle=recencyOperationLabel(kind);
    const pilot=recencyPilotNote(dashboardOptions,option);
    return `<details class="recency-detail-row">
      <summary>
@@ -174,9 +201,10 @@ function recency(){
      <div class="recency-detail-expanded">
        <p>${recencyStatusDetails(status)}</p>
        ${status.threshold&&status.change?`<p>If no more qualifying flights are made, the recorded threshold will fall below the minimum on <b>${displayDate(status.change)}</b>.</p>`:''}
-       ${status.tone==='estimated'?'<p>Estimated using single-pilot PIC/SOLO take-off and landing pairs; approaches are not separately verified.</p>':''}
-       ${row.unverifiedFlights?`<p>${row.unverifiedFlights} flight(s) have unverified PF movement pairs excluded from credit.</p>`:''}
-       <span class="mini">EASA ${kind==='night'?'FCL.060(b)(2)':'FCL.060(b)(1)'} · Rolling preceding 90 days. This indicator does not certify privileges.</span>
+       ${status.tone==='estimated'&&!row.special?'<p>Estimated using single-pilot PIC/SOLO take-off and landing pairs; approaches are not separately verified.</p>':''}
+       ${row.special&&row.missingCounts?`<p>${row.missingCounts} earlier operation flight(s) lack recorded cycles/sequences and are not automatically credited.</p>`:''}
+       ${!row.special&&row.unverifiedFlights?`<p>${row.unverifiedFlights} flight(s) have unverified PF movement pairs excluded from credit.</p>`:''}
+       <span class="mini">EASA ${row.special?row.rule:kind==='night'?'FCL.060(b)(2)':'FCL.060(b)(1)'} · Rolling preceding 90 days. This indicator does not certify privileges. ${row.special?'Cycles/sequences are self-recorded and still require operator and crew competency verification.':''}</span>
      </div>
    </details>`;
  };
@@ -195,11 +223,11 @@ function recency(){
    <details class="card recency-method" style="margin-top:14px">
      <summary style="cursor:pointer;font-weight:700">How HeliLog calculates recency</summary>
      <p class="mini">Period: ${displayDate(window.HeliLogV233Recency.dateShift(asOf,-89))} to ${displayDate(asOf)}. Passenger-carrying recency requires 3 qualifying take-offs, approaches and landings as PF in the preceding 90 days. Night PIC requires a qualifying night sequence or an IR alternative under FCL.060.</p>
-     <p class="mini">Single-pilot PIC/SOLO movements are estimated from recorded take-offs and landings. Earlier private and training flights can contribute, but HeliLog does not independently verify the approach, type/FFS alternatives, or legal privileges. Multi-pilot, other pilot functions, licence and operator requirements need separate assessment.</p>
+     <p class="mini">Single-pilot PIC/SOLO movements are estimated from recorded take-offs and landings. NVIS counts recorded NVIS flights; HHO counts documented hoist cycles; offshore counts explicitly entered complete sequences. Cycle/sequence counts are self-reported. Older flights without counts are not automatically credited. Training, operator approvals, night hover transitions, crew duties and permitted simulator credits still require independent verification.</p>
      <p class="mini"><a target="_blank" rel="noopener noreferrer" href="https://www.easa.europa.eu/en/document-library/easy-access-rules/online-publications/easy-access-rules-aircrew-regulation-eu-no-11782011">EASA Aircrew Rules · FCL.060</a></p>
    </details>
    <div class="card recency-detail-card" style="margin-top:14px">
-     <div class="head"><div><h2>All recencies</h2><div class="muted">Rolling 90 days · Select a row for details</div></div></div>
+     <div class="head"><div><h2>All recencies</h2><div class="muted">Passenger, NVIS, hoist and offshore activity · select a row for details</div></div></div>
      ${dashboardOptions.length?allGroups:'<p class="muted">No flights recorded yet.</p>'}
    </div>
 `;

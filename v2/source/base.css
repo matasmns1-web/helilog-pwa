@@ -554,3 +554,12 @@ html.helilog-test-mode .brand::after{
 .recency-detail-type .recency-type-heading{font-size:14px;padding-top:9px}
 .recency-detail-main>b.recency-kind{font-size:13px}
 @media(max-width:520px){.recency-pilot-note{font-size:10px;margin-left:5px}}
+
+/* V2.34: operation duration and cycle/sequence counters in the same row */
+.special-count-fields{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.85fr) minmax(0,.85fr);gap:8px;align-items:end}
+.special-count-fields>div{min-width:0}
+.special-count-fields input{box-sizing:border-box;width:100%;min-width:0}
+.special-count-fields label{display:block;line-height:1.35;margin-bottom:4px}
+.special-nvis-auto{display:flex;flex-direction:column;gap:4px;grid-column:span 2}
+.special-nvis-auto strong{font-size:13px;color:var(--ink)}
+@media(max-width:520px){.special-count-fields{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.special-nvis-auto{grid-column:auto}}

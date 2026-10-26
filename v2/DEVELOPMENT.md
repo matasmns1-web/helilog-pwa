@@ -237,3 +237,10 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 - Recency page groups both dashboard-selector checkboxes and full expandable Recency entries under matching type headings.
 - Where a type has both single-/multi-pilot evidence for the same recency kind, a small crew-configuration qualifier is retained to distinguish separate legally relevant calculations. All stored preference keys remain unchanged.
 - Display-only. No automatic writes/backfills, no changes to the FCL.060 90-day calculation, cloud or signed archive histories, or production.
+
+## V2.34 — Specialised operations Phase 2 (TEST)
+
+- Keep the historical `flight.specialOps` operation-minute format untouched; add optional `flight.specialOpsCycles` keyed by operation code with integer `{day,night}` counts for specialised cycles or offshore complete sequences. Missing means unrecorded, not zero evidence.
+- Full Flight Entry presents operation time next to day/night cycle counts. HHO cycles require transitions to/from hover; offshore entries require complete offshore take-off/departure/approach/landing sequences. NVIS uses one flight per selected flight, not cycles. Validation rejects negative/fractional/out-of-range cycle counts and night cycles without night flight time.
+- 90-day read-only NVIS, HHO day/night, offshore day/night counters, by type/crew configuration, on Recency page and optional dashboard selections. Missing historic cycle data is uncredited. No automatic claim of regulatory currency, no grouping of HHO and HEC credits, and no automatic HESLO/HEC/SPO operator-specific certification yet.
+- Backward-compatible with old flights, no database changes, no archive/backfill mutations, production unchanged.
