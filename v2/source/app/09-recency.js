@@ -36,7 +36,7 @@ function recencyDashboardKeys(){
    const value=JSON.parse(raw);
    if(!Array.isArray(value)||value.length>100)return [];
    return [...new Set(value.filter(x=>typeof x==='string'&&
-     /^[A-Z0-9]{2,8}\\|(single|multi)\\|(general|night)$/.test(x)))];
+     /^[A-Z0-9]{2,8}\|(single|multi)\|(general|night)$/.test(x)))];
  }catch{return [];}
 }
 function recencyDashboardOptions(rows){
@@ -118,7 +118,7 @@ function recency(){
    </div>`;
  };
  app.innerHTML=header('Recency','Select which recencies you want on the dashboard and view the full breakdown below',
-    '<button class="btn" onclick="go(\\'dashboard\\')">← Dashboard</button>')+
+    '<button class="btn" onclick="go(\'dashboard\')">← Dashboard</button>')+
    `<div class="card recency-picker-card">
      <div class="head"><div><h2>Show on dashboard</h2><div class="muted">Tick only the recencies you want to see at a glance.</div></div>
        <span class="mini" id="recencyDashboardSelectionCount">${selectedCount} selected</span></div>
