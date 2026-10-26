@@ -27,7 +27,8 @@
    return String(a?.icao||'').trim().toUpperCase();
  }
  function config(f){
-   return f?.pilotConfig==='multi'||Number(f?.multiPilotMin||0)>0?'multi':'single';
+   if(f?.pilotConfig==='multi'||f?.pilotConfig==='single')return f.pilotConfig;
+   return Number(f?.multiPilotMin||0)>0?'multi':'single';
  }
  function verified(f){
    const r=f?.recency;
