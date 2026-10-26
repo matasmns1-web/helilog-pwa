@@ -1359,6 +1359,8 @@ function dashboard(){
     </div>
   </div>
 
+  ${recencySummaryMarkup()}
+
   <div class="grid two" style="margin-top:16px">
     <div class="card">
       <div class="head"><h2>Recent flights</h2><button class="btn" onclick="go('logbook')">View all</button></div>
@@ -1374,7 +1376,7 @@ function dashboard(){
           return `<div class="reminder-item"><div><b>${htmlEscape(r.label)}</b><div class="muted">${htmlEscape(r.type)} · ${displayDate(r.date)}</div></div><div class="reminder-days ${cls}">${txt}</div></div>`;
         }).join(''):'<div class="muted">No medical or qualification validity dates recorded.</div>'}
       </div>
-      <div class="mini" style="margin-top:10px">Date reminders only — HeliLog does not yet determine regulatory validity or recency.</div>
+      <div class="mini" style="margin-top:10px">Date reminders only. See Recency for documented flight evidence; HeliLog cannot certify legal flying privileges.</div>
     </div>
   </div>
 
@@ -3586,6 +3588,19 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
       <div class="mini">Recorded separately from PIC, Dual and total flight time. Can be part of the same flight.</div>
     </div>
   </div>
+
+  <details id="recencyEvidence" style="margin-top:14px;border:1px solid var(--line);padding:12px;border-radius:10px">
+    <summary style="cursor:pointer;font-weight:700">FCL.060 recency evidence (optional)</summary>
+    <p class="mini">Only enter complete take-off, approach and landing sequences as pilot flying (PF). Take-off and landing totals alone cannot confirm recency. These entries are self-declared evidence, not a legal clearance.</p>
+    <label class="choice-option" style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <input id="recencyPF" type="checkbox" onchange="toggleRecencyEvidence()"> I confirm I was pilot flying for these complete sequences
+    </label>
+    <div class="formgrid">
+      <div class="field"><label for="recencyDay">Confirmed day sequences</label><input id="recencyDay" type="number" min="0" max="100" step="1" value="0" disabled></div>
+      <div class="field"><label for="recencyNight">Confirmed night sequences</label><input id="recencyNight" type="number" min="0" max="100" step="1" value="0" disabled></div>
+    </div>
+    <p class="mini">A night sequence also counts toward general passenger recency. Do not count simulator training or IR privileges here.</p>
+  </details>
   <div class="section-title">Specialised helicopter operations</div>
   <div class="mini">Tick an operation performed during this flight to reveal its duration in H:MM. These hours are experience breakdowns and do not increase your total flight time.</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:10px;margin-top:12px">
@@ -3642,6 +3657,12 @@ if(existing){
   toggleInstructorTime();
   $('#crossCountry').checked=!!existing.crossCountry;
   $('#remarks').value=existing.remarks||'';
+  if(existing.recency?.pfConfirmed){
+    $('#recencyPF').checked=true;
+    $('#recencyDay').value=existing.recency.day||0;
+    $('#recencyNight').value=existing.recency.night||0;
+    toggleRecencyEvidence();
+  }
   SPECIAL_OPS.forEach(op=>{
     if(Object.prototype.hasOwnProperty.call(existing.specialOps||{},op.code)){
       $('#specialCheck_'+op.code).checked=true;
@@ -3649,7 +3670,8 @@ if(existing){
       toggleSpecialOp(op.code);
     }
   });
-  if($('#instructorCheck').checked || Object.keys(existing.specialOps||{}).length) $('#moreDetails').open=true;
+  if($('#instructorCheck').checked || Object.keys(existing.specialOps||{}).length || existing.recency?.pfConfirmed) $('#moreDetails').open=true;
+  if(existing.recency?.pfConfirmed) $('#recencyEvidence').open=true;
 }else{
   $('#date').value=formatDate(new Date().toISOString().slice(0,10));
   if(quick){
@@ -3742,6 +3764,31 @@ function collectSpecialOps(totalMinutes){
     ops[op.code]=minutes;
   }
   return ops;
+}
+function toggleRecencyEvidence(){
+  const checked=!!document.getElementById('recencyPF')?.checked;
+  for(const id of ['recencyDay','recencyNight']){
+    const input=document.getElementById(id);
+    if(input)input.disabled=!checked;
+  }
+}
+function collectRecencyEvidence(icao,dayTo,dayLdg,nightTo,nightLdg,nightMin){
+  const flag=document.getElementById('recencyPF');
+  if(!flag?.checked)return null;
+  const day=Number(document.getElementById('recencyDay')?.value);
+  const night=Number(document.getElementById('recencyNight')?.value);
+  const valid=n=>Number.isSafeInteger(n)&&n>=0&&n<=100;
+  if(!valid(day)||!valid(night)||day+night===0||
+    day>Math.min(dayTo,dayLdg)||night>Math.min(nightTo,nightLdg)||
+    (night>0&&nightMin<=0)){
+    const more=document.getElementById('moreDetails');
+    const details=document.getElementById('recencyEvidence');
+    if(more)more.open=true;
+    if(details)details.open=true;
+    showFormError('Recency evidence must contain complete PF sequences. Day/night sequence counts must not exceed the corresponding take-offs and landings; night sequences require recorded night time.');
+    return false;
+  }
+  return {pfConfirmed:true,day,night,icao:String(icao||'').trim().toUpperCase()};
 }
 function uppercasePlaceInput(el){
   let start=el.selectionStart, end=el.selectionEnd;
@@ -4043,6 +4090,10 @@ function saveFlight(){
   const instructorTime=collectInstructorTime(m);
   if(instructorTime===null)return;
   let pilotConfig=document.querySelector('input[name="pilotConfig"]:checked')?.value||'single';
+  const recencyEvidence=collectRecencyEvidence(ac($('#aid').value)?.icao,
+    Number($('#toDay').value||0),Number($('#ldgDay').value||0),
+    Number($('#toNight').value||0),Number($('#ldgNight').value||0),night);
+  if(recencyEvidence===false)return;
 
   let role=$('#role').value;
   let picName=$('#picName').value.trim();
@@ -4092,6 +4143,7 @@ function saveFlight(){
     stdMin:Number(original?.stdMin||0),
     crossCountry:$('#crossCountry').checked,
     specialOps,
+    recency:recencyEvidence,
     remarks:$('#remarks').value.trim(),
     createdAt:original?.createdAt||new Date().toISOString(),
     updatedAt:new Date().toISOString()
@@ -4117,6 +4169,7 @@ function flight(id){const entry=effectiveFlight(S.flights.find(x=>x.id===id));if
 <div class="kpi-grid"><div class="card"><div class="label">Total time</div><div class="big">${fmt(f.mins)}</div></div><div class="card"><div class="label">Pilot function</div><div class="big" style="font-size:20px">${f.role}</div></div><div class="card"><div class="label">Night</div><div class="big">${fmt(f.nightMin||0)}</div></div><div class="card"><div class="label">IFR</div><div class="big">${fmt(f.ifrMin||0)}</div></div></div>
 <div class="mini" style="margin-top:12px">Night entry: ${f.nightCalculation?.mode==='automatic'?'Automatically estimated from aerodrome coordinates and civil twilight':'Manually entered / legacy record'}.</div>
 <div class="formgrid" style="margin-top:18px"><div><b>Name of PIC</b><div class="muted">${htmlEscape(displayPICName(f)||'—')}</div></div><div><b>Engine configuration</b><div class="muted">✓ ${engineCode(a)==='ME'?'Multi-engine (ME)':'Single-engine (SE)'}</div></div><div><b>Pilot configuration</b><div class="muted">${flightPilotConfig(f)==='multi'?'Multi-pilot':'Single-pilot'}</div></div><div><b>Configuration time</b><div class="muted">${(()=>{let c=configurationTimes(f);return c.multi?`Multi-pilot ${fmt(c.multi)}`:c.spME?`Single-pilot ME ${fmt(c.spME)}`:`Single-pilot SE ${fmt(c.spSE)}`})()}</div></div><div><b>Take-offs</b><div class="muted">Day ${f.takeoffDay||0} · Night ${f.takeoffNight||0}</div></div><div><b>Landings</b><div class="muted">Day ${f.landingDay||0} · Night ${f.landingNight||0}</div></div><div><b>Cross-country</b><div class="muted">${f.crossCountry?'Yes':'No'}</div></div></div>
+<p><b>FCL.060 PF evidence:</b> <span class="muted">${f.recency?.pfConfirmed?'Day '+Number(f.recency.day||0)+' · Night '+Number(f.recency.night||0)+' complete sequences':'Not recorded / unverified'}</span></p>
 <p><b>Remarks / endorsements</b><br><span class="muted">${htmlEscape(flightRemarksForDisplay(f)||'—')}</span></p>
 ${Object.keys(f.specialOps||{}).length?`<div class="card" style="margin-top:16px"><h3>Specialised helicopter operations</h3>
 ${SPECIAL_OPS.filter(op=>Object.prototype.hasOwnProperty.call(f.specialOps||{},op.code)).map(op=>`<div class="profileline"><div class="k">${htmlEscape(op.label)}</div><b>${fmt(f.specialOps[op.code])}</b></div>`).join('')}
