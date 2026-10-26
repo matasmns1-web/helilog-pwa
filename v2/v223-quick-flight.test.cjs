@@ -133,7 +133,7 @@ test('Quick Entry keeps operational safety and printing in the original code pat
   assert.match(source,/landing counts follow take-offs/i);
 });
 
-test('V2.34 Quick view collapses optional fields, without discarding them when switched',()=>{
+test('V2.34.1 Quick view collapses optional fields, without discarding them when switched',()=>{
   const ui=formHarness();
   assert.ok(ui.classes.has('quick-pic-self'),'PIC/SOLO must hide the automatic SELF field');
   assert.match(ui.markup,/id="quickExtraToggle"[^>]*aria-expanded="false"/);
@@ -152,7 +152,7 @@ test('V2.34 Quick view collapses optional fields, without discarding them when s
   assert.ok(!ui.classes.has('quick-entry-extra-open'));
   assert.equal(ui.fields.get('quickExtraToggle').attrs['aria-expanded'],'false');
 });
-test('V2.34 Quick PIC field responds to pilot function without changing stored name',()=>{
+test('V2.34.1 Quick PIC field responds to pilot function without changing stored name',()=>{
   const ui=formHarness();
   ui.fields.get('picName').value='SELF';
   assert.ok(ui.classes.has('quick-pic-self'));
@@ -165,7 +165,7 @@ test('V2.34 Quick PIC field responds to pilot function without changing stored n
   ui.browser.updateQuickPICVisibility();
   assert.ok(ui.classes.has('quick-pic-self'));
 });
-test('V2.34 invalid automatic night is surfaced in compact view when all flight details are entered',()=>{
+test('V2.34.1 invalid automatic night is surfaced in compact view when all flight details are entered',()=>{
   const ui=formHarness();
   for(const [id,value] of Object.entries({
     date:'22-10-2026',dep:'EYVI',off:'12:00',arr:'EYVI',on:'12:45'
