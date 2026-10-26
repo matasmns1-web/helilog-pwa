@@ -75,5 +75,5 @@ test('short selector labels exclude count fractions and duplicate detailed card 
  assert.match(selector,/recency-dashboard-choice/);
  assert.match(selector,/recency-choice-status/);
  assert.doesNotMatch(selector,/9\/3|Threshold falls below minimum|recorded movement pairs/);
- assert.match(html,/rolling 90-day/i);
+ assert.match(html,/rolling 90 days/i);
 });
