@@ -299,7 +299,7 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
     </div>
   </details>
   <div class="section-title">Specialised helicopter operations</div>
-  <div class="mini">Select the operations performed. Record operation time and, where applicable, completed cycles or offshore sequences. These are separate experience counters and do not increase total flight time.</div>
+  <div class="mini">Select the operations performed. Record operation time and completed cycles. Offshore counts are landings at qualifying offshore locations (not ordinary aerodrome landings).</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:10px;margin-top:12px">
     ${SPECIAL_OPS.map(op=>`<div style="border:1px solid var(--line);border-radius:9px;padding:10px">
       <label style="display:flex;gap:8px;align-items:start;cursor:pointer">
@@ -308,18 +308,18 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
       </label>
       <div id="specialWrap_${op.code}" style="display:none;margin-top:9px">
         <div class="special-count-fields">
-          <div><label for="specialTime_${op.code}" class="mini">Operation time (H:MM)</label>
+          <div><label for="specialTime_${op.code}" class="mini">Time (H:MM)</label>
              <input id="specialTime_${op.code}" type="text" inputmode="decimal" placeholder="0:00" value="0:00" oninput="updateSpecialOpsPreview()"></div>
           ${op.code==='NVIS'?'<div class="special-nvis-auto"><span class="mini">NVIS flights</span><strong>1 per flight</strong><span class="mini">Counted automatically</span></div>':`
-          <div><label for="specialDayCycles_${op.code}" class="mini">${op.code==='OFFSHORE'?'Day sequences':'Day cycles'}</label>
+          <div><label for="specialDayCycles_${op.code}" class="mini">${op.code==='OFFSHORE'?'Day landings':'Day cycles'}</label>
              <input id="specialDayCycles_${op.code}" type="number" min="0" max="9999" step="1" value="0" inputmode="numeric"></div>
-          <div><label for="specialNightCycles_${op.code}" class="mini">${op.code==='OFFSHORE'?'Night sequences':'Night cycles'}</label>
+          <div><label for="specialNightCycles_${op.code}" class="mini">${op.code==='OFFSHORE'?'Night landings':'Night cycles'}</label>
              <input id="specialNightCycles_${op.code}" type="number" min="0" max="9999" step="1" value="0" inputmode="numeric"></div>`}
         </div>
       </div>
     </div>`).join('')}
   </div>
-  <div class="mini" style="margin-top:10px">Unknown duration or counts may remain 0. For HHO, record only completed hoist cycles with transitions to and from hover. For offshore recency, record only complete offshore take-off, departure, approach and landing sequences. Night cycles must have occurred at night. NVIS uses flights, not cycles. Activities may overlap.</div>
+  <div class="mini" style="margin-top:10px">Offshore: count only landings at an offshore location (platform, helideck or vessel) with the corresponding take-off, departure and approach. HHO: completed hoist cycles including hover transitions. NVIS: flights, not cycles. Night counts require night time.</div>
   <div id="specialOpsPreview" class="mini" style="margin-top:8px"></div>
 </details>
 
@@ -492,7 +492,7 @@ function collectSpecialOpCycles(nightMinutes){
       $('#moreDetails').open=true;
       if(dayInput)dayInput.classList.add('time-input-invalid');
       if(nightInput)nightInput.classList.add('time-input-invalid');
-      showFormError(op.code+' needs whole, non-negative day/night cycle counts (0–9999). Night counts require recorded night flight time.');
+      showFormError(op.code+' requires whole, non-negative day/night counts (0–9999). Night counts require recorded night flight time.');
       (night>0&&nightMinutes<=0?nightInput:dayInput)?.focus();
       return null;
     }

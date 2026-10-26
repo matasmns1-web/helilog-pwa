@@ -51,7 +51,7 @@ test('specialised indicators grouped by type/config and night variants only with
   flight('2026-10-22','HHO',{day:1,night:2},{aid:'a',pilotConfig:'multi'})];
  const g=calc.groups(flights,ac,d);
  assert.ok(g.some(x=>x.type==='G2CA'&&x.id==='HHO'&&!x.nightHistory));
- assert.ok(g.some(x=>x.type==='AS50'&&x.id==='HHO'&&x.nightHistory&&x.config==='multi'));
+ assert.ok(g.some(x=>x.type==='AS50'&&x.id==='HHO'&&x.nightHistory&&x.config==='all'));
  assert.equal(g.some(x=>x.type==='AS50'&&x.id==='NVIS'),false);
 });
 test('source has beside-hours cycle/sequence fields and round-trip persistence without changing minute totals',()=>{

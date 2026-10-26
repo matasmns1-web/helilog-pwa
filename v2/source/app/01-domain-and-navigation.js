@@ -446,8 +446,17 @@ function specialisedTotals(){
     const recordedMinutes=flights.reduce((n,f)=>n+Number(f.specialOps[op.code]||0),0);
     const historical=Number(previous?.[op.code]||0);
     const previousMinutes=Number.isSafeInteger(historical)&&historical>=0?historical:0;
+    // Count only explicitly captured cycles/landings. Historic hours have no counts.
+    const counter=op.code==='NVIS'?'flights':op.code==='OFFSHORE'?'landings':'cycles';
+    const counts=flights.reduce((out,f)=>{
+      if(op.code==='NVIS'){out.total++;return out;}
+      const v=f.specialOpsCycles?.[op.code];
+      if(!v||!Number.isSafeInteger(v.day)||!Number.isSafeInteger(v.night)||v.day<0||v.night<0){out.unrecorded++;return out;}
+      out.day+=v.day;out.night+=v.night;out.total+=v.day+v.night;
+      return out;
+    },{day:0,night:0,total:0,unrecorded:0});
     return {...op,flights:flights.length,previousMinutes,recordedMinutes,
-      minutes:previousMinutes+recordedMinutes};
+      minutes:previousMinutes+recordedMinutes,counter,...counts};
   }).filter(e=>e.flights||e.previousMinutes>0);
 }
 function broughtForwardInputMinutes(v){return Number(v||0)>0?fmt(Number(v)):'';

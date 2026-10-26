@@ -1,4 +1,4 @@
-/* HeliLog V2.34 — phase 2 specialised-operation recency.
+/* HeliLog V2.34.1 — combined NVIS/HHO, offshore landings specialised-operation recency.
  * "CAT" is not a flight classification: FCL.060 applies to passenger/CAT
  * operations, but qualifying prior PF movements may be private/training.
  */
@@ -26,7 +26,7 @@ function recencyStatus(row,kind){
 function recencyStatusDetails(status){
  const n=status.count;
  const source=status.source==='flights'?'NVIS flight':status.source==='cycles'?'hoist cycle':
-   status.source==='sequences'?'offshore sequence':
+   status.source==='landings'?'offshore landing':
    status.confirmed?'confirmed PF sequence':'recorded movement pair';
  const plural=n===1?'':'s';
  const counted=n+' '+source+plural+' in the preceding 90 days.';
@@ -56,7 +56,8 @@ function recencyDashboardKeys(){
    const value=JSON.parse(raw);
    if(!Array.isArray(value)||value.length>100)return [];
    return [...new Set(value.filter(x=>typeof x==='string'&&
-     /^[A-Z0-9]{2,8}\|(single|multi)\|(general|night|nvis|hho|hhoNight|offshore|offshoreNight)$/.test(x)))];
+     /^[A-Z0-9]{2,8}\|(single|multi|all)\|(general|night|nvis|hho|hhoNight|offshore|offshoreNight)$/.test(x))
+     .map(key=>key.replace(/^([A-Z0-9]{2,8})\|(single|multi)\|(nvis|hho|hhoNight)$/,'$1|all|$3')))];
  }catch{return [];}
 }
 function recencyDashboardOptions(rows){
@@ -79,7 +80,7 @@ function recencyDashboardOptions(rows){
 function recencyOperationLabel(kind){
  return ({general:'Passenger-carrying',night:'Night PIC',
    nvis:'NVIS',hho:'Hoist (HHO)',hhoNight:'Hoist (night)',
-   offshore:'Offshore',offshoreNight:'Offshore (night)'})[kind]||kind;
+   offshore:'Offshore landings',offshoreNight:'Offshore landings (night)'})[kind]||kind;
 }
 function recencyOptionStatus(option){
  if(!option.row.special)return recencyStatus(option.row,option.kind);
@@ -223,7 +224,7 @@ function recency(){
    <details class="card recency-method" style="margin-top:14px">
      <summary style="cursor:pointer;font-weight:700">How HeliLog calculates recency</summary>
      <p class="mini">Period: ${displayDate(window.HeliLogV233Recency.dateShift(asOf,-89))} to ${displayDate(asOf)}. Passenger-carrying recency requires 3 qualifying take-offs, approaches and landings as PF in the preceding 90 days. Night PIC requires a qualifying night sequence or an IR alternative under FCL.060.</p>
-     <p class="mini">Single-pilot PIC/SOLO movements are estimated from recorded take-offs and landings. NVIS counts recorded NVIS flights; HHO counts documented hoist cycles; offshore counts explicitly entered complete sequences. Cycle/sequence counts are self-reported. Older flights without counts are not automatically credited. Training, operator approvals, night hover transitions, crew duties and permitted simulator credits still require independent verification.</p>
+     <p class="mini">Single-pilot PIC/SOLO movements are estimated from recorded take-offs and landings. NVIS counts recorded NVIS flights and HHO counts hoist cycles across SP/MP operation configurations of the same type. Offshore is separated by SP/MP and counts manually entered offshore landings that also represent complete qualifying take-off, departure and approach sequences. Entries are self-reported. Older flights without counts are not automatically credited. Training, operator approvals, night hover transitions, crew duties and permitted simulator credits still require independent verification.</p>
      <p class="mini"><a target="_blank" rel="noopener noreferrer" href="https://www.easa.europa.eu/en/document-library/easy-access-rules/online-publications/easy-access-rules-aircrew-regulation-eu-no-11782011">EASA Aircrew Rules · FCL.060</a></p>
    </details>
    <div class="card recency-detail-card" style="margin-top:14px">

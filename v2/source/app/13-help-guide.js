@@ -1,4 +1,4 @@
-/* V2.34. Searchable, offline-friendly guide and current release notes. */
+/* V2.34.1. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
   {
     "category": "Flight operations",
@@ -6,10 +6,10 @@ const HELILOG_GUIDE_TOPICS=[
     "summary": "Record operational cycles alongside hours, then review the dedicated NVIS, HHO and offshore 90-day counters.",
     "steps": [
       "Open Full Flight Entry → More details → Specialised helicopter operations.",
-      "Tick the operations flown and enter Operation time (H:MM). For operations with cycles, enter completed Day cycles and Night cycles; OFFSHORE fields represent complete offshore take-off/departure/approach/landing sequences instead.",
+      "Tick the operations flown and enter Operation time (H:MM). For operations with cycles, enter completed Day cycles and Night cycles; OFFSHORE Day landings and Night landings count qualifying landings at offshore locations (platforms, helidecks or vessels), including the corresponding take-off, departure and approach.",
       "A flight marked NVIS counts as one NVIS flight for the 90-day indicator, even if its operation-time entry is zero. NVIS does not use a cycle counter.",
       "For HHO, only count hoist cycles containing a transition to and from hover. Night counts require recorded night flight time. Old entries without cycle counts remain unknown and are never silently credited.",
-      "Open Recency to see NVIS, Hoist and Offshore rules for types with recorded specialised activity. Select individual items under Show on dashboard if desired.",
+      "Open Recency to see NVIS and Hoist thresholds combined across SP/MP records within an aircraft type, while offshore and passenger-carrying retain separate pilot configurations. Select dashboard indicators as desired.",
       "These are record-based indicators, not authorisations. Operator approval, relevant crew role, training/checking, supervised operations and approved simulator alternatives must be checked separately."
     ],
     "route": "recency",
@@ -252,6 +252,11 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {
+    "v": "V2.34.1",
+    "name": "Offshore landings, compact entry, and clearer specialist recency",
+    "detail": "Offshore now records Day landings and Night landings at qualifying offshore locations (with complete take-off/departure/approach requirements). NVIS and HHO use combined SP/MP records within type, offshore remains SP/MP-specific, and specialised Totals show captured day/night cycles or offshore landings without manufacturing previous-logbook counts."
+  },
   {
     "v": "V2.34",
     "name": "Specialised operations cycles and recency (Phase 2)",

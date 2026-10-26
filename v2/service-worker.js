@@ -1,4 +1,4 @@
-const CACHE='helilog-v2-34-special-cycles-1';
+const CACHE='helilog-v2-34-1-offshore-landings-1';
 const SHELL=[
   './',
   './index.html',
