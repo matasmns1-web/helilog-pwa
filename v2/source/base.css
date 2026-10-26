@@ -473,3 +473,33 @@ html.helilog-test-mode .brand::after{
 .recency-mini-label{min-width:0}
 .recency-mini-label .muted{font-size:12px;margin-top:3px}
 @media(max-width:650px){.recency-choice-grid{grid-template-columns:1fr}}
+
+/* V2.33.3: simple dashboard selector and rolling recency status */
+.recency-picker-card .recency-choice-grid{gap:7px 11px}
+.recency-picker-card .recency-dashboard-choice{padding:10px 12px;min-height:57px;gap:10px}
+.recency-choice-name{flex:1;min-width:0;font-size:13px}
+.recency-choice-name>b{font-size:13px}
+.recency-choice-title{font-size:12px;margin-top:2px}
+.recency-choice-status{flex:0 0 auto;margin-left:auto;font-size:11px;font-weight:700;border:1px solid var(--line);border-radius:999px;padding:3px 9px;white-space:nowrap}
+.recency-tone-met .recency-state,.recency-tone-met .recency-choice-status,.recency-tone-met.recency-choice-status{color:var(--cockpit-accent-bright,#43d6c5)}
+.recency-tone-estimated .recency-state,.recency-tone-estimated .recency-choice-status,.recency-tone-estimated.recency-choice-status{color:var(--cockpit-cyan,#84bddf)}
+.recency-tone-below .recency-state,.recency-tone-below .recency-choice-status,.recency-tone-below.recency-choice-status{color:var(--cockpit-warning,#efc478)}
+.recency-panel-label{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.recency-panel-label>.mini{margin:0}
+.recency-state{font-size:21px;font-weight:800;line-height:1.25;margin-top:15px;letter-spacing:-.02em}
+.recency-count-detail{color:var(--muted);font-size:13px;line-height:1.55;margin:7px 0}
+.recency-lapse{display:flex;flex-direction:column;gap:3px;border-top:1px solid var(--line);margin-top:14px;padding-top:11px;font-size:12px;color:var(--muted)}
+.recency-lapse>b{font-size:13px;color:var(--ink);font-weight:700}
+.recency-indicator{display:flex;flex-direction:column;align-items:stretch;gap:9px;padding:14px;min-height:125px}
+.recency-indicator-status{display:flex;flex-direction:column;align-items:flex-start;gap:5px}
+.recency-indicator-status>strong{font-size:18px;line-height:1.25}
+.recency-tone-met .recency-indicator-status>strong{color:var(--cockpit-accent-bright,#43d6c5)}
+.recency-tone-estimated .recency-indicator-status>strong{color:var(--cockpit-cyan,#84bddf)}
+.recency-tone-below .recency-indicator-status>strong{color:var(--cockpit-warning,#efc478)}
+.recency-indicator-status>span{font-size:12px;line-height:1.45;color:var(--muted)}
+.recency-indicator .recency-lapse{margin-top:auto}
+@media(max-width:700px){
+ .recency-choice-grid{grid-template-columns:1fr}
+ .recency-picker-card .recency-dashboard-choice{padding:11px 12px}
+ .recency-state{font-size:19px}
+}

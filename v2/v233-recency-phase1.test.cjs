@@ -67,8 +67,8 @@ test('dashboard glance and Recency route render without modifying records',()=>{
  vm.runInContext(source+'; recency();',ctx);
  assert.match(ctx.app.innerHTML,/FCL\.060/);
  assert.match(ctx.app.innerHTML,/G2CA/);
- assert.match(ctx.app.innerHTML,/4\/3/);
- assert.match(ctx.app.innerHTML,/1\/1/);
+ assert.match(ctx.app.innerHTML,/4 confirmed PF sequences in the preceding 90 days/);
+ assert.match(ctx.app.innerHTML,/1 confirmed PF sequence in the preceding 90 days/);
  assert.equal(vm.runInContext('recencySummaryMarkup()',ctx),'');
  assert.equal(JSON.stringify(flights),before);
 });
@@ -116,7 +116,7 @@ test('recency interface avoids CAT flight classification, keeps night hidden wit
  vm.createContext(ctx);vm.runInContext(source+'; recency();',ctx);
  assert.match(ctx.app.innerHTML,/Passenger-carrying/);
  assert.doesNotMatch(ctx.app.innerHTML,/Passenger \/ CAT|Night PIC — FCL\.060\(b\)\(2\)/);
- assert.match(ctx.app.innerHTML,/Estimated from logbook/);
+ assert.match(ctx.app.innerHTML,/90-day threshold met/);
  assert.equal(vm.runInContext('recencySummaryMarkup()',ctx),'');
  assert.doesNotMatch(vm.runInContext('recencySummaryMarkup()',ctx),/Night PIC recency/);
 });

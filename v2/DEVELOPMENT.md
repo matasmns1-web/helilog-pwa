@@ -211,3 +211,10 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 - Show only ICAO type/pilot-configuration pairs with logged flight history, and only show night PIC recency for a type/configuration with recorded night operations (even if the last night flight is older than 90 days).
 - Rename "Passenger / CAT" to "Passenger-carrying" to avoid misclassifying private/training flights as CAT; FCL.060 applies to carrying passengers or CAT but qualifying prior flights need not themselves be CAT.
 - No data backfill, migration, or archive mutation; unchanged production V2.31.4. Full regression suite must pass before staging deploy.
+
+## V2.33.3 — Clear rolling recency (TEST)
+
+- Show compact checkbox selectors on Recency instead of duplicating the full details.
+- Show status (requirement documented / threshold met as estimate / below recorded threshold), not an ever-increasing 8/3 headline; counts remain contextual evidence only.
+- If a recorded threshold is met, show the projected date on which it would first fall below the minimum **if there are no further qualifying flights**. Window is the preceding rolling 90 days, not a new fixed 90-day validity certificate.
+- Preserve each account's existing dashboard selections and all original flights, archives, recency calculation and protected records.
