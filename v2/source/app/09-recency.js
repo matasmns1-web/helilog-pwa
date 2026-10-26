@@ -1,4 +1,4 @@
-/* HeliLog V2.33.4 — compact dashboard and recency list.
+/* HeliLog V2.33.5 — bold recency labels in compact rows.
  * "CAT" is not a flight classification: FCL.060 applies to passenger/CAT
  * operations, but qualifying prior PF movements may be private/training.
  */
@@ -102,7 +102,7 @@ function recencySummaryMarkup(){
    return `<div class="recency-dashboard-row">
      <div class="recency-dashboard-row-text">
        <b>${htmlEscape(row.type)} · ${row.config==='multi'?'Multi-pilot':'Single-pilot'}</b>
-       <div class="muted">${kind==='night'?'Night PIC':'Passenger-carrying'} · ${recencyCompactDate(status)}</div>
+       <div class="muted"><strong class="recency-kind">${kind==='night'?'Night PIC':'Passenger-carrying'}</strong> · ${recencyCompactDate(status)}</div>
      </div>
      <span class="recency-compact-status recency-tone-${status.tone}">${recencyCompactLabel(status)}</span>
    </div>`;
@@ -124,7 +124,7 @@ function recency(){
    const status=recencyStatus(o.row,o.kind);
    return `<label class="recency-dashboard-choice">
      <input type="checkbox" data-recency-key="${o.key}" ${enabled.has(o.key)?'checked':''} onchange="recencySetDashboardIndicator(this)">
-     <span class="recency-choice-name"><b>${htmlEscape(o.row.type)}</b> · ${configuration}<span class="recency-choice-title">${title}</span></span>
+     <span class="recency-choice-name"><b>${htmlEscape(o.row.type)}</b> · ${configuration}<span class="recency-choice-title recency-kind">${title}</span></span>
      <span class="recency-choice-status recency-tone-${status.tone}">${status.short}</span>
    </label>`;
  }).join('');
@@ -136,7 +136,7 @@ function recency(){
      <summary>
        <span class="recency-detail-main">
          <b>${htmlEscape(row.type)} · ${configuration}</b>
-         <span class="muted">${headerTitle} · ${recencyCompactDate(status)}</span>
+         <span class="muted"><strong class="recency-kind">${headerTitle}</strong> · ${recencyCompactDate(status)}</span>
        </span>
        <span class="recency-compact-status recency-tone-${status.tone}">${recencyCompactLabel(status)}</span>
        <span class="recency-expand-cue" aria-hidden="true">⌄</span>

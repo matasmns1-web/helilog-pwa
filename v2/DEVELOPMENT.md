@@ -225,3 +225,8 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 - Recency page displays one compact All recencies list with expandable details, avoiding repeating full cards for each aircraft configuration and operation.
 - Keep the colour distinctions (confirmed / auto-estimated / not met), account/device-scoped dashboard selection, 90-day movement arithmetic, and private/signed flight history unchanged.
 - No database migrations, automatic recency backfill or production deployment.
+
+## V2.33.5 — Clearer Recency names (TEST)
+
+- Bold the **Passenger-carrying** and **Night PIC** recency labels in both the compact dashboard rows and the expandable Recency list, plus the dashboard-selection labels. Dates and status descriptions remain normal weight.
+- Presentation-only. Keeps recorded counts, rolling FCL.060 evidence, current selection preferences, account isolation, flights, signed archive and production unaffected.
