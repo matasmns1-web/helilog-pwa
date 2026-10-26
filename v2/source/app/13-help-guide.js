@@ -1,16 +1,16 @@
-/* V2.33. Searchable, offline-friendly guide and current release notes. */
+/* V2.33.1. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
   {
     "category": "Flight operations",
     "title": "Recent experience — passenger and night (FCL.060)",
-    "summary": "View conservative 90-day flight recency evidence by helicopter type and pilot configuration.",
+    "summary": "Automatically estimate 90-day recency from single-pilot PIC/SOLO movements, with optional manual PF evidence.",
     "steps": [
       "Open Recency from the desktop navigation, the mobile More menu, or the dashboard Recent experience summary.",
       "Review each type separately; single-pilot and multi-pilot flying are not automatically combined.",
-      "For a new or unarchived flight, open Full Flight Entry → More details → FCL.060 recency evidence and tick pilot flying only if you completed the take-off, approach AND landing.",
-      "Enter confirmed day and night sequences. Older unmarked flights, imported totals and simulator sessions without separate qualifying evidence remain unverified and do not add to documented credits.",
-      "The 90-day view is based on flight calendar dates. Check FCL.060, your licence, IR privilege if applicable, training and operator approvals before carrying passengers or operating at night. This screen does not certify privileges.",
-      "Archived signed logbook entries are never altered automatically; changes require the normal traceable correction process."
+      "For single-pilot PIC/SOLO, normal day/night take-off and landing counts automatically provide a recency estimate, including earlier logbook flights. There is no need to enter the same movements again.",
+      "To exclude an exceptional PIC/SOLO flight from the estimate, edit the unsigned flight and tick Exclude from automatic recency estimate under Full details → More details. Other pilot functions and multi-pilot operations still offer manual PF evidence fields.",
+      "Only aircraft types/configurations with real flying history appear; Night PIC recency stays hidden where no night flights have been recorded. Old night experience remains visible even when the 90-day threshold has lapsed.",
+      "Private and training flights may count toward FCL.060 recency when qualified as PF; this does not classify them as CAT. Automatic paired-movement estimates cannot independently verify an approach, and the app never certifies legal currency. Archive history remains unchanged."
     ],
     "route": "recency",
     "action": "Open Recency"
@@ -232,6 +232,11 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {
+    "v": "V2.33.1",
+    "name": "Automatic single-pilot recency and relevant night indicators",
+    "detail": "Auto-estimate PIC/SOLO single-pilot PF movements without extra sequence entry. Hide unused night recency and clarify passenger-carrying eligibility versus the classification of a CAT flight. Keep exceptional-flight opt-out and separate verified evidence."
+  },
   {
     "v": "V2.33",
     "name": "Passenger and night recent experience (Phase 1)",

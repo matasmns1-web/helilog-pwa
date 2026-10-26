@@ -227,8 +227,8 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
   <div class="field">
     <label>Pilot configuration</label>
     <div class="choice-row">
-      <label class="choice-option"><input type="radio" name="pilotConfig" value="single" checked> Single-pilot</label>
-      <label class="choice-option"><input type="radio" name="pilotConfig" value="multi"> Multi-pilot</label>
+      <label class="choice-option"><input type="radio" name="pilotConfig" value="single" checked onchange="toggleRecencyEvidence()"> Single-pilot</label>
+      <label class="choice-option"><input type="radio" name="pilotConfig" value="multi" onchange="toggleRecencyEvidence()"> Multi-pilot</label>
     </div>
     <div class="mini">The total flight time will be allocated automatically in the PDF export.</div>
   </div>
@@ -279,16 +279,24 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
   </div>
 
   <details id="recencyEvidence" style="margin-top:14px;border:1px solid var(--line);padding:12px;border-radius:10px">
-    <summary style="cursor:pointer;font-weight:700">FCL.060 recency evidence (optional)</summary>
-    <p class="mini">Only enter complete take-off, approach and landing sequences as pilot flying (PF). Take-off and landing totals alone cannot confirm recency. These entries are self-declared evidence, not a legal clearance.</p>
-    <label class="choice-option" style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-      <input id="recencyPF" type="checkbox" onchange="toggleRecencyEvidence()"> I confirm I was pilot flying for these complete sequences
-    </label>
-    <div class="formgrid">
-      <div class="field"><label for="recencyDay">Confirmed day sequences</label><input id="recencyDay" type="number" min="0" max="100" step="1" value="0" disabled></div>
-      <div class="field"><label for="recencyNight">Confirmed night sequences</label><input id="recencyNight" type="number" min="0" max="100" step="1" value="0" disabled></div>
+    <summary style="cursor:pointer;font-weight:700">FCL.060 recency — automatic or manual</summary>
+    <div id="recencyAutoWrap">
+      <p class="mini">Single-pilot PIC/SOLO: HeliLog automatically estimates qualifying movements from the take-offs and landings already recorded above. No duplicate sequence entry is necessary. Check the approaches and any unusual crew arrangements yourself.</p>
+      <label class="choice-option" style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <input id="recencyAutoExclude" type="checkbox"> Exclude this flight from automatic recency estimates (e.g. you did not fly the complete approach/landing)
+      </label>
     </div>
-    <p class="mini">A night sequence also counts toward general passenger recency. Do not count simulator training or IR privileges here.</p>
+    <div id="recencyManualWrap" style="display:none">
+      <p class="mini">For multi-pilot, DUAL, SPIC, PICUS or CO-PILOT: manually confirm complete take-off, approach and landing sequences flown by you as PF, if applicable. Do not confuse aircraft movements with your PF credit.</p>
+      <label class="choice-option" style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <input id="recencyPF" type="checkbox" onchange="toggleRecencyEvidence()"> I was pilot flying for these complete sequences
+      </label>
+      <div class="formgrid">
+        <div class="field"><label for="recencyDay">Confirmed day sequences</label><input id="recencyDay" type="number" min="0" max="100" step="1" value="0" disabled></div>
+        <div class="field"><label for="recencyNight">Confirmed night sequences</label><input id="recencyNight" type="number" min="0" max="100" step="1" value="0" disabled></div>
+      </div>
+      <p class="mini">Night sequences also count toward the general 3-sequence threshold. Approved simulator and IR credit require separate checks.</p>
+    </div>
   </details>
   <div class="section-title">Specialised helicopter operations</div>
   <div class="mini">Tick an operation performed during this flight to reveal its duration in H:MM. These hours are experience breakdowns and do not increase your total flight time.</div>
@@ -346,6 +354,7 @@ if(existing){
   toggleInstructorTime();
   $('#crossCountry').checked=!!existing.crossCountry;
   $('#remarks').value=existing.remarks||'';
+  $('#recencyAutoExclude').checked=existing.recency?.excludeAuto===true;
   if(existing.recency?.pfConfirmed){
     $('#recencyPF').checked=true;
     $('#recencyDay').value=existing.recency.day||0;
@@ -359,8 +368,8 @@ if(existing){
       toggleSpecialOp(op.code);
     }
   });
-  if($('#instructorCheck').checked || Object.keys(existing.specialOps||{}).length || existing.recency?.pfConfirmed) $('#moreDetails').open=true;
-  if(existing.recency?.pfConfirmed) $('#recencyEvidence').open=true;
+  if($('#instructorCheck').checked || Object.keys(existing.specialOps||{}).length || existing.recency?.pfConfirmed || existing.recency?.excludeAuto) $('#moreDetails').open=true;
+  if(existing.recency?.pfConfirmed || existing.recency?.excludeAuto) $('#recencyEvidence').open=true;
 }else{
   $('#date').value=formatDate(new Date().toISOString().slice(0,10));
   if(quick){
@@ -455,13 +464,27 @@ function collectSpecialOps(totalMinutes){
   return ops;
 }
 function toggleRecencyEvidence(){
-  const checked=!!document.getElementById('recencyPF')?.checked;
+  const role=document.getElementById('role')?.value;
+  const cfg=document.querySelector('input[name="pilotConfig"]:checked')?.value||'single';
+  const auto=cfg==='single'&&['PIC','SOLO'].includes(role);
+  const autoWrap=document.getElementById('recencyAutoWrap');
+  const manualWrap=document.getElementById('recencyManualWrap');
+  if(autoWrap)autoWrap.style.display=auto?'block':'none';
+  if(manualWrap)manualWrap.style.display=auto?'none':'block';
+  const checked=!auto&&!!document.getElementById('recencyPF')?.checked;
   for(const id of ['recencyDay','recencyNight']){
     const input=document.getElementById(id);
     if(input)input.disabled=!checked;
   }
 }
-function collectRecencyEvidence(icao,dayTo,dayLdg,nightTo,nightLdg,nightMin){
+function collectRecencyEvidence(icao,dayTo,dayLdg,nightTo,nightLdg,nightMin,role,cfg,original){
+  const code=String(icao||'').trim().toUpperCase();
+  if(cfg==='single'&&['PIC','SOLO'].includes(role)){
+    if(document.getElementById('recencyAutoExclude')?.checked)return {excludeAuto:true,icao:code};
+    // Preserve historical explicit PF evidence when editing a PIC/SOLO flight.
+    // If movement counts change, read-only computation rechecks validity.
+    return original?.recency?.pfConfirmed===true?{...original.recency,icao:code}:null;
+  }
   const flag=document.getElementById('recencyPF');
   if(!flag?.checked)return null;
   const day=Number(document.getElementById('recencyDay')?.value);
@@ -470,14 +493,12 @@ function collectRecencyEvidence(icao,dayTo,dayLdg,nightTo,nightLdg,nightMin){
   if(!valid(day)||!valid(night)||day+night===0||
     day>Math.min(dayTo,dayLdg)||night>Math.min(nightTo,nightLdg)||
     (night>0&&nightMin<=0)){
-    const more=document.getElementById('moreDetails');
-    const details=document.getElementById('recencyEvidence');
-    if(more)more.open=true;
-    if(details)details.open=true;
-    showFormError('Recency evidence must contain complete PF sequences. Day/night sequence counts must not exceed the corresponding take-offs and landings; night sequences require recorded night time.');
+    document.getElementById('moreDetails').open=true;
+    document.getElementById('recencyEvidence').open=true;
+    showFormError('Complete PF sequences must not exceed day/night take-offs or landings; night sequences need night time.');
     return false;
   }
-  return {pfConfirmed:true,day,night,icao:String(icao||'').trim().toUpperCase()};
+  return {pfConfirmed:true,day,night,icao:code};
 }
 function uppercasePlaceInput(el){
   let start=el.selectionStart, end=el.selectionEnd;
@@ -728,6 +749,7 @@ function roleChanged(){
     field.style.background='#fff';
   }
   if(typeof updateQuickPICVisibility==='function')updateQuickPICVisibility();
+  if(typeof toggleRecencyEvidence==='function')toggleRecencyEvidence();
 }
 
 function showFormError(msg){
@@ -779,12 +801,14 @@ function saveFlight(){
   const instructorTime=collectInstructorTime(m);
   if(instructorTime===null)return;
   let pilotConfig=document.querySelector('input[name="pilotConfig"]:checked')?.value||'single';
+  let role=$('#role').value;
+  const originalEntry=editingFlightId?S.flights.find(x=>x.id===editingFlightId):null;
   const recencyEvidence=collectRecencyEvidence(ac($('#aid').value)?.icao,
     Number($('#toDay').value||0),Number($('#ldgDay').value||0),
-    Number($('#toNight').value||0),Number($('#ldgNight').value||0),night);
+    Number($('#toNight').value||0),Number($('#ldgNight').value||0),night,
+    role,pilotConfig,originalEntry);
   if(recencyEvidence===false)return;
 
-  let role=$('#role').value;
   let picName=$('#picName').value.trim();
   if(['PIC','SOLO'].includes(role))picName='SELF';
   if(!picName) return showFormError('Please enter the name of the PIC.');
@@ -858,7 +882,7 @@ function flight(id){const entry=effectiveFlight(S.flights.find(x=>x.id===id));if
 <div class="kpi-grid"><div class="card"><div class="label">Total time</div><div class="big">${fmt(f.mins)}</div></div><div class="card"><div class="label">Pilot function</div><div class="big" style="font-size:20px">${f.role}</div></div><div class="card"><div class="label">Night</div><div class="big">${fmt(f.nightMin||0)}</div></div><div class="card"><div class="label">IFR</div><div class="big">${fmt(f.ifrMin||0)}</div></div></div>
 <div class="mini" style="margin-top:12px">Night entry: ${f.nightCalculation?.mode==='automatic'?'Automatically estimated from aerodrome coordinates and civil twilight':'Manually entered / legacy record'}.</div>
 <div class="formgrid" style="margin-top:18px"><div><b>Name of PIC</b><div class="muted">${htmlEscape(displayPICName(f)||'—')}</div></div><div><b>Engine configuration</b><div class="muted">✓ ${engineCode(a)==='ME'?'Multi-engine (ME)':'Single-engine (SE)'}</div></div><div><b>Pilot configuration</b><div class="muted">${flightPilotConfig(f)==='multi'?'Multi-pilot':'Single-pilot'}</div></div><div><b>Configuration time</b><div class="muted">${(()=>{let c=configurationTimes(f);return c.multi?`Multi-pilot ${fmt(c.multi)}`:c.spME?`Single-pilot ME ${fmt(c.spME)}`:`Single-pilot SE ${fmt(c.spSE)}`})()}</div></div><div><b>Take-offs</b><div class="muted">Day ${f.takeoffDay||0} · Night ${f.takeoffNight||0}</div></div><div><b>Landings</b><div class="muted">Day ${f.landingDay||0} · Night ${f.landingNight||0}</div></div><div><b>Cross-country</b><div class="muted">${f.crossCountry?'Yes':'No'}</div></div></div>
-<p><b>FCL.060 PF evidence:</b> <span class="muted">${f.recency?.pfConfirmed?'Day '+Number(f.recency.day||0)+' · Night '+Number(f.recency.night||0)+' complete sequences':'Not recorded / unverified'}</span></p>
+<p><b>FCL.060 recency:</b> <span class="muted">${(()=>{const e=window.HeliLogV233Recency.evidence(f);return e.source==='excluded'?'Excluded from automatic estimate':e.source==='unverified'?'PF evidence not established':e.source==='estimated'?'Automatically estimated day '+e.day+' · night '+e.night+' movements':'Confirmed day '+e.day+' · night '+e.night+' PF sequences';})()}</span></p>
 <p><b>Remarks / endorsements</b><br><span class="muted">${htmlEscape(flightRemarksForDisplay(f)||'—')}</span></p>
 ${Object.keys(f.specialOps||{}).length?`<div class="card" style="margin-top:16px"><h3>Specialised helicopter operations</h3>
 ${SPECIAL_OPS.filter(op=>Object.prototype.hasOwnProperty.call(f.specialOps||{},op.code)).map(op=>`<div class="profileline"><div class="k">${htmlEscape(op.label)}</div><b>${fmt(f.specialOps[op.code])}</b></div>`).join('')}

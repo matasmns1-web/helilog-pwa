@@ -196,3 +196,11 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 - Only explicitly checked complete take-off, approach and landing PF sequences entered under Full Flight Entry → More details count. Night sequences also contribute to the general 3-sequence requirement. Unverified historic movements and simulator time remain excluded.
 - Outputs say "Documented" / "Not established", NEVER issue an operational authorisation. IR night alternative, approved FFS credits, 120-day CAT supervised extension, multiple-type credit, licence/operator conditions and specialised recency require independent assessment.
 - No schema changes, silent backfill, write to signed archives or production migration. Test-only; V2.31.4 production remains unchanged.
+
+## V2.33.1 — Automatically estimated recency (TEST)
+
+- Single-pilot PIC/SOLO history is evaluated read-only using min(day take-offs, day landings) and min(night take-offs, night landings). This **estimates** complete PF movement sequences; an approach itself is not separately attested by logbook movement counts, so it must not be presented as certified legal currency.
+- No duplicate sequence entry for those flights; an opt-out allows an exceptional unsigned flight to be excluded. DUAL/SPIC/PICUS/co-pilot and multi-pilot flights still require explicit PF evidence for credit.
+- Show only ICAO type/pilot-configuration pairs with logged flight history, and only show night PIC recency for a type/configuration with recorded night operations (even if the last night flight is older than 90 days).
+- Rename "Passenger / CAT" to "Passenger-carrying" to avoid misclassifying private/training flights as CAT; FCL.060 applies to carrying passengers or CAT but qualifying prior flights need not themselves be CAT.
+- No data backfill, migration, or archive mutation; unchanged production V2.31.4. Full regression suite must pass before staging deploy.
