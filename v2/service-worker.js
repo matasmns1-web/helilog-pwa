@@ -1,8 +1,8 @@
-const CACHE='helilog-v2-33-recency-phase1-1';
+const CACHE='helilog-v2-33-1-auto-recency-1';
 const SHELL=[
   './',
   './index.html',
-  './recency.js?v=2.33',
+  './recency.js?v=2.33.1',
   './dark-cockpit.css?v=2.20-cockpit-3',
   './guide.css?v=2.29',
   './manifest.webmanifest',
