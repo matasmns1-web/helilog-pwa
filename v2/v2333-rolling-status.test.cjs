@@ -52,10 +52,10 @@ test('dashboard and detailed Recency cards use status rather than growing fracti
  assert.match(html,/Show on dashboard/);
  assert.match(html,/All recencies/);
  assert.match(html,/90-day threshold met/);
- assert.match(html,/8 recorded movement pairs/);
+ assert.match(html,/9 recorded movement pairs/);
  assert.match(html,/If no further qualifying flights:/);
  assert.match(html,/Threshold falls below minimum on/);
- assert.doesNotMatch(html,/8\/3|Next 90-day change:/);
+ assert.doesNotMatch(html,/9\/3|Next 90-day change:/);
  assert.match(html,/Threshold not met/);
  assert.match(html,/1 more needed|2 more needed/);
  assert.match(html,/data-recency-key="G2CA\|single\|general"/);
@@ -63,8 +63,8 @@ test('dashboard and detailed Recency cards use status rather than growing fracti
  const card=f.call('recencySummaryMarkup()');
  assert.match(card,/90-day threshold met/);
  assert.match(card,/Threshold falls below minimum on/);
- assert.match(card,/8 recorded movement pairs/);
- assert.doesNotMatch(card,/8\/3|R44/);
+ assert.match(card,/9 recorded movement pairs/);
+ assert.doesNotMatch(card,/9\/3|R44/);
  assert.equal(JSON.stringify(records),before);
 });
 test('short selector labels exclude count fractions and duplicate detailed card content',()=>{
@@ -74,6 +74,6 @@ test('short selector labels exclude count fractions and duplicate detailed card 
  const selector=html.split('recency-choice-grid')[1]?.split('</div>')[0]||'';
  assert.match(selector,/recency-dashboard-choice/);
  assert.match(selector,/recency-choice-status/);
- assert.doesNotMatch(selector,/8\/3|Threshold falls below minimum|recorded movement pairs/);
+ assert.doesNotMatch(selector,/9\/3|Threshold falls below minimum|recorded movement pairs/);
  assert.match(html,/rolling 90-day/i);
 });
