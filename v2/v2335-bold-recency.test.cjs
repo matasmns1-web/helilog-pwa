@@ -3,7 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const engine=require('./recency.js');
 const source=fs.readFileSync(path.join(__dirname,'source/app/09-recency.js'),'utf8');
-const date=new Date().toLocaleDateString('en-CA').replace(/\//g,'-');
+const now=new Date(),date=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
 function run(){
  const a=[{id:'g',icao:'G2CA'}],flights=[{id:'f',date,aid:'g',role:'PIC',pilotConfig:'single',takeoffDay:3,landingDay:3,takeoffNight:1,landingNight:1}];
  const before=JSON.stringify(flights),store=new Map(),ctx={
