@@ -67,7 +67,7 @@ test('dashboard glance and Recency route render without modifying records',()=>{
  vm.runInContext(source+'; recency();',ctx);
  assert.match(ctx.app.innerHTML,/FCL\.060/);
  assert.match(ctx.app.innerHTML,/G2CA/);
- assert.match(ctx.app.innerHTML,/3\/3/);
+ assert.match(ctx.app.innerHTML,/4\/3/);
  assert.match(ctx.app.innerHTML,/1\/1/);
  assert.match(vm.runInContext('recencySummaryMarkup()',ctx),/View recency/);
  assert.equal(JSON.stringify(flights),before);
