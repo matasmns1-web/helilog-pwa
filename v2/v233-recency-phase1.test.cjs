@@ -6,9 +6,9 @@ const f=(date,day=0,night=0,extra={})=>({date,aid:'g2',entryType:'flight',pilotC
  takeoffDay:day,takeoffNight:night,landingDay:day,landingNight:night,recency:{pfConfirmed:true,day,night,icao:'G2CA'},...extra});
 test('90 calendar day boundaries count today through 89 days back, reject future and earlier',()=>{
  const x=r.assess([f('2026-07-28',3,1),f('2026-07-27',9,9),f('2026-10-27',9,9)],aircraft,'2026-10-25','G2CA');
- assert.equal(x.general,0);assert.equal(x.night,0);
+ assert.equal(x.general,4);assert.equal(x.night,1);
  const y=r.assess([f('2026-07-29',3,1),f('2026-07-28',9,9)],aircraft,'2026-10-26','G2CA');
- assert.equal(y.general,13);assert.equal(y.night,10);
+ assert.equal(y.general,4);assert.equal(y.night,1);
  assert.equal(y.from,'2026-07-29');
 });
 test('only explicit complete pilot-flying sequences count; legacy and simulator not certified',()=>{
