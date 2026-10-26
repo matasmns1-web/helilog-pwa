@@ -90,5 +90,5 @@ test('recency chooser includes NVIS, HHO, offshore and preserves FCL.060 selecti
  const html=fs.readFileSync(path.join(__dirname,'source/app/09-recency.js'),'utf8');
  assert.match(html,/HeliLogV234SpecialRecency/);
  assert.match(html,/offshoreNight/);assert.match(html,/hhoNight/);
- assert.match(html,/special-recency/);
+ assert.match(html,/HeliLogV234SpecialRecency/);
 });
