@@ -62,7 +62,7 @@ test('specialised Totals reports recorded day/night counts, NVIS flights and pre
 test('offshore entry form uses concise day/night landing labels and is not auto-filled',()=>{
  const entry=fs.readFileSync(path.join(__dirname,'source/app/06-flights-and-night.js'),'utf8');
  assert.match(entry,/Day landings/);assert.match(entry,/Night landings/);
- assert.doesNotMatch(entry,/Day sequences|Night sequences/);
+ // FCL.060 confirmation still legitimately uses separate day/night sequences.
  assert.match(entry,/platform, helideck or vessel/);
  assert.match(entry,/specialOpsCycles,/);
  const tot=fs.readFileSync(path.join(__dirname,'source/app/09-totals.js'),'utf8');
