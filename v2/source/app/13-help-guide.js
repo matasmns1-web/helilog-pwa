@@ -1,4 +1,4 @@
-/* V2.33.4. Searchable, offline-friendly guide and current release notes. */
+/* V2.33.5. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
   {
     "category": "Flight operations",
@@ -236,6 +236,11 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {
+    "v": "V2.33.5",
+    "name": "Clearer recency names",
+    "detail": "Highlight Passenger-carrying and Night PIC in the Recency dashboard, selector and detailed lists, leaving dates and supporting information normal-weight. Compact layout and calculations are unchanged."
+  },
   {
     "v": "V2.33.4",
     "name": "Compact recent-experience dashboard and Recency page",

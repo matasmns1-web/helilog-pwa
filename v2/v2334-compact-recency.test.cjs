@@ -28,6 +28,7 @@ test('dashboard card is compact list; no nested cards or count headlines',()=>{
  assert.match(card,/dashboard-recency-card/);
  assert.match(card,/recency-dashboard-row/);
  assert.match(card,/Night PIC/);
+ assert.match(card,/<strong class="recency-kind">Night PIC<\/strong>/);
  assert.match(card,/Estimated met/);
  assert.match(card,/Threshold until/);
  assert.doesNotMatch(card,/recency-lapse|recency-indicator|recency-mini-grid|recorded movement pairs/);

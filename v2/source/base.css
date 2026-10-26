@@ -536,3 +536,6 @@ html.helilog-test-mode .brand::after{
  .recency-detail-row>summary{gap:9px}
  .recency-compact-status{font-size:10px;padding:4px 7px}
 }
+
+/* V2.33.5 — prominent operation names without adding vertical height. */
+.recency-kind{font-weight:750;color:var(--ink)}
