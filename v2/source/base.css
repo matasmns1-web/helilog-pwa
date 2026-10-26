@@ -462,3 +462,14 @@ html.helilog-test-mode .brand::after{
 .recency-panel{padding:15px;border:1px solid var(--line);border-radius:11px}
 .recency-count{font-size:26px;font-weight:800;margin:7px 0}
 @media(max-width:650px){.recency-mini-grid,.recency-grid{grid-template-columns:1fr}.recency-mini{flex-wrap:wrap}}
+
+/* V2.33.2: dashboard recency visibility preferences */
+.recency-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.recency-dashboard-choice{display:flex;align-items:center;gap:12px;cursor:pointer;padding:14px;border:1px solid var(--line);border-radius:11px;min-width:0}
+.recency-dashboard-choice:has(input:checked){border-color:var(--accent, #6489ad);background:var(--panel)}
+.recency-dashboard-choice input{width:18px;height:18px;flex:0 0 18px}
+.recency-dashboard-choice>span{min-width:0}
+.recency-choice-title{display:block;font-size:13px;color:var(--muted);margin-top:3px}
+.recency-mini-label{min-width:0}
+.recency-mini-label .muted{font-size:12px;margin-top:3px}
+@media(max-width:650px){.recency-choice-grid{grid-template-columns:1fr}}

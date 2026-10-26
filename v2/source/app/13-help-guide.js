@@ -1,4 +1,4 @@
-/* V2.33.1. Searchable, offline-friendly guide and current release notes. */
+/* V2.33.2. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
   {
     "category": "Flight operations",
@@ -6,6 +6,7 @@ const HELILOG_GUIDE_TOPICS=[
     "summary": "Automatically estimate 90-day recency from single-pilot PIC/SOLO movements, with optional manual PF evidence.",
     "steps": [
       "Open Recency from the desktop navigation, the mobile More menu, or the dashboard Recent experience summary.",
+      "Under Show on dashboard, tick any combination of Passenger-carrying and Night PIC recency for each aircraft type and pilot configuration. Choices save automatically on this device; if none is selected, no recency card appears on the dashboard.",
       "Review each type separately; single-pilot and multi-pilot flying are not automatically combined.",
       "For single-pilot PIC/SOLO, normal day/night take-off and landing counts automatically provide a recency estimate, including earlier logbook flights. There is no need to enter the same movements again.",
       "To exclude an exceptional PIC/SOLO flight from the estimate, edit the unsigned flight and tick Exclude from automatic recency estimate under Full details → More details. Other pilot functions and multi-pilot operations still offer manual PF evidence fields.",
@@ -232,6 +233,11 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {
+    "v": "V2.33.2",
+    "name": "Choose dashboard recency indicators",
+    "detail": "Select passenger-carrying and night recent-experience cards per aircraft type from the Recency page. The dashboard shows only selected indicators; preferences are stored per account on this device without changing flight or cloud records."
+  },
   {
     "v": "V2.33.1",
     "name": "Automatic single-pilot recency and relevant night indicators",
