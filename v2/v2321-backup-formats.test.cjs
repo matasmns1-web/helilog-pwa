@@ -73,8 +73,8 @@ test('error and verifier outputs do not expose signatures or persist a passphras
   assert.match(ui,/overflow-wrap:anywhere/);
 });
 test('release cache, version and production guards are not confused with data migration',()=>{
-  assert.match(read('service-worker.js'),/helilog-v2-32-2-backup-simplify-1/);
-  assert.match(gate,/HELILOG_TEST_VERSION='V2\.32\.2'/);
-  assert.match(read('source/index.template.html'),/HeliLog V2\.32\.2/);
+  assert.match(read('service-worker.js'),/helilog-v2-33-recency-phase1-1/);
+  assert.match(gate,/HELILOG_TEST_VERSION='V2\.33'/);
+  assert.match(read('source/index.template.html'),/HeliLog V2\.33/);
   assert.doesNotMatch(ui,/helilog_create_backup_now|helilog_restore_missing_records/);
 });

@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.32.2 — Backup Verification · Test</title>
+<title>HeliLog V2.33 — Flight Recency · Test</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -467,14 +467,24 @@ html.helilog-test-mode .brand::after{
   #flightForm.quick-entry-active .formgrid {gap:5px;}
   #flightForm.quick-entry-active .field > label:first-child {font-size:10px;}
 }
+
+/* V2.33 responsive recent-experience dashboard and detail grid */
+.recency-mini-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.recency-mini{display:flex;align-items:center;gap:10px;padding:11px 12px;border:1px solid var(--line);border-radius:10px}
+.recency-mini>b{font-size:21px;white-space:nowrap}
+.recency-mini>.mini{margin-left:auto;text-align:right}
+.recency-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.recency-panel{padding:15px;border:1px solid var(--line);border-radius:11px}
+.recency-count{font-size:26px;font-weight:800;margin:7px 0}
+@media(max-width:650px){.recency-mini-grid,.recency-grid{grid-template-columns:1fr}.recency-mini{flex-wrap:wrap}}
 </style>
 <link rel="stylesheet" href="./dark-cockpit.css?v=2.20-cockpit-3" media="screen">
 <link rel="stylesheet" href="./guide.css?v=2.29" media="screen">
 </head>
 <body><div class="layout">
-<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.32.2 · TEST ENVIRONMENT</span></div><nav>
+<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.33 · TEST ENVIRONMENT</span></div><nav>
 <div class="nav-group-label">Flight operations</div>
-<button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button>
+<button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="recency">◷ Recency</button>
 <div class="nav-group-label">Records &amp; assets</div>
 <button data-v="aircraft">🚁 Aircraft</button><button data-v="pilots">👤 Pilots</button><button data-v="endorsements">✎ Endorsements</button><button data-v="printarchive">▤ Print archive</button>
 <div class="nav-group-label">Account</div>
@@ -567,6 +577,7 @@ html.helilog-test-mode .brand::after{
 <script src="./cloud-backups.js?v=2.19-locations-1"></script>
 <script src="./disaster-recovery.js?v=2.19-locations-1"></script>
 <script src="./offline-backup-check.js?v=2.32"></script>
+<script src="./recency.js?v=2.33"></script>
 <script>
 const LIVE_KEY='helilog_v2_complete_test_data'; // Separate V2 test browser key.
 const SANDBOX_KEY='helilog_v2_complete_test_sandbox';
@@ -1249,6 +1260,7 @@ function mobilemore(){
     <button class="card more-link" onclick="go('endorsements')"><span>✎</span><b>Endorsements</b><span class="muted">Memoranda and signatures</span></button>
     ${!isStandaloneApp()?`<button class="card more-link" onclick="go('endorsementarchive')"><span>▤</span><b>Endorsement archive</b><span class="muted">Printed pages and corrections</span></button>`:''}
     <button class="card more-link" onclick="go('totals')"><span>◉</span><b>Totals</b><span class="muted">Flight-time breakdown</span></button>
+    <button class="card more-link" onclick="go('recency')"><span>◷</span><b>Recency</b><span class="muted">90-day passenger and night evidence</span></button>
     <button class="card more-link" onclick="go('profile')"><span>○</span><b>Profile</b><span class="muted">Pilot details, medical, licences and ratings</span></button>
     <button class="card more-link" onclick="go('settings')"><span>⚙</span><b>Settings</b><span class="muted">Logbook, cloud sync, backups and device</span></button>
     ${!v23AccountWorkspace()?`<button class="card more-link" onclick="go('testmode')"><span>⚗</span><b>Test Mode</b><span class="muted">Separate sandbox and safe reset</span></button>`:''}
@@ -1348,6 +1360,8 @@ function dashboard(){
     </div>
   </div>
 
+  ${recencySummaryMarkup()}
+
   <div class="grid two" style="margin-top:16px">
     <div class="card">
       <div class="head"><h2>Recent flights</h2><button class="btn" onclick="go('logbook')">View all</button></div>
@@ -1363,7 +1377,7 @@ function dashboard(){
           return `<div class="reminder-item"><div><b>${htmlEscape(r.label)}</b><div class="muted">${htmlEscape(r.type)} · ${displayDate(r.date)}</div></div><div class="reminder-days ${cls}">${txt}</div></div>`;
         }).join(''):'<div class="muted">No medical or qualification validity dates recorded.</div>'}
       </div>
-      <div class="mini" style="margin-top:10px">Date reminders only — HeliLog does not yet determine regulatory validity or recency.</div>
+      <div class="mini" style="margin-top:10px">Date reminders only. See Recency for documented flight evidence; HeliLog cannot certify legal flying privileges.</div>
     </div>
   </div>
 
@@ -3575,6 +3589,19 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
       <div class="mini">Recorded separately from PIC, Dual and total flight time. Can be part of the same flight.</div>
     </div>
   </div>
+
+  <details id="recencyEvidence" style="margin-top:14px;border:1px solid var(--line);padding:12px;border-radius:10px">
+    <summary style="cursor:pointer;font-weight:700">FCL.060 recency evidence (optional)</summary>
+    <p class="mini">Only enter complete take-off, approach and landing sequences as pilot flying (PF). Take-off and landing totals alone cannot confirm recency. These entries are self-declared evidence, not a legal clearance.</p>
+    <label class="choice-option" style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <input id="recencyPF" type="checkbox" onchange="toggleRecencyEvidence()"> I confirm I was pilot flying for these complete sequences
+    </label>
+    <div class="formgrid">
+      <div class="field"><label for="recencyDay">Confirmed day sequences</label><input id="recencyDay" type="number" min="0" max="100" step="1" value="0" disabled></div>
+      <div class="field"><label for="recencyNight">Confirmed night sequences</label><input id="recencyNight" type="number" min="0" max="100" step="1" value="0" disabled></div>
+    </div>
+    <p class="mini">A night sequence also counts toward general passenger recency. Do not count simulator training or IR privileges here.</p>
+  </details>
   <div class="section-title">Specialised helicopter operations</div>
   <div class="mini">Tick an operation performed during this flight to reveal its duration in H:MM. These hours are experience breakdowns and do not increase your total flight time.</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:10px;margin-top:12px">
@@ -3631,6 +3658,12 @@ if(existing){
   toggleInstructorTime();
   $('#crossCountry').checked=!!existing.crossCountry;
   $('#remarks').value=existing.remarks||'';
+  if(existing.recency?.pfConfirmed){
+    $('#recencyPF').checked=true;
+    $('#recencyDay').value=existing.recency.day||0;
+    $('#recencyNight').value=existing.recency.night||0;
+    toggleRecencyEvidence();
+  }
   SPECIAL_OPS.forEach(op=>{
     if(Object.prototype.hasOwnProperty.call(existing.specialOps||{},op.code)){
       $('#specialCheck_'+op.code).checked=true;
@@ -3638,7 +3671,8 @@ if(existing){
       toggleSpecialOp(op.code);
     }
   });
-  if($('#instructorCheck').checked || Object.keys(existing.specialOps||{}).length) $('#moreDetails').open=true;
+  if($('#instructorCheck').checked || Object.keys(existing.specialOps||{}).length || existing.recency?.pfConfirmed) $('#moreDetails').open=true;
+  if(existing.recency?.pfConfirmed) $('#recencyEvidence').open=true;
 }else{
   $('#date').value=formatDate(new Date().toISOString().slice(0,10));
   if(quick){
@@ -3731,6 +3765,31 @@ function collectSpecialOps(totalMinutes){
     ops[op.code]=minutes;
   }
   return ops;
+}
+function toggleRecencyEvidence(){
+  const checked=!!document.getElementById('recencyPF')?.checked;
+  for(const id of ['recencyDay','recencyNight']){
+    const input=document.getElementById(id);
+    if(input)input.disabled=!checked;
+  }
+}
+function collectRecencyEvidence(icao,dayTo,dayLdg,nightTo,nightLdg,nightMin){
+  const flag=document.getElementById('recencyPF');
+  if(!flag?.checked)return null;
+  const day=Number(document.getElementById('recencyDay')?.value);
+  const night=Number(document.getElementById('recencyNight')?.value);
+  const valid=n=>Number.isSafeInteger(n)&&n>=0&&n<=100;
+  if(!valid(day)||!valid(night)||day+night===0||
+    day>Math.min(dayTo,dayLdg)||night>Math.min(nightTo,nightLdg)||
+    (night>0&&nightMin<=0)){
+    const more=document.getElementById('moreDetails');
+    const details=document.getElementById('recencyEvidence');
+    if(more)more.open=true;
+    if(details)details.open=true;
+    showFormError('Recency evidence must contain complete PF sequences. Day/night sequence counts must not exceed the corresponding take-offs and landings; night sequences require recorded night time.');
+    return false;
+  }
+  return {pfConfirmed:true,day,night,icao:String(icao||'').trim().toUpperCase()};
 }
 function uppercasePlaceInput(el){
   let start=el.selectionStart, end=el.selectionEnd;
@@ -4032,6 +4091,10 @@ function saveFlight(){
   const instructorTime=collectInstructorTime(m);
   if(instructorTime===null)return;
   let pilotConfig=document.querySelector('input[name="pilotConfig"]:checked')?.value||'single';
+  const recencyEvidence=collectRecencyEvidence(ac($('#aid').value)?.icao,
+    Number($('#toDay').value||0),Number($('#ldgDay').value||0),
+    Number($('#toNight').value||0),Number($('#ldgNight').value||0),night);
+  if(recencyEvidence===false)return;
 
   let role=$('#role').value;
   let picName=$('#picName').value.trim();
@@ -4081,6 +4144,7 @@ function saveFlight(){
     stdMin:Number(original?.stdMin||0),
     crossCountry:$('#crossCountry').checked,
     specialOps,
+    recency:recencyEvidence,
     remarks:$('#remarks').value.trim(),
     createdAt:original?.createdAt||new Date().toISOString(),
     updatedAt:new Date().toISOString()
@@ -4106,6 +4170,7 @@ function flight(id){const entry=effectiveFlight(S.flights.find(x=>x.id===id));if
 <div class="kpi-grid"><div class="card"><div class="label">Total time</div><div class="big">${fmt(f.mins)}</div></div><div class="card"><div class="label">Pilot function</div><div class="big" style="font-size:20px">${f.role}</div></div><div class="card"><div class="label">Night</div><div class="big">${fmt(f.nightMin||0)}</div></div><div class="card"><div class="label">IFR</div><div class="big">${fmt(f.ifrMin||0)}</div></div></div>
 <div class="mini" style="margin-top:12px">Night entry: ${f.nightCalculation?.mode==='automatic'?'Automatically estimated from aerodrome coordinates and civil twilight':'Manually entered / legacy record'}.</div>
 <div class="formgrid" style="margin-top:18px"><div><b>Name of PIC</b><div class="muted">${htmlEscape(displayPICName(f)||'—')}</div></div><div><b>Engine configuration</b><div class="muted">✓ ${engineCode(a)==='ME'?'Multi-engine (ME)':'Single-engine (SE)'}</div></div><div><b>Pilot configuration</b><div class="muted">${flightPilotConfig(f)==='multi'?'Multi-pilot':'Single-pilot'}</div></div><div><b>Configuration time</b><div class="muted">${(()=>{let c=configurationTimes(f);return c.multi?`Multi-pilot ${fmt(c.multi)}`:c.spME?`Single-pilot ME ${fmt(c.spME)}`:`Single-pilot SE ${fmt(c.spSE)}`})()}</div></div><div><b>Take-offs</b><div class="muted">Day ${f.takeoffDay||0} · Night ${f.takeoffNight||0}</div></div><div><b>Landings</b><div class="muted">Day ${f.landingDay||0} · Night ${f.landingNight||0}</div></div><div><b>Cross-country</b><div class="muted">${f.crossCountry?'Yes':'No'}</div></div></div>
+<p><b>FCL.060 PF evidence:</b> <span class="muted">${f.recency?.pfConfirmed?'Day '+Number(f.recency.day||0)+' · Night '+Number(f.recency.night||0)+' complete sequences':'Not recorded / unverified'}</span></p>
 <p><b>Remarks / endorsements</b><br><span class="muted">${htmlEscape(flightRemarksForDisplay(f)||'—')}</span></p>
 ${Object.keys(f.specialOps||{}).length?`<div class="card" style="margin-top:16px"><h3>Specialised helicopter operations</h3>
 ${SPECIAL_OPS.filter(op=>Object.prototype.hasOwnProperty.call(f.specialOps||{},op.code)).map(op=>`<div class="profileline"><div class="k">${htmlEscape(op.label)}</div><b>${fmt(f.specialOps[op.code])}</b></div>`).join('')}
@@ -5097,6 +5162,72 @@ function saveBroughtForwardTotals(ev){
 }
 
 const profileExpanded={medical:false,qualifications:false};
+/* HeliLog V2.33 TEST — FCL.060 summary and per-type details.
+ * Values are documented evidence, NOT a legal determination of privileges.
+ */
+function recencyCurrent(){
+ const today=new Date(),yyyy=today.getFullYear(),mm=String(today.getMonth()+1).padStart(2,'0'),dd=String(today.getDate()).padStart(2,'0');
+ return yyyy+'-'+mm+'-'+dd;
+}
+function recencyRows(){return window.HeliLogV233Recency.groups(effectiveFlights(),S.aircraft,recencyCurrent());}
+function recencyDaysTo(iso){
+ if(!iso)return null;
+ const n=Date.parse(iso+'T00:00:00Z')-Date.parse(recencyCurrent()+'T00:00:00Z');
+ return Math.round(n/86400000);
+}
+function recencyStatus(row,kind){
+ const documented=kind==='night'?row.nightDocumented:row.generalDocumented;
+ const count=kind==='night'?row.night:row.general;
+ const target=kind==='night'?1:3;
+ const change=kind==='night'?row.nextNightLoss:row.nextGeneralLoss;
+ const days=recencyDaysTo(change);
+ return {count,target,documented,change,days,
+   text:documented?(days!==null&&days<=14?'Review soon':'Documented'):'Not established'};
+}
+function recencySummaryMarkup(){
+ const data=recencyRows(),preferred=effectiveFlights().filter(f=>!isSimulatorSession(f)&&f.date<=recencyCurrent())
+   .sort(compareFlightsNewest)[0];
+ const main=data.find(x=>preferred&&x.type===window.HeliLogV233Recency.typeCode(preferred,S.aircraft)&&
+   x.config===flightPilotConfig(preferred))||data[0];
+ if(!main)return '<div class="card" style="margin-top:16px"><div class="head"><h2>Recent experience</h2><button class="btn" onclick="go(\'recency\')">View recency</button></div><p class="muted">Add aircraft and flights to track FCL.060 evidence.</p></div>';
+ const gen=recencyStatus(main,'general'),night=recencyStatus(main,'night');
+ const item=(label,v)=>`<div class="recency-mini"><div class="muted">${label}</div><b>${v.count}/${v.target}</b><span class="mini">${v.text}</span></div>`;
+ return `<div class="card" style="margin-top:16px">
+ <div class="head"><div><h2>Recent experience</h2><div class="muted">FCL.060 · ${htmlEscape(main.type)} · ${main.config==='multi'?'Multi-pilot':'Single-pilot'} · rolling 90 days</div></div><button class="btn" onclick="go('recency')">View recency</button></div>
+ <div class="recency-mini-grid">${item('Passenger / CAT PF sequences',gen)}${item('Night PIC PF sequences',night)}</div>
+ <div class="mini" style="margin-top:10px">${main.unverifiedFlights?main.unverifiedFlights+' flight(s) have unverified movement counts. ':''}Documented counts require explicit pilot-flying approach evidence. Licence, IR and operator requirements still need manual confirmation.</div>
+ </div>`;
+}
+function recency(){
+ const rows=recencyRows();
+ const asOf=recencyCurrent();
+ const renderOne=(row)=>{
+   const gen=recencyStatus(row,'general'),night=recencyStatus(row,'night');
+   const cell=(title,v)=>`<div class="recency-panel">
+     <b>${title}</b><div class="recency-count">${v.count}/${v.target}</div>
+     <div class="mini">${v.documented?'Documented PF sequences':'Insufficient documented evidence'}</div>
+     ${v.change?`<div class="mini">Next 90-day change: ${displayDate(v.change)}${v.days!==null&&v.days<=30?' ('+v.days+' days)':''}</div>`:''}
+   </div>`;
+   return `<div class="card" style="margin-top:14px">
+     <div class="head"><h2>${htmlEscape(row.type)} <span class="muted" style="font-size:14px">· ${row.config==='multi'?'Multi-pilot':'Single-pilot'}</span></h2></div>
+     <div class="recency-grid">${cell('Passenger / CAT — FCL.060(b)(1)',gen)}${cell('Night PIC — FCL.060(b)(2)',night)}</div>
+     <div class="mini" style="margin-top:12px">${row.unverifiedFlights?
+       row.unverifiedFlights+' flight(s) with up to '+row.unverifiedPotential+' unverified take-off/landing pairs are excluded from documented credit.':
+       'No unverified take-off/landing pairs in this window.'}</div>
+   </div>`;
+ };
+ app.innerHTML=header('Recency','FCL.060 · documented pilot-flying experience in the preceding 90 days',
+    '<button class="btn" onclick="go(\'dashboard\')">← Dashboard</button>')+
+   `<div class="card">
+     <div class="head"><h2>Passenger-carrying and night recent experience</h2></div>
+     <p>Calculation window: ${displayDate(window.HeliLogV233Recency.dateShift(asOf,-89))} to ${displayDate(asOf)} (90 calendar dates, UTC-stored flight dates).</p>
+     <p class="mini">General: 3 take-offs, approaches and landings as pilot flying in 90 days, on the applicable type/class and pilot configuration. Night PIC: 1 night take-off, approach and landing as pilot flying in 90 days, or the IR alternative. HeliLog does not automatically assess the IR alternative, licence, operator approval, multi-type grouping, supervised 120-day CAT extension or FFS credit.</p>
+     <p class="mini"><b>Documented is not a certification of legal currency.</b> Only explicitly confirmed complete PF sequences count. Ordinary landing counts, brought-forward totals and simulators without qualifying evidence do not count. Older archived flights are not automatically modified.</p>
+     <p class="mini">Reference: EASA Part-FCL FCL.060(b)(1)–(2), (b)(5), (c). <a target="_blank" rel="noopener noreferrer" href="https://www.easa.europa.eu/en/document-library/easy-access-rules/online-publications/easy-access-rules-aircrew-regulation-eu-no-11782011">EASA Easy Access Rules for Aircrew</a>.</p>
+   </div>
+   ${rows.length?rows.map(renderOne).join(''):'<div class="card" style="margin-top:14px">No aircraft types available yet.</div>'}
+   <div class="card" style="margin-top:14px"><h2>How to record qualifying events</h2><p>Open <b>Add Flight → Full details → More details → FCL.060 recency evidence</b>. Tick the pilot-flying confirmation and enter only complete take-off, approach and landing sequences. The counts cannot exceed the flight’s day/night take-off and landing numbers.</p><p class="mini">Specialised recency (NVIS, hoist, offshore and external-load operations) will follow in Phase 2.</p></div>`;
+}
 function rememberProfileSection(which,node){
  if(!node?.isConnected)return;
  if(which==="medical"||which==="qualifications")profileExpanded[which]=node.open;
@@ -5981,8 +6112,23 @@ function deleteQualification(id){
   save();
   profile();
 }
-/* V2.32.2. Searchable, offline-friendly guide and current release notes. */
+/* V2.33. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
+  {
+    "category": "Flight operations",
+    "title": "Recent experience — passenger and night (FCL.060)",
+    "summary": "View conservative 90-day flight recency evidence by helicopter type and pilot configuration.",
+    "steps": [
+      "Open Recency from the desktop navigation, the mobile More menu, or the dashboard Recent experience summary.",
+      "Review each type separately; single-pilot and multi-pilot flying are not automatically combined.",
+      "For a new or unarchived flight, open Full Flight Entry → More details → FCL.060 recency evidence and tick pilot flying only if you completed the take-off, approach AND landing.",
+      "Enter confirmed day and night sequences. Older unmarked flights, imported totals and simulator sessions without separate qualifying evidence remain unverified and do not add to documented credits.",
+      "The 90-day view is based on flight calendar dates. Check FCL.060, your licence, IR privilege if applicable, training and operator approvals before carrying passengers or operating at night. This screen does not certify privileges.",
+      "Archived signed logbook entries are never altered automatically; changes require the normal traceable correction process."
+    ],
+    "route": "recency",
+    "action": "Open Recency"
+  },
   {
     "category": "Records & signatures",
     "title": "Reusable pilot signatures",
@@ -6200,6 +6346,11 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {
+    "v": "V2.33",
+    "name": "Passenger and night recent experience (Phase 1)",
+    "detail": "Dedicated Recency page and dashboard glance. Separate types/configurations and count only explicitly confirmed PF take-off/approach/landing sequences; older flights remain unverified. No account migrations or archive changes."
+  },
   {
     "v": "V2.32.2",
     "name": "Simpler backup verification",
@@ -6434,8 +6585,8 @@ function render(){
   }
   try{
     if(v!=='add'&&v!=='quickadd') editingFlightId=null;
-    ({dashboard,logbook,add,quickadd:quickAdd,aircraft,pilots,endorsements,printarchive,archivereview:v229PreArchiveReview,endorsementarchive:v2EndorsementArchive,totals,profile,settings,locations:v219LocationsPage,backups,cloud,testmode,mobilemore,help:helpGuide}[v]||dashboard)();
-    let moreViews=['mobilemore','aircraft','pilots','endorsements','endorsementarchive','totals','profile','settings','locations','backups','cloud','testmode','help'];
+    ({dashboard,logbook,add,quickadd:quickAdd,aircraft,pilots,endorsements,printarchive,archivereview:v229PreArchiveReview,endorsementarchive:v2EndorsementArchive,totals,recency,profile,settings,locations:v219LocationsPage,backups,cloud,testmode,mobilemore,help:helpGuide}[v]||dashboard)();
+    let moreViews=['mobilemore','aircraft','pilots','endorsements','endorsementarchive','totals','recency','profile','settings','locations','backups','cloud','testmode','help'];
     document.querySelectorAll('[data-v]').forEach(b=>{
       let active=b.dataset.v===v || (b.dataset.v==='quickadd'&&v==='add') || (b.dataset.v==='settings' && (v==='cloud'||v==='backups'||v==='locations')) || (b.dataset.v==='mobilemore' && moreViews.includes(v));
       b.classList.toggle('on',active);

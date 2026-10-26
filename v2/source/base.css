@@ -452,3 +452,13 @@ html.helilog-test-mode .brand::after{
   #flightForm.quick-entry-active .formgrid {gap:5px;}
   #flightForm.quick-entry-active .field > label:first-child {font-size:10px;}
 }
+
+/* V2.33 responsive recent-experience dashboard and detail grid */
+.recency-mini-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.recency-mini{display:flex;align-items:center;gap:10px;padding:11px 12px;border:1px solid var(--line);border-radius:10px}
+.recency-mini>b{font-size:21px;white-space:nowrap}
+.recency-mini>.mini{margin-left:auto;text-align:right}
+.recency-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.recency-panel{padding:15px;border:1px solid var(--line);border-radius:11px}
+.recency-count{font-size:26px;font-weight:800;margin:7px 0}
+@media(max-width:650px){.recency-mini-grid,.recency-grid{grid-template-columns:1fr}.recency-mini{flex-wrap:wrap}}

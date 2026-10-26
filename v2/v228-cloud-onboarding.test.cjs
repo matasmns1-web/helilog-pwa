@@ -138,8 +138,8 @@ test("one-cloud setup copy, per-device conflict review and recoverable pre-sync 
  assert.match(gate,/Review conflicts on this device/);
 });
 test("no database migrations, logbook print or archive formatting changed",()=>{
- assert.match(read("service-worker.js"),/helilog-v2-32-2-backup-simplify-1/);
- assert.match(read("source/index.template.html"),/V2\.32\.2/);
+ assert.match(read("service-worker.js"),/helilog-v2-33-recency-phase1-1/);
+ assert.match(read("source/index.template.html"),/V2\.33/);
  assert.doesNotMatch(read("print.js"),/v28CompleteCloudSetup/);
  assert.doesNotMatch(read("archive-integrity.js"),/v28CompleteCloudSetup/);
 });

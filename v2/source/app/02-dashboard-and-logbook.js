@@ -83,6 +83,8 @@ function dashboard(){
     </div>
   </div>
 
+  ${recencySummaryMarkup()}
+
   <div class="grid two" style="margin-top:16px">
     <div class="card">
       <div class="head"><h2>Recent flights</h2><button class="btn" onclick="go('logbook')">View all</button></div>
@@ -98,7 +100,7 @@ function dashboard(){
           return `<div class="reminder-item"><div><b>${htmlEscape(r.label)}</b><div class="muted">${htmlEscape(r.type)} · ${displayDate(r.date)}</div></div><div class="reminder-days ${cls}">${txt}</div></div>`;
         }).join(''):'<div class="muted">No medical or qualification validity dates recorded.</div>'}
       </div>
-      <div class="mini" style="margin-top:10px">Date reminders only — HeliLog does not yet determine regulatory validity or recency.</div>
+      <div class="mini" style="margin-top:10px">Date reminders only. See Recency for documented flight evidence; HeliLog cannot certify legal flying privileges.</div>
     </div>
   </div>
 

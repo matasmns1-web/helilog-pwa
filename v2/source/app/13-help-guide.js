@@ -1,5 +1,20 @@
-/* V2.32.2. Searchable, offline-friendly guide and current release notes. */
+/* V2.33. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
+  {
+    "category": "Flight operations",
+    "title": "Recent experience — passenger and night (FCL.060)",
+    "summary": "View conservative 90-day flight recency evidence by helicopter type and pilot configuration.",
+    "steps": [
+      "Open Recency from the desktop navigation, the mobile More menu, or the dashboard Recent experience summary.",
+      "Review each type separately; single-pilot and multi-pilot flying are not automatically combined.",
+      "For a new or unarchived flight, open Full Flight Entry → More details → FCL.060 recency evidence and tick pilot flying only if you completed the take-off, approach AND landing.",
+      "Enter confirmed day and night sequences. Older unmarked flights, imported totals and simulator sessions without separate qualifying evidence remain unverified and do not add to documented credits.",
+      "The 90-day view is based on flight calendar dates. Check FCL.060, your licence, IR privilege if applicable, training and operator approvals before carrying passengers or operating at night. This screen does not certify privileges.",
+      "Archived signed logbook entries are never altered automatically; changes require the normal traceable correction process."
+    ],
+    "route": "recency",
+    "action": "Open Recency"
+  },
   {
     "category": "Records & signatures",
     "title": "Reusable pilot signatures",
@@ -217,6 +232,11 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {
+    "v": "V2.33",
+    "name": "Passenger and night recent experience (Phase 1)",
+    "detail": "Dedicated Recency page and dashboard glance. Separate types/configurations and count only explicitly confirmed PF take-off/approach/landing sequences; older flights remain unverified. No account migrations or archive changes."
+  },
   {
     "v": "V2.32.2",
     "name": "Simpler backup verification",
