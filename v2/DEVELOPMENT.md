@@ -197,6 +197,13 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 - Outputs say "Documented" / "Not established", NEVER issue an operational authorisation. IR night alternative, approved FFS credits, 120-day CAT supervised extension, multiple-type credit, licence/operator conditions and specialised recency require independent assessment.
 - No schema changes, silent backfill, write to signed archives or production migration. Test-only; V2.31.4 production remains unchanged.
 
+## V2.33.2 — Pick dashboard Recency indicators (TEST)
+
+- Recency page provides per-ICAO-type, pilot-configuration and passenger/night checkboxes for what appears on the dashboard. Selection defaults to empty: no unwanted card.
+- Choices persist per cloud-account identity **on the current device** via a dedicated localStorage view-only key. Local and test sandbox modes use distinct keys. This is not yet synchronized between devices.
+- No aircraft/flight/archive data is modified. Hidden indicators remain fully available in Recency. Invalid/stale dashboard keys are excluded.
+- Recency calculations are unchanged and remain conservative estimates, not legal certification.
+
 ## V2.33.1 — Automatically estimated recency (TEST)
 
 - Single-pilot PIC/SOLO history is evaluated read-only using min(day take-offs, day landings) and min(night take-offs, night landings). This **estimates** complete PF movement sequences; an approach itself is not separately attested by logbook movement counts, so it must not be presented as certified legal currency.

@@ -133,7 +133,5 @@ function recency(){
    </details>
    <div class="recency-section-heading" style="margin-top:20px"><h2>All recencies</h2><p class="mini">Everything remains visible here, even if it is hidden from your dashboard.</p></div>
    ${rows.length?rows.map(renderOne).join(''):'<div class="card" style="margin-top:14px">No flights recorded yet. Recency is hidden until you have flying history.</div>'}
-   <div class="card" style="margin-top:14px"><h2>How the automatic calculation works</h2>
-   <p>For single-pilot PIC/SOLO flights, you only need the ordinary day/night take-off and landing counts. The estimate is calculated from your saved flights, including historical entries, without changing their records. To exclude a flight where you did not complete the approach or landings, edit an unsigned flight and tick <b>Exclude from automatic recency estimate</b> under Full details → More details. Archived records are not changed automatically.</p>
-   <p class="mini">Other pilot functions or multi-pilot flying can still use optional explicit PF evidence. Phase 2 will cover specialised-operation recency separately.</p></div>`;
+`;
 }
