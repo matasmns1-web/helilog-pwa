@@ -1,4 +1,4 @@
-const CACHE='helilog-v2-33-1-auto-recency-1';
+const CACHE='helilog-v2-33-2-recency-choices-1';
 const SHELL=[
   './',
   './index.html',
