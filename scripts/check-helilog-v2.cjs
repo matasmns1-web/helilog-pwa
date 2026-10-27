@@ -48,6 +48,7 @@ const GROUPS = Object.freeze([
       'v2/v2341-offshore-totals.test.cjs',
       'v2/v235-advanced-recency.test.cjs',
       'v2/v236-operator-rules.test.cjs',
+      'v2/v2362-linked-operator.test.cjs',
       'v2/v225-print-cleanup.test.cjs',
       'v2/v226-help-guide.test.cjs',
       'v2/v227-pilot-signatures.test.cjs',
