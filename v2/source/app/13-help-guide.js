@@ -1,4 +1,4 @@
-/* V2.34.1. Searchable, offline-friendly guide and current release notes. */
+/* V2.35. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
   {
     "category": "Flight operations",
@@ -252,6 +252,11 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {
+    "v": "V2.35",
+    "name": "Phase 3A — advanced recency foundation",
+    "detail": "Simplified Met badges retain their evidence explanations. Add an in-memory custom operator rule and pilot-reviewed credit model for future simulator, check and training evidence. No credits change EASA indicators or synchronized logbook data."
+  },
   {
     "v": "V2.34.1",
     "name": "Offshore landings, compact entry, and clearer specialist recency",

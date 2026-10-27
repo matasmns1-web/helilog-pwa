@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.34.1 — Flight Recency · Test</title>
+<title>HeliLog V2.35 — Flight Recency · Test</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -579,7 +579,7 @@ html.helilog-test-mode .brand::after{
 .special-nvis-auto strong{font-size:13px;color:var(--ink)}
 @media(max-width:520px){.special-count-fields{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.special-nvis-auto{grid-column:auto}}
 
-/* V2.34.1 compact offshore landing entry */
+/* V2.35 compact offshore landing entry */
 .special-count-fields{grid-template-columns:minmax(0,1fr) repeat(2,minmax(0,.82fr));column-gap:6px}
 .special-count-fields label{font-size:11px;min-height:15px}
 .special-count-fields input[type="number"]{text-align:center;padding-inline:4px;font-variant-numeric:tabular-nums}
@@ -589,7 +589,7 @@ html.helilog-test-mode .brand::after{
 <link rel="stylesheet" href="./guide.css?v=2.29" media="screen">
 </head>
 <body><div class="layout">
-<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.34.1 · TEST ENVIRONMENT</span></div><nav>
+<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.35 · TEST ENVIRONMENT</span></div><nav>
 <div class="nav-group-label">Flight operations</div>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="recency">◷ Recency</button>
 <div class="nav-group-label">Records &amp; assets</div>
@@ -686,6 +686,7 @@ html.helilog-test-mode .brand::after{
 <script src="./offline-backup-check.js?v=2.32"></script>
 <script src="./recency.js?v=2.33.1"></script>
 <script src="./special-recency.js?v=2.34"></script>
+<script src="./advanced-recency.js?v=2.35"></script>
 <script>
 const LIVE_KEY='helilog_v2_complete_test_data'; // Separate V2 test browser key.
 const SANDBOX_KEY='helilog_v2_complete_test_sandbox';
@@ -5359,7 +5360,7 @@ function saveBroughtForwardTotals(ev){
 }
 
 const profileExpanded={medical:false,qualifications:false};
-/* HeliLog V2.34.1 — combined NVIS/HHO, offshore landings specialised-operation recency.
+/* HeliLog V2.35 — combined NVIS/HHO, offshore landings specialised-operation recency.
  * "CAT" is not a flight classification: FCL.060 applies to passenger/CAT
  * operations, but qualifying prior PF movements may be private/training.
  */
@@ -5587,6 +5588,10 @@ function recency(){
      <p class="mini">Period: ${displayDate(window.HeliLogV233Recency.dateShift(asOf,-89))} to ${displayDate(asOf)}. Passenger-carrying recency requires 3 qualifying take-offs, approaches and landings as PF in the preceding 90 days. Night PIC requires a qualifying night sequence or an IR alternative under FCL.060.</p>
      <p class="mini">Single-pilot PIC/SOLO movements are estimated from recorded take-offs and landings. NVIS counts recorded NVIS flights and HHO counts hoist cycles across SP/MP operation configurations of the same type. Offshore is separated by SP/MP and counts manually entered offshore landings that also represent complete qualifying take-off, departure and approach sequences. Entries are self-reported. Older flights without counts are not automatically credited. Training, operator approvals, night hover transitions, crew duties and permitted simulator credits still require independent verification.</p>
      <p class="mini"><a target="_blank" rel="noopener noreferrer" href="https://www.easa.europa.eu/en/document-library/easy-access-rules/online-publications/easy-access-rules-aircrew-regulation-eu-no-11782011">EASA Aircrew Rules · FCL.060</a></p>
+   </details>
+   <details class="card recency-method" style="margin-top:14px">
+     <summary style="cursor:pointer;font-weight:700">Advanced recency · Phase 3A</summary>
+     <p class="mini">A separate custom-operator rule and reviewed-evidence model is being prepared. Simulator, check and training credits require an explicit operator rule and supporting evidence; they are not automatically credited to the EASA indicators above. No custom rules or credit entries are active or saved in this version.</p>
    </details>
    <div class="card recency-detail-card" style="margin-top:14px">
      <div class="head"><div><h2>All recencies</h2><div class="muted">Passenger, NVIS, hoist and offshore activity · select a row for details</div></div></div>
@@ -6478,7 +6483,7 @@ function deleteQualification(id){
   save();
   profile();
 }
-/* V2.34.1. Searchable, offline-friendly guide and current release notes. */
+/* V2.35. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
   {
     "category": "Flight operations",
@@ -6733,7 +6738,12 @@ const HELILOG_GUIDE_TOPICS=[
 ];
 const HELILOG_GUIDE_UPDATES=[
   {
-    "v": "V2.34.1",
+    "v": "V2.35",
+    "name": "Phase 3A — advanced recency foundation",
+    "detail": "Simplified Met badges retain their evidence explanations. Add an in-memory custom operator rule and pilot-reviewed credit model for future simulator, check and training evidence. No credits change EASA indicators or synchronized logbook data."
+  },
+  {
+    "v": "V2.35",
     "name": "Offshore landings, compact entry, and clearer specialist recency",
     "detail": "Offshore now records Day landings and Night landings at qualifying offshore locations (with complete take-off/departure/approach requirements). NVIS and HHO use combined SP/MP records within type, offshore remains SP/MP-specific, and specialised Totals show captured day/night cycles or offshore landings without manufacturing previous-logbook counts."
   },
