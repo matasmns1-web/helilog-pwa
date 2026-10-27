@@ -1,4 +1,4 @@
-/* HeliLog V2.41 — read-only matching of explicitly classified FFS sessions.
+/* HeliLog V2.41.1 — read-only matching of explicitly classified FFS sessions.
  * This NEVER grants EASA privileges or awards automatic operator credit.
  * Unclassified/legacy simulator entries remain unmatched until pilot supplies
  * a precise ICAO represented-aircraft type and crew configuration.
@@ -10,9 +10,16 @@
 })(typeof window!=='undefined'?window:globalThis,function(){
  'use strict';
  const TYPE=/^[A-Z0-9]{2,8}$/;
+ function deviceType(value){
+  const type=String(value||'').trim().toUpperCase();
+  return TYPE.test(type)?type:null;
+ }
  function classification(session){
   if(!session||session.entryType!=='simulator'||session.simCategory!=='FFS')return null;
-  const type=String(session.simAircraftType||'').trim().toUpperCase();
+  // A precise ICAO code in the existing device/type field is authoritative.
+  // Preserve the separate type previously saved in V2.41 only when the
+  // device field is a descriptive name, for backwards compatibility.
+  const type=deviceType(session.simDevice)||deviceType(session.simAircraftType);
   const config=String(session.simPilotConfig||'');
   if(!TYPE.test(type)||!['single','multi'].includes(config))return null;
   if(!/^[A-Za-z0-9:_-]{1,128}$/.test(String(session.id||'')))return null;
@@ -49,7 +56,7 @@
    proof(session)===record.sessionProof&&matches(session,rule)&&
    record.date===session.date&&
    record.configuration===session.simPilotConfig&&
-   record.aircraftType===session.simAircraftType&&
+   record.aircraftType===classification(session)?.type&&
    record.unit===rule.unit);
  }
  function suggestions(session,profiles){
@@ -58,5 +65,5 @@
    .map(rule=>({profileId:profile.id,operator:profile.operator,ruleId:rule.id,
     title:rule.title,unit:rule.unit})));
  }
- return Object.freeze({version:'2.41',classification,matches,proof,eligibleRecord,suggestions});
+ return Object.freeze({version:'2.41.1',deviceType,classification,matches,proof,eligibleRecord,suggestions});
 });
