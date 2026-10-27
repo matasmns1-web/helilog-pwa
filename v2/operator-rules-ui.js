@@ -454,11 +454,19 @@
      ' · '+r.minimum+' '+esc(r.unit)+' in '+r.periodDays+' days</div>'+
      '<div class="mini">Source: '+esc(monitor.optionFor(r.monitor)?.label||'Not connected')+'</div>'+
      sourceAssessment(r)+
-     '<div class="mini">Accepted: '+esc(r.acceptedSources.join(', '))+'</div>'+ 
+     '<div class="mini">Accepted: '+esc(r.acceptedSources.join(', '))+'</div>'+
+     (matcher?renderFlights.filter(f=>matcher.matches(f,r)).filter(f=>
+       !data.evidence.some(e=>e.profileId===chosen.id&&e.ruleId===r.id&&e.sessionId===f.id))
+       .map(f=>'<div class="mini" style="margin-top:9px"><b>Suggested FFS match</b> · '+esc(f.date)+
+        ' · '+esc(f.simAircraftType)+' · '+esc(f.simPilotConfig)+
+        ' <button class="btn" type="button" onclick="HeliLogV236OperatorRulesUI.reviewSession(\''+chosen.id+'\',\''+r.id+'\',\''+f.id+'\')">Review match</button></div>')
+       .join(''):'')+ 
      (data.evidence.filter(e=>e.profileId===chosen.id&&e.ruleId===r.id).map(e=>
        '<div class="mini" style="margin-top:7px;border-top:1px solid var(--line);padding-top:7px">'+
        '<b>'+esc(({ffs:'FFS',check:'Check',training:'Training'})[e.source]||e.source)+'</b> · '+esc(e.date)+
-       ' · '+e.amount+' '+esc(e.unit)+' · '+(e.status==='reviewed'?'Pilot-reviewed':'Draft · not counted')+
+       ' · '+e.amount+' '+esc(e.unit)+' · '+(e.sessionId&&
+         !matcher?.eligibleRecord(e,renderFlights.find(f=>f.id===e.sessionId),r)?
+         'Needs re-review · not counted':e.status==='reviewed'?'Pilot-reviewed':'Draft · not counted')+
        (e.evidenceRef?' · '+esc(e.evidenceRef):'')+
        (e.notes?' · '+esc(e.notes):'')+
        ' <button class="btn" type="button" onclick="HeliLogV236OperatorRulesUI.editEvidence(\''+chosen.id+'\',\''+r.id+'\',\''+e.id+'\')">Edit</button>'+ 
@@ -537,5 +545,6 @@
  }
  return Object.freeze({storageKey,read,write,validate,legacyForAccount,page,summary,createProfile,showCreate,
    cancelCreate,select,activate,removeProfile,renameProfile,editRule,saveRule,removeRule,monitorChanged,
-   editEvidence,cancelEvidence,saveEvidence,removeEvidence,assessRule,recencySummary,dashboardOptions});
+   editEvidence,cancelEvidence,saveEvidence,removeEvidence,sessionMatches,reviewSession,
+   assessRule,recencySummary,dashboardOptions});
 });
