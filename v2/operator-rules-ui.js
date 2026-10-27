@@ -365,7 +365,7 @@
     '<div class="field"><label for="opRuleDays">Rolling period (days)</label><input id="opRuleDays" type="number" min="1" max="1095" step="1" value="'+esc(r.periodDays)+'"></div></div>'+
     '<div class="field" style="margin-top:12px"><label>Permitted credit sources (explicitly authorised by your operator)</label>'+
     '<div class="actions" style="flex-wrap:wrap">'+engine.SOURCES.map(s=>'<label style="display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="opSource_'+s+'" '+(r.acceptedSources.includes(s)?'checked':'')+'>'+esc(({flight:'Flight',ffs:'Approved FFS',check:'Check',training:'Training'})[s])+'</label>').join('')+'</div></div>'+
-    '<p class="mini">Only recorded flight activity is automatically counted in this version. FFS/check/training credits require separately reviewed evidence in a future phase; selecting them does not add credit.</p>'+
+    '<p class="mini">Recorded flights count only when Flight is permitted. Eligible FFS/check/training entries count only after pilot review, with a traceable reference. Neither is proof of EASA or operator approval.</p>'+
     '<p class="mini" id="opRuleFeedback" role="status" aria-live="polite" hidden></p>'+
     '<div class="actions"><button type="button" class="btn primary" onclick="HeliLogV236OperatorRulesUI.saveRule()">Save rule</button>'+
     '<button type="button" class="btn" onclick="HeliLogV236OperatorRulesUI.editRule(null)">Cancel</button></div></div>';
@@ -395,11 +395,24 @@
      ' · '+r.minimum+' '+esc(r.unit)+' in '+r.periodDays+' days</div>'+
      '<div class="mini">Source: '+esc(monitor.optionFor(r.monitor)?.label||'Not connected')+'</div>'+
      sourceAssessment(r)+
-     '<div class="mini">Accepted: '+esc(r.acceptedSources.join(', '))+'</div></div>'+
-     '<div class="actions"><button type="button" class="btn" onclick="HeliLogV236OperatorRulesUI.editRule(\''+r.id+'\')">Edit</button>'+
+     '<div class="mini">Accepted: '+esc(r.acceptedSources.join(', '))+'</div>'+ 
+     (data.evidence.filter(e=>e.profileId===chosen.id&&e.ruleId===r.id).map(e=>
+       '<div class="mini" style="margin-top:7px;border-top:1px solid var(--line);padding-top:7px">'+
+       '<b>'+esc(({ffs:'FFS',check:'Check',training:'Training'})[e.source]||e.source)+'</b> · '+esc(e.date)+
+       ' · '+e.amount+' '+esc(e.unit)+' · '+(e.status==='reviewed'?'Pilot-reviewed':'Draft · not counted')+
+       (e.evidenceRef?' · '+esc(e.evidenceRef):'')+
+       (e.notes?' · '+esc(e.notes):'')+
+       ' <button class="btn" type="button" onclick="HeliLogV236OperatorRulesUI.editEvidence(\''+chosen.id+'\',\''+r.id+'\',\''+e.id+'\')">Edit</button>'+ 
+       ' <button class="btn" type="button" onclick="HeliLogV236OperatorRulesUI.removeEvidence(\''+e.id+'\')">Delete</button></div>').join(''))+
+     '</div>'+
+     '<div class="actions"><button type="button" class="btn" onclick="HeliLogV236OperatorRulesUI.editEvidence(\''+chosen.id+'\',\''+r.id+'\')">Add evidence</button>'+ 
+     '<button type="button" class="btn" onclick="HeliLogV236OperatorRulesUI.editRule(\''+r.id+'\')">Edit</button>'+
      '<button type="button" class="btn" onclick="HeliLogV236OperatorRulesUI.removeRule(\''+r.id+'\')">Delete</button></div></div>').join(''):'';
    const edit=chosen&&editingRuleId?
      ruleForm(chosen.rules.find(r=>r.id===editingRuleId)||null):'';
+   const evidenceEdit=chosen&&evidenceRuleId&&editingEvidenceId?
+     evidenceForm(chosen.rules.find(r=>r.id===evidenceRuleId),
+       data.evidence.find(e=>e.id===editingEvidenceId)||null):'';
    root.document.getElementById('app').innerHTML=root.header('Operator recency rules','Separate from EASA default recency',
      '<button class="btn" onclick="go(\'recency\')">← Recency</button>')+
      '<div class="card"><div class="head"><div><h2>Custom operator profiles</h2><div class="muted">Select the operator whose internal requirements you want to track.</div></div>'+
@@ -418,9 +431,9 @@
        '<button type="button" class="btn primary" onclick="HeliLogV236OperatorRulesUI.editRule(\'new\')">Add rule</button></div>'+
        '<div class="field"><label for="operatorRename">Rename operator</label><input id="operatorRename" maxlength="120" value="'+esc(chosen.operator)+'"></div>'+
        '<button class="btn" type="button" onclick="HeliLogV236OperatorRulesUI.renameProfile()">Save name</button>'+
-       '<h3 style="margin-top:14px">Rules</h3>'+(rules||'<p class="muted">No custom rules yet.</p>')+edit+'</div>':'')+
+       '<h3 style="margin-top:14px">Rules</h3>'+(rules||'<p class="muted">No custom rules yet.</p>')+edit+evidenceEdit+'</div>':'')+
      '<div class="card" style="margin-top:14px"><h2>EASA recency is unchanged</h2><p class="mini">'+
-     'These are operator-defined tracking requirements, not official EASA rules. Night flight counts use recorded night minutes, not independently verified Night VFR. Flight counts do not certify currency; FFS/check/training credits still require reviewed evidence. Existing FCL.060 and SPA results are unaffected.</p></div>';
+     'These are operator-defined tracking requirements, not official EASA rules. Night flight counts use recorded night minutes, not independently verified Night VFR. FFS/check/training records require pilot review and a reference, but are not independently verified by HeliLog. Existing FCL.060 and SPA results are unaffected.</p></div>';
  }
  function cancelCreate(){addingProfile=false;note='';refresh();}
  function dashboardOptions(flights,aircraft,asOf){
@@ -429,7 +442,7 @@
      if(!active)return [];
      return active.rules.filter(rule=>!!monitor.optionFor(rule.monitor)).flatMap(rule=>{
        try{
-         const result=monitor.assess(rule,flights,aircraft,asOf);
+         const result=assessRule(active,rule,data,flights,aircraft,asOf);
          return [{
            key:'operator|'+active.id+'|'+rule.id,operatorRule:true,rule,result,
            operatorName:active.operator,
@@ -464,5 +477,6 @@
    }catch{return 'Operator profiles unavailable';}
  }
  return Object.freeze({storageKey,read,write,validate,legacyForAccount,page,summary,createProfile,showCreate,
-   cancelCreate,select,activate,removeProfile,renameProfile,editRule,saveRule,removeRule,monitorChanged,recencySummary,dashboardOptions});
+   cancelCreate,select,activate,removeProfile,renameProfile,editRule,saveRule,removeRule,monitorChanged,
+   editEvidence,cancelEvidence,saveEvidence,removeEvidence,assessRule,recencySummary,dashboardOptions});
 });
