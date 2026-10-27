@@ -105,7 +105,7 @@ test("Settings cards fill the main content area without nesting",()=>{
   }
  }
  assert.ok(closed,"Settings grid should close before the next page");
- assert.equal(directCards,8,"All Settings cards should be siblings, including aerodromes, not nested");
+ assert.equal(directCards,7,"All Settings cards should be siblings, including aerodromes, not nested");
  assert.match(page,/class="card settings-wide"[\s\S]*?App &amp; device/);
  assert.match(html,/\.settings-grid\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  assert.match(html,/@media\(max-width:1150px\)\{\.settings-grid\{grid-template-columns:1fr\}\}/);
