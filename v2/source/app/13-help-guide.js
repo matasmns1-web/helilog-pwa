@@ -269,6 +269,11 @@ const HELILOG_GUIDE_TOPICS=[
 ];
 const HELILOG_GUIDE_UPDATES=[
   {
+    "v": "V2.37",
+    "name": "Operator recency dashboard and night-flight monitoring",
+    "detail": "Active custom operator rules now use the same expandable Met / Below threshold recency cards and dashboard checkboxes as EASA. The Night flights source counts validated flights with positive recorded night minutes, but does not independently establish Night VFR."
+  },
+  {
     "v": "V2.36.2",
     "name": "Custom rules read recorded flight operations",
     "detail": "Choose the precise activity source for each operator rule (HESLO cycles, hoist, offshore landings, NVIS or all flights). Recency shows read-only counts. Older unlinked rules require an explicit source selection. The duplicate Settings card was removed."
