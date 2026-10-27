@@ -3474,7 +3474,7 @@ function addSimulator(editId=null){
            ${['FNPT I','FNPT II','FTD','FFS','FS','Other'].map(c=>`<option value="${c}"${(old?.simCategory||'FNPT II')===c?' selected':''}>${c}</option>`).join('')}
          </select></div>
          <div class="field"><label>Device / aircraft type (required for FS/FFS/FTD)</label><input id="simDevice" maxlength="90" placeholder="Device or represented aircraft type" value="${htmlEscape(old?.simDevice||'')}"></div>
-         <div class="field"><label for="simAircraftType">Represented helicopter ICAO type (for rule matching)</label><input id="simAircraftType" maxlength="8" placeholder="G2CA, R44, EC35" value="${htmlEscape(old?.simAircraftType||'')}"><div class="mini">Optional. Required for automatic FFS matching. Use the exact ICAO type from your operator rule.</div></div>
+         <div class="field"><label for="simAircraftType">Represented helicopter ICAO type (for rule matching)</label><input id="simAircraftType" maxlength="8" placeholder="ICAO type designator" value="${htmlEscape(old?.simAircraftType||'')}"><div class="mini">Optional. Required for automatic FFS matching. Use the exact ICAO type from your operator rule.</div></div>
          <div class="field"><label for="simPilotConfig">Crew configuration for evidence matching</label><select id="simPilotConfig">
            <option value="">Not specified — no automatic match</option>
            <option value="single"${old?.simPilotConfig==='single'?' selected':''}>Single-pilot</option>
