@@ -56,10 +56,27 @@ test('source and unit are linked and invalid source fails closed',()=>{
 });
 test('linkage stays in Recency, not Settings, and is read-only to cloud/signed records',()=>{
  const src=p=>fs.readFileSync(path.join(__dirname,p),'utf8');
- assert.match(src('source/app/09-recency.js'),/recencySummary\(effectiveFlights\(\),S\.aircraft,asOf\)/);
+ assert.match(src('source/app/09-recency.js'),/recencyAllDashboardOptions/);
  assert.doesNotMatch(src('source/app/10-settings-and-locations.js'),/Operator recency rules/);
  assert.match(src('operator-rules-ui.js'),/opRuleMonitor/);
- assert.match(src('source/index.template.html'),/operator-flight-monitor\.js\?v=2\.36\.2/);
- assert.match(src('service-worker.js'),/operator-flight-monitor\.js\?v=2\.36\.2/);
+ assert.match(src('source/index.template.html'),/operator-flight-monitor\.js\?v=2\.37/);
+ assert.match(src('service-worker.js'),/operator-flight-monitor\.js\?v=2\.37/);
  assert.doesNotMatch(src('operator-flight-monitor.js'),/\.insert\(|\.delete\(|localStorage\.setItem\(/);
+});
+
+test('night flight monitor counts one flight with validated positive night time, not landings or night minutes',()=>{
+ const flights=[
+  flight('night1','2026-10-26',0,0,{nightMin:10,mins:60,takeoffNight:2,landingNight:2}),
+  flight('night2','2026-10-25',0,0,{nightMin:20,mins:60,takeoffNight:3,landingNight:3}),
+  flight('day','2026-10-25',0,0,{nightMin:0,mins:60,takeoffNight:5}),
+  flight('invalid','2026-10-24',0,0,{nightMin:80,mins:60}),
+  flight('sim','2026-10-26',0,0,{nightMin:30,mins:60,entryType:'simulator'}),
+  flight('old','2026-07-27',0,0,{nightMin:30,mins:60}),
+  flight('night1','2026-10-26',0,0,{nightMin:40,mins:60})
+ ];
+ const r=monitor.assess(rule({monitor:'flights:night',unit:'flights',minimum:3}),flights,aircraft,'2026-10-27');
+ assert.equal(r.count,2);assert.equal(r.evidenceFlights,2);assert.equal(r.thresholdMet,false);
+ const met=monitor.assess(rule({monitor:'flights:night',unit:'flights',minimum:2}),flights,aircraft,'2026-10-27');
+ assert.equal(met.count,2);assert.equal(met.thresholdMet,true);
+ assert.equal(met.thresholdUntil,'2027-01-23');assert.equal(met.certified,false);
 });
