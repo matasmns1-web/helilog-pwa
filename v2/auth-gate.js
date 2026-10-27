@@ -364,7 +364,9 @@ async function v23EnterWorkspace(auth){
  if(stored===null && !window.HeliLogV23Sync.extended()){
   try{
    const setup=await window.HeliLogV23Sync.accountSetup();
-   if(setup.hasCloud)await window.HeliLogV23Sync.activateExtension("cloud");
+   if(setup.hasCloud && legacyRules){
+    v22CloudNotice="This device has older custom operator rules. Both the local copy and cloud copy are preserved. Open Cloud Account to choose the existing cloud account data explicitly after saving a safety snapshot.";
+   }else if(setup.hasCloud)await window.HeliLogV23Sync.activateExtension("cloud");
   }catch(error){
    v22CloudNotice="Automatic account setup needs review. Local data was retained: "+(error.message||error);
   }
