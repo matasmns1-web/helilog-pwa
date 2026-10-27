@@ -47,9 +47,9 @@ test('test-only PWA release labels and offline cache are aligned',()=>{
   const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
   const manifest=JSON.parse(fs.readFileSync(path.join(root,'manifest.webmanifest'),'utf8'));
   const worker=fs.readFileSync(path.join(root,'service-worker.js'),'utf8');
-  assert.match(html,/HeliLog V2\.40 — Phase 3C Evidence · Test/);
-  assert.equal(manifest.name,'HeliLog V2.40 — Phase 3C Evidence Test');
-  assert.match(worker,/helilog-v2-40-evidence-1/);
+  assert.match(html,/HeliLog V2\.41 — Automatic FFS Evidence Matching · Test/);
+  assert.equal(manifest.name,'HeliLog V2.41 — Automatic FFS Evidence Matching Test');
+  assert.match(worker,/helilog-v2-41-auto-ffs-1/);
   assert.match(html,/function quickAdd\(\)/);
   assert.match(html,/function saveFlight\(\)/);
 });
