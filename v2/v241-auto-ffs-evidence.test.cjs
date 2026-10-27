@@ -120,8 +120,8 @@ test('entrypoint includes simulator classification fields and app caches matcher
  assert.doesNotMatch(read('source/app/06-flights-and-night.js'),/id="simDevice"/);
  assert.match(read('source/app/06-flights-and-night.js'),/const typeUnchanged=/);
  assert.match(read('source/app/06-flights-and-night.js'),/id="simPilotConfig"/);
- assert.match(read('source/index.template.html'),/simulator-evidence\.js\?v=2\.41\.1/);
- assert.match(read('service-worker.js'),/simulator-evidence\.js\?v=2\.41\.1/);
+ assert.match(read('source/index.template.html'),/simulator-evidence\.js\?v=2\.41\.2/);
+ assert.match(read('service-worker.js'),/simulator-evidence\.js\?v=2\.41\.2/);
  assert.doesNotMatch(read('recency.js'),/HeliLogV241SimulatorEvidence/);
 });
 

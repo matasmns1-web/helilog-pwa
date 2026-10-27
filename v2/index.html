@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.41.1 — Unified Simulator Type Field · Test</title>
+<title>HeliLog V2.41.2 — Simulator Session Details · Test</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -589,7 +589,7 @@ html.helilog-test-mode .brand::after{
 <link rel="stylesheet" href="./guide.css?v=2.29" media="screen">
 </head>
 <body><div class="layout">
-<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.41.1 · TEST ENVIRONMENT</span></div><nav>
+<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.41.2 · TEST ENVIRONMENT</span></div><nav>
 <div class="nav-group-label">Flight operations</div>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="recency">◷ Recency</button>
 <div class="nav-group-label">Records &amp; assets</div>
@@ -688,7 +688,7 @@ html.helilog-test-mode .brand::after{
 <script src="./special-recency.js?v=2.34"></script>
 <script src="./advanced-recency.js?v=2.35"></script>
 <script src="./operator-flight-monitor.js?v=2.40"></script>
-<script src="./simulator-evidence.js?v=2.41.1"></script>
+<script src="./simulator-evidence.js?v=2.41.2"></script>
 <script src="./operator-rules-ui.js?v=2.41"></script>
 <script>
 const LIVE_KEY='helilog_v2_complete_test_data'; // Separate V2 test browser key.
@@ -3561,9 +3561,8 @@ function simulatorDetails(id){
     <button class="btn primary" onclick="editFlight('${f.id}')">${isArchivedFlight(f.id)?'Propose correction':'Edit session'}</button>
     ${!isArchivedFlight(f.id)?`<button class="btn dangerbtn" onclick="openDeleteModal('${f.id}')">Delete session</button>`:''}</div>`)+
     `<div class="card"><h2>${htmlEscape(simulatorDeviceLabel(f))}</h2>
-     <div class="grid stats">
+     <div class="grid stats" style="grid-template-columns:minmax(0,1fr);max-width:420px">
        <div class="card"><div class="label">Simulator session</div><div class="big">${fmt(f.stdMin)}</div></div>
-       <div class="card"><div class="label">Actual flight time</div><div class="big">0:00</div></div>
      </div><p><b>Exercise / remarks</b></p><p>${htmlEscape(f.remarks||'—')}</p>
      <p class="mini">Printed only in Synthetic Training Devices and Remarks columns. Does not add to actual helicopter flight time.</p></div>`+
     matched+correctionHistoryMarkup(id);
@@ -6838,6 +6837,7 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+ {v:"V2.41.2",name:"Cleaner simulator session details",detail:"Simulator details show only the recorded simulator duration. Removed the unnecessary Actual flight time: 0:00 box. Simulator sessions still do not add helicopter flight time or EASA recency."},
  {v:"V2.41.1",name:"Simplify simulator helicopter type entry",detail:"The Represented helicopter ICAO type field is the only aircraft-type input for simulator sessions. Removed the older Device / aircraft type field without deleting legacy device descriptions or previously reviewed linked evidence."},
  {v:"V2.41",name:"Match FFS sessions to operator recency",detail:"An FFS session with an explicit ICAO helicopter type and crew configuration suggests matching operator rules. Review the supporting document and enter qualifying manoeuvres before credit is counted. Linked approval becomes ineligible after the simulator session is edited or deleted until reviewed again. Legacy evidence stays intact; no automatic EASA recency credit."},
  {v:"V2.40",name:"Phase 3C — simulator, check and training evidence",detail:"Add FFS, proficiency/check and training references to operator-specific rules. Draft entries are never counted. Pilot-reviewed entries count only with a document reference and an allowed source; mixed flight/evidence rolling dates remain traceable. The encrypted and revision-checked account cloud carries evidence with its operator profile. No file uploads, official EASA recency credits or operator approval are implied."},
