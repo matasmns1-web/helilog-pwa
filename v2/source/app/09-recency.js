@@ -1,4 +1,4 @@
-/* HeliLog V2.34.1 — combined NVIS/HHO, offshore landings specialised-operation recency.
+/* HeliLog V2.35 — combined NVIS/HHO, offshore landings specialised-operation recency.
  * "CAT" is not a flight classification: FCL.060 applies to passenger/CAT
  * operations, but qualifying prior PF movements may be private/training.
  */
@@ -21,7 +21,7 @@ function recencyStatus(row,kind){
  return {count,target,confirmed,threshold,change,days,
    text:confirmed?'Requirement met':threshold?'90-day threshold met':'Threshold not met',
    tone:confirmed?'met':threshold?'estimated':'below',
-   short:confirmed?'Met':threshold?'Estimated':'Below threshold'};
+   short:confirmed?'Met':threshold?'Met':'Below threshold'};
 }
 function recencyStatusDetails(status){
  const n=status.count;
@@ -138,7 +138,7 @@ function recencyCompactDate(status){
  return Math.max(0,status.target-status.count)+' more recorded '+(status.target-status.count===1?'movement pair':'movement pairs')+' needed';
 }
 function recencyCompactLabel(status){
- return status.tone==='met'?'Met':status.tone==='estimated'?'Estimated met':'Below threshold';
+ return status.threshold?'Met':'Below threshold';
 }
 function recencySummaryMarkup(){
  const options=recencyDashboardOptions(recencyRows());
@@ -226,6 +226,10 @@ function recency(){
      <p class="mini">Period: ${displayDate(window.HeliLogV233Recency.dateShift(asOf,-89))} to ${displayDate(asOf)}. Passenger-carrying recency requires 3 qualifying take-offs, approaches and landings as PF in the preceding 90 days. Night PIC requires a qualifying night sequence or an IR alternative under FCL.060.</p>
      <p class="mini">Single-pilot PIC/SOLO movements are estimated from recorded take-offs and landings. NVIS counts recorded NVIS flights and HHO counts hoist cycles across SP/MP operation configurations of the same type. Offshore is separated by SP/MP and counts manually entered offshore landings that also represent complete qualifying take-off, departure and approach sequences. Entries are self-reported. Older flights without counts are not automatically credited. Training, operator approvals, night hover transitions, crew duties and permitted simulator credits still require independent verification.</p>
      <p class="mini"><a target="_blank" rel="noopener noreferrer" href="https://www.easa.europa.eu/en/document-library/easy-access-rules/online-publications/easy-access-rules-aircrew-regulation-eu-no-11782011">EASA Aircrew Rules · FCL.060</a></p>
+   </details>
+   <details class="card recency-method" style="margin-top:14px">
+     <summary style="cursor:pointer;font-weight:700">Advanced recency · Phase 3A</summary>
+     <p class="mini">A separate custom-operator rule and reviewed-evidence model is being prepared. Simulator, check and training credits require an explicit operator rule and supporting evidence; they are not automatically credited to the EASA indicators above. No custom rules or credit entries are active or saved in this version.</p>
    </details>
    <div class="card recency-detail-card" style="margin-top:14px">
      <div class="head"><div><h2>All recencies</h2><div class="muted">Passenger, NVIS, hoist and offshore activity · select a row for details</div></div></div>

@@ -116,7 +116,7 @@ test('recency interface avoids CAT flight classification, keeps night hidden wit
  vm.createContext(ctx);vm.runInContext(source+'; recency();',ctx);
  assert.match(ctx.app.innerHTML,/Passenger-carrying/);
  assert.doesNotMatch(ctx.app.innerHTML,/Passenger \/ CAT|Night PIC — FCL\.060\(b\)\(2\)/);
- assert.match(ctx.app.innerHTML,/Estimated met/);
+ assert.match(ctx.app.innerHTML,/Met/);
  assert.equal(vm.runInContext('recencySummaryMarkup()',ctx),'');
  assert.doesNotMatch(vm.runInContext('recencySummaryMarkup()',ctx),/Night PIC recency/);
 });

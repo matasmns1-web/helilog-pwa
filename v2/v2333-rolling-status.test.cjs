@@ -51,7 +51,7 @@ test('dashboard and detailed Recency cards use status rather than growing fracti
  f.call('recency()');let html=f.fake.app.innerHTML;
  assert.match(html,/Show on dashboard/);
  assert.match(html,/All recencies/);
- assert.match(html,/Estimated met/);
+ assert.match(html,/Met/);
  assert.match(html,/9 recorded movement pairs/);
  assert.match(html,/If no more qualifying flights are made/);
  assert.match(html,/threshold will fall below the minimum on/);
@@ -61,7 +61,7 @@ test('dashboard and detailed Recency cards use status rather than growing fracti
  assert.match(html,/data-recency-key="G2CA\|single\|general"/);
  f.call('recencySetDashboardIndicator({dataset:{recencyKey:"G2CA|single|general"},checked:true})');
  const card=f.call('recencySummaryMarkup()');
- assert.match(card,/Estimated met/);
+ assert.match(card,/Met/);
  assert.match(card,/Threshold until/);
  assert.doesNotMatch(card,/9 recorded movement pairs/);
  assert.doesNotMatch(card,/9\/3|R44/);
