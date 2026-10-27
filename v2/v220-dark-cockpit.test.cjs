@@ -16,7 +16,7 @@ test('Dark Cockpit remains visible and the current release is test-only',()=>{
   assert.match(html,/class="nav-group-label">Flight operations/);
   assert.match(html,/class="nav-group-label">Records &amp; assets/);
   assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.39'/);
-  assert.match(manifest.name,/V2\.39 — Night VFR from IFR Time Test/);
+  assert.match(manifest.name,/V2\.39 — Cloud Sync Recovery Test/);
   assert.equal(manifest.background_color,'#090f1b');
 });
 
