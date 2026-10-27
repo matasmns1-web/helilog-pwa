@@ -95,7 +95,7 @@
   return Object.freeze({kind:'operator-recorded-activity',monitor:option.id,unit:option.unit,
     title:rule.title,type:rule.aircraftType,configuration:rule.configuration,
     from,through:asOf,count,minimum:rule.minimum,thresholdMet,thresholdUntil,
-    evidenceFlights:evidence.length,missingCycleCounts:unrecorded,
+    evidenceFlights:evidence.length,evidenceEvents:Object.freeze(evidence.map(e=>Object.freeze({...e}))),missingCycleCounts:unrecorded,
     certified:false,source:'flight',disclaimer:'Recorded flight activity only; does not confirm operator approval, crew qualifications, or EASA privileges.'});
  }
  return Object.freeze({version:'2.38.1',OPTIONS,optionFor,validate,assess});

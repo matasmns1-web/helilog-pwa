@@ -55,8 +55,8 @@ test('Flight entry and detail have Night and IFR time but no new flight-rules se
    assert.match(s,/nightMin:night,/);assert.match(s,/ifrMin:ifr,/);
    assert.match(s,/return recordArchiveCorrection\(editingFlightId,f,/);
  }
- assert.match(template,/operator-flight-monitor\.js\?v=2\.38\.1/);
- assert.match(sw,/operator-flight-monitor\.js\?v=2\.38\.1/);
+ assert.match(template,/operator-flight-monitor\.js\?v=2\.40/);
+ assert.match(sw,/operator-flight-monitor\.js\?v=2\.40/);
 });
 test('Operator monitor remains read-only and makes no EASA flight-rule certification claim',()=>{
  const src=fs.readFileSync(path.join(__dirname,'operator-flight-monitor.js'),'utf8');

@@ -1,12 +1,12 @@
-const CACHE='helilog-v2-39-1-operator-cloud-1';
+const CACHE='helilog-v2-40-evidence-1';
 const SHELL=[
   './',
   './index.html',
   './recency.js?v=2.33.1',
   './special-recency.js?v=2.34',
   './advanced-recency.js?v=2.35',
-  './operator-flight-monitor.js?v=2.38.1',
-  './operator-rules-ui.js?v=2.39.1',
+  './operator-flight-monitor.js?v=2.40',
+  './operator-rules-ui.js?v=2.40',
   './dark-cockpit.css?v=2.20-cockpit-3',
   './guide.css?v=2.29',
   './manifest.webmanifest',

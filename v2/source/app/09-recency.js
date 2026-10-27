@@ -155,7 +155,7 @@ function recencySetDashboardIndicator(input){
 }
 function recencyCompactDate(status){
  if(status.operator){
-   if(status.threshold&&status.change)return 'Threshold until '+displayDate(status.change)+' if no more flights';
+   if(status.threshold&&status.change)return 'Threshold until '+displayDate(status.change)+' if no further qualifying activity';
    return Math.max(0,status.target-status.count)+' more recorded '+status.unit+' needed within '+status.periodDays+' days';
  }
  if(status.threshold&&status.change)return 'Threshold until '+displayDate(status.change)+' if no more flights';
@@ -225,15 +225,16 @@ function recency(){
      </summary>
      <div class="recency-detail-expanded">
        <p>${status.operator
-         ?'Recorded '+status.count+' / '+status.target+' '+htmlEscape(status.unit)+' in the preceding '+status.periodDays+' days.'
+         ?'Recorded '+status.count+' / '+status.target+' '+htmlEscape(status.unit)+' in the preceding '+status.periodDays+' days.'+
+           ' ('+option.result.flightCount+' flight-based + '+option.result.evidenceCount+' pilot-reviewed evidence)'
            +(status.threshold?'':' '+Math.max(0,status.target-status.count)+' more needed.')
          :recencyStatusDetails(status)}</p>
-       ${status.threshold&&status.change?`<p>If no more qualifying flights are made, the recorded threshold will fall below the minimum on <b>${displayDate(status.change)}</b>.</p>`:''}
+       ${status.threshold&&status.change?`<p>If ${status.operator?'no further qualifying activity is recorded':'no more qualifying flights are made'}, the recorded threshold will fall below the minimum on <b>${displayDate(status.change)}</b>.</p>`:''}
        ${!status.operator&&status.tone==='estimated'&&!row.special?'<p>Estimated using single-pilot PIC/SOLO take-off and landing pairs; approaches are not separately verified.</p>':''}
        ${!status.operator&&row.special&&row.missingCounts?`<p>${row.missingCounts} earlier operation flight(s) lack recorded cycles/sequences and are not automatically credited.</p>`:''}
        ${!status.operator&&!row.special&&row.unverifiedFlights?`<p>${row.unverifiedFlights} flight(s) have unverified PF movement pairs excluded from credit.</p>`:''}
        <span class="mini">${status.operator
-         ?'Operator-defined requirement · '+htmlEscape(option.operatorName)+'. Self-recorded flight activity only; this is not an EASA result or operator approval.'
+         ?'Operator-defined requirement · '+htmlEscape(option.operatorName)+'. Only explicitly permitted recorded flights and pilot-reviewed, referenced FFS/check/training events count. Pilot review is not independent verification, operator approval or an EASA result.'
            +(option.rule.monitor==='flights:night'?' Night time greater than zero defines a counted flight; Night VFR status is not independently verified.':'')
            +(option.rule.monitor==='flights:night-vfr'?' Night VFR is inferred here from night time greater than zero and IFR time equal to zero. This is a tracking convention, not verified flight rules.':'')
            +(option.result.missingCycleCounts?' '+option.result.missingCycleCounts+' operation flight(s) lack valid recorded cycles.':'')
