@@ -24,7 +24,7 @@ test('original Quick/Full mode, PIC, night and save path are unchanged',()=>{
    "function v218UpdateNight()","function saveFlight()","id=\"saveFlightBtn\""])
    assert.ok(source.includes(str),str);
  assert.match(source,/if\(!editing\)setFlightEntryMode\(quick\?'quick':'full'\)/);
- assert.match(read('service-worker.js'),/helilog-v2-36-1-operator-rule-fix-1/);
- assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.36\.1'/);
- assert.match(read('source/index.template.html'),/HeliLog V2\.36\.1 — Operator Rule Editor Fix · Test/);
+ assert.match(read('service-worker.js'),/helilog-v2-36-2-linked-operator-recency-1/);
+ assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.36\.2'/);
+ assert.match(read('source/index.template.html'),/HeliLog V2\.36\.2 — Linked Operator Recency · Test/);
 });

@@ -231,7 +231,8 @@ function recency(){
      <div class="head"><div><h2>Custom operator recency</h2>
        <p class="mini">${window.HeliLogV236OperatorRulesUI?.summary()||'No operator profile active'}</p></div>
        <button class="btn" type="button" onclick="go('operatorrules')">Manage rules</button></div>
-     <p class="mini">Custom operator requirements remain separate from EASA recency. These rule definitions are device-local; training evidence and notifications will follow.</p>
+     <div style="display:grid;gap:8px">${window.HeliLogV236OperatorRulesUI?.recencySummary(effectiveFlights(),S.aircraft,asOf)||''}</div>
+     <p class="mini" style="margin-top:10px">These are self-reported flight counts against your custom operator thresholds, not official EASA or operator-approved currency. Operator rule settings are saved on this device; simulator/check credits are not automatically counted.</p>
    </div>
    <div class="card recency-detail-card" style="margin-top:14px">
      <div class="head"><div><h2>All recencies</h2><div class="muted">Passenger, NVIS, hoist and offshore activity · select a row for details</div></div></div>

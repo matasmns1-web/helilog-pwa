@@ -267,3 +267,9 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 
 ## V2.36.1 — Operator editor feedback (TEST)
 Add Rule opens and focuses the form; validation messages appear inline without clearing inputs. Source and EASA calculations unchanged; production unchanged.
+
+## V2.36.2 — Phase 3B extension: linked operator activity (TEST)
+- Move custom rule access exclusively to Recency; remove duplicate Settings card.
+- Add required explicit monitored activity source to rule editor, derived measure, and display count/threshold details in Recency and rule list. HESLO1–4, HHO and other operational cycles use `flight.specialOpsCycles[code]` only with `flight.specialOps[code]` present; offshore uses its separately recorded landings, NVIS uses flagged flights, and all-flights uses ordinary flight records. Type/config/rolling date filters apply; no inferred missing counts, simulators, duplicate flight IDs or unlinked rule auto-credit.
+- Pre-existing V2.36.1 rules stay saved and **unlinked** until source explicitly selected; no storage migration or cloud writes. These are self-recorded operator-specific tracking figures, not legal EASA credits or operator-approved status.
+- Flight data remains read-only; account-scoped operator profiles remain device-local; FFS/check/training evidence phase is not yet implemented.

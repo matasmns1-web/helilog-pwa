@@ -1,4 +1,4 @@
-/* HeliLog V2.36.1 TEST — local, account-scoped operator-rule editor.
+/* HeliLog V2.36.2 TEST — local, account-scoped operator-rule editor.
  * Custom operator guidance ONLY. Never overwrites EASA counters or flights.
  * Rules stay on this device, not in account cloud sync or signed archives.
  */
@@ -9,8 +9,10 @@
 })(typeof window!=='undefined'?window:globalThis,function(root){
  'use strict';
  const engine=root.HeliLogV235AdvancedRecency;
+ const monitor=root.HeliLogV2362OperatorMonitor;
  const PREFIX='helilog_operator_profiles_v1:';
  let openKey=null,selectedId=null,editingRuleId=null,addingProfile=false,note='';
+ let renderFlights=[],renderAircraft=[],renderAsOf='';
  const esc=x=>String(x??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
  const dom=id=>root.document.getElementById(id);
  const getOwner=()=>{
@@ -43,6 +45,8 @@
        throw Error('Stored operator profiles are invalid.');
      ids.add(p.id);
      if(p.rules.length)engine.ruleSet(p);
+     // Legacy v2.36 rules remain intact and visibly unlinked until the pilot selects a source.
+     for(const rule of p.rules)if(rule.monitor!==undefined&&rule.monitor!=='' )monitor.validate(rule);
      return {schema:1,id:p.id,ownerId,operator:p.operator.trim(),
        rules:p.rules.map(r=>({...r,acceptedSources:[...r.acceptedSources]}))};
    });
@@ -141,6 +145,9 @@
      if(!p)throw Error('Select an operator profile before saving a rule.');
      const v=id=>String(dom(id)?.value??'').trim();
      const title=v('opRuleTitle'),aircraftType=v('opRuleType').toUpperCase();
+     const chosenMonitor=v('opRuleMonitor');
+     const metric=monitor.optionFor(chosenMonitor);
+     if(!metric){fieldError('Choose exactly which flight-entry activity this rule monitors.','opRuleMonitor');return;}
      if(!title||title.length>120){fieldError('Enter a rule name (up to 120 characters).','opRuleTitle');return;}
      if(!/^[A-Z0-9]{2,8}$/.test(aircraftType)){
        fieldError('Enter an ICAO helicopter type designator, such as G2CA, R44 or EC35.','opRuleType');return;
@@ -159,11 +166,12 @@
      const old=p.rules.find(r=>r.id===editingRuleId);
      if(!old&&p.rules.length>=50)throw Error('Maximum 50 rules per operator.');
      const next={id:old?.id||uid('rule_'),title,aircraftType,
-       configuration:v('opRuleConfig'),unit:v('opRuleUnit'),
+       configuration:v('opRuleConfig'),unit:metric.unit,monitor:metric.id,
        periodDays:days,minimum,acceptedSources};
      if(old)p.rules=p.rules.map(r=>r.id===old.id?next:r);else p.rules.push(next);
      // Enforce the same strict operator rule schema as the separate credit engine.
      engine.ruleSet(p);
+     monitor.validate(next);
      write(data);editingRuleId=null;note='Custom rule saved: '+title+'.';
      refresh();
    }catch(e){fieldError('Rule not saved: '+(e?.message||String(e)));}
@@ -178,27 +186,53 @@
  }
  const choices=(values,selected,labels)=>values.map((v,i)=>
    '<option value="'+esc(v)+'"'+(v===selected?' selected':'')+'>'+esc(labels?.[i]||v)+'</option>').join('');
+ function monitorChanged(){
+   const selected=monitor.optionFor(dom('opRuleMonitor')?.value);
+   const measure=dom('opRuleUnit');
+   if(measure)measure.value=selected?.unit||'';
+ }
+ function sourceAssessment(rule){
+   if(!rule.monitor)return '<span class="mini">Not connected · Edit this rule to select a monitored flight activity.</span>';
+   if(!renderAsOf)return '<span class="mini">Waiting for flight data.</span>';
+   try{
+     const r=monitor.assess(rule,renderFlights,renderAircraft,renderAsOf);
+     const tone=r.thresholdMet?'met':'below';
+     return '<div class="mini">Recorded '+r.count+' / '+r.minimum+' '+esc(r.unit)+' · '+
+       '<b class="recency-tone-'+tone+'">'+(r.thresholdMet?'Recorded threshold met':'Below threshold')+'</b>'+
+       (r.thresholdUntil?' · Until '+esc(r.thresholdUntil)+' if no more recorded activity':'')+
+       (r.missingCycleCounts?' · '+r.missingCycleCounts+' flight(s) missing cycle counts':'')+
+       '</div>';
+   }catch(e){return '<span class="mini">'+esc(e.message)+'</span>';}
+ }
  function ruleForm(rule){
    const r=rule||{title:'',aircraftType:'',configuration:'all',unit:'cycles',
-     periodDays:90,minimum:3,acceptedSources:['flight']};
+     periodDays:90,minimum:3,monitor:'',acceptedSources:['flight']};
    const available=(typeof S!=='undefined'&&Array.isArray(S.aircraft)?S.aircraft:[])
      .map(a=>String(a.icao||'').trim().toUpperCase()).filter(x=>/^[A-Z0-9]{2,8}$/.test(x));
    return '<div class="card" id="opRuleForm" style="margin-top:12px;scroll-margin-top:18px"><h3>'+(rule?'Edit rule':'Add rule')+'</h3>'+
     '<div class="grid">'+
     '<div class="field"><label for="opRuleTitle">Rule name</label><input id="opRuleTitle" maxlength="120" value="'+esc(r.title)+'" placeholder="HHO operational recency"></div>'+
     '<div class="field"><label for="opRuleType">ICAO helicopter type</label><input id="opRuleType" list="opAircraftTypes" maxlength="8" value="'+esc(r.aircraftType)+'" placeholder="EC35"><datalist id="opAircraftTypes">'+[...new Set(available)].map(x=>'<option value="'+esc(x)+'"></option>').join('')+'</datalist></div>'+
+    '<div class="field"><label for="opRuleMonitor">Monitor from recorded activity</label>'+
+    '<select id="opRuleMonitor" onchange="HeliLogV236OperatorRulesUI.monitorChanged()"><option value="">Select a source…</option>'+
+    monitor.OPTIONS.map(x=>'<option value="'+esc(x.id)+'"'+(x.id===r.monitor?' selected':'')+'>'+esc(x.label)+'</option>').join('')+
+    '</select><div class="mini">Links this rule to the selected field in existing flight entries. Previously saved flights are read automatically.</div></div>'+
     '<div class="field"><label for="opRuleConfig">Crew configuration</label><select id="opRuleConfig">'+choices(engine.CONFIGS,r.configuration,['Single-pilot','Multi-pilot','Either / combined'])+'</select></div>'+
-    '<div class="field"><label for="opRuleUnit">Measure</label><select id="opRuleUnit">'+choices(engine.UNITS,r.unit,['Sequences','Flights','Cycles','Landings','Sessions'])+'</select></div>'+
+    '<div class="field"><label for="opRuleUnit">Measure (set by monitored activity)</label><select id="opRuleUnit" disabled>'+
+    choices(engine.UNITS,monitor.optionFor(r.monitor)?.unit||r.unit,['Sequences','Flights','Cycles','Landings','Sessions'])+'</select></div>'+
     '<div class="field"><label for="opRuleMin">Minimum number</label><input id="opRuleMin" type="number" min="1" max="9999" step="1" value="'+esc(r.minimum)+'"></div>'+
     '<div class="field"><label for="opRuleDays">Rolling period (days)</label><input id="opRuleDays" type="number" min="1" max="1095" step="1" value="'+esc(r.periodDays)+'"></div></div>'+
     '<div class="field" style="margin-top:12px"><label>Permitted credit sources (explicitly authorised by your operator)</label>'+
     '<div class="actions" style="flex-wrap:wrap">'+engine.SOURCES.map(s=>'<label style="display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="opSource_'+s+'" '+(r.acceptedSources.includes(s)?'checked':'')+'>'+esc(({flight:'Flight',ffs:'Approved FFS',check:'Check',training:'Training'})[s])+'</label>').join('')+'</div></div>'+
-    '<p class="mini">A selected source is only eligible for future reviewed credit with evidence. It does not certify a simulator, check or training event.</p>'+
+    '<p class="mini">Only recorded flight activity is automatically counted in this version. FFS/check/training credits require separately reviewed evidence in a future phase; selecting them does not add credit.</p>'+
     '<p class="mini" id="opRuleFeedback" role="status" aria-live="polite" hidden></p>'+
     '<div class="actions"><button type="button" class="btn primary" onclick="HeliLogV236OperatorRulesUI.saveRule()">Save rule</button>'+
     '<button type="button" class="btn" onclick="HeliLogV236OperatorRulesUI.editRule(null)">Cancel</button></div></div>';
  }
- function page(){
+ function page(flights,aircraft,asOf){
+   if(Array.isArray(flights))renderFlights=flights;
+   if(Array.isArray(aircraft))renderAircraft=aircraft;
+   if(typeof asOf==='string')renderAsOf=asOf;
    let data;try{data=read();}catch(e){
      root.document.getElementById('app').innerHTML=root.header('Operator recency rules','Custom operator-specific requirements',
        '<button class="btn" onclick="go(\'recency\')">← Recency</button>')+
@@ -218,6 +252,8 @@
      '<div class="profileline" style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">'+
      '<div><b>'+esc(r.title)+'</b><div class="mini">'+esc(r.aircraftType)+' · '+esc(r.configuration)+
      ' · '+r.minimum+' '+esc(r.unit)+' in '+r.periodDays+' days</div>'+
+     '<div class="mini">Source: '+esc(monitor.optionFor(r.monitor)?.label||'Not connected')+'</div>'+
+     sourceAssessment(r)+
      '<div class="mini">Accepted: '+esc(r.acceptedSources.join(', '))+'</div></div>'+
      '<div class="actions"><button type="button" class="btn" onclick="HeliLogV236OperatorRulesUI.editRule(\''+r.id+'\')">Edit</button>'+
      '<button type="button" class="btn" onclick="HeliLogV236OperatorRulesUI.removeRule(\''+r.id+'\')">Delete</button></div></div>').join(''):'';
@@ -241,14 +277,32 @@
        '<button class="btn" type="button" onclick="HeliLogV236OperatorRulesUI.renameProfile()">Save name</button>'+
        '<h3 style="margin-top:14px">Rules</h3>'+(rules||'<p class="muted">No custom rules yet.</p>')+edit+'</div>':'')+
      '<div class="card" style="margin-top:14px"><h2>EASA recency is unchanged</h2><p class="mini">'+
-     'These are operator-defined tracking requirements, not official EASA rules. This phase only saves rule definitions; no custom evidence or simulator/check credit is recorded yet. Existing FCL.060 and SPA results are unaffected.</p></div>';
+     'These are operator-defined tracking requirements, not official EASA rules. Flight counts use existing, self-recorded activity only. They do not certify currency; FFS/check/training credits still require reviewed evidence. Existing FCL.060 and SPA results are unaffected.</p></div>';
  }
  function cancelCreate(){addingProfile=false;note='';refresh();}
+ function recencySummary(flights,aircraft,asOf){
+   try{
+     const data=read(),active=data.profiles.find(p=>p.id===data.activeId);
+     if(!active)return '<p class="mini">No active operator. Select one under Manage rules.</p>';
+     const list=active.rules.map(rule=>{
+       if(!rule.monitor)return '<div class="recency-detail-row" style="padding:12px"><b>'+esc(rule.title)+'</b><div class="mini">Not connected · Edit this rule to choose a flight source</div></div>';
+       const prevF=renderFlights,prevA=renderAircraft,prevDate=renderAsOf;
+       renderFlights=flights;renderAircraft=aircraft;renderAsOf=asOf;
+       const status=sourceAssessment(rule);
+       renderFlights=prevF;renderAircraft=prevA;renderAsOf=prevDate;
+       return '<div class="recency-detail-row" style="padding:12px"><b>'+esc(rule.title)+'</b>'+
+         '<div class="mini">'+esc(monitor.optionFor(rule.monitor)?.label||'Unknown source')+
+         ' · '+esc(rule.aircraftType)+'</div>'+status+'</div>';
+     }).join('');
+     return '<div class="mini">Active operator: <b>'+esc(active.operator)+'</b></div>'+
+       (list||'<p class="mini">No rules in the active profile.</p>');
+   }catch(e){return '<p class="mini">Custom rules unavailable: '+esc(e.message)+'</p>';}
+ }
  function summary(){
    try{const data=read(),active=data.profiles.find(p=>p.id===data.activeId);
      return active?esc(active.operator)+' · '+active.rules.length+' custom rule'+(active.rules.length===1?'':'s'):'No operator profile active';
    }catch{return 'Operator profiles unavailable';}
  }
  return Object.freeze({storageKey,read,validate,page,summary,createProfile,showCreate,
-   cancelCreate,select,activate,removeProfile,renameProfile,editRule,saveRule,removeRule});
+   cancelCreate,select,activate,removeProfile,renameProfile,editRule,saveRule,removeRule,monitorChanged,recencySummary});
 });

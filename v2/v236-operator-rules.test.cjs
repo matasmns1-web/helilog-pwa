@@ -1,6 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const engine=require('./advanced-recency.js');
+const monitor=require('./operator-flight-monitor.js');
 const source=fs.readFileSync(path.join(__dirname,'operator-rules-ui.js'),'utf8');
 function fixture(){
  const store=new Map(),nodes={app:{innerHTML:''}},root={
@@ -9,7 +10,7 @@ function fixture(){
    localStorage:{getItem:k=>store.has(k)?store.get(k):null,setItem:(k,v)=>store.set(k,v)},
    document:{getElementById:id=>nodes[id]||null},
    header:(title,sub,action)=>'<header>'+title+action+'</header>',
-   HeliLogV235AdvancedRecency:engine,
+   HeliLogV235AdvancedRecency:engine,HeliLogV2362OperatorMonitor:monitor,
    HeliLogV23Sync:{status:()=>({owner:root.owner})},
    v23AccountWorkspace:()=>root.cloud,
    HELILOG_OPERATOR_SANDBOX:false,
@@ -37,7 +38,7 @@ test('rule editor creates, updates and removes validated rules with explicit cre
  const id=f.read().profiles[0].id;
  f.ui.editRule('new');assert.match(f.nodes.app.innerHTML,/opRuleType/);
  f.field('opRuleTitle','Hoist exercise');
- f.field('opRuleType','EC35');f.field('opRuleConfig','all');
+ f.field('opRuleType','EC35');f.field('opRuleMonitor','special:HESLO1');f.field('opRuleConfig','all');
  f.field('opRuleUnit','cycles');f.field('opRuleMin','3');f.field('opRuleDays','90');
  for(const source of engine.SOURCES)f.field('opSource_'+source,'',source==='flight'||source==='ffs');
  f.ui.saveRule();
@@ -53,7 +54,7 @@ test('invalid rule input cannot overwrite previous saved rules',()=>{
  const f=fixture();f.field('operatorProfileName','Operator');f.ui.createProfile();
  f.ui.editRule('new');
  const before=JSON.stringify(f.read());
- f.field('opRuleTitle','Test');f.field('opRuleType','R44');
+ f.field('opRuleTitle','Test');f.field('opRuleType','R44');f.field('opRuleMonitor','special:HESLO1');
  f.field('opRuleConfig','all');f.field('opRuleUnit','cycles');
  f.field('opRuleMin','1.5');f.field('opRuleDays','90');
  for(const source of engine.SOURCES)f.field('opSource_'+source,'',source==='flight');
@@ -73,7 +74,7 @@ test('Add Rule scrolls into view; save rejects missing ICAO type without destroy
  assert.match(f.nodes.app.innerHTML,/id="opRuleForm"/);
  assert.equal(scrolled,1);assert.equal(focused,1);
  f.nodes.opRuleFeedback={hidden:true,textContent:'',setAttribute(){}};
- f.field('opRuleType','');
+ f.field('opRuleType','');f.field('opRuleMonitor','special:HESLO1');
  f.field('opRuleConfig','all');f.field('opRuleUnit','flights');
  f.field('opRuleMin','3');f.field('opRuleDays','90');
  for(const src of engine.SOURCES)f.field('opSource_'+src,'',src==='flight');
@@ -122,7 +123,7 @@ test('UI route and assets are connected without changing EASA calculators or arc
  assert.match(read('service-worker.js'),/operator-rules-ui\.js\?v=2\.36/);
  assert.match(read('source/app/13-routing-and-boot.js'),/operatorrules:/);
  assert.match(read('source/app/09-recency.js'),/Custom operator recency/);
- assert.match(read('source/app/10-settings-and-locations.js'),/Operator recency rules/);
+ assert.doesNotMatch(read('source/app/10-settings-and-locations.js'),/Operator recency rules/);
  assert.doesNotMatch(read('recency.js'),/operatorprofiles|operatorRules/);
  assert.doesNotMatch(read('special-recency.js'),/operatorprofiles|operatorRules/);
 });

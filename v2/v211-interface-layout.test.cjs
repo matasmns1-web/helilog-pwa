@@ -105,7 +105,7 @@ test("Settings cards fill the main content area without nesting",()=>{
   }
  }
  assert.ok(closed,"Settings grid should close before the next page");
- assert.equal(directCards,8,"All Settings cards should be siblings, including aerodromes, not nested");
+ assert.equal(directCards,7,"All Settings cards should be siblings, including aerodromes, not nested");
  assert.match(page,/class="card settings-wide"[\s\S]*?App &amp; device/);
  assert.match(html,/\.settings-grid\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  assert.match(html,/@media\(max-width:1150px\)\{\.settings-grid\{grid-template-columns:1fr\}\}/);
@@ -130,7 +130,7 @@ test("Settings is the only Cloud/Backup top-level navigation entry and nested ro
  assert.doesNotMatch(aside,/data-v="cloud"|data-v="backups"/);
  assert.match(more,/onclick="go\('settings'\)"><span>⚙<\/span><b>Settings<\/b>/);
  assert.doesNotMatch(more,/onclick="go\('cloud'\)"|onclick="go\('backups'\)"/);
- assert.match(html,/totals,recency,operatorrules:\(\)=>window\.HeliLogV236OperatorRulesUI\.page\(\),profile,settings,locations:v219LocationsPage,backups,cloud,testmode,mobilemore/);
+ assert.match(html,/totals,recency,operatorrules:\(\)=>window\.HeliLogV236OperatorRulesUI\.page\(effectiveFlights\(\),S\.aircraft,recencyCurrent\(\)\),profile,settings,locations:v219LocationsPage,backups,cloud,testmode,mobilemore/);
  assert.match(html,/moreViews=\[[^\]]*'settings','locations','backups','cloud'/);
  assert.match(html,/b.dataset.v==='settings' && \(v==='cloud'\|\|v==='backups'\|\|v==='locations'\)/);
  assert.match(cloud,/go\('settings'\)/);
@@ -152,6 +152,6 @@ test("The UI-only release retains archived-flight handlers and updates PWA cache
   "downloadFullBackup","restoreCheckedBackup","showIntegrityCheck","editMedical",
   "saveMedical","saveQualification","deleteQualification"])
   assert.match(html,new RegExp("function "+name+"\\("));
- assert.match(html,/HeliLog V2\.36\.1 — Operator Rule Editor Fix · Test/);
- assert.match(worker,/helilog-v2-36-1-operator-rule-fix-1/);
+ assert.match(html,/HeliLog V2\.36\.2 — Linked Operator Recency · Test/);
+ assert.match(worker,/helilog-v2-36-2-linked-operator-recency-1/);
 });

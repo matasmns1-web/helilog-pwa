@@ -269,6 +269,11 @@ const HELILOG_GUIDE_TOPICS=[
 ];
 const HELILOG_GUIDE_UPDATES=[
   {
+    "v": "V2.36.2",
+    "name": "Custom rules read recorded flight operations",
+    "detail": "Choose the precise activity source for each operator rule (HESLO cycles, hoist, offshore landings, NVIS or all flights). Recency shows read-only counts. Older unlinked rules require an explicit source selection. The duplicate Settings card was removed."
+  },
+  {
     "v": "V2.36.1",
     "name": "Operator rule editor: visible form and validation",
     "detail": "Add Rule now brings the form into view. Save Rule shows invalid field feedback without discarding entered text or changing flight records."
