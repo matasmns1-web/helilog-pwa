@@ -1,5 +1,21 @@
-/* V2.35. Searchable, offline-friendly guide and current release notes. */
+/* V2.36. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
+  {
+    "category": "Flight operations",
+    "title": "Advanced recency — custom operator profiles",
+    "summary": "Configure separate operator thresholds without changing EASA recency calculations.",
+    "steps": [
+      "Open Settings → Operator recency rules, or Recency → Manage rules.",
+      "Create an operator profile, select Manage, then Add rule.",
+      "Enter a rule name, ICAO helicopter type, crew configuration, minimum, measurement unit and rolling period.",
+      "Select flight, approved FFS, check or training as permissible sources only where the operator requirements allow them.",
+      "Use Set active to choose the applicable operator profile; other profiles can remain inactive.",
+      "Profiles save per account on the current device. They are not synced or included in cloud backups.",
+      "This phase stores rule definitions only: no simulator/check evidence, training attachments, notifications or regulatory certification."
+    ],
+    "route": "operatorrules",
+    "action": "Manage operator rules"
+  },
   {
     "category": "Flight operations",
     "title": "Specialised operations — cycles and recent experience",
@@ -252,6 +268,11 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {
+    "v": "V2.36",
+    "name": "Phase 3B — Custom operator recency profiles",
+    "detail": "Add operator profiles and editable rule thresholds, types, periods, configurations, units and permitted credit sources. All custom rules stay device-local, scoped to the account, and separate from EASA recency results."
+  },
   {
     "v": "V2.35",
     "name": "Phase 3A — advanced recency foundation",

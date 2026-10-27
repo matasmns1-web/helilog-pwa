@@ -179,6 +179,9 @@ function settings(){
  app.innerHTML=header('Settings','Logbook, aerodromes, cloud account, backups and device preferences',
    `<button class="btn" type="button" onclick="go('profile')">← Profile</button>`)+
    `<div class="settings-grid">
+     <div class="card"><div class="head"><div><h2>Operator recency rules</h2>
+       <div class="muted">Create operator profiles and configure internal recency thresholds.</div></div>
+       <button class="btn primary" type="button" onclick="go('operatorrules')">Manage rules</button></div></div>
      <div class="card">
       <div class="head">
        <div><h2>Aerodromes &amp; helipads</h2>

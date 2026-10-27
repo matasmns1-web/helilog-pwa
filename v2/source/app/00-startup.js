@@ -2,6 +2,7 @@ const LIVE_KEY='helilog_v2_complete_test_data'; // Separate V2 test browser key.
 const SANDBOX_KEY='helilog_v2_complete_test_sandbox';
 const MODE_KEY='helilog_v2_complete_test_mode';
 const TEST_MODE=localStorage.getItem(MODE_KEY)==='test';
+window.HELILOG_OPERATOR_SANDBOX=TEST_MODE;
 let KEY=TEST_MODE?SANDBOX_KEY:LIVE_KEY;
 // All existing logbook saves, migrations, imports and archive snapshots use KEY.
 // Test and live records therefore reside in distinct browser-storage entries.
