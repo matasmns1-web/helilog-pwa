@@ -1,4 +1,4 @@
-/* HeliLog V2.36.2 TEST — local, account-scoped operator-rule editor.
+/* HeliLog V2.37 TEST — local, account-scoped operator-rule editor.
  * Custom operator guidance ONLY. Never overwrites EASA counters or flights.
  * Rules stay on this device, not in account cloud sync or signed archives.
  */
@@ -277,9 +277,26 @@
        '<button class="btn" type="button" onclick="HeliLogV236OperatorRulesUI.renameProfile()">Save name</button>'+
        '<h3 style="margin-top:14px">Rules</h3>'+(rules||'<p class="muted">No custom rules yet.</p>')+edit+'</div>':'')+
      '<div class="card" style="margin-top:14px"><h2>EASA recency is unchanged</h2><p class="mini">'+
-     'These are operator-defined tracking requirements, not official EASA rules. Flight counts use existing, self-recorded activity only. They do not certify currency; FFS/check/training credits still require reviewed evidence. Existing FCL.060 and SPA results are unaffected.</p></div>';
+     'These are operator-defined tracking requirements, not official EASA rules. Night flight counts use recorded night minutes, not independently verified Night VFR. Flight counts do not certify currency; FFS/check/training credits still require reviewed evidence. Existing FCL.060 and SPA results are unaffected.</p></div>';
  }
  function cancelCreate(){addingProfile=false;note='';refresh();}
+ function dashboardOptions(flights,aircraft,asOf){
+   try{
+     const data=read(),active=data.profiles.find(p=>p.id===data.activeId);
+     if(!active)return [];
+     return active.rules.filter(rule=>!!monitor.optionFor(rule.monitor)).flatMap(rule=>{
+       try{
+         const result=monitor.assess(rule,flights,aircraft,asOf);
+         return [{
+           key:'operator|'+active.id+'|'+rule.id,operatorRule:true,rule,result,
+           operatorName:active.operator,
+           row:{type:rule.aircraftType+' · Operator: '+active.operator,config:rule.configuration},
+           kind:'operator'
+         }];
+       }catch{return [];}
+     });
+   }catch{return [];}
+ }
  function recencySummary(flights,aircraft,asOf){
    try{
      const data=read(),active=data.profiles.find(p=>p.id===data.activeId);
@@ -304,5 +321,5 @@
    }catch{return 'Operator profiles unavailable';}
  }
  return Object.freeze({storageKey,read,validate,page,summary,createProfile,showCreate,
-   cancelCreate,select,activate,removeProfile,renameProfile,editRule,saveRule,removeRule,monitorChanged,recencySummary});
+   cancelCreate,select,activate,removeProfile,renameProfile,editRule,saveRule,removeRule,monitorChanged,recencySummary,dashboardOptions});
 });
