@@ -36,7 +36,8 @@ test('other editable pages avoid local authority and aircraft-specific placehold
   assert.match(profile,/id="qualName" required[^>]+placeholder="Qualification or rating name"/);
   assert.match(settings,/id="v219SiteCode"[^>]+placeholder="ICAO code or custom site ID"/);
   assert.match(totals,/class="bf-type-icao[^>]+placeholder="ICAO designator"/);
-  assert.match(flights,/id="simDevice"[^>]+placeholder="Device or represented aircraft type"/);
+  assert.match(flights,/id="simAircraftType"[^>]+placeholder="ICAO type designator"/);
+  assert.doesNotMatch(flights,/id="simDevice"/);
   for(const markup of [profile,settings,totals,flights]){
     assert.doesNotMatch(markup,/placeholder="[^"]*(?:LY-ABC|EYVI|G2CA|Cabri|Guimbal|TKA|B747-400)[^"]*"/i);
   }
