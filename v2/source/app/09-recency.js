@@ -21,7 +21,7 @@ function recencyStatus(row,kind){
  return {count,target,confirmed,threshold,change,days,
    text:confirmed?'Requirement met':threshold?'90-day threshold met':'Threshold not met',
    tone:confirmed?'met':threshold?'estimated':'below',
-   short:confirmed?'Met':threshold?'Estimated':'Below threshold'};
+   short:confirmed?'Met':threshold?'Met':'Below threshold'};
 }
 function recencyStatusDetails(status){
  const n=status.count;
@@ -138,7 +138,7 @@ function recencyCompactDate(status){
  return Math.max(0,status.target-status.count)+' more recorded '+(status.target-status.count===1?'movement pair':'movement pairs')+' needed';
 }
 function recencyCompactLabel(status){
- return status.tone==='met'?'Met':status.tone==='estimated'?'Estimated met':'Below threshold';
+ return status.threshold?'Met':'Below threshold';
 }
 function recencySummaryMarkup(){
  const options=recencyDashboardOptions(recencyRows());
