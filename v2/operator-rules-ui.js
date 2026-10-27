@@ -10,8 +10,9 @@
  'use strict';
  const engine=root.HeliLogV235AdvancedRecency;
  const monitor=root.HeliLogV2362OperatorMonitor;
+ const matcher=root.HeliLogV241SimulatorEvidence;
  const PREFIX='helilog_operator_profiles_v1:';
- let openKey=null,selectedId=null,editingRuleId=null,editingEvidenceId=null,evidenceRuleId=null,addingProfile=false,note='';
+ let openKey=null,selectedId=null,editingRuleId=null,editingEvidenceId=null,evidenceRuleId=null,matchedSessionId=null,addingProfile=false,note='';
  let renderFlights=[],renderAircraft=[],renderAsOf='';
  const esc=x=>String(x??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
  const dom=id=>root.document.getElementById(id);
@@ -30,7 +31,7 @@
  }
  function context(){
    const key=storageKey();
-   if(key!==openKey){openKey=key;selectedId=null;editingRuleId=null;editingEvidenceId=null;evidenceRuleId=null;addingProfile=false;note='';}
+   if(key!==openKey){openKey=key;selectedId=null;editingRuleId=null;editingEvidenceId=null;evidenceRuleId=null;matchedSessionId=null;addingProfile=false;note='';}
    if(!key)throw Error('An authenticated account identifier is required before saving operator rules.');
    return {key,ownerId:key.slice(PREFIX.length)};
  }
@@ -67,8 +68,14 @@
      if(event.ownerId!==ownerId)throw Error('Training evidence belongs to another account.');
      const notes=raw.notes===undefined?'':String(raw.notes);
      if(notes.length>500)throw Error('Training evidence notes exceed 500 characters.');
+     const linked=raw.sessionId!==undefined||raw.sessionProof!==undefined;
+     if(linked && (event.source!=='ffs'||
+       typeof raw.sessionId!=='string'||!/^[A-Za-z0-9:_-]{1,128}$/.test(raw.sessionId)||
+       typeof raw.sessionProof!=='string'||!raw.sessionProof||raw.sessionProof.length>12000))
+       throw Error('Linked simulator evidence has invalid provenance; no records were overwritten.');
      eventIds.add(event.id);
-     return {...event,profileId:raw.profileId,notes};
+     return {...event,profileId:raw.profileId,notes,
+       ...(linked?{sessionId:raw.sessionId,sessionProof:raw.sessionProof}:{})};
    });
    return {version:1,ownerId,activeId:data.activeId,profiles,evidence};
  }
@@ -234,7 +241,19 @@
  function assessRule(profile,rule,data,flights,aircraft,asOf){
    const observed=monitor.assess(rule,flights,aircraft,asOf);
    const related=data.evidence.filter(e=>e.profileId===profile.id&&e.ruleId===rule.id);
-   const assessed=engine.assess(profile,related,asOf,rule.id);
+   const sessions=new Map((Array.isArray(flights)?flights:[])
+     .filter(f=>f?.entryType==='simulator').map(f=>[f.id,f]));
+   // A linked event is credited only if the CURRENT simulator record still
+   // exists, matches the rule and is exactly as reviewed. No stale snapshots,
+   // deleted sessions or duplicate links may inflate the result.
+   const linkedSeen=new Set();
+   const validated=related.filter(e=>{
+     if(!e.sessionId)return true; // Historical manual Phase 3C evidence.
+     if(linkedSeen.has(e.sessionId))return false;
+     linkedSeen.add(e.sessionId);
+     return matcher?.eligibleRecord(e,sessions.get(e.sessionId),rule)===true;
+   });
+   const assessed=engine.assess(profile,validated,asOf,rule.id);
    const allowedFlight=rule.acceptedSources.includes('flight');
    const flightCount=allowedFlight?observed.count:0;
    const evidenceCount=assessed.count;
@@ -276,18 +295,41 @@
      if(!profile?.rules.some(r=>r.id===ruleId))throw Error('Choose an existing operator rule first.');
      if(id!=='new'&&!data.evidence.some(e=>e.profileId===profileId&&e.ruleId===ruleId&&e.id===id))
        throw Error('Selected evidence record is no longer available.');
-     selectedId=profileId;evidenceRuleId=ruleId;editingEvidenceId=id;editingRuleId=null;note='';refresh();
+     const existing=id==='new'?null:data.evidence.find(e=>e.id===id);
+     selectedId=profileId;evidenceRuleId=ruleId;editingEvidenceId=id;
+     matchedSessionId=existing?.sessionId||null;editingRuleId=null;note='';refresh();
      dom('opEvidenceDate')?.focus?.();
    }catch(e){fail(e);}
  }
- function cancelEvidence(){editingEvidenceId=null;evidenceRuleId=null;note='';refresh();}
+ function cancelEvidence(){editingEvidenceId=null;evidenceRuleId=null;matchedSessionId=null;note='';refresh();}
+ function sessionMatches(session){
+   try{return matcher?.suggestions(session,read().profiles)||[];}catch{return [];}
+ }
+ function reviewSession(profileId,ruleId,sessionId){
+   try{
+     const data=read(),profile=data.profiles.find(p=>p.id===profileId),
+       rule=profile?.rules.find(r=>r.id===ruleId);
+     const session=renderFlights.find(f=>f.id===sessionId);
+     if(!rule||!matcher?.matches(session,rule)||!matcher.proof(session))
+       throw Error('This FFS session cannot be matched. Check its ICAO type, crew configuration and the operator rule.');
+     const linked=data.evidence.find(e=>e.profileId===profileId&&
+       e.ruleId===ruleId&&e.sessionId===sessionId);
+     selectedId=profileId;evidenceRuleId=ruleId;
+     editingEvidenceId=linked?.id||'new';matchedSessionId=sessionId;
+     editingRuleId=null;note='Review the simulator report before awarding any operator credit.';
+     refresh();dom('opEvidenceAmount')?.focus?.();
+   }catch(e){fail(e);}
+ }
  function saveEvidence(){
    try{
      const data=read(),profile=data.profiles.find(p=>p.id===selectedId);
      const rule=profile?.rules.find(r=>r.id===evidenceRuleId);
      if(!rule)throw Error('The operator rule is no longer available.');
      const value=id=>String(dom(id)?.value??'').trim();
-     const source=value('opEvidenceSource'),date=value('opEvidenceDate'),
+     const liveFlights=typeof root.effectiveFlights==='function'?root.effectiveFlights():renderFlights;
+     const session=matchedSessionId?liveFlights.find(f=>f.id===matchedSessionId):null;
+     const source=matchedSessionId?'ffs':value('opEvidenceSource'),
+       date=matchedSessionId?session?.date:value('opEvidenceDate'),
        amount=Number(value('opEvidenceAmount'));
      const status=dom('opEvidenceReviewed')?.checked?'reviewed':'draft';
      const evidenceRef=value('opEvidenceRef'),notes=value('opEvidenceNotes');
@@ -295,17 +337,31 @@
      if(status==='reviewed'&&!rule.acceptedSources.includes(source))
        throw Error('This rule does not permit that credit source. Update the operator rule first or save a draft.');
      const previous=data.evidence.find(e=>e.id===editingEvidenceId);
+     if(previous?.sessionId && previous.sessionId!==matchedSessionId)
+       throw Error('A simulator-linked record cannot be detached silently. Delete it explicitly first.');
+     if(matchedSessionId){
+       if(!matcher?.matches(session,rule)||!matcher.proof(session))
+         throw Error('The simulator session or matching rule changed. Nothing was credited. Reopen the matching review.');
+       if(data.evidence.some(e=>e!==previous&&e.profileId===profile.id&&e.ruleId===rule.id&&e.sessionId===session.id))
+         throw Error('This simulator session is already linked to this operator rule. Edit the existing record.');
+       if(evidenceRef && data.evidence.some(e=>e!==previous&&e.profileId===profile.id&&e.ruleId===rule.id&&
+         e.source==='ffs'&&e.date===session.date&&
+         String(e.evidenceRef||'').trim().toLowerCase()===evidenceRef.toLowerCase()))
+         throw Error('This rule already has FFS evidence with the same date and report reference. Review the existing evidence before linking a second copy.');
+     }
      if(!previous&&data.evidence.length>=500)throw Error('Maximum 500 evidence entries per account.');
      const record={id:previous?.id||uid('ev_'),profileId:profile.id,ownerId:data.ownerId,
        ruleId:rule.id,date,aircraftType:rule.aircraftType,
-       configuration:rule.configuration==='all'?value('opEvidenceConfig'):rule.configuration,
-       source,unit:rule.unit,amount,status,evidenceRef,notes};
+       configuration:matchedSessionId?session.simPilotConfig:
+         rule.configuration==='all'?value('opEvidenceConfig'):rule.configuration,
+       source,unit:rule.unit,amount,status,evidenceRef,notes,
+       ...(matchedSessionId?{sessionId:session.id,sessionProof:matcher.proof(session)}:{})};
      engine.creditEvent(record);
      if(notes.length>500)throw Error('Notes must be under 500 characters.');
      if(previous)data.evidence=data.evidence.map(e=>e.id===previous.id?record:e);
      else data.evidence.push(record);
      write(data);
-     editingEvidenceId=null;evidenceRuleId=null;note=status==='reviewed'?
+     editingEvidenceId=null;evidenceRuleId=null;matchedSessionId=null;note=status==='reviewed'?
        'Pilot-reviewed evidence saved. Counting is conditional on this operator rule; no regulatory approval is implied.':
        'Draft evidence saved without recency credit.';
      refresh();
@@ -321,25 +377,32 @@
      if(!record)return;
      if(!root.confirm('Delete this evidence record? It will no longer contribute to operator tracking.'))return;
      data.evidence=data.evidence.filter(e=>e.id!==id);
-     write(data);editingEvidenceId=null;evidenceRuleId=null;note='Evidence record removed.';refresh();
+     write(data);editingEvidenceId=null;evidenceRuleId=null;matchedSessionId=null;note='Evidence record removed.';refresh();
    }catch(e){fail(e);}
  }
  function evidenceForm(rule,record){
-   const r=record||{date:'',amount:1,source:'ffs',configuration:rule.configuration==='all'?'single':rule.configuration,
+   const linked=matchedSessionId?renderFlights.find(f=>f.id===matchedSessionId):null;
+   const changed=!!(linked&&record?.sessionId&&record.sessionProof!==matcher?.proof(linked));
+   const r=record||{date:linked?.date||'',amount:1,source:'ffs',
+     configuration:linked?.simPilotConfig|| (rule.configuration==='all'?'single':rule.configuration),
      evidenceRef:'',notes:'',status:'draft'};
    return '<div class="card" id="opEvidenceForm" style="margin-top:14px">'+
+     (linked?'<div class="note"><b>Matched FFS session</b> · '+esc(linked.date)+' · '+esc(linked.simAircraftType)+
+       ' · '+esc(linked.simPilotConfig)+'. Review the real training report and enter only its qualifying '+esc(rule.unit)+
+       '. Session duration does not establish qualifying movements.'+
+       (changed?'<br><b>Session changed since the last review:</b> previous credit is suspended until reviewed again.':'')+'</div>':'')+
      '<h3>'+(record?'Edit':'Add')+' simulator / check / training evidence</h3>'+
      '<p class="mini">Record a reference to your simulator report, proficiency check or training document. No file is uploaded in this version. Do not enter passwords or medical information.</p>'+
      '<div class="grid">'+
-     '<div class="field"><label for="opEvidenceDate">Date</label><input type="date" id="opEvidenceDate" value="'+esc(r.date)+'"></div>'+
-     '<div class="field"><label for="opEvidenceSource">Evidence type</label><select id="opEvidenceSource">'+
-     choices(['ffs','check','training'],r.source,['Approved FFS session','Proficiency / operator check','Training session'])+'</select></div>'+
+     '<div class="field"><label for="opEvidenceDate">Date</label><input type="date" id="opEvidenceDate" '+(linked?'disabled ':'')+'value="'+esc(linked?.date||r.date)+'"></div>'+
+     '<div class="field"><label for="opEvidenceSource">Evidence type</label><select id="opEvidenceSource" '+(linked?'disabled':'')+'>'+
+     choices(['ffs','check','training'],linked?'ffs':r.source,['Approved FFS session','Proficiency / operator check','Training session'])+'</select></div>'+
      '<div class="field"><label for="opEvidenceAmount">Qualifying '+esc(rule.unit)+'</label><input type="number" min="1" max="9999" step="1" id="opEvidenceAmount" value="'+esc(r.amount)+'"></div>'+
-     (rule.configuration==='all'?'<div class="field"><label for="opEvidenceConfig">Crew configuration</label><select id="opEvidenceConfig">'+
-       choices(['single','multi'],r.configuration,['Single-pilot','Multi-pilot'])+'</select></div>':'')+
+     (rule.configuration==='all'?'<div class="field"><label for="opEvidenceConfig">Crew configuration</label><select id="opEvidenceConfig" '+(linked?'disabled':'')+'>'+
+       choices(['single','multi'],linked?.simPilotConfig||r.configuration,['Single-pilot','Multi-pilot'])+'</select></div>':'')+
      '<div class="field"><label for="opEvidenceRef">Evidence reference</label><input id="opEvidenceRef" maxlength="240" placeholder="FFS report no. / check record reference" value="'+esc(r.evidenceRef)+'"></div>'+
      '<div class="field"><label for="opEvidenceNotes">Notes (optional)</label><input id="opEvidenceNotes" maxlength="500" value="'+esc(r.notes)+'"></div></div>'+
-     '<label style="display:flex;align-items:flex-start;gap:9px;margin-top:12px"><input type="checkbox" id="opEvidenceReviewed" '+(r.status==='reviewed'?'checked':'')+'><span>I have reviewed the supporting record and its permitted credit source. This is my own evidence review, not operator approval or EASA credit.</span></label>'+
+     '<label style="display:flex;align-items:flex-start;gap:9px;margin-top:12px"><input type="checkbox" id="opEvidenceReviewed" '+(r.status==='reviewed'&&!changed?'checked':'')+'><span>I have reviewed the supporting record and its permitted credit source. This is my own evidence review, not operator approval or EASA credit.</span></label>'+
      '<p class="mini">Leave unchecked to save a draft. Only reviewed entries with a reference and an allowed source can contribute to this operator-defined threshold.</p>'+
      '<p class="mini" id="opEvidenceFeedback" role="alert" hidden></p>'+
      '<div class="actions"><button class="btn primary" type="button" onclick="HeliLogV236OperatorRulesUI.saveEvidence()">Save evidence</button>'+ 
@@ -395,11 +458,19 @@
      ' · '+r.minimum+' '+esc(r.unit)+' in '+r.periodDays+' days</div>'+
      '<div class="mini">Source: '+esc(monitor.optionFor(r.monitor)?.label||'Not connected')+'</div>'+
      sourceAssessment(r)+
-     '<div class="mini">Accepted: '+esc(r.acceptedSources.join(', '))+'</div>'+ 
+     '<div class="mini">Accepted: '+esc(r.acceptedSources.join(', '))+'</div>'+
+     (matcher?renderFlights.filter(f=>matcher.matches(f,r)).filter(f=>
+       !data.evidence.some(e=>e.profileId===chosen.id&&e.ruleId===r.id&&e.sessionId===f.id))
+       .map(f=>'<div class="mini" style="margin-top:9px"><b>Suggested FFS match</b> · '+esc(f.date)+
+        ' · '+esc(f.simAircraftType)+' · '+esc(f.simPilotConfig)+
+        ' <button class="btn" type="button" onclick="HeliLogV236OperatorRulesUI.reviewSession(\''+chosen.id+'\',\''+r.id+'\',\''+f.id+'\')">Review match</button></div>')
+       .join(''):'')+ 
      (data.evidence.filter(e=>e.profileId===chosen.id&&e.ruleId===r.id).map(e=>
        '<div class="mini" style="margin-top:7px;border-top:1px solid var(--line);padding-top:7px">'+
        '<b>'+esc(({ffs:'FFS',check:'Check',training:'Training'})[e.source]||e.source)+'</b> · '+esc(e.date)+
-       ' · '+e.amount+' '+esc(e.unit)+' · '+(e.status==='reviewed'?'Pilot-reviewed':'Draft · not counted')+
+       ' · '+e.amount+' '+esc(e.unit)+' · '+(e.sessionId&&
+         !matcher?.eligibleRecord(e,renderFlights.find(f=>f.id===e.sessionId),r)?
+         'Needs re-review · not counted':e.status==='reviewed'?'Pilot-reviewed':'Draft · not counted')+
        (e.evidenceRef?' · '+esc(e.evidenceRef):'')+
        (e.notes?' · '+esc(e.notes):'')+
        ' <button class="btn" type="button" onclick="HeliLogV236OperatorRulesUI.editEvidence(\''+chosen.id+'\',\''+r.id+'\',\''+e.id+'\')">Edit</button>'+ 
@@ -478,5 +549,6 @@
  }
  return Object.freeze({storageKey,read,write,validate,legacyForAccount,page,summary,createProfile,showCreate,
    cancelCreate,select,activate,removeProfile,renameProfile,editRule,saveRule,removeRule,monitorChanged,
-   editEvidence,cancelEvidence,saveEvidence,removeEvidence,assessRule,recencySummary,dashboardOptions});
+   editEvidence,cancelEvidence,saveEvidence,removeEvidence,sessionMatches,reviewSession,
+   assessRule,recencySummary,dashboardOptions});
 });

@@ -20,6 +20,12 @@ function addSimulator(editId=null){
            ${['FNPT I','FNPT II','FTD','FFS','FS','Other'].map(c=>`<option value="${c}"${(old?.simCategory||'FNPT II')===c?' selected':''}>${c}</option>`).join('')}
          </select></div>
          <div class="field"><label>Device / aircraft type (required for FS/FFS/FTD)</label><input id="simDevice" maxlength="90" placeholder="Device or represented aircraft type" value="${htmlEscape(old?.simDevice||'')}"></div>
+         <div class="field"><label for="simAircraftType">Represented helicopter ICAO type (for rule matching)</label><input id="simAircraftType" maxlength="8" placeholder="ICAO type designator" value="${htmlEscape(old?.simAircraftType||'')}"><div class="mini">Optional. Required for automatic FFS matching. Use the exact ICAO type from your operator rule.</div></div>
+         <div class="field"><label for="simPilotConfig">Crew configuration for evidence matching</label><select id="simPilotConfig">
+           <option value="">Not specified — no automatic match</option>
+           <option value="single"${old?.simPilotConfig==='single'?' selected':''}>Single-pilot</option>
+           <option value="multi"${old?.simPilotConfig==='multi'?' selected':''}>Multi-pilot</option>
+         </select></div>
          <div class="field"><label>Device qualification / ID (optional)</label><input id="simQualification" maxlength="60" placeholder="e.g. Q1234" value="${htmlEscape(old?.simQualification||'')}"></div>
          <div class="field"><label>Total time of session (H:MM)</label><input id="simDuration" inputmode="decimal" placeholder="2:30" value="${old?fmt(old.stdMin||0):''}">
            <div class="mini">Include associated pre- and after-flight checks, per the paper-logbook instructions.</div></div>
@@ -42,16 +48,22 @@ function saveSimulatorSession(){
   }
   clearFormError();
   const date=readEuropeanDate('simDate',true),category=$('#simCategory').value,device=$('#simDevice').value.trim(),
-    qualification=$('#simQualification').value.trim(),remarks=$('#simRemarks').value.trim();
+    qualification=$('#simQualification').value.trim(),remarks=$('#simRemarks').value.trim(),
+    simAircraftType=$('#simAircraftType').value.trim().toUpperCase(),
+    simPilotConfig=$('#simPilotConfig').value;
   const time=parseBroughtForwardMinutes($('#simDuration').value);
   if(!date)return showFormError('Enter a valid simulator session date in DD-MM-YYYY format.');
   if(!device && !category.startsWith('FNPT'))return showFormError('Enter the simulator device or aircraft type (required for FS/FFS/FTD).');
   if(time===null||!Number.isSafeInteger(time)||time<=0)return showFormError('Enter positive simulator time in H:MM format.');
+  if(simAircraftType&&!/^[A-Z0-9]{2,8}$/.test(simAircraftType))
+    return showFormError('ICAO helicopter type must contain 2–8 letters or digits, such as G2CA, R44 or EC35.');
+  if(!['','single','multi'].includes(simPilotConfig))return showFormError('Choose a valid crew configuration.');
   const old=editingFlightId?S.flights.find(f=>f.id===editingFlightId):null;
   if(editingFlightId&&!isSimulatorSession(old))return showFormError('Cannot convert a flight into a simulator session.');
   const entry={
     id:old?.id||'sim'+Date.now()+Math.random().toString(36).slice(2,8),
     entryType:'simulator',date,simCategory:category,simDevice:device,simQualification:qualification,
+    simAircraftType,simPilotConfig,
     stdType:[category,device,qualification?'('+qualification+')':''].filter(Boolean).join(' '),stdMin:time,
     mins:0,aid:'',dep:'',off:'',arr:'',on:'',role:'',picName:'',nightMin:0,ifrMin:0,
     takeoffDay:0,takeoffNight:0,landingDay:0,landingNight:0,crossCountry:false,specialOps:{},remarks,
@@ -63,10 +75,21 @@ function saveSimulatorSession(){
   if(!save())return;
   const id=entry.id;editingFlightId=null;clearFlightFormGuard();flight(id);
 }
+function v241ReviewSimulatorMatch(profileId,ruleId,sessionId){
+  go('operatorrules');
+  window.HeliLogV236OperatorRulesUI?.reviewSession(profileId,ruleId,sessionId);
+}
 function simulatorDetails(id){
   const f=effectiveFlight(S.flights.find(x=>x.id===id));
   if(!isSimulatorSession(f))return go('logbook');
   editingFlightId=null;
+  const suggestions=window.HeliLogV236OperatorRulesUI?.sessionMatches?.(f)||[];
+  const matched=suggestions.length?
+    '<div class="card" style="margin-top:14px"><h3>Suggested custom operator recencies</h3>'+
+    '<p class="mini">Based on the entered ICAO type, crew configuration and FFS category. Nothing is credited without reviewing a supporting document and confirming a qualifying quantity.</p>'+
+    suggestions.map(m=>'<div class="profileline"><b>'+htmlEscape(m.title)+'</b> · '+htmlEscape(m.operator)+
+      ' <button class="btn" type="button" onclick="v241ReviewSimulatorMatch(\''+m.profileId+'\',\''+m.ruleId+'\',\''+f.id+'\')">Review match</button></div>').join('')+'</div>':
+    '<div class="card" style="margin-top:14px"><h3>Operator recency matching</h3><p class="mini">No eligible custom operator rule matched. FFS matching requires a represented ICAO helicopter type, crew configuration and an operator rule that accepts FFS evidence. Simulator time alone grants no credit.</p></div>';
   app.innerHTML=header('Simulator session',formatDate(f.date)+' · '+htmlEscape(f.simCategory),
   `<div style="display:flex;gap:8px;flex-wrap:wrap">
     ${v229CanReturnToReview(id)?
@@ -80,7 +103,7 @@ function simulatorDetails(id){
        <div class="card"><div class="label">Actual flight time</div><div class="big">0:00</div></div>
      </div><p><b>Exercise / remarks</b></p><p>${htmlEscape(f.remarks||'—')}</p>
      <p class="mini">Printed only in Synthetic Training Devices and Remarks columns. Does not add to actual helicopter flight time.</p></div>`+
-    correctionHistoryMarkup(id);
+    matched+correctionHistoryMarkup(id);
 }
 function quickAdd(){add(null,true);}
 function setFlightEntryMode(mode){

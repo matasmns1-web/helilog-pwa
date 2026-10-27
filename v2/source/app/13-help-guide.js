@@ -268,6 +268,7 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+ {v:"V2.41",name:"Match FFS sessions to operator recency",detail:"An FFS session with an explicit ICAO helicopter type and crew configuration suggests matching operator rules. Review the supporting document and enter qualifying manoeuvres before credit is counted. Linked approval becomes ineligible after the simulator session is edited or deleted until reviewed again. Legacy evidence stays intact; no automatic EASA recency credit."},
  {v:"V2.40",name:"Phase 3C — simulator, check and training evidence",detail:"Add FFS, proficiency/check and training references to operator-specific rules. Draft entries are never counted. Pilot-reviewed entries count only with a document reference and an allowed source; mixed flight/evidence rolling dates remain traceable. The encrypted and revision-checked account cloud carries evidence with its operator profile. No file uploads, official EASA recency credits or operator approval are implied."},
  {v:"V2.39.1",name:"Custom operator recency rules synchronize between devices",
  detail:"Operator profiles and rules now sync through the private account cloud. Previous browser-only profiles remain preserved for recovery. Conflicting web/app versions require manual review with a verified backup. EASA recency calculations and signed archives are unchanged."},
