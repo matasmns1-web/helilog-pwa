@@ -5,7 +5,7 @@ const HELILOG_GUIDE_TOPICS=[
     "title": "Advanced recency — custom operator profiles",
     "summary": "Configure separate operator thresholds without changing EASA recency calculations.",
     "steps": [
-      "Open Settings → Operator recency rules, or Recency → Manage rules.",
+      "Open Recency → Manage operator rules.",
       "Create an operator profile, select Manage, then Add rule.",
       "Enter a rule name, ICAO helicopter type, crew configuration, minimum, measurement unit and rolling period.",
       "Select flight, approved FFS, check or training as permissible sources only where the operator requirements allow them.",
@@ -268,6 +268,11 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {
+    "v": "V2.38",
+    "name": "Recorded flight rules and Night VFR operator monitoring",
+    "detail": "Flight entry now offers VFR, IFR or Not specified. Night VFR operator rules count only records explicitly marked VFR with valid positive night minutes. Existing flights remain unclassified until individually reviewed; archived entries use correction records."
+  },
   {
     "v": "V2.37",
     "name": "Operator recency dashboard and night-flight monitoring",

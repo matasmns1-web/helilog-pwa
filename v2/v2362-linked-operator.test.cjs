@@ -59,8 +59,8 @@ test('linkage stays in Recency, not Settings, and is read-only to cloud/signed r
  assert.match(src('source/app/09-recency.js'),/recencyAllDashboardOptions/);
  assert.doesNotMatch(src('source/app/10-settings-and-locations.js'),/Operator recency rules/);
  assert.match(src('operator-rules-ui.js'),/opRuleMonitor/);
- assert.match(src('source/index.template.html'),/operator-flight-monitor\.js\?v=2\.37/);
- assert.match(src('service-worker.js'),/operator-flight-monitor\.js\?v=2\.37/);
+ assert.match(src('source/index.template.html'),/operator-flight-monitor\.js\?v=2\.38/);
+ assert.match(src('service-worker.js'),/operator-flight-monitor\.js\?v=2\.38/);
  assert.doesNotMatch(src('operator-flight-monitor.js'),/\.insert\(|\.delete\(|localStorage\.setItem\(/);
 });
 
