@@ -73,6 +73,7 @@ const GROUPS = Object.freeze([
       'v2/auth-sync.test.cjs',
       'v2/cloud-cache-coherence.test.cjs',
       'v2/profile-conflict.test.cjs',
+      'v2/v2391-operator-cloud.test.cjs',
       'v2/v24-sync.test.cjs',
       'v2/v25-profile-pic.test.cjs',
       'v2/v26-login-ui.test.cjs',
