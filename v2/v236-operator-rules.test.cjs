@@ -4,7 +4,7 @@ const engine=require('./advanced-recency.js');
 const monitor=require('./operator-flight-monitor.js');
 const source=fs.readFileSync(path.join(__dirname,'operator-rules-ui.js'),'utf8');
 function fixture(){
- const store=new Map(),nodes={app:{innerHTML:''}},root={
+ const store=new Map(),cloudCopies=new Map(),nodes={app:{innerHTML:''}},root={
    console,Date,Math,
    S:{aircraft:[{icao:'G2CA'},{icao:'EC35'}]},
    localStorage:{getItem:k=>store.has(k)?store.get(k):null,setItem:(k,v)=>store.set(k,v)},
@@ -16,9 +16,11 @@ function fixture(){
    HELILOG_OPERATOR_SANDBOX:false,
    confirm:()=>true,owner:'pilot_one',cloud:true
  };
+ root.HeliLogOperatorSyncBridge={read:()=>cloudCopies.get(root.owner)||null,
+  write:record=>cloudCopies.set(root.owner,JSON.parse(JSON.stringify(record)))};
  root.window=root;vm.createContext(root);vm.runInContext(source,root);
  const ui=root.HeliLogV236OperatorRulesUI;
- return {root,ui,store,nodes,field:(id,value,checked)=>{
+ return {root,ui,store,cloudCopies,nodes,field:(id,value,checked)=>{
     nodes[id]=checked===undefined?{value}:{checked};},read:()=>ui.read()};
 }
 test('create, rename, activate and deactivate operator profile independently of flights',()=>{
@@ -101,16 +103,16 @@ test('cloud owner changes isolate stored profiles; sandbox and local storage dif
  f.root.owner='pilot_one';assert.equal(f.read().profiles[0].operator,'Operator A');
  f.root.cloud=false;assert.equal(f.read().profiles.length,0);
  f.root.HELILOG_OPERATOR_SANDBOX=true;assert.equal(f.read().profiles.length,0);
- assert.equal(f.store.size,2);
+ assert.equal(f.store.size,0); // Account profiles are no longer browser-key owned.
 });
 test('unknown owner or corrupt/wrong-owner saved payload fails closed',()=>{
  const f=fixture();f.root.owner='';
  assert.throws(()=>f.read(),/authenticated account identifier/);
  f.root.owner='pilot_one';
- const key=f.ui.storageKey(),bad='{"version":1,"ownerId":"pilot_two","activeId":null,"profiles":[]}';
- f.store.set(key,bad);assert.throws(()=>f.read(),/invalid/);
+ const bad={version:1,ownerId:'pilot_two',activeId:null,profiles:[]};
+ f.cloudCopies.set('pilot_one',bad);assert.throws(()=>f.read(),/invalid/);
  f.ui.page();assert.match(f.nodes.app.innerHTML,/cannot be opened/);
- assert.equal(f.store.get(key),bad);
+ assert.equal(f.cloudCopies.get('pilot_one'),bad);
 });
 test('profile names and user supplied strings are escaped before rendering',()=>{
  const f=fixture();f.field('operatorProfileName','<img src=x onerror=alert(1)>');f.ui.createProfile();
@@ -119,8 +121,8 @@ test('profile names and user supplied strings are escaped before rendering',()=>
 });
 test('UI route and assets are connected without changing EASA calculators or archive data',()=>{
  const read=p=>fs.readFileSync(path.join(__dirname,p),'utf8');
- assert.match(read('source/index.template.html'),/operator-rules-ui\.js\?v=2\.37/);
- assert.match(read('service-worker.js'),/operator-rules-ui\.js\?v=2\.37/);
+ assert.match(read('source/index.template.html'),/operator-rules-ui\.js\?v=2\.39\.1/);
+ assert.match(read('service-worker.js'),/operator-rules-ui\.js\?v=2\.39\.1/);
  assert.match(read('source/app/13-routing-and-boot.js'),/operatorrules:/);
  assert.match(read('source/app/09-recency.js'),/Manage operator rules/);
  assert.doesNotMatch(read('source/app/10-settings-and-locations.js'),/Operator recency rules/);
