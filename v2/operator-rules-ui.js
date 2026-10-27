@@ -382,7 +382,7 @@
  }
  function evidenceForm(rule,record){
    const linked=matchedSessionId?renderFlights.find(f=>f.id===matchedSessionId):null;
-   const changed=linked&&record?.sessionProof!==matcher?.proof(linked);
+   const changed=!!(linked&&record?.sessionId&&record.sessionProof!==matcher?.proof(linked));
    const r=record||{date:linked?.date||'',amount:1,source:'ffs',
      configuration:linked?.simPilotConfig|| (rule.configuration==='all'?'single':rule.configuration),
      evidenceRef:'',notes:'',status:'draft'};
@@ -395,7 +395,7 @@
      '<p class="mini">Record a reference to your simulator report, proficiency check or training document. No file is uploaded in this version. Do not enter passwords or medical information.</p>'+
      '<div class="grid">'+
      '<div class="field"><label for="opEvidenceDate">Date</label><input type="date" id="opEvidenceDate" '+(linked?'disabled ':'')+'value="'+esc(linked?.date||r.date)+'"></div>'+
-     '<div class="field"><label for="opEvidenceSource">Evidence type</label><select id="opEvidenceSource">'+
+     '<div class="field"><label for="opEvidenceSource">Evidence type</label><select id="opEvidenceSource" '+(linked?'disabled':'')+'>'+
      choices(['ffs','check','training'],linked?'ffs':r.source,['Approved FFS session','Proficiency / operator check','Training session'])+'</select></div>'+
      '<div class="field"><label for="opEvidenceAmount">Qualifying '+esc(rule.unit)+'</label><input type="number" min="1" max="9999" step="1" id="opEvidenceAmount" value="'+esc(r.amount)+'"></div>'+
      (rule.configuration==='all'?'<div class="field"><label for="opEvidenceConfig">Crew configuration</label><select id="opEvidenceConfig" '+(linked?'disabled':'')+'>'+
