@@ -1,4 +1,4 @@
-/* HeliLog V2.35 — combined NVIS/HHO, offshore landings specialised-operation recency.
+/* HeliLog V2.36 — combined NVIS/HHO, offshore landings specialised-operation recency.
  * "CAT" is not a flight classification: FCL.060 applies to passenger/CAT
  * operations, but qualifying prior PF movements may be private/training.
  */
@@ -227,10 +227,12 @@ function recency(){
      <p class="mini">Single-pilot PIC/SOLO movements are estimated from recorded take-offs and landings. NVIS counts recorded NVIS flights and HHO counts hoist cycles across SP/MP operation configurations of the same type. Offshore is separated by SP/MP and counts manually entered offshore landings that also represent complete qualifying take-off, departure and approach sequences. Entries are self-reported. Older flights without counts are not automatically credited. Training, operator approvals, night hover transitions, crew duties and permitted simulator credits still require independent verification.</p>
      <p class="mini"><a target="_blank" rel="noopener noreferrer" href="https://www.easa.europa.eu/en/document-library/easy-access-rules/online-publications/easy-access-rules-aircrew-regulation-eu-no-11782011">EASA Aircrew Rules · FCL.060</a></p>
    </details>
-   <details class="card recency-method" style="margin-top:14px">
-     <summary style="cursor:pointer;font-weight:700">Advanced recency · Phase 3A</summary>
-     <p class="mini">A separate custom-operator rule and reviewed-evidence model is being prepared. Simulator, check and training credits require an explicit operator rule and supporting evidence; they are not automatically credited to the EASA indicators above. No custom rules or credit entries are active or saved in this version.</p>
-   </details>
+   <div class="card" style="margin-top:14px">
+     <div class="head"><div><h2>Custom operator recency</h2>
+       <p class="mini">${window.HeliLogV236OperatorRulesUI?.summary()||'No operator profile active'}</p></div>
+       <button class="btn" type="button" onclick="go('operatorrules')">Manage rules</button></div>
+     <p class="mini">Custom operator requirements remain separate from EASA recency. These rule definitions are device-local; training evidence and notifications will follow.</p>
+   </div>
    <div class="card recency-detail-card" style="margin-top:14px">
      <div class="head"><div><h2>All recencies</h2><div class="muted">Passenger, NVIS, hoist and offshore activity · select a row for details</div></div></div>
      ${dashboardOptions.length?allGroups:'<p class="muted">No flights recorded yet.</p>'}

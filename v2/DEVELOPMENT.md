@@ -257,3 +257,10 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 - Add a pure, in-memory advanced-recency module supporting custom operator rule sets and pilot-reviewed credit-event schemas. Explicitly configure aircraft type, crew configuration, unit, threshold, rolling window and permitted sources (flight/FFS/check/training). Pilot-reviewed records require evidence references. Wrong-owner, expired/future, malformed, duplicate, draft and unsupported-source events are not counted.
 - These results are **custom operator tracking only**, not EASA recency certification. FCL.060 and SPA calculators, signed archives, logs, sync and Supabase schemas are unchanged.
 - No rule editor, event persistence, file attachments, notifications or automatic credit integration in this first increment. Follow-up increments will implement these with account isolation and audit controls. Production remains v2.31.4.
+
+## V2.36 — Phase 3B: custom operator-rule editor (TEST)
+
+- Add account-scoped browser-local operator profiles (up to 20) and rule lists (up to 50 per profile): create, rename, activate, deactivate, delete; create/edit/delete rules with aircraft type, pilot configuration, measurement unit, positive integer threshold, sliding window and eligible flight/FFS/check/training sources.
+- Browse these profiles under Recency or Settings; active operator is separately selected and no EASA defaults are ever overwritten or displayed as operator approvals.
+- Save to a dedicated `helilog_operator_profiles_v1:<owner>` browser-localStorage key; test sandbox, local workspace and cloud users separated. Never overwrite corrupt or wrong-account storage. No cloud sync, database change, migration, backfill, signed record modification or automatic simulator/check credit. Device-local rules are not part of cloud backups.
+- Phase 3C will add independently stored reviewed credit events and evidence. A configured rule is not itself a proof of currency or privilege.

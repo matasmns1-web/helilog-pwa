@@ -42,7 +42,7 @@ function prepare(){
  const files=[
   "index.html","dark-cockpit.css","guide.css","manifest.webmanifest","service-worker.js",
   "apple-touch-icon.png","icon-192.png","icon-512.png",
-  "domain.js","night-calculation.js","aerodrome-lookup.js","print.js","prearchive-review.js","offline-backup-check.js","recency.js","special-recency.js","advanced-recency.js","endorsement-bridge.js","endorsement-ui.js",
+  "domain.js","night-calculation.js","aerodrome-lookup.js","print.js","prearchive-review.js","offline-backup-check.js","recency.js","special-recency.js","advanced-recency.js","operator-rules-ui.js","endorsement-bridge.js","endorsement-ui.js",
   "cloud-config.js","cloud-foundation.js","cloud-view.js","cloud-sync.js",
   "auth-gate.js","cloud-archives.js","archive-integrity.js",
   "recovery.js","cloud-backups.js","disaster-recovery.js"
