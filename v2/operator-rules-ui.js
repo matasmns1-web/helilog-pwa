@@ -11,7 +11,7 @@
  const engine=root.HeliLogV235AdvancedRecency;
  const monitor=root.HeliLogV2362OperatorMonitor;
  const PREFIX='helilog_operator_profiles_v1:';
- let openKey=null,selectedId=null,editingRuleId=null,addingProfile=false,note='';
+ let openKey=null,selectedId=null,editingRuleId=null,editingEvidenceId=null,evidenceRuleId=null,addingProfile=false,note='';
  let renderFlights=[],renderAircraft=[],renderAsOf='';
  const esc=x=>String(x??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
  const dom=id=>root.document.getElementById(id);
@@ -30,7 +30,7 @@
  }
  function context(){
    const key=storageKey();
-   if(key!==openKey){openKey=key;selectedId=null;editingRuleId=null;addingProfile=false;note='';}
+   if(key!==openKey){openKey=key;selectedId=null;editingRuleId=null;editingEvidenceId=null;evidenceRuleId=null;addingProfile=false;note='';}
    if(!key)throw Error('An authenticated account identifier is required before saving operator rules.');
    return {key,ownerId:key.slice(PREFIX.length)};
  }
@@ -52,7 +52,25 @@
    });
    if(data.activeId!==null&&(typeof data.activeId!=='string'||!ids.has(data.activeId)))
      throw Error('Stored active operator is invalid.');
-   return {version:1,ownerId,activeId:data.activeId,profiles};
+   // Optional V2.40 evidence is backwards compatible with older accounts.
+   // Each event is explicitly tied to an existing operator/rule; an FFS/check/
+   // training record is never silently promoted from a logged real flight.
+   const events=data.evidence===undefined?[]:data.evidence;
+   if(!Array.isArray(events)||events.length>500)throw Error('Stored training evidence is invalid.');
+   const eventIds=new Set();
+   const evidence=events.map(raw=>{
+     if(!raw||typeof raw.profileId!=='string'||eventIds.has(raw.id)||
+       !ids.has(raw.profileId)||raw.source==='flight')throw Error('Stored training evidence is invalid.');
+     const profile=profiles.find(p=>p.id===raw.profileId);
+     if(!profile?.rules.some(r=>r.id===raw.ruleId))throw Error('Training evidence links to a missing rule; preserve the original record.');
+     const event=engine.creditEvent(raw);
+     if(event.ownerId!==ownerId)throw Error('Training evidence belongs to another account.');
+     const notes=raw.notes===undefined?'':String(raw.notes);
+     if(notes.length>500)throw Error('Training evidence notes exceed 500 characters.');
+     eventIds.add(event.id);
+     return {...event,profileId:raw.profileId,notes};
+   });
+   return {version:1,ownerId,activeId:data.activeId,profiles,evidence};
  }
  function read(){
    const {key,ownerId}=context();
@@ -63,7 +81,7 @@
    }
    const raw=root.localStorage.getItem(key);
    if(raw===null)return {version:1,ownerId,activeId:null,profiles:[]};
-   if(raw.length>150000)throw Error('Stored operator profiles exceed the safety limit.');
+   if(raw.length>450000)throw Error('Stored operator profiles exceed the safety limit.');
    let value;try{value=JSON.parse(raw);}catch{throw Error('Saved operator profiles cannot be read. Nothing has been overwritten.');}
    return validate(value,ownerId);
  }
@@ -82,7 +100,7 @@
    if(!/^[0-9a-f-]{36}$/i.test(String(ownerId)))throw Error('Invalid operator-profile account ID.');
    const raw=root.localStorage.getItem(PREFIX+ownerId);
    if(raw===null)return null;
-   if(raw.length>150000)throw Error('Saved operator rules exceed the safety limit.');
+   if(raw.length>450000)throw Error('Saved operator rules exceed the safety limit.');
    let data;try{data=JSON.parse(raw);}catch{throw Error('Saved operator rules cannot be read. Nothing was overwritten.');}
    return validate(data,ownerId);
  }
@@ -130,6 +148,7 @@
  }
  function removeProfile(id){
    try{const data=read(),p=data.profiles.find(p=>p.id===id);if(!p)return;
+     if(data.evidence.some(e=>e.profileId===id))throw Error('This operator has linked evidence. Delete those evidence entries first to preserve traceability.');
      if(!root.confirm('Delete operator profile "'+p.operator+'" and all its custom rules on this device?'))return;
      data.profiles=data.profiles.filter(p=>p.id!==id);
      if(data.activeId===id)data.activeId=null;
@@ -153,7 +172,7 @@
      if(!p)throw Error('Create an operator profile before adding a rule.');
      if(id!==null&&id!=='new'&&!p.rules.some(r=>r.id===id))
        throw Error('Selected rule is no longer available. Refresh this page.');
-     selectedId=p.id;editingRuleId=id;note='';refresh();
+     selectedId=p.id;editingRuleId=id;editingEvidenceId=null;evidenceRuleId=null;note='';refresh();
      if(id!==null)focusEditor();
    }catch(e){fail(e);}
  }
@@ -197,6 +216,7 @@
  function removeRule(id){
    try{const data=read(),p=data.profiles.find(p=>p.id===selectedId);
      if(!p||!p.rules.some(r=>r.id===id))return;
+     if(data.evidence.some(e=>e.profileId===p.id&&e.ruleId===id))throw Error('This rule has linked training evidence. Remove the evidence first.');
      if(!root.confirm('Delete this custom operator rule?'))return;
      p.rules=p.rules.filter(r=>r.id!==id);
      write(data);editingRuleId=null;note='Rule deleted locally.';refresh();
