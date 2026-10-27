@@ -11,7 +11,7 @@ const gate=fs.readFileSync(path.join(dir,'auth-gate.js'),'utf8');
 
 test('every cloud script URL matches the offline shell and has a versioned URL',()=>{
  for(const file of ['cloud-config.js','cloud-foundation.js','cloud-view.js','cloud-sync.js','auth-gate.js']){
-  const url='./'+file+'?v='+(file==='cloud-sync.js'?'2.39-unsent-recovery-1':'2.19-locations-1');
+  const url='./'+file+'?v='+(file==='cloud-sync.js'?'2.39.1-operator-sync-1':'2.19-locations-1');
   assert.ok(html.includes('<script src="'+url+'"></script>'),file+' HTML');
   assert.ok(worker.includes("'"+url+"'"),file+' SW');
  }
