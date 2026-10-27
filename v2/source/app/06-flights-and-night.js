@@ -19,8 +19,8 @@ function addSimulator(editId=null){
          <div class="field"><label>Device category</label><select id="simCategory">
            ${['FNPT I','FNPT II','FTD','FFS','FS','Other'].map(c=>`<option value="${c}"${(old?.simCategory||'FNPT II')===c?' selected':''}>${c}</option>`).join('')}
          </select></div>
-         <div class="field"><label>Device / aircraft type (required for FS/FFS/FTD)</label><input id="simDevice" maxlength="90" placeholder="Device or represented aircraft type" value="${htmlEscape(old?.simDevice||'')}"></div>
-         <div class="field"><label for="simAircraftType">Represented helicopter ICAO type (for rule matching)</label><input id="simAircraftType" maxlength="8" placeholder="ICAO type designator" value="${htmlEscape(old?.simAircraftType||'')}"><div class="mini">Optional. Required for automatic FFS matching. Use the exact ICAO type from your operator rule.</div></div>
+         <div class="field"><label for="simAircraftType">Represented helicopter ICAO type (for rule matching)</label><input id="simAircraftType" maxlength="8" placeholder="ICAO type designator" value="${htmlEscape(old?.simAircraftType||window.HeliLogV241SimulatorEvidence?.deviceType(old?.simDevice)||'')}">
+           <div class="mini">Enter the helicopter ICAO designator here. Older simulator device descriptions are retained in their original records; no separate device field is needed.</div></div>
          <div class="field"><label for="simPilotConfig">Crew configuration for evidence matching</label><select id="simPilotConfig">
            <option value="">Not specified — no automatic match</option>
            <option value="single"${old?.simPilotConfig==='single'?' selected':''}>Single-pilot</option>
@@ -47,18 +47,27 @@ function saveSimulatorSession(){
     alert('Archived simulator sessions require an addendum.');return;
   }
   clearFormError();
-  const date=readEuropeanDate('simDate',true),category=$('#simCategory').value,device=$('#simDevice').value.trim(),
+  const date=readEuropeanDate('simDate',true),category=$('#simCategory').value,
+    enteredType=$('#simAircraftType').value.trim().toUpperCase(),
     qualification=$('#simQualification').value.trim(),remarks=$('#simRemarks').value.trim(),
-    simAircraftType=$('#simAircraftType').value.trim().toUpperCase(),
     simPilotConfig=$('#simPilotConfig').value;
   const time=parseBroughtForwardMinutes($('#simDuration').value);
   if(!date)return showFormError('Enter a valid simulator session date in DD-MM-YYYY format.');
-  if(!device && !category.startsWith('FNPT'))return showFormError('Enter the simulator device or aircraft type (required for FS/FFS/FTD).');
+  if(enteredType&&!/^[A-Z0-9]{2,8}$/.test(enteredType))
+    return showFormError('Enter an ICAO helicopter type using 2–8 letters or digits.');
+  if(!enteredType && !category.startsWith('FNPT'))
+    return showFormError('Enter the represented ICAO helicopter type for FS, FFS or FTD sessions.');
   if(time===null||!Number.isSafeInteger(time)||time<=0)return showFormError('Enter positive simulator time in H:MM format.');
-  if(simAircraftType&&!/^[A-Z0-9]{2,8}$/.test(simAircraftType))
-    return showFormError('ICAO helicopter type must contain 2–8 letters or digits, such as G2CA, R44 or EC35.');
   if(!['','single','multi'].includes(simPilotConfig))return showFormError('Choose a valid crew configuration.');
   const old=editingFlightId?S.flights.find(f=>f.id===editingFlightId):null;
+  // Preserve the original device identifier and matching fields if editing
+  // without changing the displayed type. This avoids silently changing old
+  // logbook records or invalidating reviewed linked FFS evidence.
+  const previousType=old?.simAircraftType||
+    window.HeliLogV241SimulatorEvidence?.deviceType(old?.simDevice)||'';
+  const typeUnchanged=!!old&&enteredType===previousType;
+  const device=typeUnchanged?old.simDevice||enteredType:enteredType;
+  const simAircraftType=typeUnchanged?old.simAircraftType:enteredType;
   if(editingFlightId&&!isSimulatorSession(old))return showFormError('Cannot convert a flight into a simulator session.');
   const entry={
     id:old?.id||'sim'+Date.now()+Math.random().toString(36).slice(2,8),

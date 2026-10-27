@@ -11,12 +11,12 @@ const sw=read('service-worker.js');
 const manifest=JSON.parse(read('manifest.webmanifest'));
 
 test('Dark Cockpit remains visible and the current release is test-only',()=>{
-  assert.match(html,/<title>HeliLog V2\.41 — Automatic FFS Evidence Matching · Test<\/title>/);
-  assert.match(html,/class="brand-version">V2\.41 · TEST ENVIRONMENT/);
+  assert.match(html,/<title>HeliLog V2\.41\.1 — Unified Simulator Type Field · Test<\/title>/);
+  assert.match(html,/class="brand-version">V2\.41\.1 · TEST ENVIRONMENT/);
   assert.match(html,/class="nav-group-label">Flight operations/);
   assert.match(html,/class="nav-group-label">Records &amp; assets/);
-  assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.41'/);
-  assert.match(manifest.name,/V2\.41 — Automatic FFS Evidence Matching Test/);
+  assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.41\.1'/);
+  assert.match(manifest.name,/V2\.41\.1 — Unified Simulator Type Field Test/);
   assert.equal(manifest.background_color,'#090f1b');
 });
 
@@ -39,7 +39,7 @@ test('Dark Cockpit stylesheet is screen-only and has responsive navigation and a
 });
 
 test('Offline shell includes the new stylesheet and retains every prior functional asset',()=>{
-  assert.match(sw,/helilog-v2-41-auto-ffs-1/);
+  assert.match(sw,/helilog-v2-41-1-single-sim-type-1/);
   assert.match(sw,/\.\/dark-cockpit\.css\?v=2\.20-cockpit-3/);
   for(const asset of ['night-calculation','aerodrome-lookup','cloud-config',
     'cloud-foundation','cloud-sync','auth-gate','archive-integrity','cloud-backups']) {

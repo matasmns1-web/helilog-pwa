@@ -36,7 +36,8 @@ test('other editable pages avoid local authority and aircraft-specific placehold
   assert.match(profile,/id="qualName" required[^>]+placeholder="Qualification or rating name"/);
   assert.match(settings,/id="v219SiteCode"[^>]+placeholder="ICAO code or custom site ID"/);
   assert.match(totals,/class="bf-type-icao[^>]+placeholder="ICAO designator"/);
-  assert.match(flights,/id="simDevice"[^>]+placeholder="Device or represented aircraft type"/);
+  assert.match(flights,/id="simAircraftType"[^>]+placeholder="ICAO type designator"/);
+  assert.doesNotMatch(flights,/id="simDevice"/);
   for(const markup of [profile,settings,totals,flights]){
     assert.doesNotMatch(markup,/placeholder="[^"]*(?:LY-ABC|EYVI|G2CA|Cabri|Guimbal|TKA|B747-400)[^"]*"/i);
   }
@@ -47,9 +48,9 @@ test('test-only PWA release labels and offline cache are aligned',()=>{
   const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
   const manifest=JSON.parse(fs.readFileSync(path.join(root,'manifest.webmanifest'),'utf8'));
   const worker=fs.readFileSync(path.join(root,'service-worker.js'),'utf8');
-  assert.match(html,/HeliLog V2\.41 — Automatic FFS Evidence Matching · Test/);
-  assert.equal(manifest.name,'HeliLog V2.41 — Automatic FFS Evidence Matching Test');
-  assert.match(worker,/helilog-v2-41-auto-ffs-1/);
+  assert.match(html,/HeliLog V2\.41\.1 — Unified Simulator Type Field · Test/);
+  assert.equal(manifest.name,'HeliLog V2.41.1 — Unified Simulator Type Field Test');
+  assert.match(worker,/helilog-v2-41-1-single-sim-type-1/);
   assert.match(html,/function quickAdd\(\)/);
   assert.match(html,/function saveFlight\(\)/);
 });

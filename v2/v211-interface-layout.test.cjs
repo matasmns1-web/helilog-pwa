@@ -152,6 +152,6 @@ test("The UI-only release retains archived-flight handlers and updates PWA cache
   "downloadFullBackup","restoreCheckedBackup","showIntegrityCheck","editMedical",
   "saveMedical","saveQualification","deleteQualification"])
   assert.match(html,new RegExp("function "+name+"\\("));
- assert.match(html,/HeliLog V2\.41 — Automatic FFS Evidence Matching · Test/);
- assert.match(worker,/helilog-v2-41-auto-ffs-1/);
+ assert.match(html,/HeliLog V2\.41\.1 — Unified Simulator Type Field · Test/);
+ assert.match(worker,/helilog-v2-41-1-single-sim-type-1/);
 });
