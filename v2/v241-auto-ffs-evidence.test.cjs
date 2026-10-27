@@ -116,26 +116,27 @@ test('linked provenance fails closed but older manual FFS evidence remains compa
 });
 test('entrypoint includes simulator classification fields and app caches matcher offline',()=>{
  const read=p=>fs.readFileSync(path.join(__dirname,p),'utf8');
- assert.doesNotMatch(read('source/app/06-flights-and-night.js'),/id="simAircraftType"/);
- assert.match(read('source/app/06-flights-and-night.js'),/id="simDevice"/);
- assert.match(read('source/app/06-flights-and-night.js'),/deviceType\(device\)/);
+ assert.match(read('source/app/06-flights-and-night.js'),/id="simAircraftType"/);
+ assert.doesNotMatch(read('source/app/06-flights-and-night.js'),/id="simDevice"/);
+ assert.match(read('source/app/06-flights-and-night.js'),/const typeUnchanged=/);
  assert.match(read('source/app/06-flights-and-night.js'),/id="simPilotConfig"/);
  assert.match(read('source/index.template.html'),/simulator-evidence\.js\?v=2\.41\.1/);
  assert.match(read('service-worker.js'),/simulator-evidence\.js\?v=2\.41\.1/);
  assert.doesNotMatch(read('recency.js'),/HeliLogV241SimulatorEvidence/);
 });
 
-test('one device/aircraft field supplies ICAO matching without duplicated type entry',()=>{
+test('one represented ICAO field supplies FFS matching without duplicated device input',()=>{
  const f=fixture(),s=f.flights[0];
  assert.equal(model.deviceType('ec35'),'EC35');
  assert.equal(model.deviceType('Cabri G2'),null);
- const single={...s,simDevice:'G2CA',simAircraftType:''};
- assert.equal(model.classification(single).type,'G2CA');
- assert.equal(model.matches(single,f.rule),true);
- assert.equal(model.suggestions(single,f.ui.read().profiles).length,1);
- // An ICAO token in the displayed field takes precedence over stale legacy type.
- assert.equal(model.matches({...s,simDevice:'R44',simAircraftType:'G2CA'},f.rule),false);
- // Existing users can retain separately stored ICAO type and descriptive device name.
+ assert.equal(model.classification({...s,simDevice:'G2CA',simAircraftType:'G2CA'}).type,'G2CA');
+ assert.equal(model.matches({...s,simDevice:'G2CA',simAircraftType:'G2CA'},f.rule),true);
+ // Represented ICAO type is authoritative over a historic device identifier.
+ assert.equal(model.matches({...s,simDevice:'R44',simAircraftType:'G2CA'},f.rule),true);
+ assert.equal(model.matches({...s,simDevice:'R44',simAircraftType:'R44'},f.rule),false);
+ // Old entries with no separate type still match if their device is an ICAO code.
+ assert.equal(model.matches({...s,simDevice:'G2CA',simAircraftType:''},f.rule),true);
+ // Historical descriptive names and type metadata remain supported.
  assert.equal(model.matches({...s,simDevice:'Cabri G2',simAircraftType:'G2CA'},f.rule),true);
  assert.equal(model.matches({...s,simDevice:'Training device',simAircraftType:''},f.rule),false);
 });
