@@ -58,8 +58,8 @@ test("Cloud Account setup avoids obsolete release labels",()=>{
 test("V2.7 remains Profile-only logout and ships coherent cache assets",()=>{
  assert.doesNotMatch(code,/onclick="v23SignOut\(\)"/);
  assert.match(html,/onclick="v23SignOut\(\)">Log out/);
- assert.match(html,/V2\.38\.1\.1 · TEST ENVIRONMENT/);
- assert.match(auth,/HELILOG_TEST_VERSION='V2\.38\.1\.1'/);
+ assert.match(html,/V2\.38\.1 · TEST ENVIRONMENT/);
+ assert.match(auth,/HELILOG_TEST_VERSION='V2\.38\.1'/);
  assert.equal(manifest.name,"HeliLog V2.38.1 — Night VFR from IFR Time Test");
  assert.match(worker,/helilog-v2-38-1-ifr-inferred-night-vfr-1/);
  for(const name of ["cloud-view","cloud-sync","auth-gate"]){

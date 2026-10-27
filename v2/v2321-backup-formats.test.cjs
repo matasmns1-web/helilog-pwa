@@ -74,7 +74,7 @@ test('error and verifier outputs do not expose signatures or persist a passphras
 });
 test('release cache, version and production guards are not confused with data migration',()=>{
   assert.match(read('service-worker.js'),/helilog-v2-38-1-ifr-inferred-night-vfr-1/);
-  assert.match(gate,/HELILOG_TEST_VERSION='V2\.38\.1\.1'/);
-  assert.match(read('source/index.template.html'),/HeliLog V2\.38\.1\.1/);
+  assert.match(gate,/HELILOG_TEST_VERSION='V2\.38\.1'/);
+  assert.match(read('source/index.template.html'),/HeliLog V2\.38\.1/);
   assert.doesNotMatch(ui,/helilog_create_backup_now|helilog_restore_missing_records/);
 });

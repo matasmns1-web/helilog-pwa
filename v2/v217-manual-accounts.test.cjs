@@ -34,10 +34,10 @@ test("staging stays connected only to existing test backend and private login",(
  assert.match(cloud,/owner|auth\.uid|verifiedClient/i);
 });
 test("version and offline PWA references are coherent",()=>{
- assert.match(page,/<title>HeliLog V2\.38\.1\.1 — Night VFR from IFR Time · Test<\/title>/);
+ assert.match(page,/<title>HeliLog V2\.38\.1 — Night VFR from IFR Time · Test<\/title>/);
  assert.equal(manifest.name,"HeliLog V2.38.1 — Night VFR from IFR Time Test");
  assert.match(worker,/helilog-v2-38-1-ifr-inferred-night-vfr-1/);
- assert.match(gate,/HELILOG_TEST_VERSION='V2\.38\.1\.1'/);
+ assert.match(gate,/HELILOG_TEST_VERSION='V2\.38\.1'/);
  for(const asset of ["cloud-config","cloud-foundation","auth-gate","cloud-view","cloud-sync","recovery"]){
    const ref=asset+".js?v=2.19-locations-1";
    assert.ok(page.includes(ref),"HTML missing "+ref);
