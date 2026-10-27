@@ -344,6 +344,10 @@
          throw Error('The simulator session or matching rule changed. Nothing was credited. Reopen the matching review.');
        if(data.evidence.some(e=>e!==previous&&e.profileId===profile.id&&e.ruleId===rule.id&&e.sessionId===session.id))
          throw Error('This simulator session is already linked to this operator rule. Edit the existing record.');
+       if(evidenceRef && data.evidence.some(e=>e!==previous&&e.profileId===profile.id&&e.ruleId===rule.id&&
+         e.source==='ffs'&&e.date===session.date&&
+         String(e.evidenceRef||'').trim().toLowerCase()===evidenceRef.toLowerCase()))
+         throw Error('This rule already has FFS evidence with the same date and report reference. Review the existing evidence before linking a second copy.');
      }
      if(!previous&&data.evidence.length>=500)throw Error('Maximum 500 evidence entries per account.');
      const record={id:previous?.id||uid('ev_'),profileId:profile.id,ownerId:data.ownerId,
