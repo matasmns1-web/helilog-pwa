@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.36.1 — Operator Rule Editor Fix · Test</title>
+<title>HeliLog V2.36.2 — Linked Operator Recency · Test</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -589,7 +589,7 @@ html.helilog-test-mode .brand::after{
 <link rel="stylesheet" href="./guide.css?v=2.29" media="screen">
 </head>
 <body><div class="layout">
-<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.36.1 · TEST ENVIRONMENT</span></div><nav>
+<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.36.2 · TEST ENVIRONMENT</span></div><nav>
 <div class="nav-group-label">Flight operations</div>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="recency">◷ Recency</button>
 <div class="nav-group-label">Records &amp; assets</div>
@@ -687,7 +687,8 @@ html.helilog-test-mode .brand::after{
 <script src="./recency.js?v=2.33.1"></script>
 <script src="./special-recency.js?v=2.34"></script>
 <script src="./advanced-recency.js?v=2.35"></script>
-<script src="./operator-rules-ui.js?v=2.36.1"></script>
+<script src="./operator-flight-monitor.js?v=2.36.2"></script>
+<script src="./operator-rules-ui.js?v=2.36.2"></script>
 <script>
 const LIVE_KEY='helilog_v2_complete_test_data'; // Separate V2 test browser key.
 const SANDBOX_KEY='helilog_v2_complete_test_sandbox';
@@ -5595,7 +5596,8 @@ function recency(){
      <div class="head"><div><h2>Custom operator recency</h2>
        <p class="mini">${window.HeliLogV236OperatorRulesUI?.summary()||'No operator profile active'}</p></div>
        <button class="btn" type="button" onclick="go('operatorrules')">Manage rules</button></div>
-     <p class="mini">Custom operator requirements remain separate from EASA recency. These rule definitions are device-local; training evidence and notifications will follow.</p>
+     <div style="display:grid;gap:8px">${window.HeliLogV236OperatorRulesUI?.recencySummary(effectiveFlights(),S.aircraft,asOf)||''}</div>
+     <p class="mini" style="margin-top:10px">These are self-reported flight counts against your custom operator thresholds, not official EASA or operator-approved currency. Operator rule settings are saved on this device; simulator/check credits are not automatically counted.</p>
    </div>
    <div class="card recency-detail-card" style="margin-top:14px">
      <div class="head"><div><h2>All recencies</h2><div class="muted">Passenger, NVIS, hoist and offshore activity · select a row for details</div></div></div>
@@ -5784,9 +5786,6 @@ function settings(){
  app.innerHTML=header('Settings','Logbook, aerodromes, cloud account, backups and device preferences',
    `<button class="btn" type="button" onclick="go('profile')">← Profile</button>`)+
    `<div class="settings-grid">
-     <div class="card"><div class="head"><div><h2>Operator recency rules</h2>
-       <div class="muted">Create operator profiles and configure internal recency thresholds.</div></div>
-       <button class="btn primary" type="button" onclick="go('operatorrules')">Manage rules</button></div></div>
      <div class="card">
       <div class="head">
        <div><h2>Aerodromes &amp; helipads</h2>
@@ -6761,6 +6760,11 @@ const HELILOG_GUIDE_TOPICS=[
 ];
 const HELILOG_GUIDE_UPDATES=[
   {
+    "v": "V2.36.2",
+    "name": "Custom rules read recorded flight operations",
+    "detail": "Choose the precise activity source for each operator rule (HESLO cycles, hoist, offshore landings, NVIS or all flights). Recency shows read-only counts. Older unlinked rules require an explicit source selection. The duplicate Settings card was removed."
+  },
+  {
     "v": "V2.36.1",
     "name": "Operator rule editor: visible form and validation",
     "detail": "Add Rule now brings the form into view. Save Rule shows invalid field feedback without discarding entered text or changing flight records."
@@ -7054,7 +7058,7 @@ function render(){
   }
   try{
     if(v!=='add'&&v!=='quickadd') editingFlightId=null;
-    ({dashboard,logbook,add,quickadd:quickAdd,aircraft,pilots,endorsements,printarchive,archivereview:v229PreArchiveReview,endorsementarchive:v2EndorsementArchive,totals,recency,operatorrules:()=>window.HeliLogV236OperatorRulesUI.page(),profile,settings,locations:v219LocationsPage,backups,cloud,testmode,mobilemore,help:helpGuide}[v]||dashboard)();
+    ({dashboard,logbook,add,quickadd:quickAdd,aircraft,pilots,endorsements,printarchive,archivereview:v229PreArchiveReview,endorsementarchive:v2EndorsementArchive,totals,recency,operatorrules:()=>window.HeliLogV236OperatorRulesUI.page(effectiveFlights(),S.aircraft,recencyCurrent()),profile,settings,locations:v219LocationsPage,backups,cloud,testmode,mobilemore,help:helpGuide}[v]||dashboard)();
     let moreViews=['mobilemore','aircraft','pilots','endorsements','endorsementarchive','totals','recency','operatorrules','profile','settings','locations','backups','cloud','testmode','help'];
     document.querySelectorAll('[data-v]').forEach(b=>{
       let active=b.dataset.v===v || (b.dataset.v==='quickadd'&&v==='add') || (b.dataset.v==='settings' && (v==='cloud'||v==='backups'||v==='locations')) || (b.dataset.v==='mobilemore' && moreViews.includes(v));

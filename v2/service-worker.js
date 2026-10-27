@@ -1,11 +1,12 @@
-const CACHE='helilog-v2-36-1-operator-rule-fix-1';
+const CACHE='helilog-v2-36-2-linked-operator-recency-1';
 const SHELL=[
   './',
   './index.html',
   './recency.js?v=2.33.1',
   './special-recency.js?v=2.34',
   './advanced-recency.js?v=2.35',
-  './operator-rules-ui.js?v=2.36.1',
+  './operator-flight-monitor.js?v=2.36.2',
+  './operator-rules-ui.js?v=2.36.2',
   './dark-cockpit.css?v=2.20-cockpit-3',
   './guide.css?v=2.29',
   './manifest.webmanifest',
