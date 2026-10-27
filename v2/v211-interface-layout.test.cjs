@@ -152,6 +152,6 @@ test("The UI-only release retains archived-flight handlers and updates PWA cache
   "downloadFullBackup","restoreCheckedBackup","showIntegrityCheck","editMedical",
   "saveMedical","saveQualification","deleteQualification"])
   assert.match(html,new RegExp("function "+name+"\\("));
- assert.match(html,/HeliLog V2\.40 — Operator Recency Cloud Sync · Test/);
+ assert.match(html,/HeliLog V2\.40 — Phase 3C Evidence · Test/);
  assert.match(worker,/helilog-v2-40-evidence-1/);
 });
