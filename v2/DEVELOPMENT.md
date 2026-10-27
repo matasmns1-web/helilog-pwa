@@ -306,3 +306,9 @@ Add Rule opens and focuses the form; validation messages appear inline without c
 - Operator profile records now contain an optional, validated `evidence` collection (max 500 entries) linked by operator profile ID and custom rule ID; previous account profiles remain readable.
 - Record dated FFS, operator/proficiency checks or training with amounts, aircraft/crew type, document reference, notes and explicit pilot review. Drafts, disallowed sources and out-of-window evidence never count. No attachments, accreditation or real EASA recency alteration.
 - Combine permitted flight records and reviewed evidence in operator-specific thresholds; compute rolling lapses from actual dated contributions. Protect linked records against silent profile/rule deletion. Data follows existing account-profile revision-checked cloud sync and conflict backups; no schema changes.
+
+## V2.41 — Automatic FFS evidence matching (TEST)
+- Existing simulator sessions may optionally record the represented helicopter ICAO type and single-/multi-pilot crew configuration. Only explicitly classified FFS sessions propose matches to operator rules permitting `ffs`.
+- On simulator details or Manage operator rules, review a suggested match, confirm the number of qualifying manoeuvres (never inferred from simulator time), and provide a report/reference before pilot-reviewed custom operator credit.
+- Linked evidence stores the session ID and an exact snapshot. It does not count after simulator edit/deletion, change of type/crew or rule mismatch. One linked record per simulator+operator rule; draft/unreviewed items do not count. Existing manual FFS/check/training evidence remains available and unchanged.
+- No EASA calculation changes, no file attachments, no database/schema migrations and no production promotion.
