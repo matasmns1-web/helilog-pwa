@@ -34,10 +34,10 @@ test("staging stays connected only to existing test backend and private login",(
  assert.match(cloud,/owner|auth\.uid|verifiedClient/i);
 });
 test("version and offline PWA references are coherent",()=>{
- assert.match(page,/<title>HeliLog V2\.35 — Flight Recency · Test<\/title>/);
- assert.equal(manifest.name,"HeliLog V2.35 — Advanced Recency Phase 3A Test");
- assert.match(worker,/helilog-v2-35-advanced-recency-1/);
- assert.match(gate,/HELILOG_TEST_VERSION='V2\.35'/);
+ assert.match(page,/<title>HeliLog V2\.36 — Flight Recency · Test<\/title>/);
+ assert.equal(manifest.name,"HeliLog V2.36 — Operator Recency Rules Test");
+ assert.match(worker,/helilog-v2-36-operator-rules-1/);
+ assert.match(gate,/HELILOG_TEST_VERSION='V2\.36'/);
  for(const asset of ["cloud-config","cloud-foundation","auth-gate","cloud-view","cloud-sync","recovery"]){
    const ref=asset+".js?v=2.19-locations-1";
    assert.ok(page.includes(ref),"HTML missing "+ref);
