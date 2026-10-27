@@ -52,5 +52,5 @@ test("existing logbook print and archive formats are not modified",()=>{
  assert.doesNotMatch(read("print.js"),/savedSignatureData/);
  assert.doesNotMatch(read("archive-integrity.js"),/savedSignatureData/);
  assert.match(read("source/index.template.html"),/V2\.38\.1/);
- assert.match(read("service-worker.js"),/helilog-v2-38-1-ifr-inferred-night-vfr-1/);
+ assert.match(read("service-worker.js"),/helilog-v2-39-cloud-recovery-1/);
 });
