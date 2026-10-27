@@ -63,7 +63,7 @@ test("V2.7 remains Profile-only logout and ships coherent cache assets",()=>{
  assert.equal(manifest.name,"HeliLog V2.39.1 — Operator Recency Cloud Sync Test");
  assert.match(worker,/helilog-v2-39-1-operator-cloud-1/);
  for(const name of ["cloud-view","cloud-sync","auth-gate"]){
-  const url=name+".js?v="+(name==='cloud-sync'?'2.39.1-operator-sync-1':'2.19-locations-1');
+  const url=name+".js?v="+(['cloud-sync','auth-gate'].includes(name)?'2.39.1-operator-sync-1':'2.19-locations-1');
   assert.ok(html.includes(url),name+" index");
   assert.ok(worker.includes(url),name+" cache");
  }
