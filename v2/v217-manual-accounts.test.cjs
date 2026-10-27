@@ -34,7 +34,7 @@ test("staging stays connected only to existing test backend and private login",(
  assert.match(cloud,/owner|auth\.uid|verifiedClient/i);
 });
 test("version and offline PWA references are coherent",()=>{
- assert.match(page,/<title>HeliLog V2\.36 — Flight Recency · Test<\/title>/);
+ assert.match(page,/<title>HeliLog V2\.36 — Operator Recency Rules · Test<\/title>/);
  assert.equal(manifest.name,"HeliLog V2.36 — Operator Recency Rules Test");
  assert.match(worker,/helilog-v2-36-operator-rules-1/);
  assert.match(gate,/HELILOG_TEST_VERSION='V2\.36'/);
