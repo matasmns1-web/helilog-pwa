@@ -43,7 +43,7 @@ test('operator rule is in the same All recencies group/picker with Below thresho
  assert.match(html,/EC35 · Operator: Night VFR Training/);
  assert.match(html,/Below threshold/);
  assert.match(html,/Recorded 2 \/ 3 flights in the preceding 90 days/);
- assert.match(html,/Night VFR status is not independently recorded or verified/);
+ assert.match(html,/Night VFR status is not independently verified/);
  assert.doesNotMatch(f.call('recencySummaryMarkup()'),/Night VFR company minimum/);
  assert.equal(JSON.stringify(f.flights),f.before);
 });
