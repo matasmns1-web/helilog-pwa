@@ -301,3 +301,8 @@ Add Rule opens and focuses the form; validation messages appear inline without c
 - Profile/rule definitions and active profile are stored in account-synced `settings:operatorProfiles` using existing revision-checked `helilog_records` transport.
 - Old per-browser profiles are verified and copied before the first cloud pull, while legacy keys remain untouched for recovery. Empty devices do not create competing records.
 - Differing cloud/device copies require manual review and safety backup; EASA recency and signed archives remain unchanged. No Supabase migration; production is unchanged.
+
+## V2.40 — Phase 3C simulator/check/training evidence (TEST)
+- Operator profile records now contain an optional, validated `evidence` collection (max 500 entries) linked by operator profile ID and custom rule ID; previous account profiles remain readable.
+- Record dated FFS, operator/proficiency checks or training with amounts, aircraft/crew type, document reference, notes and explicit pilot review. Drafts, disallowed sources and out-of-window evidence never count. No attachments, accreditation or real EASA recency alteration.
+- Combine permitted flight records and reviewed evidence in operator-specific thresholds; compute rolling lapses from actual dated contributions. Protect linked records against silent profile/rule deletion. Data follows existing account-profile revision-checked cloud sync and conflict backups; no schema changes.
