@@ -269,6 +269,11 @@ const HELILOG_GUIDE_TOPICS=[
 ];
 const HELILOG_GUIDE_UPDATES=[
   {
+    "v": "V2.39",
+    "name": "Safer cloud recovery after interrupted local changes",
+    "detail": "If an existing flight or aircraft was edited or removed on this device but its cloud queue was never saved, HeliLog now stops instead of silently overwriting or restoring it. Open Cloud Account and review both copies before choosing, with a verified safety backup. Archived and signed records remain protected."
+  },
+  {
     "v": "V2.38.1",
     "name": "Night VFR uses existing IFR and night-time entries",
     "detail": "Removed the separate VFR/IFR selector. For custom Night VFR recency, each distinct flight with positive night time and zero IFR minutes counts once. This is a user-selected heuristic; actual VFR flight rules are not independently verified. Existing flight records and archives are unchanged."
