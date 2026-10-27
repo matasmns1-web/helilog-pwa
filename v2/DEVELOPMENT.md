@@ -264,3 +264,6 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 - Browse these profiles under Recency or Settings; active operator is separately selected and no EASA defaults are ever overwritten or displayed as operator approvals.
 - Save to a dedicated `helilog_operator_profiles_v1:<owner>` browser-localStorage key; test sandbox, local workspace and cloud users separated. Never overwrite corrupt or wrong-account storage. No cloud sync, database change, migration, backfill, signed record modification or automatic simulator/check credit. Device-local rules are not part of cloud backups.
 - Phase 3C will add independently stored reviewed credit events and evidence. A configured rule is not itself a proof of currency or privilege.
+
+## V2.36.1 — Operator editor feedback (TEST)
+Add Rule opens and focuses the form; validation messages appear inline without clearing inputs. Source and EASA calculations unchanged; production unchanged.

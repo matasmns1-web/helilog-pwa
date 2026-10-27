@@ -1,4 +1,4 @@
-/* V2.36. Searchable, offline-friendly guide and current release notes. */
+/* V2.36.1. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
   {
     "category": "Flight operations",
@@ -268,6 +268,11 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {
+    "v": "V2.36.1",
+    "name": "Operator rule editor: visible form and validation",
+    "detail": "Add Rule now brings the form into view. Save Rule shows invalid field feedback without discarding entered text or changing flight records."
+  },
   {
     "v": "V2.36",
     "name": "Phase 3B — Custom operator recency profiles",
