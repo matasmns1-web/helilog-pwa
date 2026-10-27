@@ -377,21 +377,28 @@
    }catch(e){fail(e);}
  }
  function evidenceForm(rule,record){
-   const r=record||{date:'',amount:1,source:'ffs',configuration:rule.configuration==='all'?'single':rule.configuration,
+   const linked=matchedSessionId?renderFlights.find(f=>f.id===matchedSessionId):null;
+   const changed=linked&&record?.sessionProof!==matcher?.proof(linked);
+   const r=record||{date:linked?.date||'',amount:1,source:'ffs',
+     configuration:linked?.simPilotConfig|| (rule.configuration==='all'?'single':rule.configuration),
      evidenceRef:'',notes:'',status:'draft'};
    return '<div class="card" id="opEvidenceForm" style="margin-top:14px">'+
+     (linked?'<div class="note"><b>Matched FFS session</b> · '+esc(linked.date)+' · '+esc(linked.simAircraftType)+
+       ' · '+esc(linked.simPilotConfig)+'. Review the real training report and enter only its qualifying '+esc(rule.unit)+
+       '. Session duration does not establish qualifying movements.'+
+       (changed?'<br><b>Session changed since the last review:</b> previous credit is suspended until reviewed again.':'')+'</div>':'')+
      '<h3>'+(record?'Edit':'Add')+' simulator / check / training evidence</h3>'+
      '<p class="mini">Record a reference to your simulator report, proficiency check or training document. No file is uploaded in this version. Do not enter passwords or medical information.</p>'+
      '<div class="grid">'+
-     '<div class="field"><label for="opEvidenceDate">Date</label><input type="date" id="opEvidenceDate" value="'+esc(r.date)+'"></div>'+
+     '<div class="field"><label for="opEvidenceDate">Date</label><input type="date" id="opEvidenceDate" '+(linked?'disabled ':'')+'value="'+esc(linked?.date||r.date)+'"></div>'+
      '<div class="field"><label for="opEvidenceSource">Evidence type</label><select id="opEvidenceSource">'+
-     choices(['ffs','check','training'],r.source,['Approved FFS session','Proficiency / operator check','Training session'])+'</select></div>'+
+     choices(['ffs','check','training'],linked?'ffs':r.source,['Approved FFS session','Proficiency / operator check','Training session'])+'</select></div>'+
      '<div class="field"><label for="opEvidenceAmount">Qualifying '+esc(rule.unit)+'</label><input type="number" min="1" max="9999" step="1" id="opEvidenceAmount" value="'+esc(r.amount)+'"></div>'+
-     (rule.configuration==='all'?'<div class="field"><label for="opEvidenceConfig">Crew configuration</label><select id="opEvidenceConfig">'+
-       choices(['single','multi'],r.configuration,['Single-pilot','Multi-pilot'])+'</select></div>':'')+
+     (rule.configuration==='all'?'<div class="field"><label for="opEvidenceConfig">Crew configuration</label><select id="opEvidenceConfig" '+(linked?'disabled':'')+'>'+
+       choices(['single','multi'],linked?.simPilotConfig||r.configuration,['Single-pilot','Multi-pilot'])+'</select></div>':'')+
      '<div class="field"><label for="opEvidenceRef">Evidence reference</label><input id="opEvidenceRef" maxlength="240" placeholder="FFS report no. / check record reference" value="'+esc(r.evidenceRef)+'"></div>'+
      '<div class="field"><label for="opEvidenceNotes">Notes (optional)</label><input id="opEvidenceNotes" maxlength="500" value="'+esc(r.notes)+'"></div></div>'+
-     '<label style="display:flex;align-items:flex-start;gap:9px;margin-top:12px"><input type="checkbox" id="opEvidenceReviewed" '+(r.status==='reviewed'?'checked':'')+'><span>I have reviewed the supporting record and its permitted credit source. This is my own evidence review, not operator approval or EASA credit.</span></label>'+
+     '<label style="display:flex;align-items:flex-start;gap:9px;margin-top:12px"><input type="checkbox" id="opEvidenceReviewed" '+(r.status==='reviewed'&&!changed?'checked':'')+'><span>I have reviewed the supporting record and its permitted credit source. This is my own evidence review, not operator approval or EASA credit.</span></label>'+
      '<p class="mini">Leave unchecked to save a draft. Only reviewed entries with a reference and an allowed source can contribute to this operator-defined threshold.</p>'+
      '<p class="mini" id="opEvidenceFeedback" role="alert" hidden></p>'+
      '<div class="actions"><button class="btn primary" type="button" onclick="HeliLogV236OperatorRulesUI.saveEvidence()">Save evidence</button>'+ 
