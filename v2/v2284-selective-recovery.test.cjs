@@ -157,5 +157,5 @@ test("V2.34.1 recovery is explicit and cloud connection copy does not claim unsy
  assert.doesNotMatch(view,/Local logbook records are still not synchronized/);
  assert.match(sync,/verified no-op, NOT an upload/);
  assert.match(sync,/remoteFingerprint/);
- assert.match(read("service-worker.js"),/helilog-v2-39-cloud-recovery-1/);
+ assert.match(read("service-worker.js"),/helilog-v2-39-1-operator-cloud-1/);
 });
