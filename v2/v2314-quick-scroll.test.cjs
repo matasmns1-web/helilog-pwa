@@ -94,5 +94,5 @@ test('locked mode has no data writes and keeps existing flight-save validation',
  for(const part of ['function saveFlight()','function setFlightEntryMode(mode)','function v218UpdateNight()'])
   assert.ok(formSource.includes(part));
  assert.match(read('service-worker.js'),/helilog-v2-39-cloud-recovery-1/);
- assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.38\.1'/);
+ assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.39'/);
 });
