@@ -11,12 +11,12 @@ const sw=read('service-worker.js');
 const manifest=JSON.parse(read('manifest.webmanifest'));
 
 test('Dark Cockpit remains visible and the current release is test-only',()=>{
-  assert.match(html,/<title>HeliLog V2\.38\.1 — Night VFR from IFR Time · Test<\/title>/);
-  assert.match(html,/class="brand-version">V2\.38\.1 · TEST ENVIRONMENT/);
+  assert.match(html,/<title>HeliLog V2\.39 — Cloud Sync Recovery · Test<\/title>/);
+  assert.match(html,/class="brand-version">V2\.39 · TEST ENVIRONMENT/);
   assert.match(html,/class="nav-group-label">Flight operations/);
   assert.match(html,/class="nav-group-label">Records &amp; assets/);
-  assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.38\.1'/);
-  assert.match(manifest.name,/V2\.38\.1 — Night VFR from IFR Time Test/);
+  assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.39'/);
+  assert.match(manifest.name,/V2\.39 — Night VFR from IFR Time Test/);
   assert.equal(manifest.background_color,'#090f1b');
 });
 
@@ -39,11 +39,11 @@ test('Dark Cockpit stylesheet is screen-only and has responsive navigation and a
 });
 
 test('Offline shell includes the new stylesheet and retains every prior functional asset',()=>{
-  assert.match(sw,/helilog-v2-38-1-ifr-inferred-night-vfr-1/);
+  assert.match(sw,/helilog-v2-39-cloud-recovery-1/);
   assert.match(sw,/\.\/dark-cockpit\.css\?v=2\.20-cockpit-3/);
   for(const asset of ['night-calculation','aerodrome-lookup','cloud-config',
     'cloud-foundation','cloud-sync','auth-gate','archive-integrity','cloud-backups']) {
-    const ref='./'+asset+'.js?v=2.19-locations-1';
+    const ref='./'+asset+'.js?v='+(asset==='cloud-sync'?'2.39-unsent-recovery-1':'2.19-locations-1');
     assert.ok(sw.includes(ref),'Offline shell missing '+ref);
     assert.ok(html.includes(ref),'Index missing '+ref);
   }
