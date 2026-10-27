@@ -106,8 +106,8 @@ test("V2.19 installs new assets together while keeping older profile migration e
  assert.match(html,/V2\.39\.1 · TEST ENVIRONMENT/);
  assert.equal(manifest.name,"HeliLog V2.39.1 — Operator Recency Cloud Sync Test");
  assert.match(worker,/helilog-v2-39-1-operator-cloud-1/);
- assert.match(worker,/cloud-sync\.js\?v=2\.39-unsent-recovery-1/);
- assert.match(html,/cloud-sync\.js\?v=2\.39-unsent-recovery-1/);
+ assert.match(worker,/cloud-sync\.js\?v=2\.39\.1-operator-sync-1/);
+ assert.match(html,/cloud-sync\.js\?v=2\.39\.1-operator-sync-1/);
  assert.match(html,/id="ownFirstName"/);
  assert.match(html,/id="ownLastName"/);
  assert.doesNotMatch(html,/id="ownName"/);
