@@ -312,3 +312,8 @@ Add Rule opens and focuses the form; validation messages appear inline without c
 - On simulator details or Manage operator rules, review a suggested match, confirm the number of qualifying manoeuvres (never inferred from simulator time), and provide a report/reference before pilot-reviewed custom operator credit.
 - Linked evidence stores the session ID and an exact snapshot. It does not count after simulator edit/deletion, change of type/crew or rule mismatch. One linked record per simulator+operator rule; draft/unreviewed items do not count. Existing manual FFS/check/training evidence remains available and unchanged.
 - No EASA calculation changes, no file attachments, no database/schema migrations and no production promotion.
+
+## V2.41.1 — unified simulator type field (TEST)
+- Remove the duplicated `simAircraftType` input. Enter the represented ICAO designator directly in the existing `simDevice` field for FFS matching.
+- On save, derive matching type only from a valid 2–8 character code; preserve a separately saved v2.41 type when the prior descriptive device label is unchanged. On changing a descriptive device name, clear the old type instead of silently associating it with another device.
+- The FFS matcher treats an ICAO code in `simDevice` as authoritative while continuing to accept older records with descriptive device names and explicit `simAircraftType`. Review and evidence snapshots still detect edits. EASA, signed archives, flight totals, cloud schema and production are unchanged.
