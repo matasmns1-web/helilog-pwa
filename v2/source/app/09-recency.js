@@ -1,4 +1,4 @@
-/* HeliLog V2.36 — combined NVIS/HHO, offshore landings specialised-operation recency.
+/* HeliLog V2.37 — combined NVIS/HHO, offshore landings specialised-operation recency.
  * "CAT" is not a flight classification: FCL.060 applies to passenger/CAT
  * operations, but qualifying prior PF movements may be private/training.
  */
@@ -56,7 +56,8 @@ function recencyDashboardKeys(){
    const value=JSON.parse(raw);
    if(!Array.isArray(value)||value.length>100)return [];
    return [...new Set(value.filter(x=>typeof x==='string'&&
-     /^[A-Z0-9]{2,8}\|(single|multi|all)\|(general|night|nvis|hho|hhoNight|offshore|offshoreNight)$/.test(x))
+     (/^[A-Z0-9]{2,8}\|(single|multi|all)\|(general|night|nvis|hho|hhoNight|offshore|offshoreNight)$/.test(x)||
+      /^operator\|[A-Za-z0-9:_-]{1,128}\|[A-Za-z0-9:_-]{1,128}$/.test(x)))
      .map(key=>key.replace(/^([A-Z0-9]{2,8})\|(single|multi)\|(nvis|hho|hhoNight)$/,'$1|all|$3')))];
  }catch{return [];}
 }
@@ -77,12 +78,30 @@ function recencyDashboardOptions(rows){
  }
  return result;
 }
+function recencyAllDashboardOptions(rows){
+ const legal=recencyDashboardOptions(rows);
+ const custom=window.HeliLogV236OperatorRulesUI?.dashboardOptions?.(
+   effectiveFlights(),S.aircraft,recencyCurrent())||[];
+ return legal.concat(custom);
+}
+function recencyOptionLabel(option){
+ return option.operatorRule?'Operator · '+option.rule.title:recencyOperationLabel(option.kind);
+}
 function recencyOperationLabel(kind){
  return ({general:'Passenger-carrying',night:'Night PIC',
    nvis:'NVIS',hho:'Hoist (HHO)',hhoNight:'Hoist (night)',
    offshore:'Offshore landings',offshoreNight:'Offshore landings (night)'})[kind]||kind;
 }
 function recencyOptionStatus(option){
+ if(option.operatorRule){
+   const r=option.result,met=r.thresholdMet;
+   return {count:r.count,target:r.minimum,change:r.thresholdUntil,
+     periodDays:option.rule.periodDays,unit:r.unit,operator:true,
+     days:recencyDaysTo(r.thresholdUntil),threshold:met,confirmed:false,
+     tone:met?'met':'below',short:met?'Met':'Below threshold',
+     text:met?'Recorded threshold met':'Below recorded threshold',
+     source:r.unit};
+ }
  if(!option.row.special)return recencyStatus(option.row,option.kind);
  const {row,kind}=option,night=kind.endsWith('Night');
  const count=night?row.night:row.day;
@@ -109,13 +128,14 @@ function recencyTypeGroups(options){
  }));
 }
 function recencyPilotNote(all,option){
+ if(option.operatorRule)return option.row.config==='all'?'':option.row.config==='multi'?'Multi-pilot':'Single-pilot';
  return all.some(other=>other!==option&&other.row.type===option.row.type&&
    other.kind===option.kind&&other.row.config!==option.row.config)
      ?(option.row.config==='multi'?'Multi-pilot':'Single-pilot'):'';
 }
 function recencySetDashboardIndicator(input){
  const key=String(input?.dataset?.recencyKey||'');
- const options=recencyDashboardOptions(recencyRows());
+ const options=recencyAllDashboardOptions(recencyRows());
  if(!options.some(o=>o.key===key))return;
  const selected=new Set(recencyDashboardKeys());
  if(input.checked)selected.add(key);else selected.delete(key);
@@ -134,6 +154,10 @@ function recencySetDashboardIndicator(input){
  if(note)note.textContent='Saved on this device. Your dashboard will update when you open it.';
 }
 function recencyCompactDate(status){
+ if(status.operator){
+   if(status.threshold&&status.change)return 'Threshold until '+displayDate(status.change)+' if no more flights';
+   return Math.max(0,status.target-status.count)+' more recorded '+status.unit+' needed within '+status.periodDays+' days';
+ }
  if(status.threshold&&status.change)return 'Threshold until '+displayDate(status.change)+' if no more flights';
  return Math.max(0,status.target-status.count)+' more recorded '+(status.target-status.count===1?'movement pair':'movement pairs')+' needed';
 }
@@ -141,7 +165,7 @@ function recencyCompactLabel(status){
  return status.threshold?'Met':'Below threshold';
 }
 function recencySummaryMarkup(){
- const options=recencyDashboardOptions(recencyRows());
+ const options=recencyAllDashboardOptions(recencyRows());
  const selected=new Set(recencyDashboardKeys());
  const chosen=options.filter(o=>selected.has(o.key));
  if(!chosen.length)return '';
@@ -150,7 +174,7 @@ function recencySummaryMarkup(){
    const pilot=recencyPilotNote(options,option);
    return `<div class="recency-dashboard-row">
      <div class="recency-dashboard-row-text">
-       <b class="recency-kind">${recencyOperationLabel(kind)}</b>
+       <b class="recency-kind">${recencyOptionLabel(option)}</b>
        ${pilot?`<span class="recency-pilot-note">${pilot}</span>`:''}
        <div class="muted">${recencyCompactDate(status)}</div>
      </div>
@@ -169,11 +193,11 @@ function recencySummaryMarkup(){
 }
 function recency(){
  const rows=recencyRows(),asOf=recencyCurrent();
- const dashboardOptions=recencyDashboardOptions(rows);
+ const dashboardOptions=recencyAllDashboardOptions(rows);
  const enabled=new Set(recencyDashboardKeys());
  const selectedCount=dashboardOptions.filter(o=>enabled.has(o.key)).length;
  const chooserItem=o=>{
-   const title=recencyOperationLabel(o.kind);
+   const title=recencyOptionLabel(o);
    const pilot=recencyPilotNote(dashboardOptions,o);
    const status=recencyOptionStatus(o);
    return `<label class="recency-dashboard-choice">
@@ -188,7 +212,7 @@ function recency(){
  </section>`).join('');
  const renderOne=option=>{
    const {row,kind}=option,status=recencyOptionStatus(option);
-   const headerTitle=recencyOperationLabel(kind);
+   const headerTitle=recencyOptionLabel(option);
    const pilot=recencyPilotNote(dashboardOptions,option);
    return `<details class="recency-detail-row">
      <summary>
@@ -200,12 +224,19 @@ function recency(){
        <span class="recency-expand-cue" aria-hidden="true">⌄</span>
      </summary>
      <div class="recency-detail-expanded">
-       <p>${recencyStatusDetails(status)}</p>
+       <p>${status.operator
+         ?'Recorded '+status.count+' / '+status.target+' '+htmlEscape(status.unit)+' in the preceding '+status.periodDays+' days.'
+           +(status.threshold?'':' '+Math.max(0,status.target-status.count)+' more needed.')
+         :recencyStatusDetails(status)}</p>
        ${status.threshold&&status.change?`<p>If no more qualifying flights are made, the recorded threshold will fall below the minimum on <b>${displayDate(status.change)}</b>.</p>`:''}
-       ${status.tone==='estimated'&&!row.special?'<p>Estimated using single-pilot PIC/SOLO take-off and landing pairs; approaches are not separately verified.</p>':''}
-       ${row.special&&row.missingCounts?`<p>${row.missingCounts} earlier operation flight(s) lack recorded cycles/sequences and are not automatically credited.</p>`:''}
-       ${!row.special&&row.unverifiedFlights?`<p>${row.unverifiedFlights} flight(s) have unverified PF movement pairs excluded from credit.</p>`:''}
-       <span class="mini">EASA ${row.special?row.rule:kind==='night'?'FCL.060(b)(2)':'FCL.060(b)(1)'} · Rolling preceding 90 days. This indicator does not certify privileges. ${row.special?'Cycles/sequences are self-recorded and still require operator and crew competency verification.':''}</span>
+       ${!status.operator&&status.tone==='estimated'&&!row.special?'<p>Estimated using single-pilot PIC/SOLO take-off and landing pairs; approaches are not separately verified.</p>':''}
+       ${!status.operator&&row.special&&row.missingCounts?`<p>${row.missingCounts} earlier operation flight(s) lack recorded cycles/sequences and are not automatically credited.</p>`:''}
+       ${!status.operator&&!row.special&&row.unverifiedFlights?`<p>${row.unverifiedFlights} flight(s) have unverified PF movement pairs excluded from credit.</p>`:''}
+       <span class="mini">${status.operator
+         ?'Operator-defined requirement · '+htmlEscape(option.operatorName)+'. Self-recorded flight activity only; this is not an EASA result or operator approval.'
+           +(option.rule.monitor==='flights:night'?' Night time greater than zero defines a counted flight; Night VFR status is not independently recorded or verified.':'')
+           +(option.result.missingCycleCounts?' '+option.result.missingCycleCounts+' operation flight(s) lack valid recorded cycles.':'')
+         :'EASA '+(row.special?row.rule:kind==='night'?'FCL.060(b)(2)':'FCL.060(b)(1)')+' · Rolling preceding 90 days. This indicator does not certify privileges. '+(row.special?'Cycles/sequences are self-recorded and still require operator and crew competency verification.':'')}</span>
      </div>
    </details>`;
  };
@@ -227,15 +258,9 @@ function recency(){
      <p class="mini">Single-pilot PIC/SOLO movements are estimated from recorded take-offs and landings. NVIS counts recorded NVIS flights and HHO counts hoist cycles across SP/MP operation configurations of the same type. Offshore is separated by SP/MP and counts manually entered offshore landings that also represent complete qualifying take-off, departure and approach sequences. Entries are self-reported. Older flights without counts are not automatically credited. Training, operator approvals, night hover transitions, crew duties and permitted simulator credits still require independent verification.</p>
      <p class="mini"><a target="_blank" rel="noopener noreferrer" href="https://www.easa.europa.eu/en/document-library/easy-access-rules/online-publications/easy-access-rules-aircrew-regulation-eu-no-11782011">EASA Aircrew Rules · FCL.060</a></p>
    </details>
-   <div class="card" style="margin-top:14px">
-     <div class="head"><div><h2>Custom operator recency</h2>
-       <p class="mini">${window.HeliLogV236OperatorRulesUI?.summary()||'No operator profile active'}</p></div>
-       <button class="btn" type="button" onclick="go('operatorrules')">Manage rules</button></div>
-     <div style="display:grid;gap:8px">${window.HeliLogV236OperatorRulesUI?.recencySummary(effectiveFlights(),S.aircraft,asOf)||''}</div>
-     <p class="mini" style="margin-top:10px">These are self-reported flight counts against your custom operator thresholds, not official EASA or operator-approved currency. Operator rule settings are saved on this device; simulator/check credits are not automatically counted.</p>
-   </div>
    <div class="card recency-detail-card" style="margin-top:14px">
-     <div class="head"><div><h2>All recencies</h2><div class="muted">Passenger, NVIS, hoist and offshore activity · select a row for details</div></div></div>
+     <div class="head"><div><h2>All recencies</h2><div class="muted">EASA and active operator requirements · select a row for details</div></div>
+     <button type="button" class="btn" onclick="go('operatorrules')">Manage operator rules</button></div>
      ${dashboardOptions.length?allGroups:'<p class="muted">No flights recorded yet.</p>'}
    </div>
 `;
