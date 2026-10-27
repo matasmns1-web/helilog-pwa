@@ -320,6 +320,13 @@ async function v23EnterWorkspace(auth){
   if(workspace.people?.[0])workspace.people[0].name=workspace.pilot.name;
   localStorage.setItem(key,JSON.stringify(workspace));
  }
+ // Stage the existing account-only browser rules before the first cloud pull.
+ // The legacy copy remains in localStorage so it can always be recovered.
+ const legacyRules=window.HeliLogV236OperatorRulesUI?.legacyForAccount?.(id);
+ if(legacyRules && workspace.operatorProfiles===undefined){
+  workspace={...workspace,operatorProfiles:legacyRules};
+  localStorage.setItem(key,JSON.stringify(workspace));
+ }
  KEY=key;S=workspace;
  if(typeof window.HeliLogCloud.client!=="function")
   throw Error("HeliLog loaded an outdated cached cloud module. Close and reopen the app, then reload the website while online. Your account and existing data are safe.");
@@ -342,7 +349,8 @@ async function v23EnterWorkspace(auth){
      broughtForwardImported:next.broughtForwardImported??S.broughtForwardImported,
      broughtForwardImportedAt:next.broughtForwardImportedAt??S.broughtForwardImportedAt,
      // These settings are synced as a record and must be applied too.
-     siteLocations:next.siteLocations??S.siteLocations};
+     siteLocations:next.siteLocations??S.siteLocations,
+     operatorProfiles:next.operatorProfiles??S.operatorProfiles};
    // Commit one complete account state, or keep the old one on failure.
    localStorage.setItem(KEY,JSON.stringify(updated));
    S=updated;
