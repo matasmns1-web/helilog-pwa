@@ -273,3 +273,10 @@ Add Rule opens and focuses the form; validation messages appear inline without c
 - Add required explicit monitored activity source to rule editor, derived measure, and display count/threshold details in Recency and rule list. HESLO1–4, HHO and other operational cycles use `flight.specialOpsCycles[code]` only with `flight.specialOps[code]` present; offshore uses its separately recorded landings, NVIS uses flagged flights, and all-flights uses ordinary flight records. Type/config/rolling date filters apply; no inferred missing counts, simulators, duplicate flight IDs or unlinked rule auto-credit.
 - Pre-existing V2.36.1 rules stay saved and **unlinked** until source explicitly selected; no storage migration or cloud writes. These are self-recorded operator-specific tracking figures, not legal EASA credits or operator-approved status.
 - Flight data remains read-only; account-scoped operator profiles remain device-local; FFS/check/training evidence phase is not yet implemented.
+
+## V2.37 — operator recency format and night-flight monitoring (TEST)
+
+- Merge active operator rules into the same expandable **All recencies** list and **Show on dashboard** controls as EASA recency, visibly separated by the type-group heading “Operator: NAME” and each operation's “Operator ·” prefix. Preserve regular EASA indicators unchanged.
+- Dashboard selections use the same per-account/local-device preference storage; new keys include operator profile and rule IDs and are never selected by default. Deactivating or switching operator excludes inactive operator rules from display.
+- Add a Night flights monitor (`flights:night`) counting distinct, non-simulator flight entries with validated positive `nightMin` not exceeding `mins`. Count 1 per qualifying flight, not movements or night minutes. Aircraft ICAO, SP/MP config, and rolling period are applied exactly as for other operator counters.
+- **Recorded night time is not independent Night VFR evidence.** Existing entries do not explicitly identify VFR flight rules; confirm VFR with operator evidence. No EASA certification, Supabase database migration, logbook/print/archive writes, or production deployment.

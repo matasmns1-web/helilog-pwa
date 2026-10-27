@@ -1,4 +1,4 @@
-/* HeliLog v2.36.2 TEST — read-only, explicit flight-field operator activity monitor.
+/* HeliLog v2.37 TEST — read-only, explicit flight-field operator activity monitor.
  * No flight, cloud, EASA calculation or signed archive mutations.
  * User-selected flight fields are self-recorded evidence, not validated operator currency.
  */
@@ -20,7 +20,8 @@
   {id:'special:SURVEY',label:'Flight entry → Aerial survey cycles',unit:'cycles'},
   {id:'special:OFFSHORE',label:'Flight entry → Offshore platform landings',unit:'landings'},
   {id:'special:NVIS',label:'Flight entry → NVIS flights',unit:'flights'},
-  {id:'flights:all',label:'Flight logbook → Recorded flights (all operations)',unit:'flights'}
+  {id:'flights:all',label:'Flight logbook → Recorded flights (all operations)',unit:'flights'},
+  {id:'flights:night',label:'Flight logbook → Night flights (recorded night time)',unit:'flights'}
  ]);
  const validDate=s=>typeof s==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(s)&&
    Number.isFinite(Date.parse(s+'T00:00:00Z'))&&new Date(Date.parse(s+'T00:00:00Z')).toISOString().slice(0,10)===s;
@@ -55,6 +56,12 @@
    used.add(id);
    let n=0;
    if(option.id==='flights:all')n=1;
+   else if(option.id==='flights:night'){
+    // Night minutes prove a recorded night flight, not VFR flight-rule status.
+    // Reject invalid night durations and simulator entries.
+    const night=f.nightMin,total=f.mins;
+    n=positive(night)&&night>0&&positive(total)&&night<=total?1:0;
+   }
    else{
     const code=option.id.slice(8);
     if(!Object.prototype.hasOwnProperty.call(f.specialOps||{},code))continue;
@@ -83,5 +90,5 @@
     evidenceFlights:evidence.length,missingCycleCounts:unrecorded,
     certified:false,source:'flight',disclaimer:'Recorded flight activity only; does not confirm operator approval, crew qualifications, or EASA privileges.'});
  }
- return Object.freeze({version:'2.36.2',OPTIONS,optionFor,validate,assess});
+ return Object.freeze({version:'2.37',OPTIONS,optionFor,validate,assess});
 });

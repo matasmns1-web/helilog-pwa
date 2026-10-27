@@ -119,10 +119,10 @@ test('profile names and user supplied strings are escaped before rendering',()=>
 });
 test('UI route and assets are connected without changing EASA calculators or archive data',()=>{
  const read=p=>fs.readFileSync(path.join(__dirname,p),'utf8');
- assert.match(read('source/index.template.html'),/operator-rules-ui\.js\?v=2\.36/);
- assert.match(read('service-worker.js'),/operator-rules-ui\.js\?v=2\.36/);
+ assert.match(read('source/index.template.html'),/operator-rules-ui\.js\?v=2\.37/);
+ assert.match(read('service-worker.js'),/operator-rules-ui\.js\?v=2\.37/);
  assert.match(read('source/app/13-routing-and-boot.js'),/operatorrules:/);
- assert.match(read('source/app/09-recency.js'),/Custom operator recency/);
+ assert.match(read('source/app/09-recency.js'),/Manage operator rules/);
  assert.doesNotMatch(read('source/app/10-settings-and-locations.js'),/Operator recency rules/);
  assert.doesNotMatch(read('recency.js'),/operatorprofiles|operatorRules/);
  assert.doesNotMatch(read('special-recency.js'),/operatorprofiles|operatorRules/);
