@@ -47,9 +47,9 @@ test('test-only PWA release labels and offline cache are aligned',()=>{
   const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
   const manifest=JSON.parse(fs.readFileSync(path.join(root,'manifest.webmanifest'),'utf8'));
   const worker=fs.readFileSync(path.join(root,'service-worker.js'),'utf8');
-  assert.match(html,/HeliLog V2\.39\.1 — Operator Recency Cloud Sync · Test/);
-  assert.equal(manifest.name,'HeliLog V2.39.1 — Operator Recency Cloud Sync Test');
-  assert.match(worker,/helilog-v2-39-1-operator-cloud-1/);
+  assert.match(html,/HeliLog V2\.40 — Operator Recency Cloud Sync · Test/);
+  assert.equal(manifest.name,'HeliLog V2.40 — Phase 3C Evidence Test');
+  assert.match(worker,/helilog-v2-40-evidence-1/);
   assert.match(html,/function quickAdd\(\)/);
   assert.match(html,/function saveFlight\(\)/);
 });
