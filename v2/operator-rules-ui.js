@@ -326,7 +326,10 @@
      const rule=profile?.rules.find(r=>r.id===evidenceRuleId);
      if(!rule)throw Error('The operator rule is no longer available.');
      const value=id=>String(dom(id)?.value??'').trim();
-     const source=value('opEvidenceSource'),date=value('opEvidenceDate'),
+     const liveFlights=typeof root.effectiveFlights==='function'?root.effectiveFlights():renderFlights;
+     const session=matchedSessionId?liveFlights.find(f=>f.id===matchedSessionId):null;
+     const source=matchedSessionId?'ffs':value('opEvidenceSource'),
+       date=matchedSessionId?session?.date:value('opEvidenceDate'),
        amount=Number(value('opEvidenceAmount'));
      const status=dom('opEvidenceReviewed')?.checked?'reviewed':'draft';
      const evidenceRef=value('opEvidenceRef'),notes=value('opEvidenceNotes');
@@ -334,17 +337,27 @@
      if(status==='reviewed'&&!rule.acceptedSources.includes(source))
        throw Error('This rule does not permit that credit source. Update the operator rule first or save a draft.');
      const previous=data.evidence.find(e=>e.id===editingEvidenceId);
+     if(previous?.sessionId && previous.sessionId!==matchedSessionId)
+       throw Error('A simulator-linked record cannot be detached silently. Delete it explicitly first.');
+     if(matchedSessionId){
+       if(!matcher?.matches(session,rule)||!matcher.proof(session))
+         throw Error('The simulator session or matching rule changed. Nothing was credited. Reopen the matching review.');
+       if(data.evidence.some(e=>e!==previous&&e.profileId===profile.id&&e.ruleId===rule.id&&e.sessionId===session.id))
+         throw Error('This simulator session is already linked to this operator rule. Edit the existing record.');
+     }
      if(!previous&&data.evidence.length>=500)throw Error('Maximum 500 evidence entries per account.');
      const record={id:previous?.id||uid('ev_'),profileId:profile.id,ownerId:data.ownerId,
        ruleId:rule.id,date,aircraftType:rule.aircraftType,
-       configuration:rule.configuration==='all'?value('opEvidenceConfig'):rule.configuration,
-       source,unit:rule.unit,amount,status,evidenceRef,notes};
+       configuration:matchedSessionId?session.simPilotConfig:
+         rule.configuration==='all'?value('opEvidenceConfig'):rule.configuration,
+       source,unit:rule.unit,amount,status,evidenceRef,notes,
+       ...(matchedSessionId?{sessionId:session.id,sessionProof:matcher.proof(session)}:{})};
      engine.creditEvent(record);
      if(notes.length>500)throw Error('Notes must be under 500 characters.');
      if(previous)data.evidence=data.evidence.map(e=>e.id===previous.id?record:e);
      else data.evidence.push(record);
      write(data);
-     editingEvidenceId=null;evidenceRuleId=null;note=status==='reviewed'?
+     editingEvidenceId=null;evidenceRuleId=null;matchedSessionId=null;note=status==='reviewed'?
        'Pilot-reviewed evidence saved. Counting is conditional on this operator rule; no regulatory approval is implied.':
        'Draft evidence saved without recency credit.';
      refresh();
@@ -360,7 +373,7 @@
      if(!record)return;
      if(!root.confirm('Delete this evidence record? It will no longer contribute to operator tracking.'))return;
      data.evidence=data.evidence.filter(e=>e.id!==id);
-     write(data);editingEvidenceId=null;evidenceRuleId=null;note='Evidence record removed.';refresh();
+     write(data);editingEvidenceId=null;evidenceRuleId=null;matchedSessionId=null;note='Evidence record removed.';refresh();
    }catch(e){fail(e);}
  }
  function evidenceForm(rule,record){
