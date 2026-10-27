@@ -1,4 +1,4 @@
-const CACHE='helilog-v2-41-1-single-sim-type-1';
+const CACHE='helilog-v2-41-2-sim-details-1';
 const SHELL=[
   './',
   './index.html',
@@ -6,7 +6,7 @@ const SHELL=[
   './special-recency.js?v=2.34',
   './advanced-recency.js?v=2.35',
   './operator-flight-monitor.js?v=2.40',
-  './simulator-evidence.js?v=2.41.1',
+  './simulator-evidence.js?v=2.41.2',
   './operator-rules-ui.js?v=2.41',
   './dark-cockpit.css?v=2.20-cockpit-3',
   './guide.css?v=2.29',

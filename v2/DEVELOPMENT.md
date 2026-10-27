@@ -317,3 +317,7 @@ Add Rule opens and focuses the form; validation messages appear inline without c
 - Keep the v2.41 `simAircraftType` input; remove duplicate `simDevice` form input. For new simulator entries, the same ICAO type populates both `simAircraftType` and the legacy display/print `simDevice` value.
 - Existing simulator device descriptions and separate ICAO values are retained without modification if the selected represented type remains unchanged. Previously reviewed session evidence snapshots continue to validate.
 - Matcher prioritizes `simAircraftType` (represented ICAO designator), falling back to a valid legacy `simDevice` code when a separate type is absent. Edited ICAO types are explicit; no automatic EASA credit, changes to archived data, cloud schema or production.
+
+## V2.41.2 — simulator details tidy-up (TEST)
+- Simulator details now show one emphasized simulator-duration card; remove redundant `Actual flight time: 0:00` stat from this view only. Display still states simulator time is not actual helicopter flight time.
+- No schema changes, archived flight modifications, EASA/recency changes, cloud mutations or production promotion.

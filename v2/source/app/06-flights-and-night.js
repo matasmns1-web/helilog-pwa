@@ -107,9 +107,8 @@ function simulatorDetails(id){
     <button class="btn primary" onclick="editFlight('${f.id}')">${isArchivedFlight(f.id)?'Propose correction':'Edit session'}</button>
     ${!isArchivedFlight(f.id)?`<button class="btn dangerbtn" onclick="openDeleteModal('${f.id}')">Delete session</button>`:''}</div>`)+
     `<div class="card"><h2>${htmlEscape(simulatorDeviceLabel(f))}</h2>
-     <div class="grid stats">
+     <div class="grid stats" style="grid-template-columns:minmax(0,1fr);max-width:420px">
        <div class="card"><div class="label">Simulator session</div><div class="big">${fmt(f.stdMin)}</div></div>
-       <div class="card"><div class="label">Actual flight time</div><div class="big">0:00</div></div>
      </div><p><b>Exercise / remarks</b></p><p>${htmlEscape(f.remarks||'—')}</p>
      <p class="mini">Printed only in Synthetic Training Devices and Remarks columns. Does not add to actual helicopter flight time.</p></div>`+
     matched+correctionHistoryMarkup(id);
