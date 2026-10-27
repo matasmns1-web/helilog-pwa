@@ -1,4 +1,4 @@
-/* HeliLog v2.38 TEST — read-only, explicit flight-field operator activity monitor.
+/* HeliLog v2.38.1 TEST — read-only, explicit flight-field operator activity monitor.
  * No flight, cloud, EASA calculation or signed archive mutations.
  * User-selected flight fields are self-recorded evidence, not validated operator currency.
  */
@@ -22,7 +22,7 @@
   {id:'special:NVIS',label:'Flight entry → NVIS flights',unit:'flights'},
   {id:'flights:all',label:'Flight logbook → Recorded flights (all operations)',unit:'flights'},
   {id:'flights:night',label:'Flight logbook → Night flights (recorded night time)',unit:'flights'},
-  {id:'flights:night-vfr',label:'Flight logbook → Night VFR flights (explicit VFR + night time)',unit:'flights'}
+  {id:'flights:night-vfr',label:'Flight logbook → Night VFR flights (night time > 0, IFR time = 0)',unit:'flights'}
  ]);
  const validDate=s=>typeof s==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(s)&&
    Number.isFinite(Date.parse(s+'T00:00:00Z'))&&new Date(Date.parse(s+'T00:00:00Z')).toISOString().slice(0,10)===s;
@@ -58,12 +58,17 @@
    let n=0;
    if(option.id==='flights:all')n=1;
    else if(option.id==='flights:night'||option.id==='flights:night-vfr'){
-    // Night is recorded duration, not IFR time or number of night movements.
-    // Night VFR MUST have a positively recorded VFR classification. Legacy and
-    // unspecified flights are deliberately excluded; never infer from IFR minutes.
-    const night=f.nightMin,total=f.mins;
-    const validNight=positive(night)&&night>0&&positive(total)&&night<=total;
-    n=validNight&&(option.id!=='flights:night-vfr'||f.flightRules==='VFR')?1:0;
+    // Night-flight threshold uses validated recorded night duration, not
+    // night movements. Per HeliLog's user-selected tracking convention,
+    // *zero recorded IFR minutes* is treated as a VFR flight. This does not
+    // independently establish the flight's actual regulatory flight rules.
+    const night=Number(f.nightMin),total=Number(f.mins);
+    const validNight=Number.isSafeInteger(night)&&night>0&&
+      Number.isSafeInteger(total)&&total>0&&night<=total;
+    const rawIFR=f.ifrMin;
+    const ifr=(rawIFR===undefined||rawIFR===null||rawIFR==='')?0:Number(rawIFR);
+    const validIFR=Number.isSafeInteger(ifr)&&ifr>=0&&ifr<=total;
+    n=validNight&&(option.id!=='flights:night-vfr'||(validIFR&&ifr===0))?1:0;
    }
    else{
     const code=option.id.slice(8);
@@ -93,5 +98,5 @@
     evidenceFlights:evidence.length,missingCycleCounts:unrecorded,
     certified:false,source:'flight',disclaimer:'Recorded flight activity only; does not confirm operator approval, crew qualifications, or EASA privileges.'});
  }
- return Object.freeze({version:'2.38',OPTIONS,optionFor,validate,assess});
+ return Object.freeze({version:'2.38.1',OPTIONS,optionFor,validate,assess});
 });

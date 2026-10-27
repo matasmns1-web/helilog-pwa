@@ -251,14 +251,6 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
   <div class="mini">Uncheck to manually override night minutes. Older flights retain their original entries until you opt in.</div>
 </div>
   <div class="field"><label>IFR time (minutes)</label><input id="ifrMin" type="number" min="0" value="0"></div>
-  <div class="field"><label for="flightRules">Flight rules</label>
-    <select id="flightRules">
-      <option value="">Not specified</option>
-      <option value="VFR">VFR</option>
-      <option value="IFR">IFR</option>
-    </select>
-    <div class="mini">Flight rules are separate from recorded IFR instrument time. Choose VFR only when confirmed from your flight evidence; older entries remain unspecified.</div>
-  </div>
 </div>
 
 <div id="nightCalcStatus" class="note" role="status" aria-live="polite" style="margin-top:10px">Enter flight date, UTC times and aerodrome coordinates to calculate night time.</div>
@@ -359,7 +351,6 @@ if(existing){
   $('#ldgNight').value=existing.landingNight||0;
   $('#nightMin').value=existing.nightMin||0;
   $('#ifrMin').value=existing.ifrMin||0;
-  $('#flightRules').value=['VFR','IFR'].includes(existing.flightRules)?existing.flightRules:'';
   // Pre-V1.41.2 entries only have instrMin; automatically enable the control
   // when those earlier flights have recorded instructor time.
   const hasInstructorFlag=Object.prototype.hasOwnProperty.call(existing,'instructorSelected');
@@ -843,9 +834,6 @@ function saveFlight(){
    return showFormError('Night and IFR times must be whole, non-negative minutes.');
   if(night>m) return showFormError('Night time cannot be greater than total flight time.');
   if(ifr>m) return showFormError('IFR time cannot be greater than total flight time.');
-  const flightRules=$('#flightRules').value;
-  if(!['','VFR','IFR'].includes(flightRules))
-   return showFormError('Choose VFR, IFR or Not specified for flight rules.');
 
   const specialOps=collectSpecialOps(m);
   if(specialOps===null)return;
@@ -897,7 +885,6 @@ function saveFlight(){
       distanceKm:nightPreview?.distanceKm??null
     },
     ifrMin:ifr,
-    flightRules:flightRules,
     takeoffDay:Number($('#toDay').value||0),
     takeoffNight:Number($('#toNight').value||0),
     landingDay:Number($('#ldgDay').value||0),
@@ -936,7 +923,6 @@ function flight(id){const entry=effectiveFlight(S.flights.find(x=>x.id===id));if
 <h2 style="margin-top:22px">${f.dep} ${f.off||''} → ${f.arr} ${f.on||''}</h2>
 <div class="kpi-grid"><div class="card"><div class="label">Total time</div><div class="big">${fmt(f.mins)}</div></div><div class="card"><div class="label">Pilot function</div><div class="big" style="font-size:20px">${f.role}</div></div><div class="card"><div class="label">Night</div><div class="big">${fmt(f.nightMin||0)}</div></div><div class="card"><div class="label">IFR</div><div class="big">${fmt(f.ifrMin||0)}</div></div></div>
 <div class="mini" style="margin-top:12px">Night entry: ${f.nightCalculation?.mode==='automatic'?'Automatically estimated from aerodrome coordinates and civil twilight':'Manually entered / legacy record'}.</div>
-<div class="mini" style="margin-top:6px"><b>Flight rules:</b> ${['VFR','IFR'].includes(f.flightRules)?f.flightRules:'Not specified'} · Recorded IFR minutes are a separate value.</div>
 <div class="formgrid" style="margin-top:18px"><div><b>Name of PIC</b><div class="muted">${htmlEscape(displayPICName(f)||'—')}</div></div><div><b>Engine configuration</b><div class="muted">✓ ${engineCode(a)==='ME'?'Multi-engine (ME)':'Single-engine (SE)'}</div></div><div><b>Pilot configuration</b><div class="muted">${flightPilotConfig(f)==='multi'?'Multi-pilot':'Single-pilot'}</div></div><div><b>Configuration time</b><div class="muted">${(()=>{let c=configurationTimes(f);return c.multi?`Multi-pilot ${fmt(c.multi)}`:c.spME?`Single-pilot ME ${fmt(c.spME)}`:`Single-pilot SE ${fmt(c.spSE)}`})()}</div></div><div><b>Take-offs</b><div class="muted">Day ${f.takeoffDay||0} · Night ${f.takeoffNight||0}</div></div><div><b>Landings</b><div class="muted">Day ${f.landingDay||0} · Night ${f.landingNight||0}</div></div><div><b>Cross-country</b><div class="muted">${f.crossCountry?'Yes':'No'}</div></div></div>
 <p><b>FCL.060 recency:</b> <span class="muted">${(()=>{const e=window.HeliLogV233Recency.evidence(f);return e.source==='excluded'?'Excluded from automatic estimate':e.source==='unverified'?'PF evidence not established':e.source==='estimated'?'Automatically estimated day '+e.day+' · night '+e.night+' movements':'Confirmed day '+e.day+' · night '+e.night+' PF sequences';})()}</span></p>
 <p><b>Remarks / endorsements</b><br><span class="muted">${htmlEscape(flightRemarksForDisplay(f)||'—')}</span></p>

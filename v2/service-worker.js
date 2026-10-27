@@ -1,11 +1,11 @@
-const CACHE='helilog-v2-38-night-vfr-flight-rules-1';
+const CACHE='helilog-v2-38-1-ifr-inferred-night-vfr-1';
 const SHELL=[
   './',
   './index.html',
   './recency.js?v=2.33.1',
   './special-recency.js?v=2.34',
   './advanced-recency.js?v=2.35',
-  './operator-flight-monitor.js?v=2.38',
+  './operator-flight-monitor.js?v=2.38.1',
   './operator-rules-ui.js?v=2.37',
   './dark-cockpit.css?v=2.20-cockpit-3',
   './guide.css?v=2.29',

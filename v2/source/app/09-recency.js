@@ -234,7 +234,8 @@ function recency(){
        ${!status.operator&&!row.special&&row.unverifiedFlights?`<p>${row.unverifiedFlights} flight(s) have unverified PF movement pairs excluded from credit.</p>`:''}
        <span class="mini">${status.operator
          ?'Operator-defined requirement · '+htmlEscape(option.operatorName)+'. Self-recorded flight activity only; this is not an EASA result or operator approval.'
-           +(option.rule.monitor==='flights:night'?' Night time greater than zero defines a counted flight; Night VFR status is not independently recorded or verified.':'')
+           +(option.rule.monitor==='flights:night'?' Night time greater than zero defines a counted flight; Night VFR status is not independently verified.':'')
+           +(option.rule.monitor==='flights:night-vfr'?' Night VFR is inferred here from night time greater than zero and IFR time equal to zero. This is a tracking convention, not verified flight rules.':'')
            +(option.result.missingCycleCounts?' '+option.result.missingCycleCounts+' operation flight(s) lack valid recorded cycles.':'')
          :'EASA '+(row.special?row.rule:kind==='night'?'FCL.060(b)(2)':'FCL.060(b)(1)')+' · Rolling preceding 90 days. This indicator does not certify privileges. '+(row.special?'Cycles/sequences are self-recorded and still require operator and crew competency verification.':'')}</span>
      </div>
