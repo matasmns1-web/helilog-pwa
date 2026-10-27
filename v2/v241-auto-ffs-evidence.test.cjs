@@ -51,6 +51,8 @@ test('matches require an explicitly identified FFS, exact ICAO type, known crew 
 test('suggestion is non-crediting, explicit review links exactly one session per operator rule',()=>{
  const f=fixture();assert.equal(f.assess().count,0);
  assert.equal(f.ui.sessionMatches(f.flights[0]).length,1);
+ f.ui.reviewSession('op1','rule1','sim1');
+ assert.doesNotMatch(f.nodes.app.innerHTML,/Session changed since the last review/);
  f.review('2');
  const result=f.assess();
  assert.equal(result.count,2);assert.equal(result.evidenceCount,2);
