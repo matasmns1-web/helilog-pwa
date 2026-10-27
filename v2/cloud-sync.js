@@ -15,10 +15,10 @@
  const extraKinds=["person","qualification","endorsement","settings","correction_proposal"];
  let types=[...coreKinds],extended=false;
  const plural={aircraft:"aircraft",flight:"flights",person:"people",qualification:"qualifications",endorsement:"endorsements"};
- const settingNames=["pilot","broughtForward","broughtForwardByType","broughtForwardImported","broughtForwardImportedAt","siteLocations"];
+ const settingNames=["pilot","broughtForward","broughtForwardByType","broughtForwardImported","broughtForwardImportedAt","siteLocations","operatorProfiles"];
  function items(data,kind){
   if(kind==="correction_proposal")return (data?.printArchive?.corrections||[]).filter(c=>c&&!c.confirmedAt);
-  if(kind==="settings")return settingNames.map(name=>({id:name,data:clone(data?.[name]??(
+  if(kind==="settings")return settingNames.filter(name=>name!=="operatorProfiles"||data?.operatorProfiles!==undefined).map(name=>({id:name,data:clone(data?.[name]??(
    name==="pilot"?{}:name==="broughtForward"?{}:name==="broughtForwardByType"?[]:name==="broughtForwardImported"?false:name==="siteLocations"?[]:""))}));
   return data?.[plural[kind]]||[];
  }
@@ -223,7 +223,7 @@
       // BLOCKED conflict for explicit review, never auto-upload it.
       // Signed archives and pilot settings retain their protected workflows.
       if((["aircraft","flight","person","qualification"].includes(kind)||
-          (kind==="settings"&&["siteLocations","broughtForward"].includes(row.record_id)))
+          (kind==="settings"&&["siteLocations","broughtForward","operatorProfiles"].includes(row.record_id)))
         &&!pendingKeys.has(k)){
        pending.push({kind,id:row.record_id,action:"put",payload:clone(current),
         baseRevision:Number.isInteger(versions[k])?versions[k]:null,
@@ -344,6 +344,7 @@
    note:q.unqueuedRecovery?"This device has a local difference that was not previously queued. Compare both copies before any upload.": 
     q.kind==="correction_proposal"?"Pending archived-flight corrections require manual review; do not force overwrite.":
     q.kind==="endorsement"?"Signed endorsements need archive-safe recovery.":
+    q.kind==="settings"&&q.id==="operatorProfiles"?"Compare operator recency profiles on this device. Both versions are backed up before choosing.":
     q.kind==="settings"&&q.id==="siteLocations"?"Compare aerodrome/location settings on this device before choosing. Neither copy will be discarded without your approval.":
     q.kind==="settings"?"Use the separate pilot-profile workflow or preserve both copies for support.":
     isProtectedRecord(q.kind,q.id)?"Archived records require a separate integrity review.":""
@@ -351,7 +352,7 @@
  }
  function isProtectedRecord(kind,id){
   // Opening totals are reviewable ONLY through explicit, backed-up record comparison.
-  if(kind==="endorsement"||(kind==="settings"&&id!=="siteLocations"&&id!=="broughtForward"))return true;
+  if(kind==="endorsement"||(kind==="settings"&&id!=="siteLocations"&&id!=="broughtForward"&&id!=="operatorProfiles"))return true;
   if(kind==="flight" && typeof root.isArchivedFlight==="function")return !!root.isArchivedFlight(id);
   if(kind==="aircraft" && typeof root.archivedFlightIdsForAircraft==="function")
    return !!root.archivedFlightIdsForAircraft(id);
@@ -774,6 +775,8 @@
     const records=r.filter(row=>row.kind===kind);
     const fromCloud=records.map(row=>clone(row.payload));
     if(kind==="settings"){
+     // Explicit cloud adoption has a verified pre-extension safety snapshot;
+     // legacy device-only operator profiles are additionally retained separately.
      for(const item of fromCloud)if(settingNames.includes(item.id))next[item.id]=clone(item.data);
     }else next[plural[kind]]=fromCloud;
     for(const row of records){

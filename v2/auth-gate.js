@@ -1,5 +1,5 @@
 /* HeliLog V2.3 private login gate. No automatic import of V2.2 local data. */
-const HELILOG_TEST_VERSION='V2.39';
+const HELILOG_TEST_VERSION='V2.39.1';
 let v23Unlocked=false,v23AuthBusy=false,v23AuthMessage="";
 let v23RecoveryStage="signin",v23InviteStage="signin";
 function v23Escape(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
@@ -320,6 +320,13 @@ async function v23EnterWorkspace(auth){
   if(workspace.people?.[0])workspace.people[0].name=workspace.pilot.name;
   localStorage.setItem(key,JSON.stringify(workspace));
  }
+ // Stage the existing account-only browser rules before the first cloud pull.
+ // The legacy copy remains in localStorage so it can always be recovered.
+ const legacyRules=window.HeliLogV236OperatorRulesUI?.legacyForAccount?.(id);
+ if(legacyRules && workspace.operatorProfiles===undefined){
+  workspace={...workspace,operatorProfiles:legacyRules};
+  localStorage.setItem(key,JSON.stringify(workspace));
+ }
  KEY=key;S=workspace;
  if(typeof window.HeliLogCloud.client!=="function")
   throw Error("HeliLog loaded an outdated cached cloud module. Close and reopen the app, then reload the website while online. Your account and existing data are safe.");
@@ -342,7 +349,8 @@ async function v23EnterWorkspace(auth){
      broughtForwardImported:next.broughtForwardImported??S.broughtForwardImported,
      broughtForwardImportedAt:next.broughtForwardImportedAt??S.broughtForwardImportedAt,
      // These settings are synced as a record and must be applied too.
-     siteLocations:next.siteLocations??S.siteLocations};
+     siteLocations:next.siteLocations??S.siteLocations,
+     operatorProfiles:next.operatorProfiles??S.operatorProfiles};
    // Commit one complete account state, or keep the old one on failure.
    localStorage.setItem(KEY,JSON.stringify(updated));
    S=updated;
@@ -356,7 +364,9 @@ async function v23EnterWorkspace(auth){
  if(stored===null && !window.HeliLogV23Sync.extended()){
   try{
    const setup=await window.HeliLogV23Sync.accountSetup();
-   if(setup.hasCloud)await window.HeliLogV23Sync.activateExtension("cloud");
+   if(setup.hasCloud && legacyRules){
+    v22CloudNotice="This device has older custom operator rules. Both the local copy and cloud copy are preserved. Open Cloud Account to choose the existing cloud account data explicitly after saving a safety snapshot.";
+   }else if(setup.hasCloud)await window.HeliLogV23Sync.activateExtension("cloud");
   }catch(error){
    v22CloudNotice="Automatic account setup needs review. Local data was retained: "+(error.message||error);
   }

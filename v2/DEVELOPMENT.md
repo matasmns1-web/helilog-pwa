@@ -296,3 +296,8 @@ Add Rule opens and focuses the form; validation messages appear inline without c
 - A previously synced flight/aircraft/person/qualification that is absent locally while still present remotely, with no queued deletion, is **never silently resurrected**. The owner must review whether to keep the deletion or restore the cloud record.
 - Existing revision-checked updates remain in place. Signed endorsements, archived records and restricted settings cannot be auto-resolved through ordinary controls. A genuinely new device still imports unseen cloud records.
 - New regression tests cover interrupted edits/deletions, both review choices and archive protection. No Supabase migration or production deployment. The production website remains V2.31.4.
+
+## V2.39.1 — custom operator recency cloud sync (TEST)
+- Profile/rule definitions and active profile are stored in account-synced `settings:operatorProfiles` using existing revision-checked `helilog_records` transport.
+- Old per-browser profiles are verified and copied before the first cloud pull, while legacy keys remain untouched for recovery. Empty devices do not create competing records.
+- Differing cloud/device copies require manual review and safety backup; EASA recency and signed archives remain unchanged. No Supabase migration; production is unchanged.

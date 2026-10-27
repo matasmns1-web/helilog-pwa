@@ -354,6 +354,25 @@ function save(){
     return false;
   }
 }
+// V2.39.1: custom operator profiles share private account settings transport.
+window.HeliLogOperatorSyncBridge=Object.freeze({
+ read(){return S.operatorProfiles===undefined?null:JSON.parse(JSON.stringify(S.operatorProfiles));},
+ write(data){
+  if(!v23AccountWorkspace())throw Error('Sign into the cloud account first.');
+  const previous=S.operatorProfiles;
+  S.operatorProfiles=JSON.parse(JSON.stringify(data));
+  try{
+   const bytes=JSON.stringify(S);
+   localStorage.setItem(KEY,bytes);
+   if(localStorage.getItem(KEY)!==bytes)throw Error('Storage verification failed.');
+  }catch(e){
+   if(previous===undefined)delete S.operatorProfiles;else S.operatorProfiles=previous;
+   throw Error('Could not preserve custom rules on this device: '+e.message);
+  }
+  try{window.HeliLogV23Sync.track(S);}
+  catch(e){throw Error('Rules are saved on this device, but cloud sync needs attention: '+e.message);}
+ }
+});
 function fmt(n){n=Math.max(0,Number(n)||0);return Math.floor(n/60)+':'+String(n%60).padStart(2,'0')}
 function parseHM(v){if(!v)return 0;let p=v.split(':').map(Number);return (p[0]||0)*60+(p[1]||0)}
 function ac(id){return S.aircraft.find(a=>a.id===id)}

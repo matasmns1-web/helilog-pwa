@@ -1,6 +1,6 @@
-/* HeliLog V2.37 TEST — local, account-scoped operator-rule editor.
+/* HeliLog V2.39.1 TEST — account-scoped operator-rule editor.
  * Custom operator guidance ONLY. Never overwrites EASA counters or flights.
- * Rules stay on this device, not in account cloud sync or signed archives.
+ * Account workspaces sync rules; signed archives remain unchanged.
  */
 (function(root,factory){
  const api=factory(root);
@@ -56,6 +56,11 @@
  }
  function read(){
    const {key,ownerId}=context();
+   if(typeof root.v23AccountWorkspace==='function'&&root.v23AccountWorkspace()){
+     if(!root.HeliLogOperatorSyncBridge?.read)throw Error('Cloud operator storage is unavailable. Reload online.');
+     const value=root.HeliLogOperatorSyncBridge.read();
+     return value===null||value===undefined?{version:1,ownerId,activeId:null,profiles:[]}:validate(value,ownerId);
+   }
    const raw=root.localStorage.getItem(key);
    if(raw===null)return {version:1,ownerId,activeId:null,profiles:[]};
    if(raw.length>150000)throw Error('Stored operator profiles exceed the safety limit.');
@@ -65,8 +70,21 @@
  function write(data){
    const {key,ownerId}=context();
    const checked=validate(data,ownerId);
-   root.localStorage.setItem(key,JSON.stringify(checked));
+   if(typeof root.v23AccountWorkspace==='function'&&root.v23AccountWorkspace()){
+     if(!root.HeliLogOperatorSyncBridge?.write)throw Error('Cloud operator storage is unavailable. Nothing was replaced.');
+     root.HeliLogOperatorSyncBridge.write(checked);
+   }else root.localStorage.setItem(key,JSON.stringify(checked));
    return checked;
+ }
+ // Read-only, one-time source for moving earlier browser rules to account sync.
+ // Never delete the old local storage key; it is a recovery copy.
+ function legacyForAccount(ownerId){
+   if(!/^[0-9a-f-]{36}$/i.test(String(ownerId)))throw Error('Invalid operator-profile account ID.');
+   const raw=root.localStorage.getItem(PREFIX+ownerId);
+   if(raw===null)return null;
+   if(raw.length>150000)throw Error('Saved operator rules exceed the safety limit.');
+   let data;try{data=JSON.parse(raw);}catch{throw Error('Saved operator rules cannot be read. Nothing was overwritten.');}
+   return validate(data,ownerId);
  }
  function refresh(){page();}
  function fail(e){note=(e?.message||String(e));refresh();}
@@ -263,7 +281,9 @@
      '<button class="btn" onclick="go(\'recency\')">← Recency</button>')+
      '<div class="card"><div class="head"><div><h2>Custom operator profiles</h2><div class="muted">Select the operator whose internal requirements you want to track.</div></div>'+
      '<button class="btn primary" type="button" onclick="HeliLogV236OperatorRulesUI.showCreate()">Add operator</button></div>'+
-     '<p class="mini">Saved only in this browser for this HeliLog account or local workspace. Not cloud-synced, included in signed archives, or part of encrypted cloud backups.</p>'+
+     (typeof root.v23AccountWorkspace==='function'&&root.v23AccountWorkspace()?
+       '<p class="mini">Custom operator profiles sync privately between signed-in devices when extended cloud sync is enabled. Conflicts require review. EASA recency and signed archives remain unchanged.</p>':
+       '<p class="mini">Local sandbox profiles remain on this device, not in your account cloud.</p>')+
      (note?'<p role="status" class="mini">'+esc(note)+'</p>':'')+
      (addingProfile||!data.profiles.length?'<div class="field"><label for="operatorProfileName">Operator name</label>'+
        '<input maxlength="120" id="operatorProfileName" placeholder="Operator name"></div>'+
@@ -320,6 +340,6 @@
      return active?esc(active.operator)+' · '+active.rules.length+' custom rule'+(active.rules.length===1?'':'s'):'No operator profile active';
    }catch{return 'Operator profiles unavailable';}
  }
- return Object.freeze({storageKey,read,validate,page,summary,createProfile,showCreate,
+ return Object.freeze({storageKey,read,write,validate,legacyForAccount,page,summary,createProfile,showCreate,
    cancelCreate,select,activate,removeProfile,renameProfile,editRule,saveRule,removeRule,monitorChanged,recencySummary,dashboardOptions});
 });

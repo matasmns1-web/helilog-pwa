@@ -31,6 +31,10 @@ function fixture(){
   isSimulatorSession:f=>f.entryType==='simulator',compareFlightsNewest:(a,b)=>b.date.localeCompare(a.date),
   flightPilotConfig:f=>f.pilotConfig
  };
+ ctx.HeliLogOperatorSyncBridge={
+  read:()=>JSON.parse(store.get('helilog_operator_profiles_v1:'+owner)||'null'),
+  write:data=>store.set('helilog_operator_profiles_v1:'+owner,JSON.stringify(data))
+ };
  ctx.window=ctx;vm.createContext(ctx);vm.runInContext(uiSource,ctx);vm.runInContext(recencySource,ctx);
  return {ctx,store,flights,aircraft,nodes,before:JSON.stringify(flights),call:s=>vm.runInContext(s,ctx),
    setOwner:x=>owner=x,setSandbox:x=>sandbox=x,date:today};

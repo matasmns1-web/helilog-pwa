@@ -1,4 +1,4 @@
-const CACHE='helilog-v2-39-cloud-recovery-1';
+const CACHE='helilog-v2-39-1-operator-cloud-1';
 const SHELL=[
   './',
   './index.html',
@@ -6,7 +6,7 @@ const SHELL=[
   './special-recency.js?v=2.34',
   './advanced-recency.js?v=2.35',
   './operator-flight-monitor.js?v=2.38.1',
-  './operator-rules-ui.js?v=2.37',
+  './operator-rules-ui.js?v=2.39.1',
   './dark-cockpit.css?v=2.20-cockpit-3',
   './guide.css?v=2.29',
   './manifest.webmanifest',
@@ -23,8 +23,8 @@ const SHELL=[
   './cloud-config.js?v=2.19-locations-1',
   './cloud-foundation.js?v=2.19-locations-1',
   './cloud-view.js?v=2.19-locations-1',
-  './cloud-sync.js?v=2.39-unsent-recovery-1',
-  './auth-gate.js?v=2.19-locations-1',
+  './cloud-sync.js?v=2.39.1-operator-sync-1',
+  './auth-gate.js?v=2.39.1-operator-sync-1',
   './cloud-archives.js?v=2.19-locations-1',
   './archive-integrity.js?v=2.19-locations-1',
   './recovery.js?v=2.19-locations-1',
