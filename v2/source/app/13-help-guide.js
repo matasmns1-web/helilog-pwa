@@ -269,9 +269,14 @@ const HELILOG_GUIDE_TOPICS=[
 ];
 const HELILOG_GUIDE_UPDATES=[
   {
+    "v": "V2.38.1",
+    "name": "Night VFR uses existing IFR and night-time entries",
+    "detail": "Removed the separate VFR/IFR selector. For custom Night VFR recency, each distinct flight with positive night time and zero IFR minutes counts once. This is a user-selected heuristic; actual VFR flight rules are not independently verified. Existing flight records and archives are unchanged."
+  },
+  {
     "v": "V2.38",
     "name": "Recorded flight rules and Night VFR operator monitoring",
-    "detail": "Flight entry now offers VFR, IFR or Not specified. Night VFR operator rules count only records explicitly marked VFR with valid positive night minutes. Existing flights remain unclassified until individually reviewed; archived entries use correction records."
+    "detail": "Earlier test-only release introducing a VFR/IFR selector. Superseded by V2.38.1: flight entry again uses only the existing Night and IFR time fields, and custom Night VFR uses zero recorded IFR minutes as the VFR assumption."
   },
   {
     "v": "V2.37",

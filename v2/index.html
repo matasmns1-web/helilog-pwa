@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.38 — Flight Rules and Night VFR · Test</title>
+<title>HeliLog V2.38.1 — Night VFR from IFR Time · Test</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -589,7 +589,7 @@ html.helilog-test-mode .brand::after{
 <link rel="stylesheet" href="./guide.css?v=2.29" media="screen">
 </head>
 <body><div class="layout">
-<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.38 · TEST ENVIRONMENT</span></div><nav>
+<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.38.1 · TEST ENVIRONMENT</span></div><nav>
 <div class="nav-group-label">Flight operations</div>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="recency">◷ Recency</button>
 <div class="nav-group-label">Records &amp; assets</div>
@@ -687,7 +687,7 @@ html.helilog-test-mode .brand::after{
 <script src="./recency.js?v=2.33.1"></script>
 <script src="./special-recency.js?v=2.34"></script>
 <script src="./advanced-recency.js?v=2.35"></script>
-<script src="./operator-flight-monitor.js?v=2.38"></script>
+<script src="./operator-flight-monitor.js?v=2.38.1"></script>
 <script src="./operator-rules-ui.js?v=2.37"></script>
 <script>
 const LIVE_KEY='helilog_v2_complete_test_data'; // Separate V2 test browser key.
@@ -3685,14 +3685,6 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
   <div class="mini">Uncheck to manually override night minutes. Older flights retain their original entries until you opt in.</div>
 </div>
   <div class="field"><label>IFR time (minutes)</label><input id="ifrMin" type="number" min="0" value="0"></div>
-  <div class="field"><label for="flightRules">Flight rules</label>
-    <select id="flightRules">
-      <option value="">Not specified</option>
-      <option value="VFR">VFR</option>
-      <option value="IFR">IFR</option>
-    </select>
-    <div class="mini">Flight rules are separate from recorded IFR instrument time. Choose VFR only when confirmed from your flight evidence; older entries remain unspecified.</div>
-  </div>
 </div>
 
 <div id="nightCalcStatus" class="note" role="status" aria-live="polite" style="margin-top:10px">Enter flight date, UTC times and aerodrome coordinates to calculate night time.</div>
@@ -3793,7 +3785,6 @@ if(existing){
   $('#ldgNight').value=existing.landingNight||0;
   $('#nightMin').value=existing.nightMin||0;
   $('#ifrMin').value=existing.ifrMin||0;
-  $('#flightRules').value=['VFR','IFR'].includes(existing.flightRules)?existing.flightRules:'';
   // Pre-V1.41.2 entries only have instrMin; automatically enable the control
   // when those earlier flights have recorded instructor time.
   const hasInstructorFlag=Object.prototype.hasOwnProperty.call(existing,'instructorSelected');
@@ -4277,9 +4268,6 @@ function saveFlight(){
    return showFormError('Night and IFR times must be whole, non-negative minutes.');
   if(night>m) return showFormError('Night time cannot be greater than total flight time.');
   if(ifr>m) return showFormError('IFR time cannot be greater than total flight time.');
-  const flightRules=$('#flightRules').value;
-  if(!['','VFR','IFR'].includes(flightRules))
-   return showFormError('Choose VFR, IFR or Not specified for flight rules.');
 
   const specialOps=collectSpecialOps(m);
   if(specialOps===null)return;
@@ -4331,7 +4319,6 @@ function saveFlight(){
       distanceKm:nightPreview?.distanceKm??null
     },
     ifrMin:ifr,
-    flightRules:flightRules,
     takeoffDay:Number($('#toDay').value||0),
     takeoffNight:Number($('#toNight').value||0),
     landingDay:Number($('#ldgDay').value||0),
@@ -4370,7 +4357,6 @@ function flight(id){const entry=effectiveFlight(S.flights.find(x=>x.id===id));if
 <h2 style="margin-top:22px">${f.dep} ${f.off||''} → ${f.arr} ${f.on||''}</h2>
 <div class="kpi-grid"><div class="card"><div class="label">Total time</div><div class="big">${fmt(f.mins)}</div></div><div class="card"><div class="label">Pilot function</div><div class="big" style="font-size:20px">${f.role}</div></div><div class="card"><div class="label">Night</div><div class="big">${fmt(f.nightMin||0)}</div></div><div class="card"><div class="label">IFR</div><div class="big">${fmt(f.ifrMin||0)}</div></div></div>
 <div class="mini" style="margin-top:12px">Night entry: ${f.nightCalculation?.mode==='automatic'?'Automatically estimated from aerodrome coordinates and civil twilight':'Manually entered / legacy record'}.</div>
-<div class="mini" style="margin-top:6px"><b>Flight rules:</b> ${['VFR','IFR'].includes(f.flightRules)?f.flightRules:'Not specified'} · Recorded IFR minutes are a separate value.</div>
 <div class="formgrid" style="margin-top:18px"><div><b>Name of PIC</b><div class="muted">${htmlEscape(displayPICName(f)||'—')}</div></div><div><b>Engine configuration</b><div class="muted">✓ ${engineCode(a)==='ME'?'Multi-engine (ME)':'Single-engine (SE)'}</div></div><div><b>Pilot configuration</b><div class="muted">${flightPilotConfig(f)==='multi'?'Multi-pilot':'Single-pilot'}</div></div><div><b>Configuration time</b><div class="muted">${(()=>{let c=configurationTimes(f);return c.multi?`Multi-pilot ${fmt(c.multi)}`:c.spME?`Single-pilot ME ${fmt(c.spME)}`:`Single-pilot SE ${fmt(c.spSE)}`})()}</div></div><div><b>Take-offs</b><div class="muted">Day ${f.takeoffDay||0} · Night ${f.takeoffNight||0}</div></div><div><b>Landings</b><div class="muted">Day ${f.landingDay||0} · Night ${f.landingNight||0}</div></div><div><b>Cross-country</b><div class="muted">${f.crossCountry?'Yes':'No'}</div></div></div>
 <p><b>FCL.060 recency:</b> <span class="muted">${(()=>{const e=window.HeliLogV233Recency.evidence(f);return e.source==='excluded'?'Excluded from automatic estimate':e.source==='unverified'?'PF evidence not established':e.source==='estimated'?'Automatically estimated day '+e.day+' · night '+e.night+' movements':'Confirmed day '+e.day+' · night '+e.night+' PF sequences';})()}</span></p>
 <p><b>Remarks / endorsements</b><br><span class="muted">${htmlEscape(flightRemarksForDisplay(f)||'—')}</span></p>
@@ -5613,7 +5599,8 @@ function recency(){
        ${!status.operator&&!row.special&&row.unverifiedFlights?`<p>${row.unverifiedFlights} flight(s) have unverified PF movement pairs excluded from credit.</p>`:''}
        <span class="mini">${status.operator
          ?'Operator-defined requirement · '+htmlEscape(option.operatorName)+'. Self-recorded flight activity only; this is not an EASA result or operator approval.'
-           +(option.rule.monitor==='flights:night'?' Night time greater than zero defines a counted flight; Night VFR status is not independently recorded or verified.':'')
+           +(option.rule.monitor==='flights:night'?' Night time greater than zero defines a counted flight; Night VFR status is not independently verified.':'')
+           +(option.rule.monitor==='flights:night-vfr'?' Night VFR is inferred here from night time greater than zero and IFR time equal to zero. This is a tracking convention, not verified flight rules.':'')
            +(option.result.missingCycleCounts?' '+option.result.missingCycleCounts+' operation flight(s) lack valid recorded cycles.':'')
          :'EASA '+(row.special?row.rule:kind==='night'?'FCL.060(b)(2)':'FCL.060(b)(1)')+' · Rolling preceding 90 days. This indicator does not certify privileges. '+(row.special?'Cycles/sequences are self-recorded and still require operator and crew competency verification.':'')}</span>
      </div>
@@ -6799,9 +6786,14 @@ const HELILOG_GUIDE_TOPICS=[
 ];
 const HELILOG_GUIDE_UPDATES=[
   {
+    "v": "V2.38.1",
+    "name": "Night VFR uses existing IFR and night-time entries",
+    "detail": "Removed the separate VFR/IFR selector. For custom Night VFR recency, each distinct flight with positive night time and zero IFR minutes counts once. This is a user-selected heuristic; actual VFR flight rules are not independently verified. Existing flight records and archives are unchanged."
+  },
+  {
     "v": "V2.38",
     "name": "Recorded flight rules and Night VFR operator monitoring",
-    "detail": "Flight entry now offers VFR, IFR or Not specified. Night VFR operator rules count only records explicitly marked VFR with valid positive night minutes. Existing flights remain unclassified until individually reviewed; archived entries use correction records."
+    "detail": "Earlier test-only release introducing a VFR/IFR selector. Superseded by V2.38.1: flight entry again uses only the existing Night and IFR time fields, and custom Night VFR uses zero recorded IFR minutes as the VFR assumption."
   },
   {
     "v": "V2.37",

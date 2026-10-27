@@ -152,6 +152,6 @@ test("The UI-only release retains archived-flight handlers and updates PWA cache
   "downloadFullBackup","restoreCheckedBackup","showIntegrityCheck","editMedical",
   "saveMedical","saveQualification","deleteQualification"])
   assert.match(html,new RegExp("function "+name+"\\("));
- assert.match(html,/HeliLog V2\.38 — Flight Rules and Night VFR · Test/);
- assert.match(worker,/helilog-v2-38-night-vfr-flight-rules-1/);
+ assert.match(html,/HeliLog V2\.38\.1 — Night VFR from IFR Time · Test/);
+ assert.match(worker,/helilog-v2-38-1-ifr-inferred-night-vfr-1/);
 });
