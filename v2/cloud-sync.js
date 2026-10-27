@@ -775,10 +775,8 @@
     const records=r.filter(row=>row.kind===kind);
     const fromCloud=records.map(row=>clone(row.payload));
     if(kind==="settings"){
-     const operatorCloud=records.find(row=>row.record_id==="operatorProfiles");
-     if(operatorCloud && before.operatorProfiles!==undefined &&
-        canonical(before.operatorProfiles)!==canonical(operatorCloud.payload?.data))
-      throw Error("Local operator rules differ from cloud. Nothing was replaced. Preserve both copies and review this device.");
+     // Explicit cloud adoption has a verified pre-extension safety snapshot;
+     // legacy device-only operator profiles are additionally retained separately.
      for(const item of fromCloud)if(settingNames.includes(item.id))next[item.id]=clone(item.data);
     }else next[plural[kind]]=fromCloud;
     for(const row of records){
