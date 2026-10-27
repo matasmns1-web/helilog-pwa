@@ -174,7 +174,7 @@ test("adopting remote aircraft deletion cannot orphan local flights",async()=>{
  assert.equal(b.data.flights[0].aid,"a1");
 });
 
-/* V2.39 — an interrupted queue write must not leave an unreviewable edit
+/* V2.39.1 — an interrupted queue write must not leave an unreviewable edit
  * or silently resurrect an unqueued deletion. */
 async function previouslySyncedFlight(){
  const s=server(),a=device(s),b=device(s);
