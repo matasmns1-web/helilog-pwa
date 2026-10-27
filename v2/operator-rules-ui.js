@@ -110,8 +110,8 @@
  }
  function editRule(id){
    try{const data=read(),p=data.profiles.find(p=>p.id===selectedId);
-     if(!p||id!==null&&!p.rules.some(r=>r.id===id))return;
-     editingRuleId=id||'new';note='';refresh();
+     if(!p||(id!==null&&id!=='new'&&!p.rules.some(r=>r.id===id)))return;
+     editingRuleId=id;note='';refresh();
    }catch(e){fail(e);}
  }
  function saveRule(){
@@ -147,7 +147,7 @@
  function ruleForm(rule){
    const r=rule||{title:'',aircraftType:'',configuration:'all',unit:'cycles',
      periodDays:90,minimum:3,acceptedSources:['flight']};
-   const available=(Array.isArray(root.S?.aircraft)?root.S.aircraft:[])
+   const available=(typeof S!=='undefined'&&Array.isArray(S.aircraft)?S.aircraft:[])
      .map(a=>String(a.icao||'').trim().toUpperCase()).filter(x=>/^[A-Z0-9]{2,8}$/.test(x));
    return '<div class="card" style="margin-top:12px"><h3>'+(rule?'Edit rule':'Add rule')+'</h3>'+
     '<div class="grid">'+
@@ -165,7 +165,7 @@
  }
  function page(){
    let data;try{data=read();}catch(e){
-     root.app.innerHTML=root.header('Operator recency rules','Custom operator-specific requirements',
+     root.document.getElementById('app').innerHTML=root.header('Operator recency rules','Custom operator-specific requirements',
        '<button class="btn" onclick="go(\'recency\')">← Recency</button>')+
        '<div class="card"><h2>Operator rules cannot be opened</h2><p>'+esc(e.message)+'</p><p class="mini">Existing local records have not been changed or reset. Resolve account/storage access before editing.</p></div>';
      return;
@@ -188,7 +188,7 @@
      '<button type="button" class="btn" onclick="HeliLogV236OperatorRulesUI.removeRule(\''+r.id+'\')">Delete</button></div></div>').join(''):'';
    const edit=chosen&&editingRuleId?
      ruleForm(chosen.rules.find(r=>r.id===editingRuleId)||null):'';
-   root.app.innerHTML=root.header('Operator recency rules','Separate from EASA default recency',
+   root.document.getElementById('app').innerHTML=root.header('Operator recency rules','Separate from EASA default recency',
      '<button class="btn" onclick="go(\'recency\')">← Recency</button>')+
      '<div class="card"><div class="head"><div><h2>Custom operator profiles</h2><div class="muted">Select the operator whose internal requirements you want to track.</div></div>'+
      '<button class="btn primary" type="button" onclick="HeliLogV236OperatorRulesUI.showCreate()">Add operator</button></div>'+
