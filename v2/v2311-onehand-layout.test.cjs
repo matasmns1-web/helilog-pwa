@@ -26,5 +26,5 @@ test('original Quick/Full mode, PIC, night and save path are unchanged',()=>{
  assert.match(source,/if\(!editing\)setFlightEntryMode\(quick\?'quick':'full'\)/);
  assert.match(read('service-worker.js'),/helilog-v2-38-1-ifr-inferred-night-vfr-1/);
  assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.38\.1'/);
- assert.match(read('source/index.template.html'),/HeliLog V2\.38\.1 — Flight Rules and Night VFR · Test/);
+ assert.match(read('source/index.template.html'),/HeliLog V2\.38\.1 — Night VFR from IFR Time · Test/);
 });
