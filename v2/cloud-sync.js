@@ -218,11 +218,12 @@
      if(current && (original===undefined?
          (versions[k]!==undefined?localValue!==canonical(row.payload):true):
          localValue!==original)){
-      // A device can retain a pilot profile or aerodrome record edited
-      // before its queue was initialized. Preserve it and create an
-      // explicitly blocked review item; NEVER upload it automatically.
-      // An endorsement/signed archive difference remains protected.
-      if((kind==="person"||(kind==="settings"&&["siteLocations","broughtForward"].includes(row.record_id)))
+      // An interrupted save can leave ordinary flights and aircraft edited
+      // locally with no queued operation. Preserve the unqueued edit as a
+      // BLOCKED conflict for explicit review, never auto-upload it.
+      // Signed archives and pilot settings retain their protected workflows.
+      if((["aircraft","flight","person","qualification"].includes(kind)||
+          (kind==="settings"&&["siteLocations","broughtForward"].includes(row.record_id)))
         &&!pendingKeys.has(k)){
        pending.push({kind,id:row.record_id,action:"put",payload:clone(current),
         baseRevision:Number.isInteger(versions[k])?versions[k]:null,
@@ -231,6 +232,19 @@
        persist();
       }
       problem="A local record differs from the last verified cloud copy: "+k+". Nothing was overwritten. Review the conflict on this device.";
+      state="conflict";notify();return false;
+     }
+     // Known synced locally deleted item, but no queued delete: never
+     // resurrect it silently. Ask the pilot to keep the deletion or cloud
+     // original using the safety-backed ordinary conflict review.
+     if(!current && Number.isInteger(versions[k]) && mirror[k]!==undefined &&
+        ["aircraft","flight","person","qualification"].includes(kind)){
+      pending.push({kind,id:row.record_id,action:"delete",payload:null,
+       baseRevision:versions[k],generation:1,conflict:true,unqueuedRecovery:true});
+      pendingKeys.add(k);
+      persist();
+      problem="A previously synced local record is missing without a queued deletion: "+k+
+       ". Nothing was overwritten. Review both copies on this device.";
       state="conflict";notify();return false;
      }
      if(!current||canonical(current)!==canonical(row.payload)){
