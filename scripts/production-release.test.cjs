@@ -56,6 +56,7 @@ test("candidate packages all required relative PWA assets with separate backend"
   assert.ok(names.length>=22);
   assert.ok(names.includes('aerodrome-lookup.js'));
   assert.ok(names.includes('night-calculation.js'));
+  assert.ok(names.includes('simulator-evidence.js'));
   assert.ok(!names.some(x=>x.endsWith(".cjs")||x.endsWith(".md")||x==="alpha.html"));
   const cfg=fs.readFileSync(path.join(built.output,"cloud-config.js"),"utf8");
   assert.match(cfg,/"environment"\s*:\s*"production"/);
