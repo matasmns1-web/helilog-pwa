@@ -57,8 +57,38 @@ test('invalid rule input cannot overwrite previous saved rules',()=>{
  f.field('opRuleConfig','all');f.field('opRuleUnit','cycles');
  f.field('opRuleMin','1.5');f.field('opRuleDays','90');
  for(const source of engine.SOURCES)f.field('opSource_'+source,'',source==='flight');
+ f.nodes.opRuleFeedback={hidden:true,textContent:'',setAttribute(){}};
+ const beforeHtml=f.nodes.app.innerHTML;
  f.ui.saveRule();assert.equal(JSON.stringify(f.read()),before);
- assert.match(f.nodes.app.innerHTML,/Invalid operator rule/);
+ assert.equal(f.nodes.app.innerHTML,beforeHtml,'failed validation must not redraw or clear entered data');
+ assert.match(f.nodes.opRuleFeedback.textContent,/whole number from 1 to 9999/);
+ assert.equal(f.nodes.opRuleFeedback.hidden,false);
+});
+test('Add Rule scrolls into view; save rejects missing ICAO type without destroying form',()=>{
+ const f=fixture();f.field('operatorProfileName','Local Operator');f.ui.createProfile();
+ let scrolled=0,focused=0;
+ f.nodes.opRuleForm={scrollIntoView:()=>scrolled++};
+ f.nodes.opRuleTitle={value:'NVIS check',focus:()=>focused++};
+ f.ui.editRule('new');
+ assert.match(f.nodes.app.innerHTML,/id="opRuleForm"/);
+ assert.equal(scrolled,1);assert.equal(focused,1);
+ f.nodes.opRuleFeedback={hidden:true,textContent:'',setAttribute(){}};
+ f.field('opRuleType','');
+ f.field('opRuleConfig','all');f.field('opRuleUnit','flights');
+ f.field('opRuleMin','3');f.field('opRuleDays','90');
+ for(const src of engine.SOURCES)f.field('opSource_'+src,'',src==='flight');
+ const html=f.nodes.app.innerHTML;
+ f.ui.saveRule();
+ assert.equal(f.nodes.app.innerHTML,html);
+ assert.match(f.nodes.opRuleFeedback.textContent,/ICAO helicopter type designator/);
+ assert.equal(f.read().profiles[0].rules.length,0);
+});
+test('new-rule edit always resolves active operator selection instead of silently returning',()=>{
+ const f=fixture();f.field('operatorProfileName','Operator');f.ui.createProfile();
+ const id=f.read().profiles[0].id;f.ui.activate(id);
+ f.root.HeliLogV236OperatorRulesUI.select(id);
+ f.ui.editRule('new');
+ assert.match(f.nodes.app.innerHTML,/id="opRuleTitle"/);
 });
 test('cloud owner changes isolate stored profiles; sandbox and local storage differ',()=>{
  const f=fixture();f.field('operatorProfileName','Operator A');f.ui.createProfile();

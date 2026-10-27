@@ -1,4 +1,4 @@
-/* HeliLog V2.36 TEST — local, account-scoped operator-rule editor.
+/* HeliLog V2.36.1 TEST — local, account-scoped operator-rule editor.
  * Custom operator guidance ONLY. Never overwrites EASA counters or flights.
  * Rules stay on this device, not in account cloud sync or signed archives.
  */
@@ -66,6 +66,21 @@
  }
  function refresh(){page();}
  function fail(e){note=(e?.message||String(e));refresh();}
+ function fieldError(message,id){
+   // Validation must never destroy typed values or hide feedback above the fold.
+   const line=dom('opRuleFeedback');
+   if(line){line.textContent=message;line.hidden=false;line.setAttribute?.('role','alert');}
+   else note=message;
+   const field=id?dom(id):null;
+   if(field){field.setAttribute?.('aria-invalid','true');field.focus?.();}
+   else line?.scrollIntoView?.({block:'nearest'});
+ }
+ function focusEditor(){
+   const panel=dom('opRuleForm');
+   panel?.scrollIntoView?.({block:'nearest',behavior:'smooth'});
+   const first=dom('opRuleTitle');
+   first?.focus?.({preventScroll:true});
+ }
  function uid(prefix){return prefix+(root.crypto?.randomUUID?.()||Date.now().toString(36)+'_'+Math.floor(Math.random()*1e9).toString(36));}
  function createProfile(){
    try{
@@ -109,30 +124,49 @@
    }catch(e){fail(e);}
  }
  function editRule(id){
-   try{const data=read(),p=data.profiles.find(p=>p.id===selectedId);
-     if(!p||(id!==null&&id!=='new'&&!p.rules.some(r=>r.id===id)))return;
-     editingRuleId=id;note='';refresh();
+   try{
+     const data=read();
+     const fallback=data.profiles.find(p=>p.id===data.activeId)||data.profiles[0];
+     const p=data.profiles.find(p=>p.id===selectedId)||fallback;
+     if(!p)throw Error('Create an operator profile before adding a rule.');
+     if(id!==null&&id!=='new'&&!p.rules.some(r=>r.id===id))
+       throw Error('Selected rule is no longer available. Refresh this page.');
+     selectedId=p.id;editingRuleId=id;note='';refresh();
+     if(id!==null)focusEditor();
    }catch(e){fail(e);}
  }
  function saveRule(){
    try{
      const data=read(),p=data.profiles.find(p=>p.id===selectedId);
-     if(!p)throw Error('Select an operator.');
-     const v=id=>String(dom(id)?.value||'').trim();
+     if(!p)throw Error('Select an operator profile before saving a rule.');
+     const v=id=>String(dom(id)?.value??'').trim();
      const title=v('opRuleTitle'),aircraftType=v('opRuleType').toUpperCase();
+     if(!title||title.length>120){fieldError('Enter a rule name (up to 120 characters).','opRuleTitle');return;}
+     if(!/^[A-Z0-9]{2,8}$/.test(aircraftType)){
+       fieldError('Enter an ICAO helicopter type designator, such as G2CA, R44 or EC35.','opRuleType');return;
+     }
+     const days=Number(v('opRuleDays')),minimum=Number(v('opRuleMin'));
+     if(!Number.isSafeInteger(minimum)||minimum<1||minimum>9999){
+       fieldError('Minimum number must be a whole number from 1 to 9999.','opRuleMin');return;
+     }
+     if(!Number.isSafeInteger(days)||days<1||days>1095){
+       fieldError('Rolling period must be a whole number from 1 to 1095 days.','opRuleDays');return;
+     }
      const acceptedSources=engine.SOURCES.filter(x=>dom('opSource_'+x)?.checked);
+     if(!acceptedSources.length){
+       fieldError('Choose at least one credit source. This only defines eligibility; it does not award credits.');return;
+     }
      const old=p.rules.find(r=>r.id===editingRuleId);
      if(!old&&p.rules.length>=50)throw Error('Maximum 50 rules per operator.');
      const next={id:old?.id||uid('rule_'),title,aircraftType,
        configuration:v('opRuleConfig'),unit:v('opRuleUnit'),
-       periodDays:Number(v('opRuleDays')),minimum:Number(v('opRuleMin')),
-       acceptedSources};
+       periodDays:days,minimum,acceptedSources};
      if(old)p.rules=p.rules.map(r=>r.id===old.id?next:r);else p.rules.push(next);
-     // The core rule engine validates ICAO type, positive integer periods/counts,
-     // unique identifiers, known units/configurations and permitted sources.
+     // Enforce the same strict operator rule schema as the separate credit engine.
      engine.ruleSet(p);
-     write(data);editingRuleId=null;note='Custom operator rule saved on this device.';refresh();
-   }catch(e){fail(e);}
+     write(data);editingRuleId=null;note='Custom rule saved: '+title+'.';
+     refresh();
+   }catch(e){fieldError('Rule not saved: '+(e?.message||String(e)));}
  }
  function removeRule(id){
    try{const data=read(),p=data.profiles.find(p=>p.id===selectedId);
@@ -149,7 +183,7 @@
      periodDays:90,minimum:3,acceptedSources:['flight']};
    const available=(typeof S!=='undefined'&&Array.isArray(S.aircraft)?S.aircraft:[])
      .map(a=>String(a.icao||'').trim().toUpperCase()).filter(x=>/^[A-Z0-9]{2,8}$/.test(x));
-   return '<div class="card" style="margin-top:12px"><h3>'+(rule?'Edit rule':'Add rule')+'</h3>'+
+   return '<div class="card" id="opRuleForm" style="margin-top:12px;scroll-margin-top:18px"><h3>'+(rule?'Edit rule':'Add rule')+'</h3>'+
     '<div class="grid">'+
     '<div class="field"><label for="opRuleTitle">Rule name</label><input id="opRuleTitle" maxlength="120" value="'+esc(r.title)+'" placeholder="HHO operational recency"></div>'+
     '<div class="field"><label for="opRuleType">ICAO helicopter type</label><input id="opRuleType" list="opAircraftTypes" maxlength="8" value="'+esc(r.aircraftType)+'" placeholder="EC35"><datalist id="opAircraftTypes">'+[...new Set(available)].map(x=>'<option value="'+esc(x)+'"></option>').join('')+'</datalist></div>'+
@@ -160,6 +194,7 @@
     '<div class="field" style="margin-top:12px"><label>Permitted credit sources (explicitly authorised by your operator)</label>'+
     '<div class="actions" style="flex-wrap:wrap">'+engine.SOURCES.map(s=>'<label style="display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="opSource_'+s+'" '+(r.acceptedSources.includes(s)?'checked':'')+'>'+esc(({flight:'Flight',ffs:'Approved FFS',check:'Check',training:'Training'})[s])+'</label>').join('')+'</div></div>'+
     '<p class="mini">A selected source is only eligible for future reviewed credit with evidence. It does not certify a simulator, check or training event.</p>'+
+    '<p class="mini" id="opRuleFeedback" role="status" aria-live="polite" hidden></p>'+
     '<div class="actions"><button type="button" class="btn primary" onclick="HeliLogV236OperatorRulesUI.saveRule()">Save rule</button>'+
     '<button type="button" class="btn" onclick="HeliLogV236OperatorRulesUI.editRule(null)">Cancel</button></div></div>';
  }
