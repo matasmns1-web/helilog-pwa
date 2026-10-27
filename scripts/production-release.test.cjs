@@ -63,7 +63,7 @@ test("candidate packages all required relative PWA assets with separate backend"
   assert.doesNotMatch(cfg,/cabfifnsxpaalgsyicbo/);
   assert.match(cfg,/helilog-pwa\.onrender\.com/);
   const html=fs.readFileSync(path.join(built.output,"index.html"),"utf8");
-  assert.match(html,/V2\.39 · PRIVATE BETA/);
+  assert.match(html,/V2\.39\.1 · PRIVATE BETA/);
   assert.match(html,/Private Beta Candidate/);
   const manifest=JSON.parse(fs.readFileSync(path.join(built.output,"manifest.webmanifest"),"utf8"));
   assert.match(manifest.description,/not independently certified/);
