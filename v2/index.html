@@ -5613,7 +5613,7 @@ function recency(){
            ' ('+option.result.flightCount+' flight-based + '+option.result.evidenceCount+' pilot-reviewed evidence)'
            +(status.threshold?'':' '+Math.max(0,status.target-status.count)+' more needed.')
          :recencyStatusDetails(status)}</p>
-       ${status.threshold&&status.change?`<p>If no further qualifying activity is recorded, the threshold will fall below the minimum on <b>${displayDate(status.change)}</b>.</p>`:''}
+       ${status.threshold&&status.change?`<p>If ${status.operator?'no further qualifying activity is recorded':'no more qualifying flights are made'}, the recorded threshold will fall below the minimum on <b>${displayDate(status.change)}</b>.</p>`:''}
        ${!status.operator&&status.tone==='estimated'&&!row.special?'<p>Estimated using single-pilot PIC/SOLO take-off and landing pairs; approaches are not separately verified.</p>':''}
        ${!status.operator&&row.special&&row.missingCounts?`<p>${row.missingCounts} earlier operation flight(s) lack recorded cycles/sequences and are not automatically credited.</p>`:''}
        ${!status.operator&&!row.special&&row.unverifiedFlights?`<p>${row.unverifiedFlights} flight(s) have unverified PF movement pairs excluded from credit.</p>`:''}
