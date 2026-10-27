@@ -16,10 +16,10 @@
  }
  function classification(session){
   if(!session||session.entryType!=='simulator'||session.simCategory!=='FFS')return null;
-  // A precise ICAO code in the existing device/type field is authoritative.
-  // Preserve the separate type previously saved in V2.41 only when the
-  // device field is a descriptive name, for backwards compatibility.
-  const type=deviceType(session.simDevice)||deviceType(session.simAircraftType);
+  // The dedicated represented ICAO designator is authoritative.
+  // Fall back to a legacy simulator device/type code only when no separate
+  // designator was stored. Older descriptive device labels remain untouched.
+  const type=deviceType(session.simAircraftType)||deviceType(session.simDevice);
   const config=String(session.simPilotConfig||'');
   if(!TYPE.test(type)||!['single','multi'].includes(config))return null;
   if(!/^[A-Za-z0-9:_-]{1,128}$/.test(String(session.id||'')))return null;
