@@ -10,8 +10,9 @@
  'use strict';
  const engine=root.HeliLogV235AdvancedRecency;
  const monitor=root.HeliLogV2362OperatorMonitor;
+ const matcher=root.HeliLogV241SimulatorEvidence;
  const PREFIX='helilog_operator_profiles_v1:';
- let openKey=null,selectedId=null,editingRuleId=null,editingEvidenceId=null,evidenceRuleId=null,addingProfile=false,note='';
+ let openKey=null,selectedId=null,editingRuleId=null,editingEvidenceId=null,evidenceRuleId=null,matchedSessionId=null,addingProfile=false,note='';
  let renderFlights=[],renderAircraft=[],renderAsOf='';
  const esc=x=>String(x??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
  const dom=id=>root.document.getElementById(id);
@@ -30,7 +31,7 @@
  }
  function context(){
    const key=storageKey();
-   if(key!==openKey){openKey=key;selectedId=null;editingRuleId=null;editingEvidenceId=null;evidenceRuleId=null;addingProfile=false;note='';}
+   if(key!==openKey){openKey=key;selectedId=null;editingRuleId=null;editingEvidenceId=null;evidenceRuleId=null;matchedSessionId=null;addingProfile=false;note='';}
    if(!key)throw Error('An authenticated account identifier is required before saving operator rules.');
    return {key,ownerId:key.slice(PREFIX.length)};
  }
@@ -67,8 +68,14 @@
      if(event.ownerId!==ownerId)throw Error('Training evidence belongs to another account.');
      const notes=raw.notes===undefined?'':String(raw.notes);
      if(notes.length>500)throw Error('Training evidence notes exceed 500 characters.');
+     const linked=raw.sessionId!==undefined||raw.sessionProof!==undefined;
+     if(linked && (event.source!=='ffs'||
+       typeof raw.sessionId!=='string'||!/^[A-Za-z0-9:_-]{1,128}$/.test(raw.sessionId)||
+       typeof raw.sessionProof!=='string'||!raw.sessionProof||raw.sessionProof.length>12000))
+       throw Error('Linked simulator evidence has invalid provenance; no records were overwritten.');
      eventIds.add(event.id);
-     return {...event,profileId:raw.profileId,notes};
+     return {...event,profileId:raw.profileId,notes,
+       ...(linked?{sessionId:raw.sessionId,sessionProof:raw.sessionProof}:{})};
    });
    return {version:1,ownerId,activeId:data.activeId,profiles,evidence};
  }
@@ -234,7 +241,19 @@
  function assessRule(profile,rule,data,flights,aircraft,asOf){
    const observed=monitor.assess(rule,flights,aircraft,asOf);
    const related=data.evidence.filter(e=>e.profileId===profile.id&&e.ruleId===rule.id);
-   const assessed=engine.assess(profile,related,asOf,rule.id);
+   const sessions=new Map((Array.isArray(flights)?flights:[])
+     .filter(f=>f?.entryType==='simulator').map(f=>[f.id,f]));
+   // A linked event is credited only if the CURRENT simulator record still
+   // exists, matches the rule and is exactly as reviewed. No stale snapshots,
+   // deleted sessions or duplicate links may inflate the result.
+   const linkedSeen=new Set();
+   const validated=related.filter(e=>{
+     if(!e.sessionId)return true; // Historical manual Phase 3C evidence.
+     if(linkedSeen.has(e.sessionId))return false;
+     linkedSeen.add(e.sessionId);
+     return matcher?.eligibleRecord(e,sessions.get(e.sessionId),rule)===true;
+   });
+   const assessed=engine.assess(profile,validated,asOf,rule.id);
    const allowedFlight=rule.acceptedSources.includes('flight');
    const flightCount=allowedFlight?observed.count:0;
    const evidenceCount=assessed.count;
@@ -276,11 +295,31 @@
      if(!profile?.rules.some(r=>r.id===ruleId))throw Error('Choose an existing operator rule first.');
      if(id!=='new'&&!data.evidence.some(e=>e.profileId===profileId&&e.ruleId===ruleId&&e.id===id))
        throw Error('Selected evidence record is no longer available.');
-     selectedId=profileId;evidenceRuleId=ruleId;editingEvidenceId=id;editingRuleId=null;note='';refresh();
+     const existing=id==='new'?null:data.evidence.find(e=>e.id===id);
+     selectedId=profileId;evidenceRuleId=ruleId;editingEvidenceId=id;
+     matchedSessionId=existing?.sessionId||null;editingRuleId=null;note='';refresh();
      dom('opEvidenceDate')?.focus?.();
    }catch(e){fail(e);}
  }
- function cancelEvidence(){editingEvidenceId=null;evidenceRuleId=null;note='';refresh();}
+ function cancelEvidence(){editingEvidenceId=null;evidenceRuleId=null;matchedSessionId=null;note='';refresh();}
+ function sessionMatches(session){
+   try{return matcher?.suggestions(session,read().profiles)||[];}catch{return [];}
+ }
+ function reviewSession(profileId,ruleId,sessionId){
+   try{
+     const data=read(),profile=data.profiles.find(p=>p.id===profileId),
+       rule=profile?.rules.find(r=>r.id===ruleId);
+     const session=renderFlights.find(f=>f.id===sessionId);
+     if(!rule||!matcher?.matches(session,rule)||!matcher.proof(session))
+       throw Error('This FFS session cannot be matched. Check its ICAO type, crew configuration and the operator rule.');
+     const linked=data.evidence.find(e=>e.profileId===profileId&&
+       e.ruleId===ruleId&&e.sessionId===sessionId);
+     selectedId=profileId;evidenceRuleId=ruleId;
+     editingEvidenceId=linked?.id||'new';matchedSessionId=sessionId;
+     editingRuleId=null;note='Review the simulator report before awarding any operator credit.';
+     refresh();dom('opEvidenceAmount')?.focus?.();
+   }catch(e){fail(e);}
+ }
  function saveEvidence(){
    try{
      const data=read(),profile=data.profiles.find(p=>p.id===selectedId);
