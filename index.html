@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.42 — Private Beta Candidate</title>
+<title>HeliLog V2.43 — Private Beta Candidate</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -589,7 +589,7 @@ html.helilog-test-mode .brand::after{
 <link rel="stylesheet" href="./guide.css?v=2.29" media="screen">
 </head>
 <body><div class="layout">
-<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.42 · PRIVATE BETA</span></div><nav>
+<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.43 · PRIVATE BETA</span></div><nav>
 <div class="nav-group-label">Flight operations</div>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="recency">◷ Recency</button>
 <div class="nav-group-label">Records &amp; assets</div>
@@ -608,7 +608,7 @@ html.helilog-test-mode .brand::after{
 <div id="deleteModal" class="modalbackdrop" onclick="if(event.target===this)closeDeleteModal()">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="deleteTitle">
     <h3 id="deleteTitle">Delete flight?</h3>
-    <p id="deleteText">This will remove the flight from the V2 test logbook.</p>
+    <p id="deleteText">This will remove the flight from your logbook.</p>
     <div class="modal-actions">
       <button class="btn" type="button" onclick="closeDeleteModal()">Cancel</button>
       <button class="btn dangerbtn" type="button" onclick="confirmDeleteFlight()">Delete flight</button>
@@ -1989,10 +1989,7 @@ function csvEscape(v){
 }
 
 function downloadImportTemplate(){
-  let sample=[
-    IMPORT_HEADERS,
-    ['02-10-2026','G2CA','LY-XYZ','Guimbal','Cabri','G2','SE','EYVI','0935','EYKA','1055','single-pilot','1:20','PIC','Matas','1','0','1','0','0:00','0:00','yes','Example cross-country flight','{}','flight','','','','']
-  ];
+  let sample=[IMPORT_HEADERS];
   let csv=sample.map(r=>r.map(csvEscape).join(',')).join('\r\n');
   let b=new Blob([csv],{type:'text/csv;charset=utf-8'});
   let u=URL.createObjectURL(b),a=document.createElement('a');
@@ -3401,7 +3398,7 @@ function printarchive(){
   app.innerHTML=header('Print logbook & archive',
     'Continuous numbered A4 pages with cumulative totals and a permanent printing history.',
     `<button class="btn" onclick="go('logbook')">← Logbook</button>`)+
-    `<div class="card" style="margin-bottom:16px"><div class="head"><h2>Endorsement print archive — V2</h2></div><p class="mini">Print and permanently archive instructor/examiner endorsements on separately numbered pages. Corrections use signed addenda.</p><button class="btn primary" onclick="go('endorsementarchive')">Open endorsement archive</button></div>`+
+    `<div class="card" style="margin-bottom:16px"><div class="head"><h2>Endorsement print archive</h2></div><p class="mini">Print and permanently archive instructor/examiner endorsements on separately numbered pages. Corrections use signed addenda.</p><button class="btn primary" onclick="go('endorsementarchive')">Open endorsement archive</button></div>`+
     `<div class="card" style="margin-bottom:16px">
       <div class="head"><h2>Archive settings</h2></div>
       ${first?`<div class="formgrid">
@@ -3409,7 +3406,7 @@ function printarchive(){
           <input id="archiveFirstPage" type="number" min="1" max="99999" value="${S.printArchive.firstPage}">
         </div>
         <div class="field"><label>Previous paper logbook reference (optional)</label>
-          <input id="archivePaperRef" maxlength="120" placeholder="Original paper logbook, final page 42"
+          <input id="archivePaperRef" maxlength="120" placeholder="Previous paper logbook reference"
             value="${htmlEscape(S.printArchive.paperReference)}">
         </div>
       </div>
@@ -3417,7 +3414,7 @@ function printarchive(){
       :`<div class="muted">The page sequence is locked after the first confirmed batch. The last archived page is
          <b>${batches[batches.length-1].firstPage+batches[batches.length-1].pageCount-1}</b>.
          ${S.printArchive.paperReference?'Original paper logbook: '+htmlEscape(S.printArchive.paperReference):''}</div>`}
-      <div class="mini" style="margin-top:10px">By default, HeliLog starts a new printed volume at Page 1 and carries forward the imported totals from your earlier paper logbook. Keep the original handwritten logbook. Print archives and confirmation records live in this browser and are included in Full Backup.</div>
+      <div class="mini" style="margin-top:10px">By default, HeliLog starts a new printed volume at Page 1 and carries forward the imported totals from your earlier paper logbook. Keep the original handwritten logbook. Archive confirmations are stored with your logbook and included in full backups. Check cloud synchronization before switching devices.</div>
     </div>
     ${archiveSummaryMarkup(draft)}
     ${canPrint?`<div class="card" style="margin-top:14px">
@@ -3497,7 +3494,7 @@ function printarchive(){
         </div>`).join(''):
         '<p class="muted">No confirmed batches yet. Previewing or saving a PDF does not mark flights as archived.</p>'}
     </div>
-    <div class="note" style="margin-top:16px"><b>Important:</b> This is a local record of manually confirmed paper printouts, not proof that a printer completed a job or that the CAA approved the logbook. Keep the signed pages and full JSON backups. Confirm acceptance and countersignature requirements with your licensing authority. V1.43 corrections use a separate signed addendum; the original print batch is immutable. This does not certify compliance with your aviation authority's correction procedures.</div>`;
+    <div class="note" style="margin-top:16px"><b>Important:</b> This is a local record of manually confirmed paper printouts, not proof that a printer completed a job or that the CAA approved the logbook. Keep the signed pages and full JSON backups. Confirm acceptance and countersignature requirements with your licensing authority. Archived-page corrections use a separate signed addendum; the original print batch is immutable. This does not certify compliance with your aviation authority's correction procedures.</div>`;
 }
 
 function isSimulatorSession(f){return f?.entryType==='simulator';}
@@ -3528,12 +3525,12 @@ function addSimulator(editId=null){
            <option value="single"${old?.simPilotConfig==='single'?' selected':''}>Single-pilot</option>
            <option value="multi"${old?.simPilotConfig==='multi'?' selected':''}>Multi-pilot</option>
          </select></div>
-         <div class="field"><label>Device qualification / ID (optional)</label><input id="simQualification" maxlength="60" placeholder="e.g. Q1234" value="${htmlEscape(old?.simQualification||'')}"></div>
+         <div class="field"><label>Device qualification / ID (optional)</label><input id="simQualification" maxlength="60" placeholder="Device qualification or reference" value="${htmlEscape(old?.simQualification||'')}"></div>
          <div class="field"><label>Total time of session (H:MM)</label><input id="simDuration" inputmode="decimal" placeholder="2:30" value="${old?fmt(old.stdMin||0):''}">
            <div class="mini">Include associated pre- and after-flight checks, per the paper-logbook instructions.</div></div>
        </div>
        <div class="field" style="margin-top:12px"><label>Exercise / proficiency check / remarks</label>
-         <textarea id="simRemarks" placeholder="e.g. IR(H) procedures, proficiency check, revalidation">${htmlEscape(old?.remarks||'')}</textarea></div>
+         <textarea id="simRemarks" placeholder="Training exercises or check details">${htmlEscape(old?.remarks||'')}</textarea></div>
        <div class="note">Only the Synthetic Training Devices Session and Remarks columns are filled on paper. Departure, arrival, aircraft flight time, PIC time and take-offs/landings remain blank.</div>
        ${(!!editId&&correctingArchivedId===editId)?`<div class="field"><label>Reason for correction (required)</label><textarea id="correctionReason" placeholder="Explain the correction and evidence" required></textarea></div>`:''}
        <div class="actions"><button class="btn" type="button" onclick="cancelFlightForm('${old?.id||''}')">Cancel</button>
@@ -4629,7 +4626,7 @@ function pilots(){
       </div>`;
     }).join('');
 
-  app.innerHTML=header('Pilots','Saved pilot profiles for quick selection and future certification workflows',
+  app.innerHTML=header('Pilots','Saved pilot profiles for PIC selection and endorsements',
     `<button class="btn primary" onclick="newPerson()">＋ Add pilot</button>`)+
     `<div class="grid aircraft">${cards||'<div class="card"><p class="muted">No saved pilots yet.</p></div>'}</div>`;
 }
@@ -5024,7 +5021,7 @@ function signEndorsement(id){
       <div class="endorsement-body">${htmlEscape(e.text)}</div>
     </div>
 
-    <div class="note" style="margin-bottom:12px">Prototype signature capture only. This is not yet presented as a qualified or authority-approved electronic signature. The endorser should review the text above before signing.</div>
+    <div class="note" style="margin-bottom:12px">A saved or drawn signature does not independently verify identity or provide a qualified electronic signature. The endorser must review the text before signing.</div>
 
     ${v227IsPNG(signer.savedSignatureData)?`<div class="v227-saved-option"><b>Saved signature available</b><p class="muted">The signer may approve applying their profile signature to this specific endorsement.</p><button type="button" class="btn" onclick="v227UseSavedSignature('${e.id}')">Use saved signature</button></div>`:''}
     <div class="signature-canvas-wrap">
@@ -5973,7 +5970,7 @@ function settings(){
       <button class="btn primary" type="button" onclick="installHeliLog()">Install HeliLog</button>
     </div>
     <div id="pwaStatus"></div>
-    <div class="install-help" style="margin-top:10px">On iPhone/iPad, open the hosted HeliLog site in Safari, use <b>Share → Add to Home Screen</b>. Full offline PWA support requires HeliLog to be served over HTTPS. Opening this prototype directly as a file still works for testing, but it cannot register the offline service worker.</div>
+    <div class="install-help" style="margin-top:10px">On iPhone/iPad, open the hosted HeliLog site in Safari, use <b>Share → Add to Home Screen</b>. Full offline PWA support requires HeliLog to be served over HTTPS. Opening HeliLog directly from a local file does not enable offline installation.</div>
   </div>
 
 
@@ -6184,7 +6181,7 @@ function testmode(){
   app.innerHTML=header('Test Mode & safe reset',
     'A separate browser-local sandbox for experimenting with flight logging and paper archives.',
     `<button class="btn" onclick="go('dashboard')">← Dashboard</button>`)+
-    `<div class="note" style="margin-bottom:16px"><b>V2 development notice:</b> This full-interface preview uses new V2-specific storage. Test records created in the earlier modular V2 Alpha interface remain available at <a href="./alpha.html" target="_blank" rel="noopener noreferrer">Previous V2 Alpha workspace</a> on this same device, but the two datasets have not been merged. Export either workspace’s JSON backup if you want to retain its samples.</div>`+
+    `<div class="note" style="margin-bottom:16px"><b>Legacy sandbox records:</b> Earlier local test entries remain separate from this sandbox. Review them in the <a href="./alpha.html" target="_blank" rel="noopener noreferrer">previous Alpha workspace</a> on this device. These test records are not merged automatically; save a separate backup if you need them.</div>`+
     `<div class="card">
       <div class="head"><h2>Current environment: ${TEST_MODE?'⚗ TEST SANDBOX':'MAIN LOGBOOK'}</h2></div>
       <p>${TEST_MODE?
@@ -6441,7 +6438,7 @@ function editOwnProfile(){
     <div class="formgrid">
       <div class="field"><label for="ownFirstName">First name</label><input id="ownFirstName" autocomplete="given-name" required value="${htmlEscape(pilotNameParts().firstName)}"></div>
       <div class="field"><label for="ownLastName">Surname</label><input id="ownLastName" autocomplete="family-name" required value="${htmlEscape(pilotNameParts().lastName)}"></div>
-      <div class="field"><label>Licence type</label><input id="ownLicenceType" value="${htmlEscape(S.pilot.licenceType||'')}" placeholder="CPL(H)"></div>
+      <div class="field"><label>Licence type</label><input id="ownLicenceType" value="${htmlEscape(S.pilot.licenceType||'')}" placeholder="Licence type"></div>
       <div class="field"><label>Licence number</label><input id="ownLicenceNumber" value="${htmlEscape(S.pilot.licenceNumber||'')}" placeholder="Optional"></div>
       <div class="field"><label>Competent authority</label><input id="ownAuthority" value="${htmlEscape(S.pilot.authority||'')}"></div>
     </div>
@@ -6627,8 +6624,8 @@ const HELILOG_GUIDE_TOPICS=[
       "Enter a rule name, ICAO helicopter type, crew configuration, minimum, measurement unit and rolling period.",
       "Select flight, approved FFS, check or training as permissible sources only where the operator requirements allow them.",
       "Use Set active to choose the applicable operator profile; other profiles can remain inactive.",
-      "Profiles save per account on the current device. They are not synced or included in cloud backups.",
-      "This phase stores rule definitions only: no simulator/check evidence, training attachments, notifications or regulatory certification."
+      "Operator profiles, rules and associated evidence synchronize with the signed-in account. Check cloud sync before changing rules from another device.",
+      "Record supporting FFS, check or training references where the operator rule permits them. Only pilot-reviewed evidence is eligible for operator tracking; HeliLog does not upload those files or certify regulatory credit."
     ],
     "route": "operatorrules",
     "action": "Manage operator rules"
@@ -6885,6 +6882,7 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+ {v:"V2.43",name:"Clearer, neutral guidance across HeliLog",detail:"Refresh outdated help and account messages, remove prototype labels from established features, and replace overly specific form examples with generic prompts. The CSV import template now starts blank. Existing records are unchanged."},
  {v:"V2.42",name:"Faster clean printing and simpler Help & Guide",detail:"Getting-started instructions now appear first, with a compact expandable update history. Pre-archive checks run automatically; no findings means direct access to print preview. Findings still need explicit review and acknowledgement, and printed-and-signed confirmation remains separate."},
  {v:"V2.41.2",name:"Cleaner simulator session details",detail:"Simulator details show only the recorded simulator duration. Removed the unnecessary Actual flight time: 0:00 box. Simulator sessions still do not add helicopter flight time or EASA recency."},
  {v:"V2.41.1",name:"Simplify simulator helicopter type entry",detail:"The Represented helicopter ICAO type field is the only aircraft-type input for simulator sessions. Removed the older Device / aircraft type field without deleting legacy device descriptions or previously reviewed linked evidence."},

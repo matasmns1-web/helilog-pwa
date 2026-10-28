@@ -1,4 +1,4 @@
-const CACHE='helilog-v2-42-guide-archive-1';
+const CACHE='helilog-v2-43-copy-audit-1';
 const SHELL=[
   './',
   './index.html',

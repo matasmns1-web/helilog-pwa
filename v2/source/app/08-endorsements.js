@@ -229,7 +229,7 @@ function signEndorsement(id){
       <div class="endorsement-body">${htmlEscape(e.text)}</div>
     </div>
 
-    <div class="note" style="margin-bottom:12px">Prototype signature capture only. This is not yet presented as a qualified or authority-approved electronic signature. The endorser should review the text above before signing.</div>
+    <div class="note" style="margin-bottom:12px">A saved or drawn signature does not independently verify identity or provide a qualified electronic signature. The endorser must review the text before signing.</div>
 
     ${v227IsPNG(signer.savedSignatureData)?`<div class="v227-saved-option"><b>Saved signature available</b><p class="muted">The signer may approve applying their profile signature to this specific endorsement.</p><button type="button" class="btn" onclick="v227UseSavedSignature('${e.id}')">Use saved signature</button></div>`:''}
     <div class="signature-canvas-wrap">

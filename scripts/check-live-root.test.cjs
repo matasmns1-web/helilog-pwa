@@ -8,10 +8,10 @@ const fs=require("node:fs");
 const path=require("node:path");
 const root=path.resolve(__dirname,"..");
 const read=p=>fs.readFileSync(path.join(root,p),"utf8");
-test("root runs V2.42 private beta, not the V1 landing page",()=>{
+test("root runs V2.43 private beta, not the V1 landing page",()=>{
  const index=read("index.html");
- assert.match(index,/<title>HeliLog V2\.42 — Private Beta Candidate<\/title>/);
- assert.match(index,/V2\.42 · PRIVATE BETA/);
+ assert.match(index,/<title>HeliLog V2\.43 — Private Beta Candidate<\/title>/);
+ assert.match(index,/V2\.43 · PRIVATE BETA/);
  assert.match(index,/dark-cockpit\.css\?v=2\.20-cockpit-3/);
  assert.match(index,/guide\.css\?v=2\.29/);
  assert.match(index,/Help &amp; Guide/);
@@ -25,7 +25,7 @@ test("root runs V2.42 private beta, not the V1 landing page",()=>{
  assert.match(index,/src="\.\/night-calculation\.js\?v=2\.19-locations-1"/);
  assert.match(index,/src="\.\/aerodrome-lookup\.js\?v=2\.19-locations-1"/);
  assert.doesNotMatch(index,/Continue with Google/);
- assert.match(index,/not proof that a printer completed|not yet presented as a qualified/i);
+ assert.match(index,/not proof that a printer completed|does not independently verify identity|qualified electronic signature/i);
 });
 test("root config exclusively targets pinned production Supabase",()=>{
  const config=read("cloud-config.js");
@@ -52,7 +52,7 @@ test("all root app scripts exist and static assets match source",()=>{
 });
 test("production offline cache and manifest are isolated from TEST and V1",()=>{
  const sw=read("service-worker.js");
- assert.match(sw,/const CACHE='helilog-v2-42-production-candidate-1'/);
+ assert.match(sw,/const CACHE='helilog-v2-43-production-candidate-1'/);
  assert.match(sw,/dark-cockpit\.css\?v=2\.20-cockpit-3/);
  assert.match(sw,/guide\.css\?v=2\.29/);
  assert.match(sw,/cloud-config\.js\?v=2\.19-locations-1/);
@@ -60,7 +60,7 @@ test("production offline cache and manifest are isolated from TEST and V1",()=>{
  assert.match(sw,/aerodrome-lookup\.js\?v=2\.19-locations-1/);
  assert.doesNotMatch(sw,/const CACHE='helilog-v2-19-locations-1'/);
  const manifest=JSON.parse(read("manifest.webmanifest"));
- assert.match(manifest.name,/V2\.42 — Private Beta/);
+ assert.match(manifest.name,/V2\.43 — Private Beta/);
  assert.equal(manifest.scope,"./");
  assert.equal(manifest.start_url,"./index.html");
 });
