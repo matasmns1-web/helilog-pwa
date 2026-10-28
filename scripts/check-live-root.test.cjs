@@ -17,7 +17,7 @@ test("root runs V2.42 private beta, not the V1 landing page",()=>{
  assert.match(index,/Help &amp; Guide/);
  assert.match(index,/src="\.\/prearchive-review\.js\?v=2\.29\.1"/);
  assert.match(index,/src="\.\/simulator-evidence\.js\?v=2\.41\.2"/);
- assert.match(index,/function v242ArchiveCheck\(\)/);
+ assert.match(index,/function v242ArchiveCheck\(draft=nextArchiveDraft\(\)\)/);
  assert.match(index,/Older updates/);
  assert.match(index,/function syncQuickFlightScrollLock\(\)/);
  assert.match(index,/src="\.\/cloud-foundation\.js\?v=2\.19-locations-1"/);
