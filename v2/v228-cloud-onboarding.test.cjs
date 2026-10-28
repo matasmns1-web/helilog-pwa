@@ -139,7 +139,7 @@ test("one-cloud setup copy, per-device conflict review and recoverable pre-sync 
 });
 test("no database migrations, logbook print or archive formatting changed",()=>{
  assert.match(read("service-worker.js"),/helilog-v2-44-account-reset-1/);
- assert.match(read("source/index.template.html"),/V2\.43/);
+ assert.match(read("source/index.template.html"),/V2\.44/);
  assert.doesNotMatch(read("print.js"),/v28CompleteCloudSetup/);
  assert.doesNotMatch(read("archive-integrity.js"),/v28CompleteCloudSetup/);
 });
