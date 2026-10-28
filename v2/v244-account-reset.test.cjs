@@ -22,7 +22,7 @@ test('reset RPC is isolated to authenticated owner, recent session, transaction-
 });
 test('reset screen requires backup, password, exact phrase, explicit final confirmation',()=>{
  assert.match(app,/Data management/);
- assert.match(app,/Download required safety backup/);
+ assert.match(app,/Download logbook backup/);
  assert.match(app,/DELETE MY LOGBOOK/);
  assert.match(app,/v244ResetPassword/);
  assert.match(app,/signInWithPassword/);
@@ -99,7 +99,7 @@ test('without TEST migration, logbook keeps legacy sync and deletion remains dis
  assert.match(app,/sync\.resetSupported===true/);
 });
 test('production remains separate and test release has a distinct cache',()=>{
- assert.match(read('v2/service-worker.js'),/helilog-v2-44-account-reset-1/);
- assert.match(app,/V2\.44 · TEST ENVIRONMENT/);
- assert.match(read('v2/manifest.webmanifest'),/V2\.44/);
+ assert.match(read('v2/service-worker.js'),/helilog-v2-44-1-data-management-1/);
+ assert.match(app,/V2\.44\.1 · TEST ENVIRONMENT/);
+ assert.match(read('v2/manifest.webmanifest'),/V2\.44\.1/);
 });
