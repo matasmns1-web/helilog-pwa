@@ -1,5 +1,56 @@
-/* V2.31.4. Searchable, offline-friendly guide and current release notes. */
+/* V2.36.1. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
+  {
+    "category": "Flight operations",
+    "title": "Advanced recency — custom operator profiles",
+    "summary": "Configure separate operator thresholds without changing EASA recency calculations.",
+    "steps": [
+      "Open Recency → Manage operator rules.",
+      "Create an operator profile, select Manage, then Add rule.",
+      "Enter a rule name, ICAO helicopter type, crew configuration, minimum, measurement unit and rolling period.",
+      "Select flight, approved FFS, check or training as permissible sources only where the operator requirements allow them.",
+      "Use Set active to choose the applicable operator profile; other profiles can remain inactive.",
+      "Profiles save per account on the current device. They are not synced or included in cloud backups.",
+      "This phase stores rule definitions only: no simulator/check evidence, training attachments, notifications or regulatory certification."
+    ],
+    "route": "operatorrules",
+    "action": "Manage operator rules"
+  },
+  {
+    "category": "Flight operations",
+    "title": "Specialised operations — cycles and recent experience",
+    "summary": "Record operational cycles alongside hours, then review the dedicated NVIS, HHO and offshore 90-day counters.",
+    "steps": [
+      "Open Full Flight Entry → More details → Specialised helicopter operations.",
+      "Tick the operations flown and enter Operation time (H:MM). For operations with cycles, enter completed Day cycles and Night cycles; OFFSHORE Day landings and Night landings count qualifying landings at offshore locations (platforms, helidecks or vessels), including the corresponding take-off, departure and approach.",
+      "A flight marked NVIS counts as one NVIS flight for the 90-day indicator, even if its operation-time entry is zero. NVIS does not use a cycle counter.",
+      "For HHO, only count hoist cycles containing a transition to and from hover. Night counts require recorded night flight time. Old entries without cycle counts remain unknown and are never silently credited.",
+      "Open Recency to see NVIS and Hoist thresholds combined across SP/MP records within an aircraft type, while offshore and passenger-carrying retain separate pilot configurations. Select dashboard indicators as desired.",
+      "These are record-based indicators, not authorisations. Operator approval, relevant crew role, training/checking, supervised operations and approved simulator alternatives must be checked separately."
+    ],
+    "route": "recency",
+    "action": "Open Recency"
+  },
+  {
+    "category": "Flight operations",
+    "title": "Recent experience — passenger and night (FCL.060)",
+    "summary": "Automatically estimate 90-day recency from single-pilot PIC/SOLO movements, with optional manual PF evidence.",
+    "steps": [
+      "Open Recency from the desktop navigation, the mobile More menu, or the dashboard Recent experience summary.",
+      "Under Show on dashboard, tick any combination of Passenger-carrying and Night PIC recency for each aircraft type and pilot configuration. Choices save automatically on this device; if none is selected, no recency card appears on the dashboard.",
+      "Recency follows a rolling preceding 90-day window, not a fixed certificate. The dashboard and details show a status instead of an ever-increasing x/3 counter; when enough qualifying movements are recorded, HeliLog shows when the recorded threshold would lapse if you make no further qualifying flights.",
+      "The Dashboard shows compact recent-experience rows next to Upcoming dates. On the Recency page, expand an item under All recencies to see counts, rule references and more detailed qualification notes.",
+      "Indicators are grouped under their aircraft type with Passenger-carrying and Night PIC as the row names. Single-/multi-pilot labels only appear when the same recency type exists in both pilot configurations.",
+      "A recorded threshold is labelled Met for simplicity; open the recency details to see whether the evidence was independently confirmed or estimated from paired movements. HeliLog does not certify privileges.",
+      "Review each type separately; single-pilot and multi-pilot flying are not automatically combined.",
+      "For single-pilot PIC/SOLO, normal day/night take-off and landing counts automatically provide a recency estimate, including earlier logbook flights. There is no need to enter the same movements again.",
+      "To exclude an exceptional PIC/SOLO flight from the estimate, edit the unsigned flight and tick Exclude from automatic recency estimate under Full details → More details. Other pilot functions and multi-pilot operations still offer manual PF evidence fields.",
+      "Only aircraft types/configurations with real flying history appear; Night PIC recency stays hidden where no night flights have been recorded. Old night experience remains visible even when the 90-day threshold has lapsed.",
+      "Private and training flights may count toward FCL.060 recency when qualified as PF; this does not classify them as CAT. Automatic paired-movement estimates cannot independently verify an approach, and the app never certifies legal currency. Archive history remains unchanged."
+    ],
+    "route": "recency",
+    "action": "Open Recency"
+  },
   {
     "category": "Records & signatures",
     "title": "Reusable pilot signatures",
@@ -14,6 +65,23 @@ const HELILOG_GUIDE_TOPICS=[
     ],
     "route": "pilots",
     "action": "Manage pilot signatures"
+  },
+  {
+    "category": "Safety",
+    "title": "Verify an independent encrypted backup offline",
+    "summary": "Check a saved encrypted file even if Supabase or your account is unavailable.",
+    "steps": [
+      "When signed in, open Settings → Backup & Recovery, make a fresh cloud snapshot, and choose Download encrypted backup. Select a strong passphrase and store it separately from the encrypted file.",
+      "Copy the downloaded encrypted JSON file to independently managed storage such as a secure drive or a separate storage provider. HeliLog does not upload it elsewhere automatically.",
+      "On the sign-in screen expand Verify an encrypted backup without signing in, or while signed in use Backup & Recovery → Verify encrypted backup offline. Both accept the saved encrypted cloud snapshot JSON and its original passphrase.",
+      "Use the encrypted snapshot verifier only for files downloaded through Download encrypted backup. Full HeliLog backups are a separate JSON format and cannot be checked with this verifier. Checking a file does not restore data.",
+      "A successful check confirms the file decrypted, its archived records and signed addenda passed structural checks, and its contents reconstructed with matching SHA-256 fingerprints in memory. No data is uploaded or restored.",
+      "Review the backup date, age and encrypted-file SHA-256 fingerprint. Check that the file you stored independently has the same fingerprint and is recent enough for your needs.",
+      "If a check fails, keep the original file unchanged and make a fresh encrypted backup when the cloud is available. Never uninstall your only working app or overwrite live records while troubleshooting.",
+      "An independent verified file is useful for future disaster recovery, but actually rebuilding a lost Supabase project remains a separate supervised process; this screen is not a restore tool."
+    ],
+    "route": "backups",
+    "action": "Open Backup & Recovery"
   },
   {
     "category": "Start here",
@@ -113,9 +181,9 @@ const HELILOG_GUIDE_TOPICS=[
       "On the desktop website, use Logbook → Export for CSV or a printable PDF copy.",
       "Exporting a PDF does not create numbered, permanently archived pages.",
       "On the web (not the installed iPhone app), open Print Archive and choose the number of pages to include in the next batch.",
-      "Select Review flights before printing. It flags possible duplicate flights, incomplete PIC names, unusual UTC times and discrepancies in totals—without changing any record.",
-      "Open the flagged entries to make corrections if needed. Acknowledge the review for this exact selection; changes to flights or selected pages require another review.",
-      "Only then preview the numbered pages, verify the running totals, print and physically sign them, and separately confirm the printed batch in HeliLog.",
+      "Pre-archive safety checks run automatically for the selected batch. When there are no findings, Preview / Print pages is available immediately. Otherwise select Review flights before printing to inspect possible duplicates, PIC identity, UTC time issues and totals.",
+      "If any findings or page-order warnings are shown, inspect the flagged entries and acknowledge that exact selection. Changing flight data, selected pages or findings requires a fresh check and, if necessary, another review.",
+      "Whether the checks are clean or findings have been acknowledged, preview the numbered pages, verify the running totals, print and physically sign them, and separately confirm the printed batch in HeliLog.",
       "Printing a PDF alone does not create a signed archive. Confirmed pages are locked; amend them through a signed correction addendum."
     ],
     "route": "logbook",
@@ -127,13 +195,13 @@ const HELILOG_GUIDE_TOPICS=[
     "summary": "Check the exact flights about to be printed for common issues before signing.",
     "steps": [
       "On the web open Print Archive, then choose how many pages to include in the next batch.",
-      "Select Review flights before printing to inspect the selected batch. A possible duplicate is compared with your entire logbook, including earlier archived entries.",
+      "HeliLog automatically runs read-only checks against the selected pages and the entire logbook, including earlier archived entries. If there are no findings, skip the acknowledgement page and select Preview / Print pages.",
       "Check missing PIC information and pilot links, flight duration versus UTC off/on times (including overnight flights), unusual very short or long flights, Night/IFR/instructor minutes and take-off versus landing counts.",
       "Review the independent calculations of PIC/Co-pilot/Dual, engine and single-/multi-pilot experience, and carried-forward plus closing totals.",
       "Review overlapping flight intervals, including multiple flights on the same day or an overnight arrival on the next UTC day. Flights that end when another starts are not overlaps.",
       "Use View entry or View related entry to inspect a flagged flight, then select Back to review to return to the same finding. A ticked acknowledgement stays checked only if the selected batch has not changed.",
-      "Edit only an unarchived entry through its normal form. After any flight data or selected page changes, review and acknowledge the updated batch again; never silently change or automatically delete anything.",
-      "Acknowledgement allows printing after you have checked exceptions; it is not official certification. If selected pages or flight records change, repeat the review.",
+      "Edit only an unarchived entry through its normal form. After any flight or page change, HeliLog rechecks the batch and requires acknowledgement if findings remain. Records are never silently changed or deleted.",
+      "When findings exist, select Review flights before printing and acknowledge the exceptions before preview. A clean batch requires no acknowledgement, but HeliLog rechecks safety before both preview and final confirmation.",
       "Print, verify and sign the paper pages before separately confirming the archive. Archived records remain protected."
     ],
     "route": "printarchive",
@@ -200,6 +268,113 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+ {v:"V2.42",name:"Faster clean printing and simpler Help & Guide",detail:"Getting-started instructions now appear first, with a compact expandable update history. Pre-archive checks run automatically; no findings means direct access to print preview. Findings still need explicit review and acknowledgement, and printed-and-signed confirmation remains separate."},
+ {v:"V2.41.2",name:"Cleaner simulator session details",detail:"Simulator details show only the recorded simulator duration. Removed the unnecessary Actual flight time: 0:00 box. Simulator sessions still do not add helicopter flight time or EASA recency."},
+ {v:"V2.41.1",name:"Simplify simulator helicopter type entry",detail:"The Represented helicopter ICAO type field is the only aircraft-type input for simulator sessions. Removed the older Device / aircraft type field without deleting legacy device descriptions or previously reviewed linked evidence."},
+ {v:"V2.41",name:"Match FFS sessions to operator recency",detail:"An FFS session with an explicit ICAO helicopter type and crew configuration suggests matching operator rules. Review the supporting document and enter qualifying manoeuvres before credit is counted. Linked approval becomes ineligible after the simulator session is edited or deleted until reviewed again. Legacy evidence stays intact; no automatic EASA recency credit."},
+ {v:"V2.40",name:"Phase 3C — simulator, check and training evidence",detail:"Add FFS, proficiency/check and training references to operator-specific rules. Draft entries are never counted. Pilot-reviewed entries count only with a document reference and an allowed source; mixed flight/evidence rolling dates remain traceable. The encrypted and revision-checked account cloud carries evidence with its operator profile. No file uploads, official EASA recency credits or operator approval are implied."},
+ {v:"V2.39.1",name:"Custom operator recency rules synchronize between devices",
+ detail:"Operator profiles and rules now sync through the private account cloud. Previous browser-only profiles remain preserved for recovery. Conflicting web/app versions require manual review with a verified backup. EASA recency calculations and signed archives are unchanged."},
+  {
+    "v": "V2.39",
+    "name": "Safer cloud recovery after interrupted local changes",
+    "detail": "If an existing flight or aircraft was edited or removed on this device but its cloud queue was never saved, HeliLog now stops instead of silently overwriting or restoring it. Open Cloud Account and review both copies before choosing, with a verified safety backup. Archived and signed records remain protected."
+  },
+  {
+    "v": "V2.38.1",
+    "name": "Night VFR uses existing IFR and night-time entries",
+    "detail": "Removed the separate VFR/IFR selector. For custom Night VFR recency, each distinct flight with positive night time and zero IFR minutes counts once. This is a user-selected heuristic; actual VFR flight rules are not independently verified. Existing flight records and archives are unchanged."
+  },
+  {
+    "v": "V2.38",
+    "name": "Recorded flight rules and Night VFR operator monitoring",
+    "detail": "Earlier test-only release introducing a VFR/IFR selector. Superseded by V2.38.1: flight entry again uses only the existing Night and IFR time fields, and custom Night VFR uses zero recorded IFR minutes as the VFR assumption."
+  },
+  {
+    "v": "V2.37",
+    "name": "Operator recency dashboard and night-flight monitoring",
+    "detail": "Active custom operator rules now use the same expandable Met / Below threshold recency cards and dashboard checkboxes as EASA. The Night flights source counts validated flights with positive recorded night minutes, but does not independently establish Night VFR."
+  },
+  {
+    "v": "V2.36.2",
+    "name": "Custom rules read recorded flight operations",
+    "detail": "Choose the precise activity source for each operator rule (HESLO cycles, hoist, offshore landings, NVIS or all flights). Recency shows read-only counts. Older unlinked rules require an explicit source selection. The duplicate Settings card was removed."
+  },
+  {
+    "v": "V2.36.1",
+    "name": "Operator rule editor: visible form and validation",
+    "detail": "Add Rule now brings the form into view. Save Rule shows invalid field feedback without discarding entered text or changing flight records."
+  },
+  {
+    "v": "V2.36",
+    "name": "Phase 3B — Custom operator recency profiles",
+    "detail": "Add operator profiles and editable rule thresholds, types, periods, configurations, units and permitted credit sources. All custom rules stay device-local, scoped to the account, and separate from EASA recency results."
+  },
+  {
+    "v": "V2.35",
+    "name": "Phase 3A — advanced recency foundation",
+    "detail": "Simplified Met badges retain their evidence explanations. Add an in-memory custom operator rule and pilot-reviewed credit model for future simulator, check and training evidence. No credits change EASA indicators or synchronized logbook data."
+  },
+  {
+    "v": "V2.34.1",
+    "name": "Offshore landings, compact entry, and clearer specialist recency",
+    "detail": "Offshore now records Day landings and Night landings at qualifying offshore locations (with complete take-off/departure/approach requirements). NVIS and HHO use combined SP/MP records within type, offshore remains SP/MP-specific, and specialised Totals show captured day/night cycles or offshore landings without manufacturing previous-logbook counts."
+  },
+  {
+    "v": "V2.34",
+    "name": "Specialised operations cycles and recency (Phase 2)",
+    "detail": "Full Flight Entry now stores day/night cycles next to operation hours, and complete offshore sequences where appropriate. NVIS counts one flight automatically. Recency shows recorded NVIS, hoist and offshore 90-day thresholds without overwriting historic entries or certifying legal privileges."
+  },
+  {
+    "v": "V2.33.6",
+    "name": "Recency grouped by helicopter type",
+    "detail": "Group dashboard and Recency page entries by helicopter type and put Passenger-carrying or Night PIC first; show single-/multi-pilot only when necessary to distinguish otherwise identical requirements. No change to flight evidence or calculation."
+  },
+  {
+    "v": "V2.33.5",
+    "name": "Clearer recency names",
+    "detail": "Highlight Passenger-carrying and Night PIC in the Recency dashboard, selector and detailed lists, leaving dates and supporting information normal-weight. Compact layout and calculations are unchanged."
+  },
+  {
+    "v": "V2.33.4",
+    "name": "Compact recent-experience dashboard and Recency page",
+    "detail": "Move selected recency into a compact list alongside Upcoming dates, with concise colour-coded statuses. Show all recencies as expandable rows, keeping details and explanations out of the default view."
+  },
+  {
+    "v": "V2.33.3",
+    "name": "Clear rolling recency statuses",
+    "detail": "Condensed dashboard selector; replace growing x/3 counters with requirement/threshold statuses, supporting recorded counts, and the date the 90-day threshold is projected to lapse if no further qualifying flights occur."
+  },
+  {
+    "v": "V2.33.2",
+    "name": "Choose dashboard recency indicators",
+    "detail": "Select passenger-carrying and night recent-experience cards per aircraft type from the Recency page. The dashboard shows only selected indicators; preferences are stored per account on this device without changing flight or cloud records."
+  },
+  {
+    "v": "V2.33.1",
+    "name": "Automatic single-pilot recency and relevant night indicators",
+    "detail": "Auto-estimate PIC/SOLO single-pilot PF movements without extra sequence entry. Hide unused night recency and clarify passenger-carrying eligibility versus the classification of a CAT flight. Keep exceptional-flight opt-out and separate verified evidence."
+  },
+  {
+    "v": "V2.33",
+    "name": "Passenger and night recent experience (Phase 1)",
+    "detail": "Dedicated Recency page and dashboard glance. Separate types/configurations and count only explicitly confirmed PF take-off/approach/landing sequences; older flights remain unverified. No account migrations or archive changes."
+  },
+  {
+    "v": "V2.32.2",
+    "name": "Simpler backup verification",
+    "detail": "Removed legacy unencrypted V2.8 recovery-package download and inspection controls from Backup & Restore. The encrypted snapshot verifier and cloud archive safeguards remain available."
+  },
+  {
+    "v": "V2.32.1",
+    "name": "Clear backup format selection",
+    "detail": "Added signed-in encrypted-file verification with format-specific errors. Inspections remain read-only and never restore data."
+  },
+  {
+    "v": "V2.32",
+    "name": "Offline encrypted recovery verification",
+    "detail": "Verify a separately saved encrypted snapshot from the sign-in screen even without access to the cloud. Decrypts and checks archive consistency in memory; never restores records."
+  },
   {
     "v": "V2.31.4",
     "name": "Quick Flight scroll behavior",
@@ -291,7 +466,13 @@ function helpGuideExpand(open){
  document.querySelectorAll('[data-help-topic]').forEach(el=>{if(!el.hidden)el.open=!!open;});
 }
 function helpGuide(){
- const html=HELILOG_GUIDE_TOPICS.map(topic=>`<details class="card guide-topic" data-help-topic>
+ // Put onboarding immediately before specialist topics, preserving the order
+ // of everything else, including search and expand-all behaviour.
+ const orderedTopics=[...HELILOG_GUIDE_TOPICS].sort((a,b)=>
+  Number(b.category==='Start here')-Number(a.category==='Start here'));
+ const recentUpdates=HELILOG_GUIDE_UPDATES.slice(0,3);
+ const pastUpdates=HELILOG_GUIDE_UPDATES.slice(3);
+ const html=orderedTopics.map(topic=>`<details class="card guide-topic" data-help-topic>
   <summary><span class="guide-topic-label"><small>${htmlEscape(topic.category)}</small><b>${htmlEscape(topic.title)}</b><span class="muted">${htmlEscape(topic.summary)}</span></span><span class="guide-chevron" aria-hidden="true">⌄</span></summary>
   <div class="guide-topic-body"><ol>${topic.steps.map(step=>`<li>${htmlEscape(step)}</li>`).join('')}</ol><div class="guide-topic-actions"><button class="btn" type="button" onclick="go('${topic.route}')">${htmlEscape(topic.action)} →</button></div></div>
  </details>`).join('');
@@ -309,7 +490,10 @@ function helpGuide(){
  <label for="helpSearch" class="guide-search-label">Search instructions</label><input id="helpSearch" class="guide-search" type="search" placeholder="Try: UTC, PIC, archive, backup…" oninput="helpGuideSearch()" autocomplete="off">
  <div class="mini" id="helpSearchResults" role="status" aria-live="polite">${HELILOG_GUIDE_TOPICS.length} topics</div>
  <div class="guide-topics">${html}</div><div id="helpNoResults" class="card" hidden>No matching topics. Try another keyword.</div></section>
- <section class="card guide-updates"><h2>What's new</h2><p class="muted">We update this guide when HeliLog gains new features.</p>
- ${HELILOG_GUIDE_UPDATES.map(x=>`<div class="guide-update"><span class="guide-version">${htmlEscape(x.v)}</span><div><b>${htmlEscape(x.name)}</b><div class="muted">${htmlEscape(x.detail)}</div></div></div>`).join('')}</section>
+ <section class="card guide-updates"><h2>What's new</h2><p class="muted">Recent improvements. Select an update to read details.</p>
+ ${recentUpdates.map((x,i)=>`<div class="guide-update"><span class="guide-version">${htmlEscape(x.v)}</span><details class="guide-update-details" ${i===0?'open':''}><summary><b>${htmlEscape(x.name)}</b></summary><p class="muted">${htmlEscape(x.detail)}</p></details></div>`).join('')}
+ ${pastUpdates.length?`<details class="guide-history"><summary>Older updates (${pastUpdates.length})</summary>
+  ${pastUpdates.map(x=>`<div class="guide-update"><span class="guide-version">${htmlEscape(x.v)}</span><details class="guide-update-details"><summary><b>${htmlEscape(x.name)}</b></summary><p class="muted">${htmlEscape(x.detail)}</p></details></div>`).join('')}
+ </details>`:''}</section>
  <p class="guide-disclaimer">HeliLog helps maintain records. Pilots remain responsible for accurate entries and meeting the rules of their competent authority.</p>`;
 }

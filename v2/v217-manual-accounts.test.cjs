@@ -34,12 +34,12 @@ test("staging stays connected only to existing test backend and private login",(
  assert.match(cloud,/owner|auth\.uid|verifiedClient/i);
 });
 test("version and offline PWA references are coherent",()=>{
- assert.match(page,/<title>HeliLog V2\.31\.4 — Compact Quick Flight · Test<\/title>/);
- assert.equal(manifest.name,"HeliLog V2.31.4 — Compact Quick Flight Test");
- assert.match(worker,/helilog-v2-31-4-quick-scroll-1/);
- assert.match(gate,/HELILOG_TEST_VERSION='V2\.31\.4'/);
+ assert.match(page,/<title>HeliLog V2\.42 — Guide & Archive Fast Path · Test<\/title>/);
+ assert.equal(manifest.name,"HeliLog V2.42 — Guide & Archive Fast Path Test");
+ assert.match(worker,/helilog-v2-42-guide-archive-1/);
+ assert.match(gate,/HELILOG_TEST_VERSION='V2\.42'/);
  for(const asset of ["cloud-config","cloud-foundation","auth-gate","cloud-view","cloud-sync","recovery"]){
-   const ref=asset+".js?v=2.19-locations-1";
+   const ref=asset+".js?v="+(['cloud-sync','auth-gate'].includes(asset)?'2.39.1-operator-sync-1':'2.19-locations-1');
    assert.ok(page.includes(ref),"HTML missing "+ref);
    assert.ok(worker.includes(ref),"service worker missing "+ref);
  }

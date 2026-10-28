@@ -1,5 +1,5 @@
 /* HeliLog V2.3 private login gate. No automatic import of V2.2 local data. */
-const HELILOG_TEST_VERSION='V2.31.4';
+const HELILOG_TEST_VERSION='V2.42';
 let v23Unlocked=false,v23AuthBusy=false,v23AuthMessage="";
 let v23RecoveryStage="signin",v23InviteStage="signin";
 function v23Escape(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
@@ -84,8 +84,55 @@ function v23LoginView(){
  '<button class="btn" type="button" style="width:100%;margin-top:10px" onclick="v23ShowPasswordHelp()">Forgot password?</button>')+
  (TEST_MODE?'<div class="note" style="margin-top:15px">The previous local Test Mode is active. To use cloud login, exit the old sandbox first. Its data remains safely stored.</div>'+
  '<button class="btn" type="button" onclick="v23ExitOldTestMode()">Exit old Test Mode</button>':'')+
+ '<details class="card" style="margin-top:16px"><summary style="cursor:pointer;font-weight:700">Verify an encrypted backup without signing in</summary>'+
+ '<p class="mini">Works offline after HeliLog has loaded. Select a previously downloaded, encrypted cloud snapshot and enter its passphrase. The file stays in this browser; nothing is uploaded, restored, or saved.</p>'+
+ '<form class="form" onsubmit="v232VerifyOfflineFile(event)">'+
+ '<div class="field"><label for="v232OfflineFile">Encrypted HeliLog backup (.json)</label>'+
+ '<input id="v232OfflineFile" type="file" accept=".json,application/json" required></div>'+
+ '<div class="field"><label for="v232OfflinePass">Original encryption passphrase</label>'+
+ '<input id="v232OfflinePass" type="password" autocomplete="off" minlength="12" required></div>'+
+ '<button class="btn" id="v232OfflineButton" type="submit">Check file without cloud</button></form>'+
+ '<div id="v232OfflineResult" class="note" role="status" aria-live="polite" hidden></div>'+
+ '<p class="mini">A successful check verifies decryptability and snapshot structure; it does not create off-provider storage or prove official logbook validity. Keep the backup and passphrase in separate secure places.</p></details>'+
  '<p class="mini" style="margin-top:20px">Your logbook is private to this account. Aircraft and flights sync across devices signed into the same account; records from other accounts are not imported automatically.</p>'+
  '</div></div>';
+}
+
+/* V2.32: a disconnected pilot can verify an already-encrypted external file
+ * without ever authenticating to, uploading to or writing through Supabase. */
+let v232OfflineBusy=false;
+async function v232VerifyOfflineFile(event){
+ event?.preventDefault?.();
+ if(v232OfflineBusy)return;
+ const fileInput=document.getElementById("v232OfflineFile");
+ const passInput=document.getElementById("v232OfflinePass");
+ const result=document.getElementById("v232OfflineResult");
+ const button=document.getElementById("v232OfflineButton");
+ const file=fileInput?.files?.[0];
+ const password=passInput?.value||"";
+ if(passInput)passInput.value=""; // Do not keep passphrase in input or state.
+ if(fileInput)fileInput.value="";
+ if(!result)return;
+ result.hidden=false;result.textContent="Checking this encrypted file locally…";
+ if(!file){result.textContent="Select an encrypted HeliLog file first.";return;}
+ if(file.size>100*1024*1024){result.textContent="File is larger than the 100 MB verification limit.";return;}
+ v232OfflineBusy=true;if(button)button.disabled=true;
+ try{
+  const report=await window.HeliLogV232OfflineCheck.verifyText(await file.text(),password);
+  // This display intentionally excludes pilot names, signatures, and record data.
+  // Hashes help compare independently saved copies without exposing plaintext.
+  result.textContent="VERIFIED IN MEMORY: "+report.records+" records, "+
+   report.archives+" signed print batches, "+report.frozen+" frozen originals, "+
+   report.addenda+" signed addenda. Backup dated "+report.createdAt.slice(0,10)+
+   " ("+report.ageDays+" days old). SHA-256 encrypted file: "+
+   report.encryptedFileSha256+". Recovery fingerprint: "+report.recoveredSha256+
+   ". No cloud connection or account data changes were made."+
+   (report.ageWarning?" WARNING: This backup is over seven days old.":"")+
+   " Store the encrypted file in separately managed storage; this test cannot prove that a copy is offsite.";
+ }catch(e){
+  result.textContent="BACKUP NOT VERIFIED: "+String(e?.message||e)+
+   " No logbook or cloud records were changed.";
+ }finally{v232OfflineBusy=false;if(button)button.disabled=false;}
 }
 
 /* V2.19: recovery is an independent locked screen. Never open a workspace from an email link. */
@@ -273,6 +320,13 @@ async function v23EnterWorkspace(auth){
   if(workspace.people?.[0])workspace.people[0].name=workspace.pilot.name;
   localStorage.setItem(key,JSON.stringify(workspace));
  }
+ // Stage the existing account-only browser rules before the first cloud pull.
+ // The legacy copy remains in localStorage so it can always be recovered.
+ const legacyRules=window.HeliLogV236OperatorRulesUI?.legacyForAccount?.(id);
+ if(legacyRules && workspace.operatorProfiles===undefined){
+  workspace={...workspace,operatorProfiles:legacyRules};
+  localStorage.setItem(key,JSON.stringify(workspace));
+ }
  KEY=key;S=workspace;
  if(typeof window.HeliLogCloud.client!=="function")
   throw Error("HeliLog loaded an outdated cached cloud module. Close and reopen the app, then reload the website while online. Your account and existing data are safe.");
@@ -295,7 +349,8 @@ async function v23EnterWorkspace(auth){
      broughtForwardImported:next.broughtForwardImported??S.broughtForwardImported,
      broughtForwardImportedAt:next.broughtForwardImportedAt??S.broughtForwardImportedAt,
      // These settings are synced as a record and must be applied too.
-     siteLocations:next.siteLocations??S.siteLocations};
+     siteLocations:next.siteLocations??S.siteLocations,
+     operatorProfiles:next.operatorProfiles??S.operatorProfiles};
    // Commit one complete account state, or keep the old one on failure.
    localStorage.setItem(KEY,JSON.stringify(updated));
    S=updated;
@@ -309,7 +364,9 @@ async function v23EnterWorkspace(auth){
  if(stored===null && !window.HeliLogV23Sync.extended()){
   try{
    const setup=await window.HeliLogV23Sync.accountSetup();
-   if(setup.hasCloud)await window.HeliLogV23Sync.activateExtension("cloud");
+   if(setup.hasCloud && legacyRules){
+    v22CloudNotice="This device has older custom operator rules. Both the local copy and cloud copy are preserved. Open Cloud Account to choose the existing cloud account data explicitly after saving a safety snapshot.";
+   }else if(setup.hasCloud)await window.HeliLogV23Sync.activateExtension("cloud");
   }catch(error){
    v22CloudNotice="Automatic account setup needs review. Local data was retained: "+(error.message||error);
   }
@@ -503,6 +560,16 @@ async function v28InspectCloudRecovery(ev){
   if(!v23AccountWorkspace())throw Error("Sign in to the account that owns the backup.");
   if(file.size>100*1024*1024)throw Error("File exceeds the 100 MB read-only verification limit.");
   const parsed=JSON.parse(await file.text());
+  // Never attempt to interpret other backup formats as a V2.8 workspace.
+  // The encrypted checker needs an explicit passphrase; it never restores.
+  if(parsed?.app==="HeliLog"&&parsed?.format==="encrypted-cloud-snapshot"){
+   v28Notice="This is an ENCRYPTED cloud snapshot (V2.9+), not a V2.8 recovery package. Use 'Verify encrypted backup offline' above and enter its passphrase. Your file is unchanged.";
+   return;
+  }
+  if(parsed?.app==="HeliLog"&&parsed?.format==="helilog-full-backup"){
+   v28Notice="This is a FULL LOCAL HeliLog backup, not a V2.8 recovery package. Cloud-account replacement is disabled. Keep this file securely; nothing was restored.";
+   return;
+  }
   const result=await window.HeliLogV28Recovery.verify(parsed,window.HeliLogCloud.snapshot().userId);
   const n=result.counts;
   v28Notice="Recovery file SHA-256 verified ("+n.flights+" flights, "+n.aircraft+" aircraft, "+

@@ -262,8 +262,45 @@ function saveArchiveSetup(){
  * Never store a review decision in the logbook or the signed archive.
  */
 let pendingArchiveReview=null;
+let v242ReviewViewedKey=null;
+/* V2.42: Evaluate the SAME read-only checker immediately before each
+ * preview and confirmation. No clean result is stored as acknowledgement.
+ * The review key includes both the exact draft and actual findings: changes
+ * to other flights that affect the report invalidate an earlier exception review.
+ * Fail closed if the checker is unavailable or its output is malformed.
+ */
+function v242ArchiveCheck(draft=nextArchiveDraft()){
+ if(!draft?.flights?.length)return {ready:false,clean:false,report:null,key:null,error:null};
+ if(typeof window.HeliLogV29Review?.evaluate!=='function')
+  return {ready:false,clean:false,report:null,key:null,error:'Pre-archive safety checker is unavailable. Reload HeliLog online before printing.'};
+ try{
+  const result=window.HeliLogV29Review.evaluate({draft,allFlights:S.flights,people:S.people});
+  if(!Array.isArray(result?.issues)||!Number.isSafeInteger(result.critical)||
+     !Number.isSafeInteger(result.advisory)||result.critical<0||result.advisory<0||
+     result.critical+result.advisory!==result.issues.length)
+   throw Error('Invalid pre-archive findings. Nothing was approved.');
+  // Page-order warnings are significant even when individual flight checks
+  // pass. Treat them as advisories requiring the regular review workflow.
+  const extra=[];
+  if(draft.lateCount>0)extra.push({severity:'advisory',code:'late-entry',
+   message:draft.lateCount+' flight(s) predate the last signed batch. Review their placement and annotate them as late entries.'});
+  if(draft.ambiguousSimulatorDays>0)extra.push({severity:'advisory',code:'sim-order',
+   message:draft.ambiguousSimulatorDays+' day(s) contain both timed flights and undated-time simulator entries. Confirm print order.'});
+  if(draft.demoCount>0)extra.push({severity:'critical',code:'demo-entry',
+   message:draft.demoCount+' unchanged demonstration entries must be removed before confirming an official archive.'});
+  const issues=[...result.issues,...extra];
+  const report={...result,issues,critical:result.critical+extra.filter(x=>x.severity==='critical').length,
+   advisory:result.advisory+extra.filter(x=>x.severity==='advisory').length};
+  const clean=issues.length===0;
+  const key=JSON.stringify({draft,issues});
+  return {ready:clean||pendingArchiveReview===key,clean,report,key,error:null};
+ }catch(err){
+  return {ready:false,clean:false,report:null,key:null,
+   error:'Pre-archive safety review failed: '+String(err?.message||err)};
+ }
+}
 function v229ArchiveReviewed(draft=nextArchiveDraft()){
- return !!pendingArchiveReview && pendingArchiveReview===JSON.stringify(draft);
+ return v242ArchiveCheck(draft).ready;
 }
 /* V2.31.3: transient return navigation, never persisted or confused with
  * signed review acknowledgement. The exact batch controls checkbox restore. */
@@ -302,9 +339,11 @@ function v229PreArchiveReview(){
  if(v23PreventUnsupportedArchive()||isStandaloneApp())return;
  const draft=nextArchiveDraft();
  if(!draft.flights.length){go("printarchive");return;}
- if(!window.HeliLogV29Review?.evaluate)
-  throw Error("Pre-archive review module unavailable. Reopen HeliLog online; do not print or archive.");
- const report=window.HeliLogV29Review.evaluate({draft,allFlights:S.flights,people:S.people});
+ const check=v242ArchiveCheck(draft);
+ if(check.error)throw Error(check.error);
+ if(check.clean){go("printarchive");return;}
+ const report=check.report;
+ v242ReviewViewedKey=check.key;
  const issueHtml=report.issues.map((issue,issueIndex)=>{
   const heading=issue.severity==="critical"?"Check carefully":"Check if applicable";
   const related=issue.otherFlightId?
@@ -349,7 +388,13 @@ function v229AcceptReview(){
  }
  const draft=nextArchiveDraft();
  if(!draft.flights.length){alert("There are no flights to review.");return;}
- pendingArchiveReview=JSON.stringify(draft);
+ const check=v242ArchiveCheck(draft);
+ if(check.error){alert(check.error);return;}
+ if(!check.clean&&(!check.key||check.key!==v242ReviewViewedKey)){
+  alert("The selected flights or findings have changed. Review the current results before continuing.");
+  v229PreArchiveReview();return;
+ }
+ pendingArchiveReview=check.clean?null:check.key;
  go("printarchive");
 }
 function previewNextArchive(){
@@ -606,7 +651,8 @@ function printarchive(){
   const batches=archivedBatches();
   const draft=nextArchiveDraft();
   const previewReady=!!pendingArchivePreview && pendingArchivePreview===JSON.stringify(draft);
-  const reviewReady=v229ArchiveReviewed(draft);
+  const reviewCheck=v242ArchiveCheck(draft);
+  const reviewReady=reviewCheck.ready;
   const canPrint=draft.flights.length>0;
   const first=!batches.length;
   app.innerHTML=header('Print logbook & archive',
@@ -648,12 +694,14 @@ function printarchive(){
         You can also print a partly filled final page; any unused rows will be crossed out with dashes and marked UNUSED.
       </p>
     </div>`:''}
-    ${canPrint?`<div class="card" style="margin-top:14px">
-      <div class="head"><h2>Step 1 — Pre-archive flight review</h2></div>
-      <p>Review possible duplicates, PIC information, unusual UTC times and flight-time totals for these exact pages before printing. Findings never change your records.</p>
-      <div class="mini">${reviewReady?'Review acknowledged for this exact batch. Re-review if you wish.':'Review required before previewing or printing this batch.'}</div>
-      <div class="actions" style="margin-top:10px"><button class="btn ${reviewReady?'':'primary'}" onclick="go('archivereview')">${reviewReady?'Review again':'Review flights before printing'}</button></div>
-    </div>`:''}
+    ${canPrint?(reviewCheck.clean?
+      `<div class="card" style="margin-top:14px"><div class="mini"><b>No pre-archive findings for the selected pages.</b> Continue directly to Preview / Print pages. HeliLog rechecks before preview and confirmation; you still need to verify, print and sign the pages.</div></div>`:
+      `<div class="card" style="margin-top:14px">
+       <div class="head"><h2>Step 1 — Pre-archive flight review</h2></div>
+       <p>Review possible duplicates, PIC information, unusual UTC times and flight-time totals for these exact pages before printing. Findings never change your records.</p>
+       <div class="mini">${reviewCheck.error?htmlEscape(reviewCheck.error):reviewReady?'Findings acknowledged for this exact batch. Review again if needed.':'Findings require review and acknowledgement before previewing or printing this batch.'}</div>
+       <div class="actions" style="margin-top:10px"><button class="btn ${reviewReady?'':'primary'}" ${reviewCheck.error?'disabled':''} onclick="go('archivereview')">${reviewReady?'Review again':'Review flights before printing'}</button></div>
+      </div>`):''}
     ${draft.demoCount?`<div class="note" style="margin-top:14px;border-color:#b42318">
        <b>Example flights detected:</b> ${draft.demoCount} unchanged demonstration entries are present in this print batch.
        Do not sign these as genuine flight records. You may preview the layout, but archive confirmation is blocked until they are removed.
@@ -667,7 +715,7 @@ function printarchive(){
     <div class="card" style="margin-top:16px">
       <div class="head"><h2>Next print batch</h2></div>
       ${canPrint?
-        `<p class="muted">1. Review the selected flights. 2. Preview and print the A4 landscape pages. 3. Check totals and sign them. 4. Confirm the printed batch to lock the records.</p>
+        `<p class="muted">${reviewCheck.clean?'No review findings. ':reviewReady?'Findings reviewed. ':'Review findings before printing. '}Preview the A4 pages, verify totals, print and physically sign, then separately confirm the printed batch to lock the records.</p>
          <div style="display:flex;flex-wrap:wrap;gap:9px">
            <button class="btn primary" ${reviewReady?'':'disabled'} onclick="previewNextArchive()">Preview / Print pages</button>
            <button class="btn" ${previewReady&&reviewReady?'':'disabled'} onclick="confirmPrintedArchive()">Confirm printed & signed</button>

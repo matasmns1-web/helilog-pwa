@@ -264,18 +264,32 @@ function backups(){
         <p><b>Full HeliLog backup</b></p>
         <p class="muted">Includes flights, aircraft, pilots, specialised-operation hours, imported totals, print archive snapshots, endorsements and signatures. JSON backups include a SHA-256 checksum.</p>
         <button class="btn primary" type="button" onclick="downloadFullBackup()">Download backup</button>
-        ${v23AccountWorkspace()?'<button class="btn" style="margin-left:8px" type="button" onclick="v28DownloadCloudRecovery()">Download verified cloud recovery package</button>':''}
       </div>
       <div>
-        <p><b>Restore from backup</b></p>
-        <p class="muted">${v23AccountWorkspace()?'Cloud account replacement is blocked for safety. You can inspect a recovery package without modifying any records.':'Select a backup to verify it first. HeliLog requires a safety copy before restoring.'}</p>
-        ${v23AccountWorkspace()?'<input id="v28RecoveryInput" type="file" accept=".json,application/json" style="display:none" onchange="v28InspectCloudRecovery(event)"><button class="btn" type="button" onclick="document.getElementById(\'v28RecoveryInput\').click()">Inspect cloud recovery file</button>':''}
-        <input id="restoreBackupInput" type="file" accept=".json,application/json" style="display:none" onchange="handleBackupRestoreFile(event)">
-        <button class="btn" type="button" onclick="document.getElementById('restoreBackupInput').click()" ${v23AccountWorkspace()?'disabled title="Restore will be available after cloud-safe migration"':''}>Choose backup file</button>
+        <p><b>Verify a saved backup — read-only</b></p>
+        <p class="muted">Verify a downloaded encrypted cloud snapshot here. Full HeliLog backups use a separate format and cannot be checked with this verifier. Inspection never restores or overwrites logbook records.</p>
+        ${v23AccountWorkspace()?`
+          <details open class="card" style="padding:12px;margin:12px 0">
+            <summary style="font-weight:700;cursor:pointer">Encrypted cloud snapshot</summary>
+            <p class="mini">Use for files downloaded with <b>Download encrypted backup</b>. The encrypted file and passphrase stay in your browser. This also works from the sign-in screen without cloud access.</p>
+            <form class="form" onsubmit="v232VerifyOfflineFile(event)">
+              <div class="field"><label for="v232OfflineFile">Encrypted snapshot JSON</label>
+                <input id="v232OfflineFile" type="file" accept=".json,application/json" required></div>
+              <div class="field"><label for="v232OfflinePass">Encryption passphrase</label>
+                <input id="v232OfflinePass" type="password" autocomplete="off" minlength="12" required></div>
+              <button class="btn primary" id="v232OfflineButton" type="submit">Verify encrypted backup offline</button>
+            </form>
+            <div id="v232OfflineResult" class="note" role="status" aria-live="polite" style="overflow-wrap:anywhere;margin-top:10px" hidden></div>
+          </details>
+        `: `
+          <p class="mini">Local workspace backups can be checked with the legacy local restore flow. This option is disabled for signed-in cloud accounts to protect synchronized history.</p>
+          <input id="restoreBackupInput" type="file" accept=".json,application/json" style="display:none" onchange="handleBackupRestoreFile(event)">
+          <button class="btn" type="button" onclick="document.getElementById('restoreBackupInput').click()">Choose local backup file</button>
+        `}
       </div>
     </div>
     <div id="backupRestoreStatus" style="margin-top:12px"></div>
-    ${v23AccountWorkspace()?'<div class="mini" style="margin-top:12px">Cloud recovery packages are SHA-256 verified and should be stored securely off-device. Downloads contain personal details and signatures. This version inspects files but intentionally does not overwrite synced cloud history.</div>'+ (v28Notice?'<div class="note" role="status" style="margin-top:8px">'+htmlEscape(v28Notice)+'</div>':''):''}
+    ${v23AccountWorkspace()?'<div class="mini" style="margin-top:12px">Encrypted snapshots use AES-256-GCM with a separate passphrase. Verification is read-only and does not prove the file has been stored independently; keep a copy outside HeliLog and away from this device.</div>':''}
   </div>
 
 

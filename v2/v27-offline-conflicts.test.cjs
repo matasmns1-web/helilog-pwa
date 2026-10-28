@@ -173,3 +173,90 @@ test("adopting remote aircraft deletion cannot orphan local flights",async()=>{
  assert.equal(b.data.aircraft[0].reg,"LY-OFFLINE");
  assert.equal(b.data.flights[0].aid,"a1");
 });
+
+/* V2.39.1 — an interrupted queue write must not leave an unreviewable edit
+ * or silently resurrect an unqueued deletion. */
+async function previouslySyncedFlight(){
+ const s=server(),a=device(s),b=device(s);
+ await a.api.refresh();
+ a.data.flights.push({id:"f1",date:"2026-10-27",mins:40,role:"PIC"});
+ a.api.track(a.data);await tick();
+ assert.equal(s.rows.length,1);
+ await b.api.refresh();
+ assert.equal(b.data.flights[0].mins,40);
+ return {s,a,b};
+}
+test("unqueued flight edit creates reviewable conflict without uploading",async()=>{
+ const {s,b}=await previouslySyncedFlight(),writes=s.writes;
+ b.data.flights[0].mins=55;
+ await b.api.refresh();
+ assert.equal(b.api.status().state,"conflict");
+ assert.equal(b.api.status().pending,1);
+ assert.deepEqual(b.api.conflicts().map(x=>[x.kind,x.id,x.reviewable,x.unqueuedRecovery]),
+  [["flight","f1",true,true]]);
+ const review=await b.api.previewRecordConflict("flight","f1");
+ assert.equal(review.local.mins,55);assert.equal(review.cloud.mins,40);
+ assert.equal(s.writes,writes);
+ await b.api.resolveRecordConflict("local");
+ assert.equal(s.rows[0].payload.mins,40);
+ await b.api.refresh();await tick();
+ assert.equal(s.rows[0].payload.mins,55);
+ assert.equal(b.api.status().state,"synced");
+});
+test("unqueued aircraft edit can be restored from cloud after a verified backup",async()=>{
+ const s=server(),a=device(s),b=device(s);
+ await a.api.refresh();a.data.aircraft.push({id:"a1",reg:"LY-ORIGINAL"});
+ a.api.track(a.data);await tick();await b.api.refresh();
+ b.data.aircraft[0].reg="LY-UNQUEUED";
+ await b.api.refresh();
+ assert.equal(b.api.conflicts()[0].reviewable,true);
+ const p=await b.api.previewRecordConflict("aircraft","a1");
+ assert.equal(p.local.reg,"LY-UNQUEUED");
+ const result=await b.api.resolveRecordConflict("cloud");
+ assert.ok(b.store.get(result.backupKey));
+ assert.equal(b.data.aircraft[0].reg,"LY-ORIGINAL");
+ assert.equal(s.rows[0].payload.reg,"LY-ORIGINAL");
+ await b.api.refresh();assert.equal(b.api.status().state,"synced");
+});
+test("unqueued local flight deletion blocks silent resurrection and can be kept",async()=>{
+ const {s,b}=await previouslySyncedFlight(),writes=s.writes;
+ b.data.flights.splice(0,1);
+ await b.api.refresh();
+ assert.equal(b.api.status().state,"conflict");
+ assert.equal(b.api.status().pending,1);
+ assert.equal(b.data.flights.length,0);assert.equal(s.writes,writes);
+ assert.equal(b.api.conflicts()[0].reviewable,true);
+ const p=await b.api.previewRecordConflict("flight","f1");
+ assert.equal(p.localDeleted,true);assert.equal(p.cloudDeleted,false);
+ const result=await b.api.resolveRecordConflict("local");
+ assert.ok(b.store.get(result.backupKey));
+ await b.api.refresh();await tick();
+ assert.equal(s.rows.length,0);assert.equal(b.data.flights.length,0);
+ assert.equal(b.api.status().state,"synced");
+});
+test("unqueued local deletion can be explicitly reversed after review",async()=>{
+ const {s,b}=await previouslySyncedFlight();
+ b.data.flights.splice(0,1);await b.api.refresh();
+ await b.api.previewRecordConflict("flight","f1");
+ const r=await b.api.resolveRecordConflict("cloud");
+ assert.ok(b.store.get(r.backupKey));
+ assert.equal(b.data.flights[0].mins,40);
+ assert.equal(s.rows[0].payload.mins,40);
+ await b.api.refresh();assert.equal(b.api.status().state,"synced");
+});
+test("archived unqueued flight edit is preserved but not eligible for ordinary review",async()=>{
+ const {s,b}=await previouslySyncedFlight(),writes=s.writes;
+ b.protected();b.data.flights[0].mins=70;
+ await b.api.refresh();
+ assert.equal(b.api.status().state,"conflict");
+ assert.equal(b.api.conflicts()[0].reviewable,false);
+ await assert.rejects(()=>b.api.previewRecordConflict("flight","f1"),/protected archive recovery/);
+ assert.equal(s.rows[0].payload.mins,40);assert.equal(s.writes,writes);
+});
+test("fresh device still imports unknown cloud records without false conflicts",async()=>{
+ const {s}=await previouslySyncedFlight(),c=device(s);
+ await c.api.refresh();
+ assert.equal(c.api.status().state,"synced");
+ assert.equal(c.api.status().pending,0);
+ assert.equal(c.data.flights[0].mins,40);
+});

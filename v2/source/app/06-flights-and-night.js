@@ -19,7 +19,13 @@ function addSimulator(editId=null){
          <div class="field"><label>Device category</label><select id="simCategory">
            ${['FNPT I','FNPT II','FTD','FFS','FS','Other'].map(c=>`<option value="${c}"${(old?.simCategory||'FNPT II')===c?' selected':''}>${c}</option>`).join('')}
          </select></div>
-         <div class="field"><label>Device / aircraft type (required for FS/FFS/FTD)</label><input id="simDevice" maxlength="90" placeholder="Device or represented aircraft type" value="${htmlEscape(old?.simDevice||'')}"></div>
+         <div class="field"><label for="simAircraftType">Represented helicopter ICAO type (for rule matching)</label><input id="simAircraftType" maxlength="8" placeholder="ICAO type designator" value="${htmlEscape(old?.simAircraftType||window.HeliLogV241SimulatorEvidence?.deviceType(old?.simDevice)||'')}">
+           <div class="mini">Enter the helicopter ICAO designator here. Older simulator device descriptions are retained in their original records; no separate device field is needed.</div></div>
+         <div class="field"><label for="simPilotConfig">Crew configuration for evidence matching</label><select id="simPilotConfig">
+           <option value="">Not specified — no automatic match</option>
+           <option value="single"${old?.simPilotConfig==='single'?' selected':''}>Single-pilot</option>
+           <option value="multi"${old?.simPilotConfig==='multi'?' selected':''}>Multi-pilot</option>
+         </select></div>
          <div class="field"><label>Device qualification / ID (optional)</label><input id="simQualification" maxlength="60" placeholder="e.g. Q1234" value="${htmlEscape(old?.simQualification||'')}"></div>
          <div class="field"><label>Total time of session (H:MM)</label><input id="simDuration" inputmode="decimal" placeholder="2:30" value="${old?fmt(old.stdMin||0):''}">
            <div class="mini">Include associated pre- and after-flight checks, per the paper-logbook instructions.</div></div>
@@ -41,17 +47,32 @@ function saveSimulatorSession(){
     alert('Archived simulator sessions require an addendum.');return;
   }
   clearFormError();
-  const date=readEuropeanDate('simDate',true),category=$('#simCategory').value,device=$('#simDevice').value.trim(),
-    qualification=$('#simQualification').value.trim(),remarks=$('#simRemarks').value.trim();
+  const date=readEuropeanDate('simDate',true),category=$('#simCategory').value,
+    enteredType=$('#simAircraftType').value.trim().toUpperCase(),
+    qualification=$('#simQualification').value.trim(),remarks=$('#simRemarks').value.trim(),
+    simPilotConfig=$('#simPilotConfig').value;
   const time=parseBroughtForwardMinutes($('#simDuration').value);
   if(!date)return showFormError('Enter a valid simulator session date in DD-MM-YYYY format.');
-  if(!device && !category.startsWith('FNPT'))return showFormError('Enter the simulator device or aircraft type (required for FS/FFS/FTD).');
+  if(enteredType&&!/^[A-Z0-9]{2,8}$/.test(enteredType))
+    return showFormError('Enter an ICAO helicopter type using 2–8 letters or digits.');
+  if(!enteredType && !category.startsWith('FNPT'))
+    return showFormError('Enter the represented ICAO helicopter type for FS, FFS or FTD sessions.');
   if(time===null||!Number.isSafeInteger(time)||time<=0)return showFormError('Enter positive simulator time in H:MM format.');
+  if(!['','single','multi'].includes(simPilotConfig))return showFormError('Choose a valid crew configuration.');
   const old=editingFlightId?S.flights.find(f=>f.id===editingFlightId):null;
+  // Preserve the original device identifier and matching fields if editing
+  // without changing the displayed type. This avoids silently changing old
+  // logbook records or invalidating reviewed linked FFS evidence.
+  const previousType=old?.simAircraftType||
+    window.HeliLogV241SimulatorEvidence?.deviceType(old?.simDevice)||'';
+  const typeUnchanged=!!old&&enteredType===previousType;
+  const device=typeUnchanged?old.simDevice||enteredType:enteredType;
+  const simAircraftType=typeUnchanged?old.simAircraftType:enteredType;
   if(editingFlightId&&!isSimulatorSession(old))return showFormError('Cannot convert a flight into a simulator session.');
   const entry={
     id:old?.id||'sim'+Date.now()+Math.random().toString(36).slice(2,8),
     entryType:'simulator',date,simCategory:category,simDevice:device,simQualification:qualification,
+    simAircraftType,simPilotConfig,
     stdType:[category,device,qualification?'('+qualification+')':''].filter(Boolean).join(' '),stdMin:time,
     mins:0,aid:'',dep:'',off:'',arr:'',on:'',role:'',picName:'',nightMin:0,ifrMin:0,
     takeoffDay:0,takeoffNight:0,landingDay:0,landingNight:0,crossCountry:false,specialOps:{},remarks,
@@ -63,10 +84,21 @@ function saveSimulatorSession(){
   if(!save())return;
   const id=entry.id;editingFlightId=null;clearFlightFormGuard();flight(id);
 }
+function v241ReviewSimulatorMatch(profileId,ruleId,sessionId){
+  go('operatorrules');
+  window.HeliLogV236OperatorRulesUI?.reviewSession(profileId,ruleId,sessionId);
+}
 function simulatorDetails(id){
   const f=effectiveFlight(S.flights.find(x=>x.id===id));
   if(!isSimulatorSession(f))return go('logbook');
   editingFlightId=null;
+  const suggestions=window.HeliLogV236OperatorRulesUI?.sessionMatches?.(f)||[];
+  const matched=suggestions.length?
+    '<div class="card" style="margin-top:14px"><h3>Suggested custom operator recencies</h3>'+
+    '<p class="mini">Based on the entered ICAO type, crew configuration and FFS category. Nothing is credited without reviewing a supporting document and confirming a qualifying quantity.</p>'+
+    suggestions.map(m=>'<div class="profileline"><b>'+htmlEscape(m.title)+'</b> · '+htmlEscape(m.operator)+
+      ' <button class="btn" type="button" onclick="v241ReviewSimulatorMatch(\''+m.profileId+'\',\''+m.ruleId+'\',\''+f.id+'\')">Review match</button></div>').join('')+'</div>':
+    '<div class="card" style="margin-top:14px"><h3>Operator recency matching</h3><p class="mini">No eligible custom operator rule matched. FFS matching requires a represented ICAO helicopter type, crew configuration and an operator rule that accepts FFS evidence. Simulator time alone grants no credit.</p></div>';
   app.innerHTML=header('Simulator session',formatDate(f.date)+' · '+htmlEscape(f.simCategory),
   `<div style="display:flex;gap:8px;flex-wrap:wrap">
     ${v229CanReturnToReview(id)?
@@ -75,12 +107,11 @@ function simulatorDetails(id){
     <button class="btn primary" onclick="editFlight('${f.id}')">${isArchivedFlight(f.id)?'Propose correction':'Edit session'}</button>
     ${!isArchivedFlight(f.id)?`<button class="btn dangerbtn" onclick="openDeleteModal('${f.id}')">Delete session</button>`:''}</div>`)+
     `<div class="card"><h2>${htmlEscape(simulatorDeviceLabel(f))}</h2>
-     <div class="grid stats">
+     <div class="grid stats" style="grid-template-columns:minmax(0,1fr);max-width:420px">
        <div class="card"><div class="label">Simulator session</div><div class="big">${fmt(f.stdMin)}</div></div>
-       <div class="card"><div class="label">Actual flight time</div><div class="big">0:00</div></div>
      </div><p><b>Exercise / remarks</b></p><p>${htmlEscape(f.remarks||'—')}</p>
      <p class="mini">Printed only in Synthetic Training Devices and Remarks columns. Does not add to actual helicopter flight time.</p></div>`+
-    correctionHistoryMarkup(id);
+    matched+correctionHistoryMarkup(id);
 }
 function quickAdd(){add(null,true);}
 function setFlightEntryMode(mode){
@@ -227,8 +258,8 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
   <div class="field">
     <label>Pilot configuration</label>
     <div class="choice-row">
-      <label class="choice-option"><input type="radio" name="pilotConfig" value="single" checked> Single-pilot</label>
-      <label class="choice-option"><input type="radio" name="pilotConfig" value="multi"> Multi-pilot</label>
+      <label class="choice-option"><input type="radio" name="pilotConfig" value="single" checked onchange="toggleRecencyEvidence()"> Single-pilot</label>
+      <label class="choice-option"><input type="radio" name="pilotConfig" value="multi" onchange="toggleRecencyEvidence()"> Multi-pilot</label>
     </div>
     <div class="mini">The total flight time will be allocated automatically in the PDF export.</div>
   </div>
@@ -277,8 +308,29 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
       <div class="mini">Recorded separately from PIC, Dual and total flight time. Can be part of the same flight.</div>
     </div>
   </div>
+
+  <details id="recencyEvidence" style="margin-top:14px;border:1px solid var(--line);padding:12px;border-radius:10px">
+    <summary style="cursor:pointer;font-weight:700">FCL.060 recency — automatic or manual</summary>
+    <div id="recencyAutoWrap">
+      <p class="mini">Single-pilot PIC/SOLO: HeliLog automatically estimates qualifying movements from the take-offs and landings already recorded above. No duplicate sequence entry is necessary. Check the approaches and any unusual crew arrangements yourself.</p>
+      <label class="choice-option" style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <input id="recencyAutoExclude" type="checkbox"> Exclude this flight from automatic recency estimates (e.g. you did not fly the complete approach/landing)
+      </label>
+    </div>
+    <div id="recencyManualWrap" style="display:none">
+      <p class="mini">For multi-pilot, DUAL, SPIC, PICUS or CO-PILOT: manually confirm complete take-off, approach and landing sequences flown by you as PF, if applicable. Do not confuse aircraft movements with your PF credit.</p>
+      <label class="choice-option" style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <input id="recencyPF" type="checkbox" onchange="toggleRecencyEvidence()"> I was pilot flying for these complete sequences
+      </label>
+      <div class="formgrid">
+        <div class="field"><label for="recencyDay">Confirmed day sequences</label><input id="recencyDay" type="number" min="0" max="100" step="1" value="0" disabled></div>
+        <div class="field"><label for="recencyNight">Confirmed night sequences</label><input id="recencyNight" type="number" min="0" max="100" step="1" value="0" disabled></div>
+      </div>
+      <p class="mini">Night sequences also count toward the general 3-sequence threshold. Approved simulator and IR credit require separate checks.</p>
+    </div>
+  </details>
   <div class="section-title">Specialised helicopter operations</div>
-  <div class="mini">Tick an operation performed during this flight to reveal its duration in H:MM. These hours are experience breakdowns and do not increase your total flight time.</div>
+  <div class="mini">Select the operations performed. Record operation time and completed cycles. Offshore counts are landings at qualifying offshore locations (not ordinary aerodrome landings).</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:10px;margin-top:12px">
     ${SPECIAL_OPS.map(op=>`<div style="border:1px solid var(--line);border-radius:9px;padding:10px">
       <label style="display:flex;gap:8px;align-items:start;cursor:pointer">
@@ -286,12 +338,19 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
         <span>${htmlEscape(op.label)}</span>
       </label>
       <div id="specialWrap_${op.code}" style="display:none;margin-top:9px">
-        <label for="specialTime_${op.code}" class="mini">Operation time (H:MM)</label>
-        <input id="specialTime_${op.code}" type="text" inputmode="decimal" placeholder="0:00" value="0:00" oninput="updateSpecialOpsPreview()">
+        <div class="special-count-fields">
+          <div><label for="specialTime_${op.code}" class="mini">Time (H:MM)</label>
+             <input id="specialTime_${op.code}" type="text" inputmode="decimal" placeholder="0:00" value="0:00" oninput="updateSpecialOpsPreview()"></div>
+          ${op.code==='NVIS'?'<div class="special-nvis-auto"><span class="mini">NVIS flights</span><strong>1 per flight</strong><span class="mini">Counted automatically</span></div>':`
+          <div><label for="specialDayCycles_${op.code}" class="mini">${op.code==='OFFSHORE'?'Day landings':'Day cycles'}</label>
+             <input id="specialDayCycles_${op.code}" type="number" min="0" max="9999" step="1" value="0" inputmode="numeric"></div>
+          <div><label for="specialNightCycles_${op.code}" class="mini">${op.code==='OFFSHORE'?'Night landings':'Night cycles'}</label>
+             <input id="specialNightCycles_${op.code}" type="number" min="0" max="9999" step="1" value="0" inputmode="numeric"></div>`}
+        </div>
       </div>
     </div>`).join('')}
   </div>
-  <div class="mini" style="margin-top:10px">Ticked activities with unknown duration may remain 0:00; they count as a flight but not as credited hours. Activities can overlap.</div>
+  <div class="mini" style="margin-top:10px">Offshore: count only landings at an offshore location (platform, helideck or vessel) with the corresponding take-off, departure and approach. HHO: completed hoist cycles including hover transitions. NVIS: flights, not cycles. Night counts require night time.</div>
   <div id="specialOpsPreview" class="mini" style="margin-top:8px"></div>
 </details>
 
@@ -333,14 +392,26 @@ if(existing){
   toggleInstructorTime();
   $('#crossCountry').checked=!!existing.crossCountry;
   $('#remarks').value=existing.remarks||'';
+  $('#recencyAutoExclude').checked=existing.recency?.excludeAuto===true;
+  if(existing.recency?.pfConfirmed){
+    $('#recencyPF').checked=true;
+    $('#recencyDay').value=existing.recency.day||0;
+    $('#recencyNight').value=existing.recency.night||0;
+    toggleRecencyEvidence();
+  }
   SPECIAL_OPS.forEach(op=>{
     if(Object.prototype.hasOwnProperty.call(existing.specialOps||{},op.code)){
       $('#specialCheck_'+op.code).checked=true;
       $('#specialTime_'+op.code).value=fmt(existing.specialOps[op.code]);
+      if(op.code!=='NVIS'){
+        $('#specialDayCycles_'+op.code).value=Number(existing.specialOpsCycles?.[op.code]?.day||0);
+        $('#specialNightCycles_'+op.code).value=Number(existing.specialOpsCycles?.[op.code]?.night||0);
+      }
       toggleSpecialOp(op.code);
     }
   });
-  if($('#instructorCheck').checked || Object.keys(existing.specialOps||{}).length) $('#moreDetails').open=true;
+  if($('#instructorCheck').checked || Object.keys(existing.specialOps||{}).length || existing.recency?.pfConfirmed || existing.recency?.excludeAuto) $('#moreDetails').open=true;
+  if(existing.recency?.pfConfirmed || existing.recency?.excludeAuto) $('#recencyEvidence').open=true;
 }else{
   $('#date').value=formatDate(new Date().toISOString().slice(0,10));
   if(quick){
@@ -408,6 +479,10 @@ function toggleSpecialOp(code){
   if(!checked){
     const field=document.getElementById('specialTime_'+code);
     if(field)field.value='0:00';
+    for(const id of ['specialDayCycles_','specialNightCycles_']){
+      const count=document.getElementById(id+code);
+      if(count)count.value='0';
+    }
   }
   updateSpecialOpsPreview();
 }
@@ -433,6 +508,67 @@ function collectSpecialOps(totalMinutes){
     ops[op.code]=minutes;
   }
   return ops;
+}
+function collectSpecialOpCycles(nightMinutes){
+  const result={};
+  for(const op of SPECIAL_OPS){
+    if(op.code==='NVIS'||!document.getElementById('specialCheck_'+op.code)?.checked)continue;
+    const dayInput=document.getElementById('specialDayCycles_'+op.code);
+    const nightInput=document.getElementById('specialNightCycles_'+op.code);
+    const rawDay=String(dayInput?.value??'').trim(),rawNight=String(nightInput?.value??'').trim();
+    const day=Number(rawDay),night=Number(rawNight);
+    if(!/^\d{1,4}$/.test(rawDay)||!/^\d{1,4}$/.test(rawNight)||
+      !Number.isSafeInteger(day)||!Number.isSafeInteger(night)||
+      day<0||night<0||day>9999||night>9999||(night>0&&nightMinutes<=0)){
+      $('#moreDetails').open=true;
+      if(dayInput)dayInput.classList.add('time-input-invalid');
+      if(nightInput)nightInput.classList.add('time-input-invalid');
+      showFormError(op.code+' requires whole, non-negative day/night counts (0–9999). Night counts require recorded night flight time.');
+      (night>0&&nightMinutes<=0?nightInput:dayInput)?.focus();
+      return null;
+    }
+    dayInput?.classList.remove('time-input-invalid');
+    nightInput?.classList.remove('time-input-invalid');
+    if(day||night)result[op.code]={day,night};
+  }
+  return result;
+}
+function toggleRecencyEvidence(){
+  const role=document.getElementById('role')?.value;
+  const cfg=document.querySelector('input[name="pilotConfig"]:checked')?.value||'single';
+  const auto=cfg==='single'&&['PIC','SOLO'].includes(role);
+  const autoWrap=document.getElementById('recencyAutoWrap');
+  const manualWrap=document.getElementById('recencyManualWrap');
+  if(autoWrap)autoWrap.style.display=auto?'block':'none';
+  if(manualWrap)manualWrap.style.display=auto?'none':'block';
+  const checked=!auto&&!!document.getElementById('recencyPF')?.checked;
+  for(const id of ['recencyDay','recencyNight']){
+    const input=document.getElementById(id);
+    if(input)input.disabled=!checked;
+  }
+}
+function collectRecencyEvidence(icao,dayTo,dayLdg,nightTo,nightLdg,nightMin,role,cfg,original){
+  const code=String(icao||'').trim().toUpperCase();
+  if(cfg==='single'&&['PIC','SOLO'].includes(role)){
+    if(document.getElementById('recencyAutoExclude')?.checked)return {excludeAuto:true,icao:code};
+    // Preserve historical explicit PF evidence when editing a PIC/SOLO flight.
+    // If movement counts change, read-only computation rechecks validity.
+    return original?.recency?.pfConfirmed===true?{...original.recency,icao:code}:null;
+  }
+  const flag=document.getElementById('recencyPF');
+  if(!flag?.checked)return null;
+  const day=Number(document.getElementById('recencyDay')?.value);
+  const night=Number(document.getElementById('recencyNight')?.value);
+  const valid=n=>Number.isSafeInteger(n)&&n>=0&&n<=100;
+  if(!valid(day)||!valid(night)||day+night===0||
+    day>Math.min(dayTo,dayLdg)||night>Math.min(nightTo,nightLdg)||
+    (night>0&&nightMin<=0)){
+    document.getElementById('moreDetails').open=true;
+    document.getElementById('recencyEvidence').open=true;
+    showFormError('Complete PF sequences must not exceed day/night take-offs or landings; night sequences need night time.');
+    return false;
+  }
+  return {pfConfirmed:true,day,night,icao:code};
 }
 function uppercasePlaceInput(el){
   let start=el.selectionStart, end=el.selectionEnd;
@@ -683,6 +819,7 @@ function roleChanged(){
     field.style.background='#fff';
   }
   if(typeof updateQuickPICVisibility==='function')updateQuickPICVisibility();
+  if(typeof toggleRecencyEvidence==='function')toggleRecencyEvidence();
 }
 
 function showFormError(msg){
@@ -731,11 +868,19 @@ function saveFlight(){
 
   const specialOps=collectSpecialOps(m);
   if(specialOps===null)return;
+  const specialOpsCycles=collectSpecialOpCycles(night);
+  if(specialOpsCycles===null)return;
   const instructorTime=collectInstructorTime(m);
   if(instructorTime===null)return;
   let pilotConfig=document.querySelector('input[name="pilotConfig"]:checked')?.value||'single';
-
   let role=$('#role').value;
+  const originalEntry=editingFlightId?S.flights.find(x=>x.id===editingFlightId):null;
+  const recencyEvidence=collectRecencyEvidence(ac($('#aid').value)?.icao,
+    Number($('#toDay').value||0),Number($('#ldgDay').value||0),
+    Number($('#toNight').value||0),Number($('#ldgNight').value||0),night,
+    role,pilotConfig,originalEntry);
+  if(recencyEvidence===false)return;
+
   let picName=$('#picName').value.trim();
   if(['PIC','SOLO'].includes(role))picName='SELF';
   if(!picName) return showFormError('Please enter the name of the PIC.');
@@ -783,6 +928,8 @@ function saveFlight(){
     stdMin:Number(original?.stdMin||0),
     crossCountry:$('#crossCountry').checked,
     specialOps,
+    specialOpsCycles,
+    recency:recencyEvidence,
     remarks:$('#remarks').value.trim(),
     createdAt:original?.createdAt||new Date().toISOString(),
     updatedAt:new Date().toISOString()
@@ -808,9 +955,11 @@ function flight(id){const entry=effectiveFlight(S.flights.find(x=>x.id===id));if
 <div class="kpi-grid"><div class="card"><div class="label">Total time</div><div class="big">${fmt(f.mins)}</div></div><div class="card"><div class="label">Pilot function</div><div class="big" style="font-size:20px">${f.role}</div></div><div class="card"><div class="label">Night</div><div class="big">${fmt(f.nightMin||0)}</div></div><div class="card"><div class="label">IFR</div><div class="big">${fmt(f.ifrMin||0)}</div></div></div>
 <div class="mini" style="margin-top:12px">Night entry: ${f.nightCalculation?.mode==='automatic'?'Automatically estimated from aerodrome coordinates and civil twilight':'Manually entered / legacy record'}.</div>
 <div class="formgrid" style="margin-top:18px"><div><b>Name of PIC</b><div class="muted">${htmlEscape(displayPICName(f)||'—')}</div></div><div><b>Engine configuration</b><div class="muted">✓ ${engineCode(a)==='ME'?'Multi-engine (ME)':'Single-engine (SE)'}</div></div><div><b>Pilot configuration</b><div class="muted">${flightPilotConfig(f)==='multi'?'Multi-pilot':'Single-pilot'}</div></div><div><b>Configuration time</b><div class="muted">${(()=>{let c=configurationTimes(f);return c.multi?`Multi-pilot ${fmt(c.multi)}`:c.spME?`Single-pilot ME ${fmt(c.spME)}`:`Single-pilot SE ${fmt(c.spSE)}`})()}</div></div><div><b>Take-offs</b><div class="muted">Day ${f.takeoffDay||0} · Night ${f.takeoffNight||0}</div></div><div><b>Landings</b><div class="muted">Day ${f.landingDay||0} · Night ${f.landingNight||0}</div></div><div><b>Cross-country</b><div class="muted">${f.crossCountry?'Yes':'No'}</div></div></div>
+<p><b>FCL.060 recency:</b> <span class="muted">${(()=>{const e=window.HeliLogV233Recency.evidence(f);return e.source==='excluded'?'Excluded from automatic estimate':e.source==='unverified'?'PF evidence not established':e.source==='estimated'?'Automatically estimated day '+e.day+' · night '+e.night+' movements':'Confirmed day '+e.day+' · night '+e.night+' PF sequences';})()}</span></p>
 <p><b>Remarks / endorsements</b><br><span class="muted">${htmlEscape(flightRemarksForDisplay(f)||'—')}</span></p>
 ${Object.keys(f.specialOps||{}).length?`<div class="card" style="margin-top:16px"><h3>Specialised helicopter operations</h3>
-${SPECIAL_OPS.filter(op=>Object.prototype.hasOwnProperty.call(f.specialOps||{},op.code)).map(op=>`<div class="profileline"><div class="k">${htmlEscape(op.label)}</div><b>${fmt(f.specialOps[op.code])}</b></div>`).join('')}
+${SPECIAL_OPS.filter(op=>Object.prototype.hasOwnProperty.call(f.specialOps||{},op.code)).map(op=>`<div class="profileline"><div class="k">${htmlEscape(op.label)}</div>
+ <b>${fmt(f.specialOps[op.code])}${op.code==='NVIS'?' · NVIS flight':f.specialOpsCycles?.[op.code]?' · Day '+Number(f.specialOpsCycles[op.code].day)+' / Night '+Number(f.specialOpsCycles[op.code].night):''}</b></div>`).join('')}
 <div class="mini">Breakdown only — no additional flight-time credit.</div></div>`:''}</div>`+
   correctionHistoryMarkup(id)}
 

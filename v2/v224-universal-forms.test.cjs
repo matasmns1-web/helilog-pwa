@@ -36,7 +36,8 @@ test('other editable pages avoid local authority and aircraft-specific placehold
   assert.match(profile,/id="qualName" required[^>]+placeholder="Qualification or rating name"/);
   assert.match(settings,/id="v219SiteCode"[^>]+placeholder="ICAO code or custom site ID"/);
   assert.match(totals,/class="bf-type-icao[^>]+placeholder="ICAO designator"/);
-  assert.match(flights,/id="simDevice"[^>]+placeholder="Device or represented aircraft type"/);
+  assert.match(flights,/id="simAircraftType"[^>]+placeholder="ICAO type designator"/);
+  assert.doesNotMatch(flights,/id="simDevice"/);
   for(const markup of [profile,settings,totals,flights]){
     assert.doesNotMatch(markup,/placeholder="[^"]*(?:LY-ABC|EYVI|G2CA|Cabri|Guimbal|TKA|B747-400)[^"]*"/i);
   }
@@ -47,9 +48,9 @@ test('test-only PWA release labels and offline cache are aligned',()=>{
   const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
   const manifest=JSON.parse(fs.readFileSync(path.join(root,'manifest.webmanifest'),'utf8'));
   const worker=fs.readFileSync(path.join(root,'service-worker.js'),'utf8');
-  assert.match(html,/HeliLog V2\.31\.4 — Compact Quick Flight · Test/);
-  assert.equal(manifest.name,'HeliLog V2.31.4 — Compact Quick Flight Test');
-  assert.match(worker,/helilog-v2-31-4-quick-scroll-1/);
+  assert.match(html,/HeliLog V2\.42 — Guide & Archive Fast Path · Test/);
+  assert.equal(manifest.name,'HeliLog V2.42 — Guide & Archive Fast Path Test');
+  assert.match(worker,/helilog-v2-42-guide-archive-1/);
   assert.match(html,/function quickAdd\(\)/);
   assert.match(html,/function saveFlight\(\)/);
 });

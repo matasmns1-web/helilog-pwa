@@ -4,7 +4,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
 const read=p=>fs.readFileSync(path.join(__dirname,p),'utf8');
 const css=read('source/base.css'),source=read('source/app/06-flights-and-night.js');
-test('V2.31.4 Quick entry returns to natural top alignment without wasted space',()=>{
+test('V2.34.1 Quick entry returns to natural top alignment without wasted space',()=>{
  assert.match(css,/main:has\(#flightForm\.quick-entry-active\) \{\s*display:block;/);
  assert.match(css,/main:has\(#flightForm\.quick-entry-active\) \.top \{\s*margin-top:0;/);
  assert.doesNotMatch(css,/main:has\(#flightForm\.quick-entry-active\)\s*\{[^}]*min-height:100dvh/);
@@ -24,7 +24,7 @@ test('original Quick/Full mode, PIC, night and save path are unchanged',()=>{
    "function v218UpdateNight()","function saveFlight()","id=\"saveFlightBtn\""])
    assert.ok(source.includes(str),str);
  assert.match(source,/if\(!editing\)setFlightEntryMode\(quick\?'quick':'full'\)/);
- assert.match(read('service-worker.js'),/helilog-v2-31-4-quick-scroll-1/);
- assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.31\.4'/);
- assert.match(read('source/index.template.html'),/HeliLog V2\.31\.4 — Compact Quick Flight · Test/);
+ assert.match(read('service-worker.js'),/helilog-v2-42-guide-archive-1/);
+ assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.42'/);
+ assert.match(read('source/index.template.html'),/HeliLog V2\.42 — Guide & Archive Fast Path · Test/);
 });

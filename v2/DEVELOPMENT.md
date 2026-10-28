@@ -167,3 +167,163 @@ V2.21 is a maintenance milestone; the visible V2.20 version label and cache revi
 - The existing keyboard-open detection immediately releases the lock on focus and restores natural scrolling; closing the keyboard restores the top alignment/lock only if the form still fits. Smaller displays, expanded optional fields, validation banners, and asynchronous night calculation warnings unlock scroll automatically when they exceed available height.
 - Layout is recalculated on changes to Quick/Full mode, advanced fields, night warnings, page navigation and viewport/keyboard size; a ResizeObserver watches form/heading height changes.
 - No database changes, flight validation changes, imported totals changes, cloud sync changes or signed archive changes. TEST-only release.
+
+## V2.32 — encrypted off-provider recovery readiness (first safe increment)
+
+- Preserve V2.9 private scheduled Supabase snapshots and AES-256-GCM/PBKDF2-310k encrypted downloads. In-provider database snapshots are NOT independent disaster-recovery copies.
+- New offline-backup-check.js provides a read-only signed-out file verification workflow on the Sign in screen. Works without a Supabase session/network when app files are locally cached. Reads the existing encrypted-cloud-snapshot v1 format.
+- User chooses an encrypted file and passphrase. WebCrypto AES-GCM authenticates it, the V2.10 in-memory drill checks records, frozen signed archives and addenda, and displays SHA-256 fingerprints and age without names or signatures. Wrong passphrase or invalid file fails closed.
+- No selected file, passphrase or decrypted content is uploaded, saved to localStorage or restored into an account. No database migration or schema changes.
+- This verifies that one user-selected file can be reconstructed. The pilot must separately save a copy outside the Supabase provider/device and compare checksums. Neither automatic offsite storage nor complete provider recovery is implemented yet.
+- Keep test-only until signed-out and network-off testing on iPhone and desktop confirms behavior.
+
+## V2.32.2 — distinguish backup formats in the signed-in UI
+
+- Signed-in Settings → Backup & Recovery now presents three clearly identified formats instead of one ambiguous Restore box: encrypted cloud snapshots (V2.9+), unencrypted verified cloud recovery packages (V2.8), and a separate local-workspace backup. The local-only restore control is available only outside a cloud account.
+- The encrypted snapshot verifier, previously accessible from Sign in only, is now also accessible while signed in. It reuses the V2.32 no-cloud, in-memory verification handler and never persists a passphrase or modifies active data.
+- The V2.8 inspector recognizes an encrypted-cloud-snapshot or helilog-full-backup JSON and provides format-specific guidance instead of the generic unsupported backup error. Existing V2.8 SHA-256 verification remains read-only.
+- There are no database/Supabase migrations, new cloud permissions, automatic restores, or changed production records. Test deployment only; production remains v2.31.4.
+
+## V2.32.2 — Remove legacy V2.8 backup controls (test only)
+
+- The Backup & Restore page now offers the full JSON backup and the read-only AES-256-GCM encrypted cloud-snapshot checker; the legacy V2.8 unencrypted recovery-package download and inspect buttons are hidden from the user interface.
+- Existing archive-integrity audits, historical V2.8 data compatibility functions, encrypted snapshot downloads and offline verification (including the sign-in screen) remain unchanged. Signed-in cloud accounts still cannot use local full-backup restore to overwrite cloud records.
+- The Help & Guide, staged regression assertions, app version, and service-worker cache were updated together. No Supabase migrations, storage mutations, or production changes. Independent offsite storage and end-to-end isolated disaster restoration are still future tasks.
+
+## V2.33 — FCL.060 recent-experience Phase 1 (TEST)
+
+- A dedicated Recency page (desktop navigation/mobile More) and short dashboard card show rolling 90-calendar-day pilot-flying evidence separately for each helicopter ICAO type and pilot configuration, without automatic cross-type credit.
+- Only explicitly checked complete take-off, approach and landing PF sequences entered under Full Flight Entry → More details count. Night sequences also contribute to the general 3-sequence requirement. Unverified historic movements and simulator time remain excluded.
+- Outputs say "Documented" / "Not established", NEVER issue an operational authorisation. IR night alternative, approved FFS credits, 120-day CAT supervised extension, multiple-type credit, licence/operator conditions and specialised recency require independent assessment.
+- No schema changes, silent backfill, write to signed archives or production migration. Test-only; V2.31.4 production remains unchanged.
+
+## V2.33.2 — Pick dashboard Recency indicators (TEST)
+
+- Recency page provides per-ICAO-type, pilot-configuration and passenger/night checkboxes for what appears on the dashboard. Selection defaults to empty: no unwanted card.
+- Choices persist per cloud-account identity **on the current device** via a dedicated localStorage view-only key. Local and test sandbox modes use distinct keys. This is not yet synchronized between devices.
+- No aircraft/flight/archive data is modified. Hidden indicators remain fully available in Recency. Invalid/stale dashboard keys are excluded.
+- Recency calculations are unchanged and remain conservative estimates, not legal certification.
+
+## V2.33.1 — Automatically estimated recency (TEST)
+
+- Single-pilot PIC/SOLO history is evaluated read-only using min(day take-offs, day landings) and min(night take-offs, night landings). This **estimates** complete PF movement sequences; an approach itself is not separately attested by logbook movement counts, so it must not be presented as certified legal currency.
+- No duplicate sequence entry for those flights; an opt-out allows an exceptional unsigned flight to be excluded. DUAL/SPIC/PICUS/co-pilot and multi-pilot flights still require explicit PF evidence for credit.
+- Show only ICAO type/pilot-configuration pairs with logged flight history, and only show night PIC recency for a type/configuration with recorded night operations (even if the last night flight is older than 90 days).
+- Rename "Passenger / CAT" to "Passenger-carrying" to avoid misclassifying private/training flights as CAT; FCL.060 applies to carrying passengers or CAT but qualifying prior flights need not themselves be CAT.
+- No data backfill, migration, or archive mutation; unchanged production V2.31.4. Full regression suite must pass before staging deploy.
+
+## V2.33.3 — Clear rolling recency (TEST)
+
+- Show compact checkbox selectors on Recency instead of duplicating the full details.
+- Show status (requirement documented / threshold met as estimate / below recorded threshold), not an ever-increasing 8/3 headline; counts remain contextual evidence only.
+- If a recorded threshold is met, show the projected date on which it would first fall below the minimum **if there are no further qualifying flights**. Window is the preceding rolling 90 days, not a new fixed 90-day validity certificate.
+- Preserve each account's existing dashboard selections and all original flights, archives, recency calculation and protected records.
+
+## V2.33.4 — Compact recency cards (TEST)
+
+- Dashboard displays pinned recency as a short status list beside Upcoming dates, rather than a full-width nested card. If nothing is selected, no recency card is shown.
+- Recency page displays one compact All recencies list with expandable details, avoiding repeating full cards for each aircraft configuration and operation.
+- Keep the colour distinctions (confirmed / auto-estimated / not met), account/device-scoped dashboard selection, 90-day movement arithmetic, and private/signed flight history unchanged.
+- No database migrations, automatic recency backfill or production deployment.
+
+## V2.33.5 — Clearer Recency names (TEST)
+
+- Bold the **Passenger-carrying** and **Night PIC** recency labels in both the compact dashboard rows and the expandable Recency list, plus the dashboard-selection labels. Dates and status descriptions remain normal weight.
+- Presentation-only. Keeps recorded counts, rolling FCL.060 evidence, current selection preferences, account isolation, flights, signed archive and production unaffected.
+
+## V2.33.6 — Group Recency by aircraft type (TEST)
+
+- Dashboard shows one heading per ICAO helicopter type; under it, labels are **Passenger-carrying** and **Night PIC** rather than repeating the single-/multi-pilot configuration.
+- Recency page groups both dashboard-selector checkboxes and full expandable Recency entries under matching type headings.
+- Where a type has both single-/multi-pilot evidence for the same recency kind, a small crew-configuration qualifier is retained to distinguish separate legally relevant calculations. All stored preference keys remain unchanged.
+- Display-only. No automatic writes/backfills, no changes to the FCL.060 90-day calculation, cloud or signed archive histories, or production.
+
+## V2.34 — Specialised operations Phase 2 (TEST)
+
+- Keep the historical `flight.specialOps` operation-minute format untouched; add optional `flight.specialOpsCycles` keyed by operation code with integer `{day,night}` counts for specialised cycles or offshore complete sequences. Missing means unrecorded, not zero evidence.
+- Full Flight Entry presents operation time next to day/night cycle counts. HHO cycles require transitions to/from hover; offshore entries require complete offshore take-off/departure/approach/landing sequences. NVIS uses one flight per selected flight, not cycles. Validation rejects negative/fractional/out-of-range cycle counts and night cycles without night flight time.
+- 90-day read-only NVIS, HHO day/night, offshore day/night counters, by type/crew configuration, on Recency page and optional dashboard selections. Missing historic cycle data is uncredited. No automatic claim of regulatory currency, no grouping of HHO and HEC credits, and no automatic HESLO/HEC/SPO operator-specific certification yet.
+- Backward-compatible with old flights, no database changes, no archive/backfill mutations, production unchanged.
+
+## V2.34.1 — offshore landings, specialised recency credit and totals (TEST)
+
+- OFFSHORE remains stored in the backward-compatible `specialOpsCycles.OFFSHORE.{day,night}` shape, but its compact fields are now **Day landings / Night landings** at qualifying offshore locations (platforms, helidecks, vessels). Entries must represent qualifying take-off, departure, approach, landing sequences under SPA.HOFO.170. Ordinary landing counts are NOT automatically credited.
+- NVIS (flights) and HHO (hoist cycles) recency calculation aggregates SP/MP configurations **within the same ICAO type**. Offshore and passenger-carrying requirements remain separated by single- and multi-pilot intended operation. Existing per-device dashboard preferences for NVIS/HHO are read through an alias to the combined indicator; old records remain unchanged.
+- Specialised Totals adds counted cycles/offshore landings (Day, Night) and NVIS flights alongside existing time columns, plus per-type counts; previous-logbook hours never invent cycle counts. Archived flights, signatures, original schema, cloud and production untouched.
+
+## V2.35 — Phase 3A advanced recency foundation (TEST)
+
+- Display **Met** in both places formerly showing **Estimated met**; preserve the internal estimated-vs-confirmed source and the expanded caution that approaches are not independently verified. A recency badge is not legal authorization.
+- Add a pure, in-memory advanced-recency module supporting custom operator rule sets and pilot-reviewed credit-event schemas. Explicitly configure aircraft type, crew configuration, unit, threshold, rolling window and permitted sources (flight/FFS/check/training). Pilot-reviewed records require evidence references. Wrong-owner, expired/future, malformed, duplicate, draft and unsupported-source events are not counted.
+- These results are **custom operator tracking only**, not EASA recency certification. FCL.060 and SPA calculators, signed archives, logs, sync and Supabase schemas are unchanged.
+- No rule editor, event persistence, file attachments, notifications or automatic credit integration in this first increment. Follow-up increments will implement these with account isolation and audit controls. Production remains v2.31.4.
+
+## V2.36 — Phase 3B: custom operator-rule editor (TEST)
+
+- Add account-scoped browser-local operator profiles (up to 20) and rule lists (up to 50 per profile): create, rename, activate, deactivate, delete; create/edit/delete rules with aircraft type, pilot configuration, measurement unit, positive integer threshold, sliding window and eligible flight/FFS/check/training sources.
+- Browse these profiles under Recency or Settings; active operator is separately selected and no EASA defaults are ever overwritten or displayed as operator approvals.
+- Save to a dedicated `helilog_operator_profiles_v1:<owner>` browser-localStorage key; test sandbox, local workspace and cloud users separated. Never overwrite corrupt or wrong-account storage. No cloud sync, database change, migration, backfill, signed record modification or automatic simulator/check credit. Device-local rules are not part of cloud backups.
+- Phase 3C will add independently stored reviewed credit events and evidence. A configured rule is not itself a proof of currency or privilege.
+
+## V2.36.1 — Operator editor feedback (TEST)
+Add Rule opens and focuses the form; validation messages appear inline without clearing inputs. Source and EASA calculations unchanged; production unchanged.
+
+## V2.36.2 — Phase 3B extension: linked operator activity (TEST)
+- Move custom rule access exclusively to Recency; remove duplicate Settings card.
+- Add required explicit monitored activity source to rule editor, derived measure, and display count/threshold details in Recency and rule list. HESLO1–4, HHO and other operational cycles use `flight.specialOpsCycles[code]` only with `flight.specialOps[code]` present; offshore uses its separately recorded landings, NVIS uses flagged flights, and all-flights uses ordinary flight records. Type/config/rolling date filters apply; no inferred missing counts, simulators, duplicate flight IDs or unlinked rule auto-credit.
+- Pre-existing V2.36.1 rules stay saved and **unlinked** until source explicitly selected; no storage migration or cloud writes. These are self-recorded operator-specific tracking figures, not legal EASA credits or operator-approved status.
+- Flight data remains read-only; account-scoped operator profiles remain device-local; FFS/check/training evidence phase is not yet implemented.
+
+## V2.37 — operator recency format and night-flight monitoring (TEST)
+
+- Merge active operator rules into the same expandable **All recencies** list and **Show on dashboard** controls as EASA recency, visibly separated by the type-group heading “Operator: NAME” and each operation's “Operator ·” prefix. Preserve regular EASA indicators unchanged.
+- Dashboard selections use the same per-account/local-device preference storage; new keys include operator profile and rule IDs and are never selected by default. Deactivating or switching operator excludes inactive operator rules from display.
+- Add a Night flights monitor (`flights:night`) counting distinct, non-simulator flight entries with validated positive `nightMin` not exceeding `mins`. Count 1 per qualifying flight, not movements or night minutes. Aircraft ICAO, SP/MP config, and rolling period are applied exactly as for other operator counters.
+- **Recorded night time is not independent Night VFR evidence.** Existing entries do not explicitly identify VFR flight rules; confirm VFR with operator evidence. No EASA certification, Supabase database migration, logbook/print/archive writes, or production deployment.
+
+## V2.38 — explicit VFR/IFR and Night VFR operator monitoring (TEST)
+- Add user-confirmed `flightRules` as `VFR`, `IFR` or `''` (not specified) to ordinary flight entry and edit forms; show in flight details. Do not conflate this with IFR instrument time (`ifrMin`). Keep old/archived/imported flights unchanged, default to unclassified, and rely on existing archived-flight correction flow.
+- Add the separate `flights:night-vfr` monitoring source to custom operator rules. One distinct normal flight counts only if its ICAO type/config/date matches the custom rule, its `flightRules === 'VFR'`, and its positive `nightMin` is a valid duration within its total minutes. Existing `flights:night` remains available and unchanged.
+- Custom operator thresholds are self-recorded tracking only, not an independent certification of VFR operations or EASA privileges. No database migration, bulk reclassification, cloud reset, print/archive rewrite or production release.
+
+## V2.38.1 — Simplified Night VFR operator recency (TEST)
+- Remove the additional `Flight rules` selector from Quick/Full Flight entry and Flight details. The pre-existing Night and IFR minutes remain unchanged. Do not write a new `flightRules` property or delete fields from historical records in cloud/storage/archive.
+- Retain the existing `flights:night` and `flights:night-vfr` operator rule IDs. For `flights:night-vfr`, count one distinct actual flight only when `nightMin > 0`, `nightMin <= mins` and `ifrMin === 0` (missing/empty IFR minutes considered zero), with valid integer durations. Type, crew configuration and rolling date restrictions are preserved. Flights with positive or invalid IFR time do not count; records with formerly explicit VFR/IFR annotations do not override the inferred rule.
+- This implements a **user-configured VFR tracking assumption, not regulatory evidence**: under aviation rules instrument flight time and IFR flight rules are not equivalent. Display a short disclaimer in rule detail. No batch reclassification, database migration, user data writes, or production changes.
+
+## V2.39 — Recover interrupted cloud-sync queue operations (TEST)
+- A locally changed **flight, aircraft, person or qualification** without a queued upload now surfaces an explicit blocked, device-local conflict, instead of an error without a usable review action. The existing comparison and verified safety-backup choices are reused.
+- A previously synced flight/aircraft/person/qualification that is absent locally while still present remotely, with no queued deletion, is **never silently resurrected**. The owner must review whether to keep the deletion or restore the cloud record.
+- Existing revision-checked updates remain in place. Signed endorsements, archived records and restricted settings cannot be auto-resolved through ordinary controls. A genuinely new device still imports unseen cloud records.
+- New regression tests cover interrupted edits/deletions, both review choices and archive protection. No Supabase migration or production deployment. The production website remains V2.31.4.
+
+## V2.39.1 — custom operator recency cloud sync (TEST)
+- Profile/rule definitions and active profile are stored in account-synced `settings:operatorProfiles` using existing revision-checked `helilog_records` transport.
+- Old per-browser profiles are verified and copied before the first cloud pull, while legacy keys remain untouched for recovery. Empty devices do not create competing records.
+- Differing cloud/device copies require manual review and safety backup; EASA recency and signed archives remain unchanged. No Supabase migration; production is unchanged.
+
+## V2.40 — Phase 3C simulator/check/training evidence (TEST)
+- Operator profile records now contain an optional, validated `evidence` collection (max 500 entries) linked by operator profile ID and custom rule ID; previous account profiles remain readable.
+- Record dated FFS, operator/proficiency checks or training with amounts, aircraft/crew type, document reference, notes and explicit pilot review. Drafts, disallowed sources and out-of-window evidence never count. No attachments, accreditation or real EASA recency alteration.
+- Combine permitted flight records and reviewed evidence in operator-specific thresholds; compute rolling lapses from actual dated contributions. Protect linked records against silent profile/rule deletion. Data follows existing account-profile revision-checked cloud sync and conflict backups; no schema changes.
+
+## V2.41 — Automatic FFS evidence matching (TEST)
+- Existing simulator sessions may optionally record the represented helicopter ICAO type and single-/multi-pilot crew configuration. Only explicitly classified FFS sessions propose matches to operator rules permitting `ffs`.
+- On simulator details or Manage operator rules, review a suggested match, confirm the number of qualifying manoeuvres (never inferred from simulator time), and provide a report/reference before pilot-reviewed custom operator credit.
+- Linked evidence stores the session ID and an exact snapshot. It does not count after simulator edit/deletion, change of type/crew or rule mismatch. One linked record per simulator+operator rule; draft/unreviewed items do not count. Existing manual FFS/check/training evidence remains available and unchanged.
+- No EASA calculation changes, no file attachments, no database/schema migrations and no production promotion.
+
+## V2.41.1 — unified represented ICAO type field (TEST)
+- Keep the v2.41 `simAircraftType` input; remove duplicate `simDevice` form input. For new simulator entries, the same ICAO type populates both `simAircraftType` and the legacy display/print `simDevice` value.
+- Existing simulator device descriptions and separate ICAO values are retained without modification if the selected represented type remains unchanged. Previously reviewed session evidence snapshots continue to validate.
+- Matcher prioritizes `simAircraftType` (represented ICAO designator), falling back to a valid legacy `simDevice` code when a separate type is absent. Edited ICAO types are explicit; no automatic EASA credit, changes to archived data, cloud schema or production.
+
+## V2.41.2 — simulator details tidy-up (TEST)
+- Simulator details now show one emphasized simulator-duration card; remove redundant `Actual flight time: 0:00` stat from this view only. Display still states simulator time is not actual helicopter flight time.
+- No schema changes, archived flight modifications, EASA/recency changes, cloud mutations or production promotion.
+
+## V2.42 — condensed Guide and clean pre-archive fast path (TEST)
+- Help & Guide onboarding / Start here topics are first. Latest three updates show in a compact expandable section; the older update history remains available inside a collapsed details control. Search and expand/collapse of topics remain unchanged.
+- Before every preview and confirmation, HeliLog independently evaluates the exact batch and current electronic logbook. A zero-finding batch (including no late-entry, same-day simulator-order or demo warnings) can preview and print immediately with no acknowledgement step.
+- Any finding requires the previous manual review and checkbox acknowledgement. Review signatures are transient, based on the exact draft and findings; a changed record or issue result invalidates consent. If the safety checker is missing/fails/malformed, preview and archive confirmation are blocked. No preview auto-confirms a signed batch, and archive and cloud protections remain intact.
+- Production, Supabase schema and signed records are unchanged.
