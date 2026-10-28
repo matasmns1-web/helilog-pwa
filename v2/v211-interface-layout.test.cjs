@@ -131,9 +131,9 @@ test("Settings is the only Cloud/Backup top-level navigation entry and nested ro
  assert.doesNotMatch(aside,/data-v="cloud"|data-v="backups"/);
  assert.match(more,/onclick="go\('settings'\)"><span>⚙<\/span><b>Settings<\/b>/);
  assert.doesNotMatch(more,/onclick="go\('cloud'\)"|onclick="go\('backups'\)"/);
- assert.match(html,/totals,recency,operatorrules:\(\)=>window\.HeliLogV236OperatorRulesUI\.page\(effectiveFlights\(\),S\.aircraft,recencyCurrent\(\)\),profile,settings,locations:v219LocationsPage,backups,cloud,testmode,mobilemore/);
- assert.match(html,/moreViews=\[[^\]]*'settings','locations','backups','cloud'/);
- assert.match(html,/b.dataset.v==='settings' && \(v==='cloud'\|\|v==='backups'\|\|v==='locations'\)/);
+ assert.match(html,/totals,recency,operatorrules:\(\)=>window\.HeliLogV236OperatorRulesUI\.page\(effectiveFlights\(\),S\.aircraft,recencyCurrent\(\)\),profile,settings,datamanagement:v244DataManagementPage,locations:v219LocationsPage,backups,cloud,testmode,mobilemore/);
+ assert.match(html,/moreViews=\[[^\]]*'settings','datamanagement','locations','backups','cloud'/);
+ assert.match(html,/b.dataset.v==='settings' && \(v==='cloud'\|\|v==='backups'\|\|v==='locations'\|\|v==='datamanagement'\)/);
  assert.match(cloud,/go\('settings'\)/);
  assert.match(cloud,/go\(\\'backups\\'\)/);
 });
