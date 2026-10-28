@@ -77,6 +77,7 @@ const GROUPS = Object.freeze([
       'v2/v240-operator-evidence.test.cjs',
       'v2/v241-auto-ffs-evidence.test.cjs',
       'v2/v2412-simulator-details.test.cjs',
+      'v2/v242-guide-clean-archive.test.cjs',
       'v2/v24-sync.test.cjs',
       'v2/v25-profile-pic.test.cjs',
       'v2/v26-login-ui.test.cjs',
