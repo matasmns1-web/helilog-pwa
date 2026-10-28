@@ -240,7 +240,7 @@ function settings(){
       <button class="btn primary" type="button" onclick="installHeliLog()">Install HeliLog</button>
     </div>
     <div id="pwaStatus"></div>
-    <div class="install-help" style="margin-top:10px">On iPhone/iPad, open the hosted HeliLog site in Safari, use <b>Share → Add to Home Screen</b>. Full offline PWA support requires HeliLog to be served over HTTPS. Opening this prototype directly as a file still works for testing, but it cannot register the offline service worker.</div>
+    <div class="install-help" style="margin-top:10px">On iPhone/iPad, open the hosted HeliLog site in Safari, use <b>Share → Add to Home Screen</b>. Full offline PWA support requires HeliLog to be served over HTTPS. Opening HeliLog directly from a local file does not enable offline installation.</div>
   </div>
 
 

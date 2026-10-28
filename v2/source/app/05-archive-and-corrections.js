@@ -658,7 +658,7 @@ function printarchive(){
   app.innerHTML=header('Print logbook & archive',
     'Continuous numbered A4 pages with cumulative totals and a permanent printing history.',
     `<button class="btn" onclick="go('logbook')">← Logbook</button>`)+
-    `<div class="card" style="margin-bottom:16px"><div class="head"><h2>Endorsement print archive — V2</h2></div><p class="mini">Print and permanently archive instructor/examiner endorsements on separately numbered pages. Corrections use signed addenda.</p><button class="btn primary" onclick="go('endorsementarchive')">Open endorsement archive</button></div>`+
+    `<div class="card" style="margin-bottom:16px"><div class="head"><h2>Endorsement print archive</h2></div><p class="mini">Print and permanently archive instructor/examiner endorsements on separately numbered pages. Corrections use signed addenda.</p><button class="btn primary" onclick="go('endorsementarchive')">Open endorsement archive</button></div>`+
     `<div class="card" style="margin-bottom:16px">
       <div class="head"><h2>Archive settings</h2></div>
       ${first?`<div class="formgrid">
@@ -666,7 +666,7 @@ function printarchive(){
           <input id="archiveFirstPage" type="number" min="1" max="99999" value="${S.printArchive.firstPage}">
         </div>
         <div class="field"><label>Previous paper logbook reference (optional)</label>
-          <input id="archivePaperRef" maxlength="120" placeholder="Original paper logbook, final page 42"
+          <input id="archivePaperRef" maxlength="120" placeholder="Previous paper logbook reference"
             value="${htmlEscape(S.printArchive.paperReference)}">
         </div>
       </div>
@@ -674,7 +674,7 @@ function printarchive(){
       :`<div class="muted">The page sequence is locked after the first confirmed batch. The last archived page is
          <b>${batches[batches.length-1].firstPage+batches[batches.length-1].pageCount-1}</b>.
          ${S.printArchive.paperReference?'Original paper logbook: '+htmlEscape(S.printArchive.paperReference):''}</div>`}
-      <div class="mini" style="margin-top:10px">By default, HeliLog starts a new printed volume at Page 1 and carries forward the imported totals from your earlier paper logbook. Keep the original handwritten logbook. Print archives and confirmation records live in this browser and are included in Full Backup.</div>
+      <div class="mini" style="margin-top:10px">By default, HeliLog starts a new printed volume at Page 1 and carries forward the imported totals from your earlier paper logbook. Keep the original handwritten logbook. Archive confirmations are stored with your logbook and included in full backups. Check cloud synchronization before switching devices.</div>
     </div>
     ${archiveSummaryMarkup(draft)}
     ${canPrint?`<div class="card" style="margin-top:14px">
@@ -754,6 +754,6 @@ function printarchive(){
         </div>`).join(''):
         '<p class="muted">No confirmed batches yet. Previewing or saving a PDF does not mark flights as archived.</p>'}
     </div>
-    <div class="note" style="margin-top:16px"><b>Important:</b> This is a local record of manually confirmed paper printouts, not proof that a printer completed a job or that the CAA approved the logbook. Keep the signed pages and full JSON backups. Confirm acceptance and countersignature requirements with your licensing authority. V1.43 corrections use a separate signed addendum; the original print batch is immutable. This does not certify compliance with your aviation authority's correction procedures.</div>`;
+    <div class="note" style="margin-top:16px"><b>Important:</b> This is a local record of manually confirmed paper printouts, not proof that a printer completed a job or that the CAA approved the logbook. Keep the signed pages and full JSON backups. Confirm acceptance and countersignature requirements with your licensing authority. Archived-page corrections use a separate signed addendum; the original print batch is immutable. This does not certify compliance with your aviation authority's correction procedures.</div>`;
 }
 

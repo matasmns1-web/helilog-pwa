@@ -336,10 +336,7 @@ function csvEscape(v){
 }
 
 function downloadImportTemplate(){
-  let sample=[
-    IMPORT_HEADERS,
-    ['02-10-2026','G2CA','LY-XYZ','Guimbal','Cabri','G2','SE','EYVI','0935','EYKA','1055','single-pilot','1:20','PIC','Matas','1','0','1','0','0:00','0:00','yes','Example cross-country flight','{}','flight','','','','']
-  ];
+  let sample=[IMPORT_HEADERS];
   let csv=sample.map(r=>r.map(csvEscape).join(',')).join('\r\n');
   let b=new Blob([csv],{type:'text/csv;charset=utf-8'});
   let u=URL.createObjectURL(b),a=document.createElement('a');

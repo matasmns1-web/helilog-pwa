@@ -153,7 +153,7 @@ function testmode(){
   app.innerHTML=header('Test Mode & safe reset',
     'A separate browser-local sandbox for experimenting with flight logging and paper archives.',
     `<button class="btn" onclick="go('dashboard')">← Dashboard</button>`)+
-    `<div class="note" style="margin-bottom:16px"><b>V2 development notice:</b> This full-interface preview uses new V2-specific storage. Test records created in the earlier modular V2 Alpha interface remain available at <a href="./alpha.html" target="_blank" rel="noopener noreferrer">Previous V2 Alpha workspace</a> on this same device, but the two datasets have not been merged. Export either workspace’s JSON backup if you want to retain its samples.</div>`+
+    `<div class="note" style="margin-bottom:16px"><b>Legacy sandbox records:</b> Earlier local test entries remain separate from this sandbox. Review them in the <a href="./alpha.html" target="_blank" rel="noopener noreferrer">previous Alpha workspace</a> on this device. These test records are not merged automatically; save a separate backup if you need them.</div>`+
     `<div class="card">
       <div class="head"><h2>Current environment: ${TEST_MODE?'⚗ TEST SANDBOX':'MAIN LOGBOOK'}</h2></div>
       <p>${TEST_MODE?

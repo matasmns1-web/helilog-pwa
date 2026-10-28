@@ -127,7 +127,7 @@ function pilots(){
       </div>`;
     }).join('');
 
-  app.innerHTML=header('Pilots','Saved pilot profiles for quick selection and future certification workflows',
+  app.innerHTML=header('Pilots','Saved pilot profiles for PIC selection and endorsements',
     `<button class="btn primary" onclick="newPerson()">＋ Add pilot</button>`)+
     `<div class="grid aircraft">${cards||'<div class="card"><p class="muted">No saved pilots yet.</p></div>'}</div>`;
 }
