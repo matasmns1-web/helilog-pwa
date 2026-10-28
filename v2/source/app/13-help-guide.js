@@ -268,6 +268,7 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+ {v:"V2.44",name:"Protected account-wide data reset",detail:"The Data management area prepares a mandatory safety backup and requires fresh account-password verification before deleting logbook records, frozen print archives and cloud snapshots. Account login is retained. Other devices must explicitly acknowledge a reset before syncing."},
  {v:"V2.43",name:"Clearer, neutral guidance across HeliLog",detail:"Refresh outdated help and account messages, remove prototype labels from established features, and replace overly specific form examples with generic prompts. The CSV import template now starts blank. Existing records are unchanged."},
  {v:"V2.42",name:"Faster clean printing and simpler Help & Guide",detail:"Getting-started instructions now appear first, with a compact expandable update history. Pre-archive checks run automatically; no findings means direct access to print preview. Findings still need explicit review and acknowledgement, and printed-and-signed confirmation remains separate."},
  {v:"V2.41.2",name:"Cleaner simulator session details",detail:"Simulator details show only the recorded simulator duration. Removed the unnecessary Actual flight time: 0:00 box. Simulator sessions still do not add helicopter flight time or EASA recency."},

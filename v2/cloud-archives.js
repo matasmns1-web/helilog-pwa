@@ -232,7 +232,8 @@
   if(kind==="flight")await verifyPrintedFlights(batch,ids);
   assertReady();
   const {data,error:err}=await client.rpc("helilog_confirm_print_batch",{
-   p_kind:kind,p_batch:clone(batch),p_record_ids:ids
+   p_kind:kind,p_batch:clone(batch),p_record_ids:ids,
+    p_reset_generation:root.HeliLogV23Sync.status().resetGeneration
   });
   if(err)throw Error("Cloud archive was not confirmed: "+err.message);
   if(!data)throw Error("Cloud archive did not acknowledge the confirmed batch.");
@@ -244,7 +245,8 @@
    throw Error("Invalid signed correction.");
   await verifyIntegrityBeforeWrite();
   const {data,error:err}=await client.rpc("helilog_confirm_print_addendum",{
-   p_kind:kind,p_record_id:recordId,p_addendum:clone(correction)
+   p_kind:kind,p_record_id:recordId,p_addendum:clone(correction),
+    p_reset_generation:root.HeliLogV23Sync.status().resetGeneration
   });
   if(err)throw Error("Cloud correction was not confirmed: "+err.message);
   if(!data)throw Error("Cloud correction was not acknowledged.");

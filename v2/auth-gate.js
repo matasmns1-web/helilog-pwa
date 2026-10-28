@@ -1,20 +1,20 @@
 /* HeliLog V2.3 private login gate. No automatic import of V2.2 local data. */
-const HELILOG_TEST_VERSION='V2.43';
+const HELILOG_TEST_VERSION='V2.44';
 let v23Unlocked=false,v23AuthBusy=false,v23AuthMessage="";
 let v23RecoveryStage="signin",v23InviteStage="signin";
 function v23Escape(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function v23AccountWorkspace(){return v23Unlocked && !!window.HeliLogV23Sync.status().owner;}
 function v23SyncInfo(){
  const st=window.HeliLogV23Sync.status();
- const label=st.state==="synced"?(window.HeliLogV23Sync.extended()?"Cloud synced":"Cloud setup incomplete"):st.state==="syncing"?"Syncing records…":
+ const label=st.state==="reset_required"?"Remote logbook reset detected":st.state==="synced"?(window.HeliLogV23Sync.extended()?"Cloud synced":"Cloud setup incomplete"):st.state==="syncing"?"Syncing records…":
  st.state==="conflict"?"Conflict: needs attention":st.state==="offline"?"Offline: saved on device":
  st.state==="error"?"Sync error: saved on device":
  st.pending?"Pending upload: "+st.pending+" change(s)":"Checking cloud records…";
  const pending=Math.max(0,Number(st.pending)||0);
  const setupNeeded=!window.HeliLogV23Sync.extended() && st.state==="synced";
- const tone=st.state==="conflict"||st.state==="error"?"problem":
+ const tone=st.state==="reset_required"||st.state==="conflict"||st.state==="error"?"problem":
   st.state==="offline"||pending||setupNeeded?"warn":st.state==="synced"?"ok":"busy";
- const shortLabel=st.state==="conflict"?"Conflict":st.state==="error"?"Sync issue":
+ const shortLabel=st.state==="reset_required"?"Reset detected":st.state==="conflict"?"Conflict":st.state==="error"?"Sync issue":
   st.state==="offline"?"Offline":pending?pending+" pending":
   st.state==="syncing"?"Syncing…":setupNeeded?"Finish setup":st.state==="synced"?"Synced":"Checking…";
  return '<details class="v220-sync-pop" data-tone="'+tone+'">'+
@@ -332,8 +332,9 @@ async function v23EnterWorkspace(auth){
   throw Error("HeliLog loaded an outdated cached cloud module. Close and reopen the app, then reload the website while online. Your account and existing data are safe.");
  const client=await window.HeliLogCloud.client();
  window.HeliLogV23Sync.start({
-  userId:id,client,getData:()=>S,
+  userId:id,client,getData:()=>S,freshAccountDevice:stored===null,
   replaceData:next=>{
+   if(next?.cloudResetV244===true){localStorage.setItem(KEY,JSON.stringify(next));S=next;return;}
    if(typeof hasUnsavedFlightChanges==='function'&&hasUnsavedFlightChanges())
     throw Error("A flight form has unsaved changes. Finish or cancel the edit before refreshing cloud records.");
    const updated={...S,

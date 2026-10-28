@@ -90,6 +90,7 @@ if(window.visualViewport) window.visualViewport.addEventListener('resize',update
 function render(){
   document.documentElement.classList.remove('helilog-quick-scroll-locked');
   if(!v23Unlocked){v23LoginView();return;}
+ if(window.HeliLogV23Sync.status().state==="reset_required"){v244ResetRequiredView();return;}
   let v=location.hash.slice(1)||'dashboard';
   if(v23AccountWorkspace()&&v==='testmode'){
     v='dashboard';if(location.hash!=='#dashboard')location.hash='#dashboard';
