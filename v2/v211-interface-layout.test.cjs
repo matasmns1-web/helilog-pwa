@@ -28,11 +28,12 @@ function fixture(){
   displayDate:s=>s||"—",formatDateTime:s=>String(s),
   v23AccountWorkspace:()=>true,
   v29BackupPanel:()=>'<section id="v29-backup-tools">Encrypted snapshots</section>',
-  updatePWAStatus:()=>statusCalls++,
+  v244ResetPanel:()=>'<p>Protected reset UI</p>',
+   updatePWAStatus:()=>statusCalls++,
   statusCalls:()=>statusCalls
  };
  const wrapper=[
-  'const {app,S,TEST_MODE,v28Notice,pilotNameParts,header,htmlEscape,displayDate,formatDateTime,v23AccountWorkspace,v29BackupPanel,updatePWAStatus}=deps;',
+  'const {app,S,TEST_MODE,v28Notice,pilotNameParts,header,htmlEscape,displayDate,formatDateTime,v23AccountWorkspace,v29BackupPanel,updatePWAStatus,v244ResetPanel}=deps;',
   'let editingQualificationId=null;',
   code,
   'return {profile,settings,backups,rememberProfileSection,profileExpanded};'
@@ -105,7 +106,7 @@ test("Settings cards fill the main content area without nesting",()=>{
   }
  }
  assert.ok(closed,"Settings grid should close before the next page");
- assert.equal(directCards,7,"All Settings cards should be siblings, including aerodromes, not nested");
+ assert.equal(directCards,8,"All Settings cards should be siblings, including aerodromes, not nested");
  assert.match(page,/class="card settings-wide"[\s\S]*?App &amp; device/);
  assert.match(html,/\.settings-grid\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  assert.match(html,/@media\(max-width:1150px\)\{\.settings-grid\{grid-template-columns:1fr\}\}/);
@@ -152,6 +153,6 @@ test("The UI-only release retains archived-flight handlers and updates PWA cache
   "downloadFullBackup","restoreCheckedBackup","showIntegrityCheck","editMedical",
   "saveMedical","saveQualification","deleteQualification"])
   assert.match(html,new RegExp("function "+name+"\\("));
- assert.match(html,/HeliLog V2\.43 — Interface Copy Review · Test/);
- assert.match(worker,/helilog-v2-43-copy-audit-1/);
+ assert.match(html,/HeliLog V2\.44 — Protected Data Reset · Test/);
+ assert.match(worker,/helilog-v2-44-account-reset-1/);
 });
