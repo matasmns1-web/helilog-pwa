@@ -100,6 +100,6 @@ test('without TEST migration, logbook keeps legacy sync and deletion remains dis
 });
 test('production remains separate and test release has a distinct cache',()=>{
  assert.match(read('v2/service-worker.js'),/helilog-v2-44-1-data-management-1/);
- assert.match(app,/V2\.44\.1\.1 · TEST ENVIRONMENT/);
- assert.match(read('v2/manifest.webmanifest'),/V2\.44\.1\.1/);
+ assert.match(app,/V2\.44\.1 · TEST ENVIRONMENT/);
+ assert.match(read('v2/manifest.webmanifest'),/V2\.44\.1/);
 });
