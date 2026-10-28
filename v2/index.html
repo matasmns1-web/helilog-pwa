@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.43 — Interface Copy Review · Test</title>
+<title>HeliLog V2.44 — Protected Data Reset · Test</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -589,7 +589,7 @@ html.helilog-test-mode .brand::after{
 <link rel="stylesheet" href="./guide.css?v=2.29" media="screen">
 </head>
 <body><div class="layout">
-<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.43 · TEST ENVIRONMENT</span></div><nav>
+<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.44 · TEST ENVIRONMENT</span></div><nav>
 <div class="nav-group-label">Flight operations</div>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="recency">◷ Recency</button>
 <div class="nav-group-label">Records &amp; assets</div>
@@ -5952,6 +5952,12 @@ function settings(){
     <div id="integrityCheckResult" class="mini">No records will be changed by the check.</div>
   </div>
 
+  <div class="card settings-wide" id="v244DataManagement">
+    <div class="head">
+      <div><h2>Data management</h2><div class="muted">Account-owned records and protected reset actions.</div></div>
+    </div>
+    ${v244ResetPanel()}
+  </div>
   <div class="card" id="settings-testmode-card">
     <div class="head">
       <div><h2>Test Mode &amp; safe reset</h2>
@@ -6225,6 +6231,141 @@ function testmode(){
       <div id="cleanStartStatus" class="mini"></div>
     </div>`}
     <div class="note" style="margin-top:16px">TEST DATA MUST NOT be used as a genuine pilot logbook. Sandbox archives are not official flying records, even when signed in a print preview.</div>`;
+}
+
+let v244Prepared=null,v244Busy=false,v244Notice='';
+
+function v244ResetPanel(){
+ const account=v23AccountWorkspace();
+ const sync=account?window.HeliLogV23Sync.status():null;
+ const ready=account&&sync.state==="synced"&&sync.pending===0&&sync.conflicts===0&&Number.isSafeInteger(sync.resetGeneration);
+ const valid=ready&&v244Prepared?.owner===sync.owner&&v244Prepared?.generation===sync.resetGeneration&&v244Prepared?.snapshot===JSON.stringify(S);
+ return '<p class="muted">Permanently erase this account’s flights, simulator sessions, aircraft, licences, people, endorsements, signatures, imported totals, signed archive history, correction addenda and cloud snapshots. Your sign-in account remains active. Independently downloaded backups cannot be erased remotely.</p>'+
+  '<div class="note"><b>Important:</b> This also removes confirmed archive evidence. Keep the required flight records and a verified external backup before using this action. The action cannot be undone through HeliLog.</div>'+
+  (!account?'<p class="mini">Sign in to a cloud account to manage account-wide deletion. The old local-only sandbox reset remains separate.</p>':
+  '<p class="mini">Cloud status: <b>'+v23Escape(sync.state)+'</b>. Reset is disabled while offline, syncing, or reviewing conflicts.</p>'+
+  '<button type="button" class="btn" onclick="v244PrepareReset()"'+(!ready||v244Busy?' disabled':'')+'>1. Download required safety backup</button>'+
+  (valid?'<form class="form" onsubmit="v244ExecuteReset(event)" style="margin-top:15px">'+
+  '<p class="note"><b>Safety backup requested.</b> Open the downloaded file, save it outside HeliLog and verify that it is readable before continuing.</p>'+
+  '<div class="field"><label for="v244ResetPassword">Re-enter account password</label><input id="v244ResetPassword" type="password" autocomplete="current-password" required></div>'+
+  '<div class="field"><label for="v244ResetPhrase">Type DELETE MY LOGBOOK</label><input id="v244ResetPhrase" type="text" autocomplete="off" required></div>'+
+  '<label><input id="v244ResetBackupVerified" type="checkbox" required> I have saved and verified an independent copy, and understand that all account logbook data and cloud snapshots will be erased.</label>'+
+  '<button type="submit" class="btn dangerbtn"'+(v244Busy?' disabled':'')+'>Permanently delete logbook data</button></form>':'')+
+  (v244Notice?'<div role="status" class="note" style="margin-top:10px">'+v23Escape(v244Notice)+'</div>':''));
+}
+
+function v244FreshWorkspace(){
+ const name=window.HeliLogCloud.snapshot().displayName||"Pilot";
+ const empty=freshLogbookData({pilot:{name}},false);
+ empty.cloudWorkspaceV23=true;
+ empty.cloudResetV244=true;
+ empty.endorsementV2Archive={firstPage:1,batches:[],amendments:[]};
+ return empty;
+}
+
+async function v244PrepareReset(){
+ if(v244Busy||!v23AccountWorkspace())return;
+ v244Busy=true;v244Prepared=null;v244Notice="";
+ try{
+  if(window.navigator.onLine===false||typeof hasUnsavedFlightChanges==="function"&&hasUnsavedFlightChanges())
+   throw Error("Connect to the internet and finish any open flight edit first.");
+  await v23RefreshSync();
+  const sync=window.HeliLogV23Sync.status(),owner=window.HeliLogCloud.snapshot().userId;
+  if(sync.state!=="synced"||sync.owner!==owner||sync.pending||sync.conflicts||!Number.isSafeInteger(sync.resetGeneration))
+   throw Error("Resolve all unsynchronized changes and verify the account before resetting.");
+  const audit=await v28ReadAudit(false);
+  if(!audit.ok)throw Error("Cloud archive integrity check did not pass. Preserve both copies and review the findings before deleting.");
+  const before=JSON.stringify(S),file=await makeFullBackup();
+  if(JSON.stringify(S)!==before||window.HeliLogCloud.snapshot().userId!==owner)
+   throw Error("Your logbook or account changed during backup. Nothing was deleted.");
+  offerBackupFile(file,"HeliLog_SAFETY_Before_Account_Reset");
+  v244Prepared={owner,generation:sync.resetGeneration,snapshot:before};
+  v244Notice="Backup download requested. Verify it was saved before continuing.";
+ }catch(e){v244Notice="Reset preparation stopped: "+String(e.message||e);}
+ finally{v244Busy=false;if(location.hash==="#settings")settings();}
+}
+
+async function v244ExecuteReset(event){
+ event?.preventDefault?.();
+ if(v244Busy||!v244Prepared||!v23AccountWorkspace())return;
+ const field=document.getElementById("v244ResetPassword");
+ let password=field?.value||"";
+ if(field)field.value="";
+ const phrase=document.getElementById("v244ResetPhrase")?.value||"";
+ const acknowledged=!!document.getElementById("v244ResetBackupVerified")?.checked;
+ if(phrase!=="DELETE MY LOGBOOK"||!acknowledged||!password){v244Notice="Enter your account password, the exact phrase and confirm your verified safety backup.";settings();return;}
+ const owner=v244Prepared.owner,generation=v244Prepared.generation,before=v244Prepared.snapshot;
+ if(!confirm("FINAL WARNING: Delete ALL logbook information, signed print archives, endorsements and cloud snapshots from this account? Your account login stays active. This operation cannot be undone."))return;
+ v244Busy=true;v244Notice="";
+ let serverReset=false;
+ try{
+  if(window.navigator.onLine===false||window.HeliLogCloud.snapshot().userId!==owner||JSON.stringify(S)!==before)
+   throw Error("Your account, data or network changed. Start again with a new backup.");
+  const sync=window.HeliLogV23Sync.status();
+  if(sync.state!=="synced"||sync.pending||sync.conflicts||sync.resetGeneration!==generation)
+   throw Error("Synchronization changed. A new backup and review are required.");
+  const db=await window.HeliLogCloud.client();
+  const email=window.HeliLogCloud.snapshot().email;
+  const verified=await db.auth.signInWithPassword({email,password});
+  password="";
+  if(verified.error||verified.data?.user?.id!==owner)
+   throw Error("Account password verification failed. Nothing was deleted.");
+  if(!await window.HeliLogV23Sync.ensureGeneration()||
+   window.HeliLogV23Sync.status().resetGeneration!==generation||
+   JSON.stringify(S)!==before)throw Error("Account changed during password confirmation. No deletion was requested.");
+  const outcome=await db.rpc("helilog_reset_logbook",{
+   p_expected_generation:generation,p_confirmation:"DELETE MY LOGBOOK"
+  });
+  if(outcome.error)throw Error(outcome.error.message||"Cloud reset was rejected.");
+  serverReset=true;
+  const next=Number(outcome.data);
+  window.HeliLogV24Archive.stop();
+  window.HeliLogV23Sync.adoptGenerationAfterReset(next,v244FreshWorkspace());
+  v244Prepared=null;
+  window.location.reload();
+ }catch(e){
+  v244Prepared=null;
+  v244Notice=(serverReset?
+   "Cloud deletion SUCCEEDED but this device could not finish updating. Preserve your external backup and reload HeliLog so the reset protection can take effect. ":
+   "Deletion did not complete. Your records should remain unchanged. ")+String(e.message||e);
+ }finally{
+  password="";v244Busy=false;
+  if(location.hash==="#settings")settings();
+ }
+}
+
+function v244ResetRequiredView(){
+ const sync=window.HeliLogV23Sync.status();
+ app.innerHTML='<div class="v23-auth-container"><div class="v23-auth-card">'+
+  '<h2>Account logbook reset detected</h2>'+
+  '<p>The account logbook was erased on another device. HeliLog has blocked all older cached records and pending uploads from being synchronized again.</p>'+
+  '<p class="note">Records still on THIS device have not been deleted. Download a safety copy if you need to retain evidence of them. Accepting the new empty account will clear this device’s logbook cache and unsent changes.</p>'+
+  '<p class="mini">Pending changes on this device: '+Number(sync.pending||0)+'.</p>'+
+  '<button class="btn dangerbtn" type="button" onclick="v244AcknowledgeRemoteReset()"'+(v244Busy?' disabled':'')+'>Download backup and clear this device</button>'+
+  (v244Notice?'<div class="note" role="alert">'+v23Escape(v244Notice)+'</div>':'')+
+  '</div></div>';
+}
+
+async function v244AcknowledgeRemoteReset(){
+ if(v244Busy||!v23AccountWorkspace()||window.HeliLogV23Sync.status().state!=="reset_required")return;
+ v244Busy=true;v244Notice="";
+ try{
+  if(window.navigator.onLine===false)throw Error("Reconnect to check the latest cloud reset.");
+  await window.HeliLogV23Sync.ensureGeneration();
+  if(window.HeliLogV23Sync.status().state!=="reset_required")
+   throw Error("The account state changed. Reload before proceeding.");
+  const before=JSON.stringify(S),backup=await makeFullBackup();
+  if(JSON.stringify(S)!==before)throw Error("Local data changed during backup.");
+  offerBackupFile(backup,"HeliLog_STALE_DEVICE_Before_Clear");
+  const words=prompt("Your local logbook was superseded by an account reset. Verify your downloaded backup is saved and readable. Type CLEAR THIS DEVICE to discard the old local records:");
+  if(words!=="CLEAR THIS DEVICE")return;
+  if(!confirm("Replace THIS device’s cached logbook and pending uploads with the reset account’s empty workspace?"))return;
+  if(JSON.stringify(S)!==before)throw Error("This device changed after the backup. Start again.");
+  window.HeliLogV24Archive.stop();
+  window.HeliLogV23Sync.acceptRemoteReset(v244FreshWorkspace());
+  window.location.reload();
+ }catch(e){v244Notice="Local reset not acknowledged: "+String(e.message||e);}
+ finally{v244Busy=false;if(window.HeliLogV23Sync.status().state==="reset_required")v244ResetRequiredView();}
 }
 
 function backupSummary(data){
@@ -6882,6 +7023,7 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+ {v:"V2.44",name:"Protected account-wide data reset",detail:"The Data management area prepares a mandatory safety backup and requires fresh account-password verification before deleting logbook records, frozen print archives and cloud snapshots. Account login is retained. Other devices must explicitly acknowledge a reset before syncing."},
  {v:"V2.43",name:"Clearer, neutral guidance across HeliLog",detail:"Refresh outdated help and account messages, remove prototype labels from established features, and replace overly specific form examples with generic prompts. The CSV import template now starts blank. Existing records are unchanged."},
  {v:"V2.42",name:"Faster clean printing and simpler Help & Guide",detail:"Getting-started instructions now appear first, with a compact expandable update history. Pre-archive checks run automatically; no findings means direct access to print preview. Findings still need explicit review and acknowledgement, and printed-and-signed confirmation remains separate."},
  {v:"V2.41.2",name:"Cleaner simulator session details",detail:"Simulator details show only the recorded simulator duration. Removed the unnecessary Actual flight time: 0:00 box. Simulator sessions still do not add helicopter flight time or EASA recency."},
@@ -7204,6 +7346,7 @@ if(window.visualViewport) window.visualViewport.addEventListener('resize',update
 function render(){
   document.documentElement.classList.remove('helilog-quick-scroll-locked');
   if(!v23Unlocked){v23LoginView();return;}
+ if(window.HeliLogV23Sync.status().state==="reset_required"){v244ResetRequiredView();return;}
   let v=location.hash.slice(1)||'dashboard';
   if(v23AccountWorkspace()&&v==='testmode'){
     v='dashboard';if(location.hash!=='#dashboard')location.hash='#dashboard';
