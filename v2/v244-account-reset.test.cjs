@@ -95,11 +95,11 @@ test('without TEST migration, logbook keeps legacy sync and deletion remains dis
  for(let i=0;i<100;i++)await Promise.resolve();
  assert.equal(remote.length,1);
  assert.equal(rpcCalls,0);
- assert.match(app,/Test preview only/);
+ assert.match(app,/Deletion unavailable on this test server/);
  assert.match(app,/sync\.resetSupported===true/);
 });
 test('production remains separate and test release has a distinct cache',()=>{
  assert.match(read('v2/service-worker.js'),/helilog-v2-44-1-data-management-1/);
- assert.match(app,/V2\.44\.1 · TEST ENVIRONMENT/);
- assert.match(read('v2/manifest.webmanifest'),/V2\.44\.1/);
+ assert.match(app,/V2\.44\.1\.1 · TEST ENVIRONMENT/);
+ assert.match(read('v2/manifest.webmanifest'),/V2\.44\.1\.1/);
 });
