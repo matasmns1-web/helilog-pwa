@@ -204,11 +204,12 @@ let v244Prepared=null,v244Busy=false,v244Notice='';
 function v244ResetPanel(){
  const account=v23AccountWorkspace();
  const sync=account?window.HeliLogV23Sync.status():null;
- const ready=account&&sync.state==="synced"&&sync.pending===0&&sync.conflicts===0&&Number.isSafeInteger(sync.resetGeneration);
+ const ready=account&&sync.resetSupported===true&&sync.state==="synced"&&sync.pending===0&&sync.conflicts===0&&Number.isSafeInteger(sync.resetGeneration);
  const valid=ready&&v244Prepared?.owner===sync.owner&&v244Prepared?.generation===sync.resetGeneration&&v244Prepared?.snapshot===JSON.stringify(S);
  return '<p class="muted">Permanently erase this account’s flights, simulator sessions, aircraft, licences, people, endorsements, signatures, imported totals, signed archive history, correction addenda and cloud snapshots. Your sign-in account remains active. Independently downloaded backups cannot be erased remotely.</p>'+
   '<div class="note"><b>Important:</b> This also removes confirmed archive evidence. Keep the required flight records and a verified external backup before using this action. The action cannot be undone through HeliLog.</div>'+
   (!account?'<p class="mini">Sign in to a cloud account to manage account-wide deletion. The old local-only sandbox reset remains separate.</p>':
+  (!sync.resetSupported?'<div class="note" role="status"><b>Test preview only.</b> The required server-side reset safeguards are not installed yet. Deletion is unavailable; normal logbook synchronization remains active.</div>':'')+
   '<p class="mini">Cloud status: <b>'+v23Escape(sync.state)+'</b>. Reset is disabled while offline, syncing, or reviewing conflicts.</p>'+
   '<button type="button" class="btn" onclick="v244PrepareReset()"'+(!ready||v244Busy?' disabled':'')+'>1. Download required safety backup</button>'+
   (valid?'<form class="form" onsubmit="v244ExecuteReset(event)" style="margin-top:15px">'+
@@ -237,7 +238,7 @@ async function v244PrepareReset(){
    throw Error("Connect to the internet and finish any open flight edit first.");
   await v23RefreshSync();
   const sync=window.HeliLogV23Sync.status(),owner=window.HeliLogCloud.snapshot().userId;
-  if(sync.state!=="synced"||sync.owner!==owner||sync.pending||sync.conflicts||!Number.isSafeInteger(sync.resetGeneration))
+  if(!sync.resetSupported||sync.state!=="synced"||sync.owner!==owner||sync.pending||sync.conflicts||!Number.isSafeInteger(sync.resetGeneration))
    throw Error("Resolve all unsynchronized changes and verify the account before resetting.");
   const audit=await v28ReadAudit(false);
   if(!audit.ok)throw Error("Cloud archive integrity check did not pass. Preserve both copies and review the findings before deleting.");
@@ -275,7 +276,7 @@ async function v244ExecuteReset(event){
   if(window.navigator.onLine===false||window.HeliLogCloud.snapshot().userId!==owner||JSON.stringify(S)!==before)
    throw Error("Your account, data or network changed. Start again with a new backup.");
   const sync=window.HeliLogV23Sync.status();
-  if(sync.state!=="synced"||sync.pending||sync.conflicts||sync.resetGeneration!==generation)
+  if(!sync.resetSupported||sync.state!=="synced"||sync.pending||sync.conflicts||sync.resetGeneration!==generation)
    throw Error("Synchronization changed. A new backup and review are required.");
   const db=await window.HeliLogCloud.client();
   const email=window.HeliLogCloud.snapshot().email;

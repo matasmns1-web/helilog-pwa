@@ -30,7 +30,7 @@ test('reset screen requires backup, password, exact phrase, explicit final confi
  assert.match(app,/Permanently delete logbook data/);
  assert.match(app,/v244ResetRequiredView/);
  assert.match(app,/CLEAR THIS DEVICE/);
- assert.match(cloud,/p_reset_generation:root\.HeliLogV23Sync\.status\(\)\.resetGeneration/g);
+ assert.match(cloud,/if\(syncStatus\.resetSupported\)args\.p_reset_generation=syncStatus\.resetGeneration/g);
 });
 test('a previously active device is fenced after another device reset',async()=>{
  let serverGeneration=0,remoteWrites=0;
@@ -60,6 +60,43 @@ test('reset preparation fails unless device and cloud archive counts match',()=>
  assert.match(app,/localArchiveBatches!==audit\.counts\.batches/);
  assert.match(app,/localSignedAddenda!==audit\.counts\.addenda/);
  assert.match(app,/Cloud archive refresh is not healthy/);
+});
+
+test('without TEST migration, logbook keeps legacy sync and deletion remains disabled',async()=>{
+ const store=new Map(),remote=[];
+ const data={aircraft:[],flights:[]};
+ class Query {
+  constructor(table){this.table=table;this.filters={};this.method='read';}
+  select(){return this}eq(k,v){this.filters[k]=v;return this}
+  in(){return this}order(){return this}range(){return this}
+  async single(){return {data:null,error:{code:'42703',message:'column helilog_accounts.reset_generation does not exist'}};}
+  insert(v){this.method='insert';this.payload=v;return this}
+  then(ok,bad){
+   let rows=[],error=null;
+   if(this.method==='read')rows=remote.filter(row=>Object.entries(this.filters).every(([key,value])=>row[key]===value));
+   else{remote.push({...this.payload,revision:1});rows=[{revision:1}];}
+   return Promise.resolve({data:rows,error}).then(ok,bad);
+  }
+ }
+ let rpcCalls=0;
+ const client={from:table=>new Query(table),async rpc(){rpcCalls++;throw Error('RPC must not be used on old schema');}};
+ const browser={navigator:{onLine:true},console,localStorage:{
+  getItem:k=>store.has(k)?store.get(k):null,setItem:(k,v)=>store.set(k,String(v))
+ },HeliLogCloud:{snapshot:()=>({userId:uid})}};
+ browser.window=browser;
+ const api=new Function('window','module',sync+';return window.HeliLogV23Sync;')(browser,undefined);
+ api.start({userId:uid,client,getData:()=>data,replaceData:next=>Object.assign(data,next),freshAccountDevice:true});
+ assert.equal(await api.refresh(),true);
+ assert.equal(api.status().state,'synced');
+ assert.equal(api.status().resetSupported,false);
+ assert.equal(api.status().resetGeneration,null);
+ data.aircraft.push({id:'demo',reg:'LY-TEST'});
+ api.track(data);
+ for(let i=0;i<100;i++)await Promise.resolve();
+ assert.equal(remote.length,1);
+ assert.equal(rpcCalls,0);
+ assert.match(app,/Test preview only/);
+ assert.match(app,/sync\.resetSupported===true/);
 });
 test('production remains separate and test release has a distinct cache',()=>{
  assert.match(read('v2/service-worker.js'),/helilog-v2-44-account-reset-1/);
