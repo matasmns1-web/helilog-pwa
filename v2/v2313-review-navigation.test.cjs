@@ -64,10 +64,10 @@ test('Back to review only appears for flight opened from review, not normal logb
  assert.match(archive,/v229OpenReviewFlight\('\+\s*htmlEscape\(JSON\.stringify\(issue\.otherFlightId\)\)\+','\+issueIndex/);
 });
 test('review and print confirmation still require exact batch fingerprint',()=>{
- assert.match(archive,/pendingArchiveReview===JSON\.stringify\(draft\)/);
+ assert.match(archive,/pendingArchiveReview===key/);
  assert.match(archive,/pendingArchivePreview===JSON\.stringify\(draft\)/);
  assert.match(archive,/if\(!v229ArchiveReviewed\(draft\)\)/);
  assert.doesNotMatch(archive.slice(archive.indexOf('let v229ReviewReturn=null;'),archive.indexOf('function v229PreArchiveReview(){')),/localStorage|save\(|setItem\(|archiveBatch/);
- assert.match(read('service-worker.js'),/helilog-v2-41-2-sim-details-1/);
- assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.41\.2'/);
+ assert.match(read('service-worker.js'),/helilog-v2-42-guide-archive-1/);
+ assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.42'/);
 });

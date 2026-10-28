@@ -181,9 +181,9 @@ const HELILOG_GUIDE_TOPICS=[
       "On the desktop website, use Logbook → Export for CSV or a printable PDF copy.",
       "Exporting a PDF does not create numbered, permanently archived pages.",
       "On the web (not the installed iPhone app), open Print Archive and choose the number of pages to include in the next batch.",
-      "Select Review flights before printing. It flags possible duplicate flights, incomplete PIC names, unusual UTC times and discrepancies in totals—without changing any record.",
-      "Open the flagged entries to make corrections if needed. Acknowledge the review for this exact selection; changes to flights or selected pages require another review.",
-      "Only then preview the numbered pages, verify the running totals, print and physically sign them, and separately confirm the printed batch in HeliLog.",
+      "Pre-archive safety checks run automatically for the selected batch. When there are no findings, Preview / Print pages is available immediately. Otherwise select Review flights before printing to inspect possible duplicates, PIC identity, UTC time issues and totals.",
+      "If any findings or page-order warnings are shown, inspect the flagged entries and acknowledge that exact selection. Changing flight data, selected pages or findings requires a fresh check and, if necessary, another review.",
+      "Whether the checks are clean or findings have been acknowledged, preview the numbered pages, verify the running totals, print and physically sign them, and separately confirm the printed batch in HeliLog.",
       "Printing a PDF alone does not create a signed archive. Confirmed pages are locked; amend them through a signed correction addendum."
     ],
     "route": "logbook",
@@ -195,13 +195,13 @@ const HELILOG_GUIDE_TOPICS=[
     "summary": "Check the exact flights about to be printed for common issues before signing.",
     "steps": [
       "On the web open Print Archive, then choose how many pages to include in the next batch.",
-      "Select Review flights before printing to inspect the selected batch. A possible duplicate is compared with your entire logbook, including earlier archived entries.",
+      "HeliLog automatically runs read-only checks against the selected pages and the entire logbook, including earlier archived entries. If there are no findings, skip the acknowledgement page and select Preview / Print pages.",
       "Check missing PIC information and pilot links, flight duration versus UTC off/on times (including overnight flights), unusual very short or long flights, Night/IFR/instructor minutes and take-off versus landing counts.",
       "Review the independent calculations of PIC/Co-pilot/Dual, engine and single-/multi-pilot experience, and carried-forward plus closing totals.",
       "Review overlapping flight intervals, including multiple flights on the same day or an overnight arrival on the next UTC day. Flights that end when another starts are not overlaps.",
       "Use View entry or View related entry to inspect a flagged flight, then select Back to review to return to the same finding. A ticked acknowledgement stays checked only if the selected batch has not changed.",
-      "Edit only an unarchived entry through its normal form. After any flight data or selected page changes, review and acknowledge the updated batch again; never silently change or automatically delete anything.",
-      "Acknowledgement allows printing after you have checked exceptions; it is not official certification. If selected pages or flight records change, repeat the review.",
+      "Edit only an unarchived entry through its normal form. After any flight or page change, HeliLog rechecks the batch and requires acknowledgement if findings remain. Records are never silently changed or deleted.",
+      "When findings exist, select Review flights before printing and acknowledge the exceptions before preview. A clean batch requires no acknowledgement, but HeliLog rechecks safety before both preview and final confirmation.",
       "Print, verify and sign the paper pages before separately confirming the archive. Archived records remain protected."
     ],
     "route": "printarchive",
@@ -268,6 +268,7 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+ {v:"V2.42",name:"Faster clean printing and simpler Help & Guide",detail:"Getting-started instructions now appear first, with a compact expandable update history. Pre-archive checks run automatically; no findings means direct access to print preview. Findings still need explicit review and acknowledgement, and printed-and-signed confirmation remains separate."},
  {v:"V2.41.2",name:"Cleaner simulator session details",detail:"Simulator details show only the recorded simulator duration. Removed the unnecessary Actual flight time: 0:00 box. Simulator sessions still do not add helicopter flight time or EASA recency."},
  {v:"V2.41.1",name:"Simplify simulator helicopter type entry",detail:"The Represented helicopter ICAO type field is the only aircraft-type input for simulator sessions. Removed the older Device / aircraft type field without deleting legacy device descriptions or previously reviewed linked evidence."},
  {v:"V2.41",name:"Match FFS sessions to operator recency",detail:"An FFS session with an explicit ICAO helicopter type and crew configuration suggests matching operator rules. Review the supporting document and enter qualifying manoeuvres before credit is counted. Linked approval becomes ineligible after the simulator session is edited or deleted until reviewed again. Legacy evidence stays intact; no automatic EASA recency credit."},
@@ -465,7 +466,13 @@ function helpGuideExpand(open){
  document.querySelectorAll('[data-help-topic]').forEach(el=>{if(!el.hidden)el.open=!!open;});
 }
 function helpGuide(){
- const html=HELILOG_GUIDE_TOPICS.map(topic=>`<details class="card guide-topic" data-help-topic>
+ // Put onboarding immediately before specialist topics, preserving the order
+ // of everything else, including search and expand-all behaviour.
+ const orderedTopics=[...HELILOG_GUIDE_TOPICS].sort((a,b)=>
+  Number(b.category==='Start here')-Number(a.category==='Start here'));
+ const recentUpdates=HELILOG_GUIDE_UPDATES.slice(0,3);
+ const pastUpdates=HELILOG_GUIDE_UPDATES.slice(3);
+ const html=orderedTopics.map(topic=>`<details class="card guide-topic" data-help-topic>
   <summary><span class="guide-topic-label"><small>${htmlEscape(topic.category)}</small><b>${htmlEscape(topic.title)}</b><span class="muted">${htmlEscape(topic.summary)}</span></span><span class="guide-chevron" aria-hidden="true">⌄</span></summary>
   <div class="guide-topic-body"><ol>${topic.steps.map(step=>`<li>${htmlEscape(step)}</li>`).join('')}</ol><div class="guide-topic-actions"><button class="btn" type="button" onclick="go('${topic.route}')">${htmlEscape(topic.action)} →</button></div></div>
  </details>`).join('');
@@ -483,7 +490,10 @@ function helpGuide(){
  <label for="helpSearch" class="guide-search-label">Search instructions</label><input id="helpSearch" class="guide-search" type="search" placeholder="Try: UTC, PIC, archive, backup…" oninput="helpGuideSearch()" autocomplete="off">
  <div class="mini" id="helpSearchResults" role="status" aria-live="polite">${HELILOG_GUIDE_TOPICS.length} topics</div>
  <div class="guide-topics">${html}</div><div id="helpNoResults" class="card" hidden>No matching topics. Try another keyword.</div></section>
- <section class="card guide-updates"><h2>What's new</h2><p class="muted">We update this guide when HeliLog gains new features.</p>
- ${HELILOG_GUIDE_UPDATES.map(x=>`<div class="guide-update"><span class="guide-version">${htmlEscape(x.v)}</span><div><b>${htmlEscape(x.name)}</b><div class="muted">${htmlEscape(x.detail)}</div></div></div>`).join('')}</section>
+ <section class="card guide-updates"><h2>What's new</h2><p class="muted">Recent improvements. Select an update to read details.</p>
+ ${recentUpdates.map((x,i)=>`<div class="guide-update"><span class="guide-version">${htmlEscape(x.v)}</span><details class="guide-update-details" ${i===0?'open':''}><summary><b>${htmlEscape(x.name)}</b></summary><p class="muted">${htmlEscape(x.detail)}</p></details></div>`).join('')}
+ ${pastUpdates.length?`<details class="guide-history"><summary>Older updates (${pastUpdates.length})</summary>
+  ${pastUpdates.map(x=>`<div class="guide-update"><span class="guide-version">${htmlEscape(x.v)}</span><details class="guide-update-details"><summary><b>${htmlEscape(x.name)}</b></summary><p class="muted">${htmlEscape(x.detail)}</p></details></div>`).join('')}
+ </details>`:''}</section>
  <p class="guide-disclaimer">HeliLog helps maintain records. Pilots remain responsible for accurate entries and meeting the rules of their competent authority.</p>`;
 }

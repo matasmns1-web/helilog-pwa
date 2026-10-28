@@ -321,3 +321,9 @@ Add Rule opens and focuses the form; validation messages appear inline without c
 ## V2.41.2 — simulator details tidy-up (TEST)
 - Simulator details now show one emphasized simulator-duration card; remove redundant `Actual flight time: 0:00` stat from this view only. Display still states simulator time is not actual helicopter flight time.
 - No schema changes, archived flight modifications, EASA/recency changes, cloud mutations or production promotion.
+
+## V2.42 — condensed Guide and clean pre-archive fast path (TEST)
+- Help & Guide onboarding / Start here topics are first. Latest three updates show in a compact expandable section; the older update history remains available inside a collapsed details control. Search and expand/collapse of topics remain unchanged.
+- Before every preview and confirmation, HeliLog independently evaluates the exact batch and current electronic logbook. A zero-finding batch (including no late-entry, same-day simulator-order or demo warnings) can preview and print immediately with no acknowledgement step.
+- Any finding requires the previous manual review and checkbox acknowledgement. Review signatures are transient, based on the exact draft and findings; a changed record or issue result invalidates consent. If the safety checker is missing/fails/malformed, preview and archive confirmation are blocked. No preview auto-confirms a signed batch, and archive and cloud protections remain intact.
+- Production, Supabase schema and signed records are unchanged.

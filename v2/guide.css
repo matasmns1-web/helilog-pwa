@@ -32,6 +32,16 @@
 .guide-update{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
 .guide-update .muted{font-size:12px;margin-top:3px}
 .guide-version{padding:4px 7px;border:1px solid #388e84;background:#194a47;border-radius:6px;color:#a9f5e9;font-size:11px;font-weight:800}
+/* V2.42: keep the latest improvements accessible without a tall changelog. */
+.guide-update-details{flex:1;min-width:0}
+.guide-update-details summary{list-style:none;cursor:pointer;font-weight:700}
+.guide-update-details summary::-webkit-details-marker{display:none}
+.guide-update-details summary:hover{color:#70dfd0}
+.guide-update-details[open] summary{margin-bottom:5px}
+.guide-update-details .muted{margin:0;font-size:12px;line-height:1.5}
+.guide-history{margin-top:10px;border-top:1px solid var(--line);padding-top:12px}
+.guide-history>summary{cursor:pointer;color:#70dfd0;font-weight:700;font-size:13px}
+.guide-history>summary:hover{text-decoration:underline}
 .guide-disclaimer{color:var(--muted);font-size:12px;line-height:1.5;margin:16px 0 30px}
 @media(max-width:700px){.guide-first-steps{grid-template-columns:repeat(2,minmax(0,1fr))}.guide-intro{padding:17px}.guide-topic summary{padding:14px}.guide-topic-body{padding:10px 14px 15px}.guide-actions .btn{font-size:12px;padding:8px}}
 }

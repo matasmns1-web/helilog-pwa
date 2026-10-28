@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.41.2 — Simulator Session Details · Test</title>
+<title>HeliLog V2.42 — Guide & Archive Fast Path · Test</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -589,7 +589,7 @@ html.helilog-test-mode .brand::after{
 <link rel="stylesheet" href="./guide.css?v=2.29" media="screen">
 </head>
 <body><div class="layout">
-<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.41.2 · TEST ENVIRONMENT</span></div><nav>
+<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.42 · TEST ENVIRONMENT</span></div><nav>
 <div class="nav-group-label">Flight operations</div>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="recency">◷ Recency</button>
 <div class="nav-group-label">Records &amp; assets</div>
@@ -3005,8 +3005,45 @@ function saveArchiveSetup(){
  * Never store a review decision in the logbook or the signed archive.
  */
 let pendingArchiveReview=null;
+let v242ReviewViewedKey=null;
+/* V2.42: Evaluate the SAME read-only checker immediately before each
+ * preview and confirmation. No clean result is stored as acknowledgement.
+ * The review key includes both the exact draft and actual findings: changes
+ * to other flights that affect the report invalidate an earlier exception review.
+ * Fail closed if the checker is unavailable or its output is malformed.
+ */
+function v242ArchiveCheck(draft=nextArchiveDraft()){
+ if(!draft?.flights?.length)return {ready:false,clean:false,report:null,key:null,error:null};
+ if(typeof window.HeliLogV29Review?.evaluate!=='function')
+  return {ready:false,clean:false,report:null,key:null,error:'Pre-archive safety checker is unavailable. Reload HeliLog online before printing.'};
+ try{
+  const result=window.HeliLogV29Review.evaluate({draft,allFlights:S.flights,people:S.people});
+  if(!Array.isArray(result?.issues)||!Number.isSafeInteger(result.critical)||
+     !Number.isSafeInteger(result.advisory)||result.critical<0||result.advisory<0||
+     result.critical+result.advisory!==result.issues.length)
+   throw Error('Invalid pre-archive findings. Nothing was approved.');
+  // Page-order warnings are significant even when individual flight checks
+  // pass. Treat them as advisories requiring the regular review workflow.
+  const extra=[];
+  if(draft.lateCount>0)extra.push({severity:'advisory',code:'late-entry',
+   message:draft.lateCount+' flight(s) predate the last signed batch. Review their placement and annotate them as late entries.'});
+  if(draft.ambiguousSimulatorDays>0)extra.push({severity:'advisory',code:'sim-order',
+   message:draft.ambiguousSimulatorDays+' day(s) contain both timed flights and undated-time simulator entries. Confirm print order.'});
+  if(draft.demoCount>0)extra.push({severity:'critical',code:'demo-entry',
+   message:draft.demoCount+' unchanged demonstration entries must be removed before confirming an official archive.'});
+  const issues=[...result.issues,...extra];
+  const report={...result,issues,critical:result.critical+extra.filter(x=>x.severity==='critical').length,
+   advisory:result.advisory+extra.filter(x=>x.severity==='advisory').length};
+  const clean=issues.length===0;
+  const key=JSON.stringify({draft,issues});
+  return {ready:clean||pendingArchiveReview===key,clean,report,key,error:null};
+ }catch(err){
+  return {ready:false,clean:false,report:null,key:null,
+   error:'Pre-archive safety review failed: '+String(err?.message||err)};
+ }
+}
 function v229ArchiveReviewed(draft=nextArchiveDraft()){
- return !!pendingArchiveReview && pendingArchiveReview===JSON.stringify(draft);
+ return v242ArchiveCheck(draft).ready;
 }
 /* V2.31.3: transient return navigation, never persisted or confused with
  * signed review acknowledgement. The exact batch controls checkbox restore. */
@@ -3045,9 +3082,11 @@ function v229PreArchiveReview(){
  if(v23PreventUnsupportedArchive()||isStandaloneApp())return;
  const draft=nextArchiveDraft();
  if(!draft.flights.length){go("printarchive");return;}
- if(!window.HeliLogV29Review?.evaluate)
-  throw Error("Pre-archive review module unavailable. Reopen HeliLog online; do not print or archive.");
- const report=window.HeliLogV29Review.evaluate({draft,allFlights:S.flights,people:S.people});
+ const check=v242ArchiveCheck(draft);
+ if(check.error)throw Error(check.error);
+ if(check.clean){go("printarchive");return;}
+ const report=check.report;
+ v242ReviewViewedKey=check.key;
  const issueHtml=report.issues.map((issue,issueIndex)=>{
   const heading=issue.severity==="critical"?"Check carefully":"Check if applicable";
   const related=issue.otherFlightId?
@@ -3092,7 +3131,13 @@ function v229AcceptReview(){
  }
  const draft=nextArchiveDraft();
  if(!draft.flights.length){alert("There are no flights to review.");return;}
- pendingArchiveReview=JSON.stringify(draft);
+ const check=v242ArchiveCheck(draft);
+ if(check.error){alert(check.error);return;}
+ if(!check.clean&&(!check.key||check.key!==v242ReviewViewedKey)){
+  alert("The selected flights or findings have changed. Review the current results before continuing.");
+  v229PreArchiveReview();return;
+ }
+ pendingArchiveReview=check.clean?null:check.key;
  go("printarchive");
 }
 function previewNextArchive(){
@@ -3349,7 +3394,8 @@ function printarchive(){
   const batches=archivedBatches();
   const draft=nextArchiveDraft();
   const previewReady=!!pendingArchivePreview && pendingArchivePreview===JSON.stringify(draft);
-  const reviewReady=v229ArchiveReviewed(draft);
+  const reviewCheck=v242ArchiveCheck(draft);
+  const reviewReady=reviewCheck.ready;
   const canPrint=draft.flights.length>0;
   const first=!batches.length;
   app.innerHTML=header('Print logbook & archive',
@@ -3391,12 +3437,14 @@ function printarchive(){
         You can also print a partly filled final page; any unused rows will be crossed out with dashes and marked UNUSED.
       </p>
     </div>`:''}
-    ${canPrint?`<div class="card" style="margin-top:14px">
-      <div class="head"><h2>Step 1 — Pre-archive flight review</h2></div>
-      <p>Review possible duplicates, PIC information, unusual UTC times and flight-time totals for these exact pages before printing. Findings never change your records.</p>
-      <div class="mini">${reviewReady?'Review acknowledged for this exact batch. Re-review if you wish.':'Review required before previewing or printing this batch.'}</div>
-      <div class="actions" style="margin-top:10px"><button class="btn ${reviewReady?'':'primary'}" onclick="go('archivereview')">${reviewReady?'Review again':'Review flights before printing'}</button></div>
-    </div>`:''}
+    ${canPrint?(reviewCheck.clean?
+      `<div class="card" style="margin-top:14px"><div class="mini"><b>No pre-archive findings for the selected pages.</b> Continue directly to Preview / Print pages. HeliLog rechecks before preview and confirmation; you still need to verify, print and sign the pages.</div></div>`:
+      `<div class="card" style="margin-top:14px">
+       <div class="head"><h2>Step 1 — Pre-archive flight review</h2></div>
+       <p>Review possible duplicates, PIC information, unusual UTC times and flight-time totals for these exact pages before printing. Findings never change your records.</p>
+       <div class="mini">${reviewCheck.error?htmlEscape(reviewCheck.error):reviewReady?'Findings acknowledged for this exact batch. Review again if needed.':'Findings require review and acknowledgement before previewing or printing this batch.'}</div>
+       <div class="actions" style="margin-top:10px"><button class="btn ${reviewReady?'':'primary'}" ${reviewCheck.error?'disabled':''} onclick="go('archivereview')">${reviewReady?'Review again':'Review flights before printing'}</button></div>
+      </div>`):''}
     ${draft.demoCount?`<div class="note" style="margin-top:14px;border-color:#b42318">
        <b>Example flights detected:</b> ${draft.demoCount} unchanged demonstration entries are present in this print batch.
        Do not sign these as genuine flight records. You may preview the layout, but archive confirmation is blocked until they are removed.
@@ -3410,7 +3458,7 @@ function printarchive(){
     <div class="card" style="margin-top:16px">
       <div class="head"><h2>Next print batch</h2></div>
       ${canPrint?
-        `<p class="muted">1. Review the selected flights. 2. Preview and print the A4 landscape pages. 3. Check totals and sign them. 4. Confirm the printed batch to lock the records.</p>
+        `<p class="muted">${reviewCheck.clean?'No review findings. ':reviewReady?'Findings reviewed. ':'Review findings before printing. '}Preview the A4 pages, verify totals, print and physically sign, then separately confirm the printed batch to lock the records.</p>
          <div style="display:flex;flex-wrap:wrap;gap:9px">
            <button class="btn primary" ${reviewReady?'':'disabled'} onclick="previewNextArchive()">Preview / Print pages</button>
            <button class="btn" ${previewReady&&reviewReady?'':'disabled'} onclick="confirmPrintedArchive()">Confirm printed & signed</button>
@@ -6750,9 +6798,9 @@ const HELILOG_GUIDE_TOPICS=[
       "On the desktop website, use Logbook → Export for CSV or a printable PDF copy.",
       "Exporting a PDF does not create numbered, permanently archived pages.",
       "On the web (not the installed iPhone app), open Print Archive and choose the number of pages to include in the next batch.",
-      "Select Review flights before printing. It flags possible duplicate flights, incomplete PIC names, unusual UTC times and discrepancies in totals—without changing any record.",
-      "Open the flagged entries to make corrections if needed. Acknowledge the review for this exact selection; changes to flights or selected pages require another review.",
-      "Only then preview the numbered pages, verify the running totals, print and physically sign them, and separately confirm the printed batch in HeliLog.",
+      "Pre-archive safety checks run automatically for the selected batch. When there are no findings, Preview / Print pages is available immediately. Otherwise select Review flights before printing to inspect possible duplicates, PIC identity, UTC time issues and totals.",
+      "If any findings or page-order warnings are shown, inspect the flagged entries and acknowledge that exact selection. Changing flight data, selected pages or findings requires a fresh check and, if necessary, another review.",
+      "Whether the checks are clean or findings have been acknowledged, preview the numbered pages, verify the running totals, print and physically sign them, and separately confirm the printed batch in HeliLog.",
       "Printing a PDF alone does not create a signed archive. Confirmed pages are locked; amend them through a signed correction addendum."
     ],
     "route": "logbook",
@@ -6764,13 +6812,13 @@ const HELILOG_GUIDE_TOPICS=[
     "summary": "Check the exact flights about to be printed for common issues before signing.",
     "steps": [
       "On the web open Print Archive, then choose how many pages to include in the next batch.",
-      "Select Review flights before printing to inspect the selected batch. A possible duplicate is compared with your entire logbook, including earlier archived entries.",
+      "HeliLog automatically runs read-only checks against the selected pages and the entire logbook, including earlier archived entries. If there are no findings, skip the acknowledgement page and select Preview / Print pages.",
       "Check missing PIC information and pilot links, flight duration versus UTC off/on times (including overnight flights), unusual very short or long flights, Night/IFR/instructor minutes and take-off versus landing counts.",
       "Review the independent calculations of PIC/Co-pilot/Dual, engine and single-/multi-pilot experience, and carried-forward plus closing totals.",
       "Review overlapping flight intervals, including multiple flights on the same day or an overnight arrival on the next UTC day. Flights that end when another starts are not overlaps.",
       "Use View entry or View related entry to inspect a flagged flight, then select Back to review to return to the same finding. A ticked acknowledgement stays checked only if the selected batch has not changed.",
-      "Edit only an unarchived entry through its normal form. After any flight data or selected page changes, review and acknowledge the updated batch again; never silently change or automatically delete anything.",
-      "Acknowledgement allows printing after you have checked exceptions; it is not official certification. If selected pages or flight records change, repeat the review.",
+      "Edit only an unarchived entry through its normal form. After any flight or page change, HeliLog rechecks the batch and requires acknowledgement if findings remain. Records are never silently changed or deleted.",
+      "When findings exist, select Review flights before printing and acknowledge the exceptions before preview. A clean batch requires no acknowledgement, but HeliLog rechecks safety before both preview and final confirmation.",
       "Print, verify and sign the paper pages before separately confirming the archive. Archived records remain protected."
     ],
     "route": "printarchive",
@@ -6837,6 +6885,7 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+ {v:"V2.42",name:"Faster clean printing and simpler Help & Guide",detail:"Getting-started instructions now appear first, with a compact expandable update history. Pre-archive checks run automatically; no findings means direct access to print preview. Findings still need explicit review and acknowledgement, and printed-and-signed confirmation remains separate."},
  {v:"V2.41.2",name:"Cleaner simulator session details",detail:"Simulator details show only the recorded simulator duration. Removed the unnecessary Actual flight time: 0:00 box. Simulator sessions still do not add helicopter flight time or EASA recency."},
  {v:"V2.41.1",name:"Simplify simulator helicopter type entry",detail:"The Represented helicopter ICAO type field is the only aircraft-type input for simulator sessions. Removed the older Device / aircraft type field without deleting legacy device descriptions or previously reviewed linked evidence."},
  {v:"V2.41",name:"Match FFS sessions to operator recency",detail:"An FFS session with an explicit ICAO helicopter type and crew configuration suggests matching operator rules. Review the supporting document and enter qualifying manoeuvres before credit is counted. Linked approval becomes ineligible after the simulator session is edited or deleted until reviewed again. Legacy evidence stays intact; no automatic EASA recency credit."},
@@ -7034,7 +7083,13 @@ function helpGuideExpand(open){
  document.querySelectorAll('[data-help-topic]').forEach(el=>{if(!el.hidden)el.open=!!open;});
 }
 function helpGuide(){
- const html=HELILOG_GUIDE_TOPICS.map(topic=>`<details class="card guide-topic" data-help-topic>
+ // Put onboarding immediately before specialist topics, preserving the order
+ // of everything else, including search and expand-all behaviour.
+ const orderedTopics=[...HELILOG_GUIDE_TOPICS].sort((a,b)=>
+  Number(b.category==='Start here')-Number(a.category==='Start here'));
+ const recentUpdates=HELILOG_GUIDE_UPDATES.slice(0,3);
+ const pastUpdates=HELILOG_GUIDE_UPDATES.slice(3);
+ const html=orderedTopics.map(topic=>`<details class="card guide-topic" data-help-topic>
   <summary><span class="guide-topic-label"><small>${htmlEscape(topic.category)}</small><b>${htmlEscape(topic.title)}</b><span class="muted">${htmlEscape(topic.summary)}</span></span><span class="guide-chevron" aria-hidden="true">⌄</span></summary>
   <div class="guide-topic-body"><ol>${topic.steps.map(step=>`<li>${htmlEscape(step)}</li>`).join('')}</ol><div class="guide-topic-actions"><button class="btn" type="button" onclick="go('${topic.route}')">${htmlEscape(topic.action)} →</button></div></div>
  </details>`).join('');
@@ -7052,8 +7107,11 @@ function helpGuide(){
  <label for="helpSearch" class="guide-search-label">Search instructions</label><input id="helpSearch" class="guide-search" type="search" placeholder="Try: UTC, PIC, archive, backup…" oninput="helpGuideSearch()" autocomplete="off">
  <div class="mini" id="helpSearchResults" role="status" aria-live="polite">${HELILOG_GUIDE_TOPICS.length} topics</div>
  <div class="guide-topics">${html}</div><div id="helpNoResults" class="card" hidden>No matching topics. Try another keyword.</div></section>
- <section class="card guide-updates"><h2>What's new</h2><p class="muted">We update this guide when HeliLog gains new features.</p>
- ${HELILOG_GUIDE_UPDATES.map(x=>`<div class="guide-update"><span class="guide-version">${htmlEscape(x.v)}</span><div><b>${htmlEscape(x.name)}</b><div class="muted">${htmlEscape(x.detail)}</div></div></div>`).join('')}</section>
+ <section class="card guide-updates"><h2>What's new</h2><p class="muted">Recent improvements. Select an update to read details.</p>
+ ${recentUpdates.map((x,i)=>`<div class="guide-update"><span class="guide-version">${htmlEscape(x.v)}</span><details class="guide-update-details" ${i===0?'open':''}><summary><b>${htmlEscape(x.name)}</b></summary><p class="muted">${htmlEscape(x.detail)}</p></details></div>`).join('')}
+ ${pastUpdates.length?`<details class="guide-history"><summary>Older updates (${pastUpdates.length})</summary>
+  ${pastUpdates.map(x=>`<div class="guide-update"><span class="guide-version">${htmlEscape(x.v)}</span><details class="guide-update-details"><summary><b>${htmlEscape(x.name)}</b></summary><p class="muted">${htmlEscape(x.detail)}</p></details></div>`).join('')}
+ </details>`:''}</section>
  <p class="guide-disclaimer">HeliLog helps maintain records. Pilots remain responsible for accurate entries and meeting the rules of their competent authority.</p>`;
 }
 document.addEventListener('keydown',function(e){
