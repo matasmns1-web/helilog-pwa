@@ -10,8 +10,8 @@ const HELILOG_GUIDE_TOPICS=[
       "Enter a rule name, ICAO helicopter type, crew configuration, minimum, measurement unit and rolling period.",
       "Select flight, approved FFS, check or training as permissible sources only where the operator requirements allow them.",
       "Use Set active to choose the applicable operator profile; other profiles can remain inactive.",
-      "Profiles save per account on the current device. They are not synced or included in cloud backups.",
-      "This phase stores rule definitions only: no simulator/check evidence, training attachments, notifications or regulatory certification."
+      "Operator profiles, rules and associated evidence synchronize with the signed-in account. Check cloud sync before changing rules from another device.",
+      "Record supporting FFS, check or training references where the operator rule permits them. Only pilot-reviewed evidence is eligible for operator tracking; HeliLog does not upload those files or certify regulatory credit."
     ],
     "route": "operatorrules",
     "action": "Manage operator rules"
@@ -268,6 +268,7 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+ {v:"V2.43",name:"Clearer, neutral guidance across HeliLog",detail:"Refresh outdated help and account messages, remove prototype labels from established features, and replace overly specific form examples with generic prompts. The CSV import template now starts blank. Existing records are unchanged."},
  {v:"V2.42",name:"Faster clean printing and simpler Help & Guide",detail:"Getting-started instructions now appear first, with a compact expandable update history. Pre-archive checks run automatically; no findings means direct access to print preview. Findings still need explicit review and acknowledgement, and printed-and-signed confirmation remains separate."},
  {v:"V2.41.2",name:"Cleaner simulator session details",detail:"Simulator details show only the recorded simulator duration. Removed the unnecessary Actual flight time: 0:00 box. Simulator sessions still do not add helicopter flight time or EASA recency."},
  {v:"V2.41.1",name:"Simplify simulator helicopter type entry",detail:"The Represented helicopter ICAO type field is the only aircraft-type input for simulator sessions. Removed the older Device / aircraft type field without deleting legacy device descriptions or previously reviewed linked evidence."},

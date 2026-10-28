@@ -198,7 +198,7 @@ function cloud(){
  const state=st.status;
  let action='';
  if(!st.configured){
-  action='<div class="note"><b>Not connected yet.</b> The Supabase test project must be connected and its private account schema must be applied before login can be enabled. HeliLog is currently local-only.</div>'+
+  action='<div class="note"><b>Not connected yet.</b> Cloud connection is not configured for this installation. Sign-in and synchronization are unavailable until the account service is configured.</div>'+
     '<p class="muted">No cloud database has been activated, and no flights, signatures or endorsements have been uploaded.</p>';
  }else if(state==="signed_in"){
   action='<div class="card"><div class="head"><h2>Cloud account</h2></div>'+
@@ -211,7 +211,7 @@ function cloud(){
    '</div>';
  }else{
   action='<div class="card"><div class="head"><h2>Sign in to HeliLog Cloud</h2></div>'+
-   '<p class="muted">Initially, only accounts invited to this private test project can sign in. Public registration is disabled.</p>'+
+   '<p class="muted">Sign in with an authorized HeliLog account. New accounts are created by the administrator.</p>'+
    '<form id="v22CloudLogin" onsubmit="v22CloudSignIn(event)" class="form">'+
    '<div class="formgrid"><div class="field"><label for="cloudEmail">Email</label>'+
    '<input id="cloudEmail" name="cloudEmail" type="email" autocomplete="username" required></div>'+

@@ -62,7 +62,7 @@ function v2EndorsementArchive(){
   app.innerHTML=header('Print archive — Endorsements',
     'Separate, consecutively numbered paper endorsement pages with permanent signed originals and correction addenda.',
     '<button class="btn" onclick="go(\'printarchive\')">← Flight Print Archive</button>')+
-  '<div class="note" style="margin-bottom:14px"><b>HeliLog V2 test feature.</b> Sign endorsements in the Endorsements section, then print and confirm the pages here. Printed originals remain unchanged; corrections require a separately signed addendum. This is not authority-approved electronic signature verification.</div>'+
+  '<div class="note" style="margin-bottom:14px"><b>Endorsement archive.</b> Sign endorsements in the Endorsements section, then print and confirm the pages here. Printed originals remain unchanged; corrections require a separately signed addendum. This is not authority-approved electronic signature verification.</div>'+
   '<div class="card" style="margin-bottom:16px"><div class="head"><h2>New endorsement print batch</h2></div>'+
   (hasDraft?
     '<div class="note"><b>Preview prepared:</b> '+v2PendingEndorsementBatch.items.length+
