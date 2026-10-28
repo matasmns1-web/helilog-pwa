@@ -36,7 +36,7 @@
   }else data[plural[kind]]=arr;
  }
  let owner="",db=null,pending=[],versions={},mirror={},baseline={},state="inactive",problem="",
-  running=false,paused=false,reconciling=false,pilotPreview=null,recordPreview=null,recoveryPreview=null,snapshotFn=null,replaceFn=null,listener=null;
+  running=false,paused=false,reconciling=false,pilotPreview=null,recordPreview=null,recoveryPreview=null,snapshotFn=null,replaceFn=null,listener=null,resetGeneration=null,remoteGeneration=null,fenceReady=false,freshDevice=false,resetCapable=false;
  const clone=x=>JSON.parse(JSON.stringify(x));
  // PostgreSQL JSONB may reorder object keys. Compare canonical values,
  // otherwise harmless key ordering could produce false sync conflicts.
@@ -56,6 +56,7 @@
  const recordKey=u=>"helilog_v23_account_"+u;
  const extKey=u=>"helilog_v24_ext_"+u;
  const savedPreMigration=u=>"helilog_v24_pre_extension_"+u;
+ const generationKey=u=>"helilog_v244_reset_generation_"+u;
  const read=(key,otherwise)=>{
   const raw=root.localStorage.getItem(key);
   if(raw===null)return otherwise;
@@ -65,7 +66,7 @@
  const persist=()=>{if(!owner)return;root.localStorage.setItem(queueKey(owner),JSON.stringify(pending));root.localStorage.setItem(versionKey(owner),JSON.stringify(versions));root.localStorage.setItem(mirrorKey(owner),JSON.stringify(mirror));};
  function notify(){try{listener?.(status());}catch(e){root.console?.warn?.("Cloud status view failed",e)}}
  function status(){
-  return {state,pending:pending.length,conflicts:pending.filter(q=>q.conflict).length,error:problem,owner,online:root.navigator?.onLine!==false};
+  return {state,pending:pending.length,conflicts:pending.filter(q=>q.conflict).length,error:problem,owner,online:root.navigator?.onLine!==false,resetGeneration:resetCapable&&fenceReady?resetGeneration:null,resetSupported:resetCapable,remoteGeneration,resetRequired:state==="reset_required"};
  }
  function isActive(){return !!owner&&!paused;}
  function mapOf(data){
@@ -78,13 +79,16 @@
  function parseKey(k){const i=k.indexOf(":");return {kind:k.slice(0,i),id:k.slice(i+1)};}
  function stop(){
   owner="";db=null;pending=[];versions={};mirror={};baseline={};state="inactive";problem="";extended=false;types=[...coreKinds];
-  running=false;paused=true;reconciling=false;pilotPreview=null;recordPreview=null;recoveryPreview=null;snapshotFn=null;replaceFn=null;notify();
+  running=false;paused=true;reconciling=false;pilotPreview=null;recordPreview=null;recoveryPreview=null;snapshotFn=null;replaceFn=null;resetGeneration=null;remoteGeneration=null;fenceReady=false;freshDevice=false;resetCapable=false;notify();
  }
- function start({userId,client,getData,replaceData,onStatus}){
+ function start({userId,client,getData,replaceData,onStatus,freshAccountDevice=false}){
   if(!/^[0-9a-f-]{36}$/i.test(String(userId)))throw Error("A verified Supabase user ID is required.");
   if(!client?.from||typeof getData!=="function"||typeof replaceData!=="function")throw Error("Cloud workspace configuration is incomplete.");
   if(owner&&owner!==userId)stop();
   owner=userId;db=client;snapshotFn=getData;replaceFn=replaceData;listener=onStatus||null;
+  freshDevice=!!freshAccountDevice;resetCapable=false;resetGeneration=read(generationKey(owner),null);
+  if(resetGeneration!==null&&(!Number.isSafeInteger(resetGeneration)||resetGeneration<0))throw Error("Invalid reset marker.");
+  fenceReady=typeof db.rpc!=="function";if(fenceReady){resetGeneration=0;remoteGeneration=0;}
   extended=read(extKey(owner),false)===true;
   types=extended?[...coreKinds,...extraKinds]:[...coreKinds];
   paused=false;running=false;reconciling=false;pilotPreview=null;recordPreview=null;recoveryPreview=null;pending=read(queueKey(owner),[]);
@@ -98,8 +102,55 @@
   }
   baseline=mapOf(snapshotFn());state=pending.length?"pending":"connecting";problem="";notify();
  }
+ // V2.44: verify the server-owned generation BEFORE any cloud read/write.
+ async function ensureGeneration(){
+  if(!isActive())return false;
+  if(typeof db.rpc!=="function")return true; // Legacy in-memory test adapters.
+  if(root.navigator?.onLine===false){state="offline";notify();return false;}
+  const at=owner;
+  const {data,error}=await db.from("helilog_accounts").select("reset_generation").eq("user_id",at).single();
+  // Until the TEST-only migration is installed, preserve V2.43
+  // cloud operations and keep the destructive reset action unavailable.
+  // Recognize ONLY the missing reset_generation column; all other
+  // database or connectivity errors must remain fail-closed.
+  if(error && String(error.code)==="42703" && /reset_generation/.test(String(error.message||""))){
+   resetCapable=false;remoteGeneration=null;fenceReady=true;return true;
+  }
+  if(error)throw Error("Reset generation check failed: "+error.message);
+  resetCapable=true;
+  if(!isActive()||at!==owner)return false;
+  const now=Number(data?.reset_generation);
+  if(!Number.isSafeInteger(now)||now<0)throw Error("Invalid account reset generation.");
+  remoteGeneration=now;
+  if(resetGeneration===null&&(now===0||freshDevice)){
+   root.localStorage.setItem(generationKey(owner),JSON.stringify(now));resetGeneration=now;
+  }
+  if(resetGeneration!==now){
+   fenceReady=false;state="reset_required";
+   problem="This account was reset on another device. Old local records and pending uploads are blocked until you acknowledge the reset.";
+   notify();return false;
+  }
+  fenceReady=true;return true;
+ }
+ function adoptGenerationAfterReset(next,empty){
+  if(!isActive()||!fenceReady||!Number.isSafeInteger(next)||next!==resetGeneration+1)
+   throw Error("The account reset marker changed.");
+  replaceFn(empty);
+  root.localStorage.setItem(generationKey(owner),JSON.stringify(next));
+  resetGeneration=next;remoteGeneration=next;pending=[];versions={};mirror={};baseline=mapOf(snapshotFn());
+  persist();state="synced";problem="";notify();
+ }
+ function acceptRemoteReset(empty){
+  if(!isActive()||state!=="reset_required"||!Number.isSafeInteger(remoteGeneration))
+   throw Error("No verified account reset requires acknowledgement.");
+  replaceFn(empty);
+  root.localStorage.setItem(generationKey(owner),JSON.stringify(remoteGeneration));
+  resetGeneration=remoteGeneration;fenceReady=true;pending=[];versions={};mirror={};
+  baseline=mapOf(snapshotFn());persist();state="synced";problem="";notify();
+ }
  function track(data){
   if(!isActive()||!snapshotFn)return;
+  if(!fenceReady||state==="reset_required")throw Error("Cloud reset check incomplete. Changes cannot be queued.");
   const next=mapOf(data),keys=new Set([...Object.keys(baseline),...Object.keys(next)]);
   const changed=[...keys].filter(k=>baseline[k]!==next[k]);
   if(!changed.length)return;
@@ -144,6 +195,7 @@
   if(root.HeliLogCloud?.snapshot?.().userId!==owner){state="error";problem="Your cloud session has changed. Sign in again.";notify();return false;}
   const sessionOwner=owner;
   try{
+   if(!await ensureGeneration())return false;
    const remote=await listRemote(sessionOwner);
    if(!isActive()||owner!==sessionOwner||reconciling)return false;
    const rmap=new Map(remote.map(row=>[ident(row.kind,row.record_id),row]));
@@ -278,6 +330,7 @@
   if(!isActive()||running||reconciling)return false;
   if(root.navigator?.onLine===false){state="offline";notify();return false;}
   if(root.HeliLogCloud?.snapshot?.().userId!==owner){state="error";problem="Sign in again before syncing.";notify();return false;}
+  try{if(!await ensureGeneration())return false;}catch(e){state="error";problem=String(e.message||e);notify();return false;}
   running=true;state=pending.length?"syncing":"connecting";problem="";notify();
   try{
    while(pending.length){
@@ -289,6 +342,14 @@
     if(!q)break;
     const k=ident(q.kind,q.id),generation=q.generation,ownerAtStart=owner;
     let result;
+    if(resetCapable&&typeof db.rpc==="function"){
+     if(!await ensureGeneration())return false;
+     const response=await db.rpc("helilog_sync_mutation",{
+      p_action:q.action,p_kind:q.kind,p_record_id:q.id,p_payload:q.action==="put"?q.payload:null,
+      p_base_revision:q.baseRevision,p_reset_generation:resetGeneration
+     });
+     result={error:response.error,data:response.error?null:[{revision:Number(response.data)}]};
+    }else{
     if(q.baseRevision===null){
      if(q.action==="delete"){pending=pending.filter(x=>x!==q);persist();continue;}
      result=await db.from("helilog_records")
@@ -301,9 +362,10 @@
       await query.update({payload:q.payload,revision:q.baseRevision+1})
        .eq("owner_id",owner).eq("kind",q.kind).eq("record_id",q.id).eq("revision",q.baseRevision).select("revision");
     }
+    }
     if(!isActive()||owner!==ownerAtStart)return false;
     if(result.error){
-     if(result.error.code==="23505" || result.error.code==="23503"){
+     if(result.error.code==="23505" || result.error.code==="23503" || result.error.code==="40001"){
       q.conflict=true;state="conflict";problem="Cloud record conflict for "+k+". Local changes were preserved.";persist();notify();continue;
      }
      throw Error("Sync "+k+": "+result.error.message);
@@ -800,7 +862,7 @@
   }else await refresh();
   return {enabled:true,status:status(),backupKey};
  }
- return Object.freeze({recordKey,start,stop,track,refresh,flush,pull,status,ignoreNoChanges,
+ return Object.freeze({recordKey,start,stop,track,refresh,flush,pull,status,ignoreNoChanges,ensureGeneration,adoptGenerationAfterReset,acceptRemoteReset,
   extended:()=>extended,preservedSetupSummary,previewPreservedRecovery,restorePreservedRecovery,extensionPreview,accountSetup,activateExtension,
   previewPilotConflict,resolvePilotConflict,conflicts,previewRecordConflict,resolveRecordConflict});
 });

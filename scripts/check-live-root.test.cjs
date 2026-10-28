@@ -8,10 +8,10 @@ const fs=require("node:fs");
 const path=require("node:path");
 const root=path.resolve(__dirname,"..");
 const read=p=>fs.readFileSync(path.join(root,p),"utf8");
-test("root runs V2.43 private beta, not the V1 landing page",()=>{
+test("root runs V2.44.1 private beta, not the V1 landing page",()=>{
  const index=read("index.html");
- assert.match(index,/<title>HeliLog V2\.43 — Private Beta Candidate<\/title>/);
- assert.match(index,/V2\.43 · PRIVATE BETA/);
+ assert.match(index,/<title>HeliLog V2\.44\.1 — Private Beta Candidate<\/title>/);
+ assert.match(index,/V2\.44\.1 · PRIVATE BETA/);
  assert.match(index,/dark-cockpit\.css\?v=2\.20-cockpit-3/);
  assert.match(index,/guide\.css\?v=2\.29/);
  assert.match(index,/Help &amp; Guide/);
@@ -19,6 +19,9 @@ test("root runs V2.43 private beta, not the V1 landing page",()=>{
  assert.match(index,/src="\.\/simulator-evidence\.js\?v=2\.41\.2"/);
  assert.match(index,/function v242ArchiveCheck\(draft=nextArchiveDraft\(\)\)/);
  assert.match(index,/Older updates/);
+ assert.match(index,/datamanagement:v244DataManagementPage/);
+ assert.match(index,/function v244DownloadSafetyCopy\(\)/);
+ assert.match(index,/function v244VerifyBackupFile\(event\)/);
  assert.match(index,/function syncQuickFlightScrollLock\(\)/);
  assert.match(index,/src="\.\/cloud-foundation\.js\?v=2\.19-locations-1"/);
  assert.match(index,/src="\.\/auth-gate\.js\?v=2\.39\.1-operator-sync-1"/);
@@ -52,7 +55,7 @@ test("all root app scripts exist and static assets match source",()=>{
 });
 test("production offline cache and manifest are isolated from TEST and V1",()=>{
  const sw=read("service-worker.js");
- assert.match(sw,/const CACHE='helilog-v2-43-production-candidate-1'/);
+ assert.match(sw,/const CACHE='helilog-v2-44-1-production-candidate-1'/);
  assert.match(sw,/dark-cockpit\.css\?v=2\.20-cockpit-3/);
  assert.match(sw,/guide\.css\?v=2\.29/);
  assert.match(sw,/cloud-config\.js\?v=2\.19-locations-1/);
@@ -60,7 +63,7 @@ test("production offline cache and manifest are isolated from TEST and V1",()=>{
  assert.match(sw,/aerodrome-lookup\.js\?v=2\.19-locations-1/);
  assert.doesNotMatch(sw,/const CACHE='helilog-v2-19-locations-1'/);
  const manifest=JSON.parse(read("manifest.webmanifest"));
- assert.match(manifest.name,/V2\.43 — Private Beta/);
+ assert.match(manifest.name,/V2\.44\.1 — Private Beta/);
  assert.equal(manifest.scope,"./");
  assert.equal(manifest.start_url,"./index.html");
 });
@@ -69,6 +72,8 @@ test("production cloud status is compact and expandable, with unchanged print lo
  assert.match(html,/v220-page-heading/);
  assert.match(auth,/details class="v220-sync-pop"/);
  assert.match(auth,/v220-sync-bubble/);
+ assert.match(read("cloud-sync.js"),/helilog_sync_mutation/);
+ assert.match(read("cloud-archives.js"),/p_reset_generation/);
  assert.match(css,/details\.v220-sync-pop/);
  assert.equal(read("print.js"),read("v2/print.js"));
  assert.equal(read("guide.css"),read("v2/guide.css"));
