@@ -97,6 +97,17 @@
    salt:bytesToBase64(salt),iv:bytesToBase64(iv),ciphertext:bytesToBase64(sealed)};
  }
  async function decryptSnapshot(locked,password,owner){
+  // Normal signed-in inspection MUST keep account isolation.
+  if(!uuid(owner))throw Error("Sign in to the correct cloud account first.");
+  return decryptEncryptedPayload(locked,password,owner);
+ }
+ // Offline inspection is decrypt-only. The backup owner is authenticated by
+ // AES-GCM's ciphertext, not by an active browser session, and no cloud call
+ // or local write is involved.
+ async function decryptSnapshotOffline(locked,password){
+  return decryptEncryptedPayload(locked,password,null);
+ }
+ async function decryptEncryptedPayload(locked,password,expectedOwner){
   if(!locked||locked.app!=="HeliLog"||locked.format!=="encrypted-cloud-snapshot"||
     locked.version!==1||locked.cipher!=="AES-256-GCM"||
     locked.kdf!=="PBKDF2-SHA256"||locked.iterations!==310000)
@@ -112,8 +123,12 @@
   let plain;
   try{plain=JSON.parse(new TextDecoder().decode(unpacked));}
   catch{throw Error("The decrypted backup is not valid JSON.");}
-  if(plain.owner!==owner || !uuid(plain.backupId)||
-   !plain.content || !/^[a-f0-9]{64}$/i.test(plain.serverHash||""))
+  if(!uuid(plain.owner)||!uuid(plain.backupId)||
+   !plain.content||plain.content.schema!==1||
+   !Array.isArray(plain.content.records)||!Array.isArray(plain.content.archives)||
+   !Array.isArray(plain.content.frozen)||!Array.isArray(plain.content.addenda)||
+   !/^[a-f0-9]{64}$/i.test(plain.serverHash||"")||
+   (expectedOwner!==null&&plain.owner!==expectedOwner))
    throw Error("This encrypted backup belongs to another account or contains invalid data.");
   return {backupId:plain.backupId,createdAt:plain.createdAt,
    records:plain.content.records?.length||0,archives:plain.content.archives?.length||0,
@@ -152,5 +167,5 @@
   return report;
  }
  return Object.freeze({list,create,preview,restore,encryptSnapshot,decryptSnapshot,
-   downloadPayload,keyFromPassword,health,retention});
+   decryptSnapshotOffline,downloadPayload,keyFromPassword,health,retention});
 });

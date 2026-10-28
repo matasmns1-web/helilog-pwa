@@ -111,12 +111,14 @@ test("Settings cards fill the main content area without nesting",()=>{
  assert.match(html,/@media\(max-width:1150px\)\{\.settings-grid\{grid-template-columns:1fr\}\}/);
 });
 
-test("Backup page retains legacy and cloud backup/restore tools",()=>{
+test("Backup page retains encrypted cloud verification without legacy V2.8 controls",()=>{
  const f=fixture(),before=JSON.stringify(f.S);f.pages.backups();
  assert.match(f.app.innerHTML,/data-screen="Backup & Recovery"/);
  assert.match(f.app.innerHTML,/id="v29-backup-tools"/);
- for(const name of ["downloadFullBackup","v28DownloadCloudRecovery","v28InspectCloudRecovery",
-  "handleBackupRestoreFile"])assert.match(f.app.innerHTML,new RegExp(name+"\\("));
+ for(const name of ["downloadFullBackup","v232VerifyOfflineFile"])assert.match(f.app.innerHTML,new RegExp(name+"\\("));
+ assert.doesNotMatch(f.app.innerHTML,/handleBackupRestoreFile\(/,"Cloud-backed account must not offer local restore");
+ assert.match(f.app.innerHTML,/Encrypted cloud snapshot/);
+ assert.doesNotMatch(f.app.innerHTML,/Inspect V2.8 recovery package|Download verified cloud recovery package/);
  assert.match(f.app.innerHTML,/id="backupRestoreStatus"/);
  assert.equal(JSON.stringify(f.S),before);
  assert.doesNotMatch(f.app.innerHTML,/Existing logbook import|id="medicalSection"/);
@@ -128,7 +130,7 @@ test("Settings is the only Cloud/Backup top-level navigation entry and nested ro
  assert.doesNotMatch(aside,/data-v="cloud"|data-v="backups"/);
  assert.match(more,/onclick="go\('settings'\)"><span>⚙<\/span><b>Settings<\/b>/);
  assert.doesNotMatch(more,/onclick="go\('cloud'\)"|onclick="go\('backups'\)"/);
- assert.match(html,/totals,profile,settings,locations:v219LocationsPage,backups,cloud,testmode,mobilemore/);
+ assert.match(html,/totals,recency,operatorrules:\(\)=>window\.HeliLogV236OperatorRulesUI\.page\(effectiveFlights\(\),S\.aircraft,recencyCurrent\(\)\),profile,settings,locations:v219LocationsPage,backups,cloud,testmode,mobilemore/);
  assert.match(html,/moreViews=\[[^\]]*'settings','locations','backups','cloud'/);
  assert.match(html,/b.dataset.v==='settings' && \(v==='cloud'\|\|v==='backups'\|\|v==='locations'\)/);
  assert.match(cloud,/go\('settings'\)/);
@@ -150,6 +152,6 @@ test("The UI-only release retains archived-flight handlers and updates PWA cache
   "downloadFullBackup","restoreCheckedBackup","showIntegrityCheck","editMedical",
   "saveMedical","saveQualification","deleteQualification"])
   assert.match(html,new RegExp("function "+name+"\\("));
- assert.match(html,/HeliLog V2\.31\.4 — Compact Quick Flight · Test/);
- assert.match(worker,/helilog-v2-31-4-quick-scroll-1/);
+ assert.match(html,/HeliLog V2\.42 — Guide & Archive Fast Path · Test/);
+ assert.match(worker,/helilog-v2-42-guide-archive-1/);
 });

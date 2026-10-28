@@ -1,7 +1,13 @@
-const CACHE='helilog-v2-31-4-quick-scroll-1';
+const CACHE='helilog-v2-42-guide-archive-1';
 const SHELL=[
   './',
   './index.html',
+  './recency.js?v=2.33.1',
+  './special-recency.js?v=2.34',
+  './advanced-recency.js?v=2.35',
+  './operator-flight-monitor.js?v=2.40',
+  './simulator-evidence.js?v=2.41.2',
+  './operator-rules-ui.js?v=2.41',
   './dark-cockpit.css?v=2.20-cockpit-3',
   './guide.css?v=2.29',
   './manifest.webmanifest',
@@ -18,13 +24,14 @@ const SHELL=[
   './cloud-config.js?v=2.19-locations-1',
   './cloud-foundation.js?v=2.19-locations-1',
   './cloud-view.js?v=2.19-locations-1',
-  './cloud-sync.js?v=2.19-locations-1',
-  './auth-gate.js?v=2.19-locations-1',
+  './cloud-sync.js?v=2.39.1-operator-sync-1',
+  './auth-gate.js?v=2.39.1-operator-sync-1',
   './cloud-archives.js?v=2.19-locations-1',
   './archive-integrity.js?v=2.19-locations-1',
   './recovery.js?v=2.19-locations-1',
   './cloud-backups.js?v=2.19-locations-1',
-  './disaster-recovery.js?v=2.19-locations-1'
+  './disaster-recovery.js?v=2.19-locations-1',
+  './offline-backup-check.js?v=2.32'
 ];
 
 self.addEventListener('install',event=>{

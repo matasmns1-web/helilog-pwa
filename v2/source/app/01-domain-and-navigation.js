@@ -354,6 +354,25 @@ function save(){
     return false;
   }
 }
+// V2.39.1: custom operator profiles share private account settings transport.
+window.HeliLogOperatorSyncBridge=Object.freeze({
+ read(){return S.operatorProfiles===undefined?null:JSON.parse(JSON.stringify(S.operatorProfiles));},
+ write(data){
+  if(!v23AccountWorkspace())throw Error('Sign into the cloud account first.');
+  const previous=S.operatorProfiles;
+  S.operatorProfiles=JSON.parse(JSON.stringify(data));
+  try{
+   const bytes=JSON.stringify(S);
+   localStorage.setItem(KEY,bytes);
+   if(localStorage.getItem(KEY)!==bytes)throw Error('Storage verification failed.');
+  }catch(e){
+   if(previous===undefined)delete S.operatorProfiles;else S.operatorProfiles=previous;
+   throw Error('Could not preserve custom rules on this device: '+e.message);
+  }
+  try{window.HeliLogV23Sync.track(S);}
+  catch(e){throw Error('Rules are saved on this device, but cloud sync needs attention: '+e.message);}
+ }
+});
 function fmt(n){n=Math.max(0,Number(n)||0);return Math.floor(n/60)+':'+String(n%60).padStart(2,'0')}
 function parseHM(v){if(!v)return 0;let p=v.split(':').map(Number);return (p[0]||0)*60+(p[1]||0)}
 function ac(id){return S.aircraft.find(a=>a.id===id)}
@@ -446,8 +465,17 @@ function specialisedTotals(){
     const recordedMinutes=flights.reduce((n,f)=>n+Number(f.specialOps[op.code]||0),0);
     const historical=Number(previous?.[op.code]||0);
     const previousMinutes=Number.isSafeInteger(historical)&&historical>=0?historical:0;
+    // Count only explicitly captured cycles/landings. Historic hours have no counts.
+    const counter=op.code==='NVIS'?'flights':op.code==='OFFSHORE'?'landings':'cycles';
+    const counts=flights.reduce((out,f)=>{
+      if(op.code==='NVIS'){out.total++;return out;}
+      const v=f.specialOpsCycles?.[op.code];
+      if(!v||!Number.isSafeInteger(v.day)||!Number.isSafeInteger(v.night)||v.day<0||v.night<0){out.unrecorded++;return out;}
+      out.day+=v.day;out.night+=v.night;out.total+=v.day+v.night;
+      return out;
+    },{day:0,night:0,total:0,unrecorded:0});
     return {...op,flights:flights.length,previousMinutes,recordedMinutes,
-      minutes:previousMinutes+recordedMinutes};
+      minutes:previousMinutes+recordedMinutes,counter,...counts};
   }).filter(e=>e.flights||e.previousMinutes>0);
 }
 function broughtForwardInputMinutes(v){return Number(v||0)>0?fmt(Number(v)):'';
@@ -626,6 +654,7 @@ function mobilemore(){
     <button class="card more-link" onclick="go('endorsements')"><span>✎</span><b>Endorsements</b><span class="muted">Memoranda and signatures</span></button>
     ${!isStandaloneApp()?`<button class="card more-link" onclick="go('endorsementarchive')"><span>▤</span><b>Endorsement archive</b><span class="muted">Printed pages and corrections</span></button>`:''}
     <button class="card more-link" onclick="go('totals')"><span>◉</span><b>Totals</b><span class="muted">Flight-time breakdown</span></button>
+    <button class="card more-link" onclick="go('recency')"><span>◷</span><b>Recency</b><span class="muted">90-day passenger and night evidence</span></button>
     <button class="card more-link" onclick="go('profile')"><span>○</span><b>Profile</b><span class="muted">Pilot details, medical, licences and ratings</span></button>
     <button class="card more-link" onclick="go('settings')"><span>⚙</span><b>Settings</b><span class="muted">Logbook, cloud sync, backups and device</span></button>
     ${!v23AccountWorkspace()?`<button class="card more-link" onclick="go('testmode')"><span>⚗</span><b>Test Mode</b><span class="muted">Separate sandbox and safe reset</span></button>`:''}

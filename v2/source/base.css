@@ -452,3 +452,120 @@ html.helilog-test-mode .brand::after{
   #flightForm.quick-entry-active .formgrid {gap:5px;}
   #flightForm.quick-entry-active .field > label:first-child {font-size:10px;}
 }
+
+/* V2.33 responsive recent-experience dashboard and detail grid */
+.recency-mini-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.recency-mini{display:flex;align-items:center;gap:10px;padding:11px 12px;border:1px solid var(--line);border-radius:10px}
+.recency-mini>b{font-size:21px;white-space:nowrap}
+.recency-mini>.mini{margin-left:auto;text-align:right}
+.recency-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.recency-panel{padding:15px;border:1px solid var(--line);border-radius:11px}
+.recency-count{font-size:26px;font-weight:800;margin:7px 0}
+@media(max-width:650px){.recency-mini-grid,.recency-grid{grid-template-columns:1fr}.recency-mini{flex-wrap:wrap}}
+
+/* V2.33.2: dashboard recency visibility preferences */
+.recency-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.recency-dashboard-choice{display:flex;align-items:center;gap:12px;cursor:pointer;padding:14px;border:1px solid var(--line);border-radius:11px;min-width:0}
+.recency-dashboard-choice:has(input:checked){border-color:var(--accent, #6489ad);background:var(--panel)}
+.recency-dashboard-choice input{width:18px;height:18px;flex:0 0 18px}
+.recency-dashboard-choice>span{min-width:0}
+.recency-choice-title{display:block;font-size:13px;color:var(--muted);margin-top:3px}
+.recency-mini-label{min-width:0}
+.recency-mini-label .muted{font-size:12px;margin-top:3px}
+@media(max-width:650px){.recency-choice-grid{grid-template-columns:1fr}}
+
+/* V2.33.3: simple dashboard selector and rolling recency status */
+.recency-picker-card .recency-choice-grid{gap:7px 11px}
+.recency-picker-card .recency-dashboard-choice{padding:10px 12px;min-height:57px;gap:10px}
+.recency-choice-name{flex:1;min-width:0;font-size:13px}
+.recency-choice-name>b{font-size:13px}
+.recency-choice-title{font-size:12px;margin-top:2px}
+.recency-choice-status{flex:0 0 auto;margin-left:auto;font-size:11px;font-weight:700;border:1px solid var(--line);border-radius:999px;padding:3px 9px;white-space:nowrap}
+.recency-tone-met .recency-state,.recency-tone-met .recency-choice-status,.recency-tone-met.recency-choice-status{color:var(--cockpit-accent-bright,#43d6c5)}
+.recency-tone-estimated .recency-state,.recency-tone-estimated .recency-choice-status,.recency-tone-estimated.recency-choice-status{color:var(--cockpit-cyan,#84bddf)}
+.recency-tone-below .recency-state,.recency-tone-below .recency-choice-status,.recency-tone-below.recency-choice-status{color:var(--cockpit-warning,#efc478)}
+.recency-panel-label{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.recency-panel-label>.mini{margin:0}
+.recency-state{font-size:21px;font-weight:800;line-height:1.25;margin-top:15px;letter-spacing:-.02em}
+.recency-count-detail{color:var(--muted);font-size:13px;line-height:1.55;margin:7px 0}
+.recency-lapse{display:flex;flex-direction:column;gap:3px;border-top:1px solid var(--line);margin-top:14px;padding-top:11px;font-size:12px;color:var(--muted)}
+.recency-lapse>b{font-size:13px;color:var(--ink);font-weight:700}
+.recency-indicator{display:flex;flex-direction:column;align-items:stretch;gap:9px;padding:14px;min-height:125px}
+.recency-indicator-status{display:flex;flex-direction:column;align-items:flex-start;gap:5px}
+.recency-indicator-status>strong{font-size:18px;line-height:1.25}
+.recency-tone-met .recency-indicator-status>strong{color:var(--cockpit-accent-bright,#43d6c5)}
+.recency-tone-estimated .recency-indicator-status>strong{color:var(--cockpit-cyan,#84bddf)}
+.recency-tone-below .recency-indicator-status>strong{color:var(--cockpit-warning,#efc478)}
+.recency-indicator-status>span{font-size:12px;line-height:1.45;color:var(--muted)}
+.recency-indicator .recency-lapse{margin-top:auto}
+@media(max-width:700px){
+ .recency-choice-grid{grid-template-columns:1fr}
+ .recency-picker-card .recency-dashboard-choice{padding:11px 12px}
+ .recency-state{font-size:19px}
+}
+
+/* V2.33.4 — compact recency alongside Upcoming dates, no nested status cards */
+.dashboard-side-stack{display:grid;align-content:start;gap:14px;min-width:0}
+.dashboard-recency-card{min-width:0}
+.dashboard-recency-card .head{margin-bottom:3px}
+.recency-dashboard-list{display:grid}
+.recency-dashboard-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.recency-dashboard-row:last-child{border-bottom:0}
+.recency-dashboard-row-text{min-width:0}
+.recency-dashboard-row-text>b{font-size:13px}
+.recency-dashboard-row-text>.muted{font-size:12px;margin-top:3px;line-height:1.4}
+.recency-compact-status{display:inline-flex;justify-content:center;align-items:center;white-space:nowrap;border:1px solid currentColor;border-radius:999px;padding:4px 9px;font-size:11px;font-weight:750;letter-spacing:.01em;flex-shrink:0}
+.recency-compact-status.recency-tone-met{color:var(--cockpit-accent-bright,#43d6c5)}
+.recency-compact-status.recency-tone-estimated{color:var(--cockpit-cyan,#84bddf)}
+.recency-compact-status.recency-tone-below{color:var(--cockpit-warning,#efc478)}
+.recency-dashboard-disclaimer{margin-top:6px;font-size:11px;line-height:1.4}
+.recency-detail-card .head{margin-bottom:5px}
+.recency-detail-list{display:grid}
+.recency-detail-row{border-bottom:1px solid var(--line);min-width:0}
+.recency-detail-row:last-child{border-bottom:0}
+.recency-detail-row>summary{display:flex;align-items:center;gap:13px;cursor:pointer;list-style:none;padding:13px 0}
+.recency-detail-row>summary::-webkit-details-marker{display:none}
+.recency-detail-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;font-size:13px}
+.recency-detail-main>.muted{font-size:12px;line-height:1.45}
+.recency-expand-cue{font-size:16px;color:var(--muted);transition:transform .15s}
+.recency-detail-row[open] .recency-expand-cue{transform:rotate(180deg)}
+.recency-detail-expanded{margin:0 0 13px;padding:10px 13px;border-left:2px solid var(--line);background:rgba(0,0,0,.07);border-radius:0 8px 8px 0;color:var(--muted);font-size:12px;line-height:1.5}
+.recency-detail-expanded p{margin:0 0 7px}
+.recency-detail-expanded p:last-child{margin-bottom:0}
+@media(max-width:700px){
+ .recency-detail-row>summary{gap:9px}
+ .recency-compact-status{font-size:10px;padding:4px 7px}
+}
+
+/* V2.33.5 — prominent operation names without adding vertical height. */
+.recency-kind{font-weight:750;color:var(--ink)}
+
+/* V2.33.6 — group recency indicators beneath the aircraft type */
+.recency-type-heading{font-size:13px;font-weight:800;line-height:1.35;color:var(--ink);padding:10px 0 3px}
+.recency-dashboard-list .recency-type-group+.recency-type-group{border-top:1px solid var(--line);margin-top:6px;padding-top:6px}
+.recency-dashboard-list .recency-type-heading{padding:10px 0 0}
+.recency-type-group .recency-dashboard-row{padding:8px 0}
+.recency-type-group .recency-dashboard-row:last-child{border-bottom:0}
+.recency-dashboard-row-text>b.recency-kind{font-size:13px}
+.recency-pilot-note{font-size:11px;color:var(--muted);margin-left:8px;white-space:nowrap}
+.recency-picker-type+.recency-picker-type{border-top:1px solid var(--line);padding-top:8px;margin-top:8px}
+.recency-picker-type .recency-type-heading{margin-bottom:7px}
+.recency-detail-type+.recency-detail-type{border-top:1px solid var(--line);margin-top:8px;padding-top:8px}
+.recency-detail-type .recency-type-heading{font-size:14px;padding-top:9px}
+.recency-detail-main>b.recency-kind{font-size:13px}
+@media(max-width:520px){.recency-pilot-note{font-size:10px;margin-left:5px}}
+
+/* V2.34: operation duration and cycle/sequence counters in the same row */
+.special-count-fields{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.85fr) minmax(0,.85fr);gap:8px;align-items:end}
+.special-count-fields>div{min-width:0}
+.special-count-fields input{box-sizing:border-box;width:100%;min-width:0}
+.special-count-fields label{display:block;line-height:1.35;margin-bottom:4px}
+.special-nvis-auto{display:flex;flex-direction:column;gap:4px;grid-column:span 2}
+.special-nvis-auto strong{font-size:13px;color:var(--ink)}
+@media(max-width:520px){.special-count-fields{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.special-nvis-auto{grid-column:auto}}
+
+/* V2.34.1 compact offshore landing entry */
+.special-count-fields{grid-template-columns:minmax(0,1fr) repeat(2,minmax(0,.82fr));column-gap:6px}
+.special-count-fields label{font-size:11px;min-height:15px}
+.special-count-fields input[type="number"]{text-align:center;padding-inline:4px;font-variant-numeric:tabular-nums}
+@media(max-width:520px){.special-count-fields{grid-template-columns:minmax(0,1fr) repeat(2,minmax(0,.82fr));column-gap:5px}.special-count-fields label{font-size:10px}}

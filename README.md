@@ -1,10 +1,10 @@
 # HeliLog — Pilot logbook private beta
 
-**Stable production version: V2.24**, published from the repository root at [helilog-pwa.onrender.com](https://helilog-pwa.onrender.com). Each pilot account uses the separate **HeliLog Production** Supabase project; no test accounts or records are migrated automatically.
+**Stable production version: V2.42**, published from the repository root at [helilog-pwa.onrender.com](https://helilog-pwa.onrender.com). Each pilot account uses the separate **HeliLog Production** Supabase project; no test accounts or records are migrated automatically.
 
 Development and testing continue separately on branch `v2/development` at [helilog-v2-test.onrender.com](https://helilog-v2-test.onrender.com), connected to the TEST Supabase project.
 
-**V2.24 production update:** Dark Cockpit layout and compact cloud-sync indicator (V2.20), maintainable modular sources and complete regression checks (V2.21–V2.22), Quick Flight Entry (V2.23), and universally worded aircraft, endorsement and other form guidance (V2.24). Production and TEST Supabase projects remain separate. Existing records, confirmed paper archives, and the printed logbook format are preserved. No database schema or production-record migration is part of this release.
+**V2.42 production update (28 October 2026):** Includes previously tested recency dashboards, operator-specific recency, simulator/check/training evidence, automatic FFS evidence matching, safe account synchronization, refined simulator forms, and the cleaner Help & Guide plus automatic pre-archive checks for clean batches. No production database migration or existing record conversion. Production and TEST Supabase projects remain separate. Existing logbooks, confirmed paper archives, and the printed-page format are preserved.
 
 **Important:** This is a private beta, not an independently EASA-approved electronic pilot logbook. Pilots should keep their authoritative logbooks and separate encrypted backups.
 

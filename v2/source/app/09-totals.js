@@ -52,21 +52,33 @@ function totals(){
   </div>
   <div class="card" style="margin-top:16px">
     <div class="head"><h2>Specialised helicopter operations experience</h2></div>
-    <div class="mini" style="margin-bottom:12px">Historical operation hours from your previous logbook are included separately from HeliLog flights. Categories may overlap and must not be added together or added to total flight time.</div>
+    <div class="mini" style="margin-bottom:12px">Previous-logbook hours are separate. Cycle and offshore-landing counts only reflect recorded HeliLog flights; operation categories may overlap.</div>
     ${opsTotals.length?`<div style="overflow-x:auto"><table>
-      <thead><tr><th>Operation</th><th>HeliLog flights</th><th>Previous</th><th>Recorded here</th><th>Combined</th><th>By ICAO type (HeliLog flights only)</th></tr></thead>
+      <thead><tr><th>Operation</th><th>HeliLog flights</th><th>Previous</th><th>Recorded here</th><th>Combined</th><th>Cycles / landings</th><th>By ICAO type (HeliLog flights only)</th></tr></thead>
       <tbody>${opsTotals.map(op=>{
         const byType=new Map();
         effectiveFlights().filter(f=>Object.prototype.hasOwnProperty.call(f.specialOps||{},op.code)).forEach(f=>{
           const type=ac(f.aid)?.icao||'—';
-          byType.set(type,(byType.get(type)||0)+Number(f.specialOps[op.code]||0));
+          if(!byType.has(type))byType.set(type,{mins:0,day:0,night:0,total:0,unrecorded:0});
+          const item=byType.get(type);
+          item.mins+=Number(f.specialOps[op.code]||0);
+          if(op.code==='NVIS')item.total++;
+          else {
+            const v=f.specialOpsCycles?.[op.code];
+            if(v&&Number.isSafeInteger(v.day)&&v.day>=0&&Number.isSafeInteger(v.night)&&v.night>=0){
+              item.day+=v.day;item.night+=v.night;item.total+=v.day+v.night;
+            } else item.unrecorded++;
+          }
         });
+        const label=op.counter==='landings'?'Offshore landings':op.counter==='flights'?'NVIS flights':'Cycles';
+        const countText=v=>op.counter==='flights'?v.total+' flights':v.total+' (D '+v.day+' / N '+v.night+')'+(v.unrecorded?' · '+v.unrecorded+' unknown':'');
         return `<tr><td><b>${htmlEscape(op.code)}</b><div class="mini">${htmlEscape(op.label)}</div></td>
           <td>${op.flights}</td><td>${fmt(op.previousMinutes)}</td><td>${fmt(op.recordedMinutes)}</td><td><b>${fmt(op.minutes)}</b></td>
-          <td>${[...byType.entries()].map(([type,mins])=>`${htmlEscape(type)} ${fmt(mins)}`).join(' · ')}</td></tr>`;
+          <td><b>${op.total}</b><div class="mini">${label}${op.counter==='flights'?'':' · D '+op.day+' / N '+op.night}${op.unrecorded?' · '+op.unrecorded+' unknown':''}</div></td>
+          <td>${[...byType.entries()].map(([type,v])=>`<b>${htmlEscape(type)}</b> ${fmt(v.mins)} <span class="mini">· ${countText(v)}</span>`).join('<div style="height:6px"></div>')}</td></tr>`;
       }).join('')}</tbody></table></div>`:
       '<div class="muted">No specialised operations recorded yet. Add previous experience through Settings → Import previous logbook totals, or use More details on a new flight.</div>'}
-    <div class="mini" style="margin-top:12px">For example, VRLL and HESLO 2 may describe overlapping portions of the same flight. Their category totals must not be added together.</div>
+    <div class="mini" style="margin-top:12px">Counts show day (D) and night (N). NVIS counts flights; offshore counts qualifying offshore landings. Previous-logbook hours have no associated cycle counts.</div>
   </div>`;
 }
 

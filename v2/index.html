@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.31.4 — Compact Quick Flight · Test</title>
+<title>HeliLog V2.42 — Guide & Archive Fast Path · Test</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -467,14 +467,131 @@ html.helilog-test-mode .brand::after{
   #flightForm.quick-entry-active .formgrid {gap:5px;}
   #flightForm.quick-entry-active .field > label:first-child {font-size:10px;}
 }
+
+/* V2.33 responsive recent-experience dashboard and detail grid */
+.recency-mini-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.recency-mini{display:flex;align-items:center;gap:10px;padding:11px 12px;border:1px solid var(--line);border-radius:10px}
+.recency-mini>b{font-size:21px;white-space:nowrap}
+.recency-mini>.mini{margin-left:auto;text-align:right}
+.recency-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.recency-panel{padding:15px;border:1px solid var(--line);border-radius:11px}
+.recency-count{font-size:26px;font-weight:800;margin:7px 0}
+@media(max-width:650px){.recency-mini-grid,.recency-grid{grid-template-columns:1fr}.recency-mini{flex-wrap:wrap}}
+
+/* V2.33.2: dashboard recency visibility preferences */
+.recency-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.recency-dashboard-choice{display:flex;align-items:center;gap:12px;cursor:pointer;padding:14px;border:1px solid var(--line);border-radius:11px;min-width:0}
+.recency-dashboard-choice:has(input:checked){border-color:var(--accent, #6489ad);background:var(--panel)}
+.recency-dashboard-choice input{width:18px;height:18px;flex:0 0 18px}
+.recency-dashboard-choice>span{min-width:0}
+.recency-choice-title{display:block;font-size:13px;color:var(--muted);margin-top:3px}
+.recency-mini-label{min-width:0}
+.recency-mini-label .muted{font-size:12px;margin-top:3px}
+@media(max-width:650px){.recency-choice-grid{grid-template-columns:1fr}}
+
+/* V2.33.3: simple dashboard selector and rolling recency status */
+.recency-picker-card .recency-choice-grid{gap:7px 11px}
+.recency-picker-card .recency-dashboard-choice{padding:10px 12px;min-height:57px;gap:10px}
+.recency-choice-name{flex:1;min-width:0;font-size:13px}
+.recency-choice-name>b{font-size:13px}
+.recency-choice-title{font-size:12px;margin-top:2px}
+.recency-choice-status{flex:0 0 auto;margin-left:auto;font-size:11px;font-weight:700;border:1px solid var(--line);border-radius:999px;padding:3px 9px;white-space:nowrap}
+.recency-tone-met .recency-state,.recency-tone-met .recency-choice-status,.recency-tone-met.recency-choice-status{color:var(--cockpit-accent-bright,#43d6c5)}
+.recency-tone-estimated .recency-state,.recency-tone-estimated .recency-choice-status,.recency-tone-estimated.recency-choice-status{color:var(--cockpit-cyan,#84bddf)}
+.recency-tone-below .recency-state,.recency-tone-below .recency-choice-status,.recency-tone-below.recency-choice-status{color:var(--cockpit-warning,#efc478)}
+.recency-panel-label{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.recency-panel-label>.mini{margin:0}
+.recency-state{font-size:21px;font-weight:800;line-height:1.25;margin-top:15px;letter-spacing:-.02em}
+.recency-count-detail{color:var(--muted);font-size:13px;line-height:1.55;margin:7px 0}
+.recency-lapse{display:flex;flex-direction:column;gap:3px;border-top:1px solid var(--line);margin-top:14px;padding-top:11px;font-size:12px;color:var(--muted)}
+.recency-lapse>b{font-size:13px;color:var(--ink);font-weight:700}
+.recency-indicator{display:flex;flex-direction:column;align-items:stretch;gap:9px;padding:14px;min-height:125px}
+.recency-indicator-status{display:flex;flex-direction:column;align-items:flex-start;gap:5px}
+.recency-indicator-status>strong{font-size:18px;line-height:1.25}
+.recency-tone-met .recency-indicator-status>strong{color:var(--cockpit-accent-bright,#43d6c5)}
+.recency-tone-estimated .recency-indicator-status>strong{color:var(--cockpit-cyan,#84bddf)}
+.recency-tone-below .recency-indicator-status>strong{color:var(--cockpit-warning,#efc478)}
+.recency-indicator-status>span{font-size:12px;line-height:1.45;color:var(--muted)}
+.recency-indicator .recency-lapse{margin-top:auto}
+@media(max-width:700px){
+ .recency-choice-grid{grid-template-columns:1fr}
+ .recency-picker-card .recency-dashboard-choice{padding:11px 12px}
+ .recency-state{font-size:19px}
+}
+
+/* V2.33.4 — compact recency alongside Upcoming dates, no nested status cards */
+.dashboard-side-stack{display:grid;align-content:start;gap:14px;min-width:0}
+.dashboard-recency-card{min-width:0}
+.dashboard-recency-card .head{margin-bottom:3px}
+.recency-dashboard-list{display:grid}
+.recency-dashboard-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.recency-dashboard-row:last-child{border-bottom:0}
+.recency-dashboard-row-text{min-width:0}
+.recency-dashboard-row-text>b{font-size:13px}
+.recency-dashboard-row-text>.muted{font-size:12px;margin-top:3px;line-height:1.4}
+.recency-compact-status{display:inline-flex;justify-content:center;align-items:center;white-space:nowrap;border:1px solid currentColor;border-radius:999px;padding:4px 9px;font-size:11px;font-weight:750;letter-spacing:.01em;flex-shrink:0}
+.recency-compact-status.recency-tone-met{color:var(--cockpit-accent-bright,#43d6c5)}
+.recency-compact-status.recency-tone-estimated{color:var(--cockpit-cyan,#84bddf)}
+.recency-compact-status.recency-tone-below{color:var(--cockpit-warning,#efc478)}
+.recency-dashboard-disclaimer{margin-top:6px;font-size:11px;line-height:1.4}
+.recency-detail-card .head{margin-bottom:5px}
+.recency-detail-list{display:grid}
+.recency-detail-row{border-bottom:1px solid var(--line);min-width:0}
+.recency-detail-row:last-child{border-bottom:0}
+.recency-detail-row>summary{display:flex;align-items:center;gap:13px;cursor:pointer;list-style:none;padding:13px 0}
+.recency-detail-row>summary::-webkit-details-marker{display:none}
+.recency-detail-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;font-size:13px}
+.recency-detail-main>.muted{font-size:12px;line-height:1.45}
+.recency-expand-cue{font-size:16px;color:var(--muted);transition:transform .15s}
+.recency-detail-row[open] .recency-expand-cue{transform:rotate(180deg)}
+.recency-detail-expanded{margin:0 0 13px;padding:10px 13px;border-left:2px solid var(--line);background:rgba(0,0,0,.07);border-radius:0 8px 8px 0;color:var(--muted);font-size:12px;line-height:1.5}
+.recency-detail-expanded p{margin:0 0 7px}
+.recency-detail-expanded p:last-child{margin-bottom:0}
+@media(max-width:700px){
+ .recency-detail-row>summary{gap:9px}
+ .recency-compact-status{font-size:10px;padding:4px 7px}
+}
+
+/* V2.33.5 — prominent operation names without adding vertical height. */
+.recency-kind{font-weight:750;color:var(--ink)}
+
+/* V2.33.6 — group recency indicators beneath the aircraft type */
+.recency-type-heading{font-size:13px;font-weight:800;line-height:1.35;color:var(--ink);padding:10px 0 3px}
+.recency-dashboard-list .recency-type-group+.recency-type-group{border-top:1px solid var(--line);margin-top:6px;padding-top:6px}
+.recency-dashboard-list .recency-type-heading{padding:10px 0 0}
+.recency-type-group .recency-dashboard-row{padding:8px 0}
+.recency-type-group .recency-dashboard-row:last-child{border-bottom:0}
+.recency-dashboard-row-text>b.recency-kind{font-size:13px}
+.recency-pilot-note{font-size:11px;color:var(--muted);margin-left:8px;white-space:nowrap}
+.recency-picker-type+.recency-picker-type{border-top:1px solid var(--line);padding-top:8px;margin-top:8px}
+.recency-picker-type .recency-type-heading{margin-bottom:7px}
+.recency-detail-type+.recency-detail-type{border-top:1px solid var(--line);margin-top:8px;padding-top:8px}
+.recency-detail-type .recency-type-heading{font-size:14px;padding-top:9px}
+.recency-detail-main>b.recency-kind{font-size:13px}
+@media(max-width:520px){.recency-pilot-note{font-size:10px;margin-left:5px}}
+
+/* V2.34: operation duration and cycle/sequence counters in the same row */
+.special-count-fields{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.85fr) minmax(0,.85fr);gap:8px;align-items:end}
+.special-count-fields>div{min-width:0}
+.special-count-fields input{box-sizing:border-box;width:100%;min-width:0}
+.special-count-fields label{display:block;line-height:1.35;margin-bottom:4px}
+.special-nvis-auto{display:flex;flex-direction:column;gap:4px;grid-column:span 2}
+.special-nvis-auto strong{font-size:13px;color:var(--ink)}
+@media(max-width:520px){.special-count-fields{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.special-nvis-auto{grid-column:auto}}
+
+/* V2.34.1 compact offshore landing entry */
+.special-count-fields{grid-template-columns:minmax(0,1fr) repeat(2,minmax(0,.82fr));column-gap:6px}
+.special-count-fields label{font-size:11px;min-height:15px}
+.special-count-fields input[type="number"]{text-align:center;padding-inline:4px;font-variant-numeric:tabular-nums}
+@media(max-width:520px){.special-count-fields{grid-template-columns:minmax(0,1fr) repeat(2,minmax(0,.82fr));column-gap:5px}.special-count-fields label{font-size:10px}}
 </style>
 <link rel="stylesheet" href="./dark-cockpit.css?v=2.20-cockpit-3" media="screen">
 <link rel="stylesheet" href="./guide.css?v=2.29" media="screen">
 </head>
 <body><div class="layout">
-<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.31.4 · TEST ENVIRONMENT</span></div><nav>
+<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.42 · TEST ENVIRONMENT</span></div><nav>
 <div class="nav-group-label">Flight operations</div>
-<button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button>
+<button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="recency">◷ Recency</button>
 <div class="nav-group-label">Records &amp; assets</div>
 <button data-v="aircraft">🚁 Aircraft</button><button data-v="pilots">👤 Pilots</button><button data-v="endorsements">✎ Endorsements</button><button data-v="printarchive">▤ Print archive</button>
 <div class="nav-group-label">Account</div>
@@ -559,18 +676,26 @@ html.helilog-test-mode .brand::after{
 <script src="./cloud-config.js?v=2.19-locations-1"></script>
 <script src="./cloud-foundation.js?v=2.19-locations-1"></script>
 <script src="./cloud-view.js?v=2.19-locations-1"></script>
-<script src="./cloud-sync.js?v=2.19-locations-1"></script>
-<script src="./auth-gate.js?v=2.19-locations-1"></script>
+<script src="./cloud-sync.js?v=2.39.1-operator-sync-1"></script>
+<script src="./auth-gate.js?v=2.39.1-operator-sync-1"></script>
 <script src="./cloud-archives.js?v=2.19-locations-1"></script>
 <script src="./archive-integrity.js?v=2.19-locations-1"></script>
 <script src="./recovery.js?v=2.19-locations-1"></script>
 <script src="./cloud-backups.js?v=2.19-locations-1"></script>
 <script src="./disaster-recovery.js?v=2.19-locations-1"></script>
+<script src="./offline-backup-check.js?v=2.32"></script>
+<script src="./recency.js?v=2.33.1"></script>
+<script src="./special-recency.js?v=2.34"></script>
+<script src="./advanced-recency.js?v=2.35"></script>
+<script src="./operator-flight-monitor.js?v=2.40"></script>
+<script src="./simulator-evidence.js?v=2.41.2"></script>
+<script src="./operator-rules-ui.js?v=2.41"></script>
 <script>
 const LIVE_KEY='helilog_v2_complete_test_data'; // Separate V2 test browser key.
 const SANDBOX_KEY='helilog_v2_complete_test_sandbox';
 const MODE_KEY='helilog_v2_complete_test_mode';
 const TEST_MODE=localStorage.getItem(MODE_KEY)==='test';
+window.HELILOG_OPERATOR_SANDBOX=TEST_MODE;
 let KEY=TEST_MODE?SANDBOX_KEY:LIVE_KEY;
 // All existing logbook saves, migrations, imports and archive snapshots use KEY.
 // Test and live records therefore reside in distinct browser-storage entries.
@@ -976,6 +1101,25 @@ function save(){
     return false;
   }
 }
+// V2.39.1: custom operator profiles share private account settings transport.
+window.HeliLogOperatorSyncBridge=Object.freeze({
+ read(){return S.operatorProfiles===undefined?null:JSON.parse(JSON.stringify(S.operatorProfiles));},
+ write(data){
+  if(!v23AccountWorkspace())throw Error('Sign into the cloud account first.');
+  const previous=S.operatorProfiles;
+  S.operatorProfiles=JSON.parse(JSON.stringify(data));
+  try{
+   const bytes=JSON.stringify(S);
+   localStorage.setItem(KEY,bytes);
+   if(localStorage.getItem(KEY)!==bytes)throw Error('Storage verification failed.');
+  }catch(e){
+   if(previous===undefined)delete S.operatorProfiles;else S.operatorProfiles=previous;
+   throw Error('Could not preserve custom rules on this device: '+e.message);
+  }
+  try{window.HeliLogV23Sync.track(S);}
+  catch(e){throw Error('Rules are saved on this device, but cloud sync needs attention: '+e.message);}
+ }
+});
 function fmt(n){n=Math.max(0,Number(n)||0);return Math.floor(n/60)+':'+String(n%60).padStart(2,'0')}
 function parseHM(v){if(!v)return 0;let p=v.split(':').map(Number);return (p[0]||0)*60+(p[1]||0)}
 function ac(id){return S.aircraft.find(a=>a.id===id)}
@@ -1068,8 +1212,17 @@ function specialisedTotals(){
     const recordedMinutes=flights.reduce((n,f)=>n+Number(f.specialOps[op.code]||0),0);
     const historical=Number(previous?.[op.code]||0);
     const previousMinutes=Number.isSafeInteger(historical)&&historical>=0?historical:0;
+    // Count only explicitly captured cycles/landings. Historic hours have no counts.
+    const counter=op.code==='NVIS'?'flights':op.code==='OFFSHORE'?'landings':'cycles';
+    const counts=flights.reduce((out,f)=>{
+      if(op.code==='NVIS'){out.total++;return out;}
+      const v=f.specialOpsCycles?.[op.code];
+      if(!v||!Number.isSafeInteger(v.day)||!Number.isSafeInteger(v.night)||v.day<0||v.night<0){out.unrecorded++;return out;}
+      out.day+=v.day;out.night+=v.night;out.total+=v.day+v.night;
+      return out;
+    },{day:0,night:0,total:0,unrecorded:0});
     return {...op,flights:flights.length,previousMinutes,recordedMinutes,
-      minutes:previousMinutes+recordedMinutes};
+      minutes:previousMinutes+recordedMinutes,counter,...counts};
   }).filter(e=>e.flights||e.previousMinutes>0);
 }
 function broughtForwardInputMinutes(v){return Number(v||0)>0?fmt(Number(v)):'';
@@ -1248,6 +1401,7 @@ function mobilemore(){
     <button class="card more-link" onclick="go('endorsements')"><span>✎</span><b>Endorsements</b><span class="muted">Memoranda and signatures</span></button>
     ${!isStandaloneApp()?`<button class="card more-link" onclick="go('endorsementarchive')"><span>▤</span><b>Endorsement archive</b><span class="muted">Printed pages and corrections</span></button>`:''}
     <button class="card more-link" onclick="go('totals')"><span>◉</span><b>Totals</b><span class="muted">Flight-time breakdown</span></button>
+    <button class="card more-link" onclick="go('recency')"><span>◷</span><b>Recency</b><span class="muted">90-day passenger and night evidence</span></button>
     <button class="card more-link" onclick="go('profile')"><span>○</span><b>Profile</b><span class="muted">Pilot details, medical, licences and ratings</span></button>
     <button class="card more-link" onclick="go('settings')"><span>⚙</span><b>Settings</b><span class="muted">Logbook, cloud sync, backups and device</span></button>
     ${!v23AccountWorkspace()?`<button class="card more-link" onclick="go('testmode')"><span>⚗</span><b>Test Mode</b><span class="muted">Separate sandbox and safe reset</span></button>`:''}
@@ -1352,6 +1506,8 @@ function dashboard(){
       <div class="head"><h2>Recent flights</h2><button class="btn" onclick="go('logbook')">View all</button></div>
       <div style="overflow:auto"><table><thead><tr><th>Date</th><th>Type</th><th>Route</th><th>Time</th><th>Function</th></tr></thead><tbody>${fs.slice(0,6).map(row).join('')}</tbody></table></div>
     </div>
+    <div class="dashboard-side-stack">
+    ${recencySummaryMarkup()}
     <div class="card">
       <div class="head"><h2>Upcoming dates</h2><button class="btn" onclick="go('profile')">Profile</button></div>
       <div class="reminder-list">
@@ -1362,7 +1518,8 @@ function dashboard(){
           return `<div class="reminder-item"><div><b>${htmlEscape(r.label)}</b><div class="muted">${htmlEscape(r.type)} · ${displayDate(r.date)}</div></div><div class="reminder-days ${cls}">${txt}</div></div>`;
         }).join(''):'<div class="muted">No medical or qualification validity dates recorded.</div>'}
       </div>
-      <div class="mini" style="margin-top:10px">Date reminders only — HeliLog does not yet determine regulatory validity or recency.</div>
+      <div class="mini" style="margin-top:10px">Date reminders only. See Recency for flight evidence; HeliLog cannot certify flying privileges.</div>
+    </div>
     </div>
   </div>
 
@@ -2848,8 +3005,45 @@ function saveArchiveSetup(){
  * Never store a review decision in the logbook or the signed archive.
  */
 let pendingArchiveReview=null;
+let v242ReviewViewedKey=null;
+/* V2.42: Evaluate the SAME read-only checker immediately before each
+ * preview and confirmation. No clean result is stored as acknowledgement.
+ * The review key includes both the exact draft and actual findings: changes
+ * to other flights that affect the report invalidate an earlier exception review.
+ * Fail closed if the checker is unavailable or its output is malformed.
+ */
+function v242ArchiveCheck(draft=nextArchiveDraft()){
+ if(!draft?.flights?.length)return {ready:false,clean:false,report:null,key:null,error:null};
+ if(typeof window.HeliLogV29Review?.evaluate!=='function')
+  return {ready:false,clean:false,report:null,key:null,error:'Pre-archive safety checker is unavailable. Reload HeliLog online before printing.'};
+ try{
+  const result=window.HeliLogV29Review.evaluate({draft,allFlights:S.flights,people:S.people});
+  if(!Array.isArray(result?.issues)||!Number.isSafeInteger(result.critical)||
+     !Number.isSafeInteger(result.advisory)||result.critical<0||result.advisory<0||
+     result.critical+result.advisory!==result.issues.length)
+   throw Error('Invalid pre-archive findings. Nothing was approved.');
+  // Page-order warnings are significant even when individual flight checks
+  // pass. Treat them as advisories requiring the regular review workflow.
+  const extra=[];
+  if(draft.lateCount>0)extra.push({severity:'advisory',code:'late-entry',
+   message:draft.lateCount+' flight(s) predate the last signed batch. Review their placement and annotate them as late entries.'});
+  if(draft.ambiguousSimulatorDays>0)extra.push({severity:'advisory',code:'sim-order',
+   message:draft.ambiguousSimulatorDays+' day(s) contain both timed flights and undated-time simulator entries. Confirm print order.'});
+  if(draft.demoCount>0)extra.push({severity:'critical',code:'demo-entry',
+   message:draft.demoCount+' unchanged demonstration entries must be removed before confirming an official archive.'});
+  const issues=[...result.issues,...extra];
+  const report={...result,issues,critical:result.critical+extra.filter(x=>x.severity==='critical').length,
+   advisory:result.advisory+extra.filter(x=>x.severity==='advisory').length};
+  const clean=issues.length===0;
+  const key=JSON.stringify({draft,issues});
+  return {ready:clean||pendingArchiveReview===key,clean,report,key,error:null};
+ }catch(err){
+  return {ready:false,clean:false,report:null,key:null,
+   error:'Pre-archive safety review failed: '+String(err?.message||err)};
+ }
+}
 function v229ArchiveReviewed(draft=nextArchiveDraft()){
- return !!pendingArchiveReview && pendingArchiveReview===JSON.stringify(draft);
+ return v242ArchiveCheck(draft).ready;
 }
 /* V2.31.3: transient return navigation, never persisted or confused with
  * signed review acknowledgement. The exact batch controls checkbox restore. */
@@ -2888,9 +3082,11 @@ function v229PreArchiveReview(){
  if(v23PreventUnsupportedArchive()||isStandaloneApp())return;
  const draft=nextArchiveDraft();
  if(!draft.flights.length){go("printarchive");return;}
- if(!window.HeliLogV29Review?.evaluate)
-  throw Error("Pre-archive review module unavailable. Reopen HeliLog online; do not print or archive.");
- const report=window.HeliLogV29Review.evaluate({draft,allFlights:S.flights,people:S.people});
+ const check=v242ArchiveCheck(draft);
+ if(check.error)throw Error(check.error);
+ if(check.clean){go("printarchive");return;}
+ const report=check.report;
+ v242ReviewViewedKey=check.key;
  const issueHtml=report.issues.map((issue,issueIndex)=>{
   const heading=issue.severity==="critical"?"Check carefully":"Check if applicable";
   const related=issue.otherFlightId?
@@ -2935,7 +3131,13 @@ function v229AcceptReview(){
  }
  const draft=nextArchiveDraft();
  if(!draft.flights.length){alert("There are no flights to review.");return;}
- pendingArchiveReview=JSON.stringify(draft);
+ const check=v242ArchiveCheck(draft);
+ if(check.error){alert(check.error);return;}
+ if(!check.clean&&(!check.key||check.key!==v242ReviewViewedKey)){
+  alert("The selected flights or findings have changed. Review the current results before continuing.");
+  v229PreArchiveReview();return;
+ }
+ pendingArchiveReview=check.clean?null:check.key;
  go("printarchive");
 }
 function previewNextArchive(){
@@ -3192,7 +3394,8 @@ function printarchive(){
   const batches=archivedBatches();
   const draft=nextArchiveDraft();
   const previewReady=!!pendingArchivePreview && pendingArchivePreview===JSON.stringify(draft);
-  const reviewReady=v229ArchiveReviewed(draft);
+  const reviewCheck=v242ArchiveCheck(draft);
+  const reviewReady=reviewCheck.ready;
   const canPrint=draft.flights.length>0;
   const first=!batches.length;
   app.innerHTML=header('Print logbook & archive',
@@ -3234,12 +3437,14 @@ function printarchive(){
         You can also print a partly filled final page; any unused rows will be crossed out with dashes and marked UNUSED.
       </p>
     </div>`:''}
-    ${canPrint?`<div class="card" style="margin-top:14px">
-      <div class="head"><h2>Step 1 — Pre-archive flight review</h2></div>
-      <p>Review possible duplicates, PIC information, unusual UTC times and flight-time totals for these exact pages before printing. Findings never change your records.</p>
-      <div class="mini">${reviewReady?'Review acknowledged for this exact batch. Re-review if you wish.':'Review required before previewing or printing this batch.'}</div>
-      <div class="actions" style="margin-top:10px"><button class="btn ${reviewReady?'':'primary'}" onclick="go('archivereview')">${reviewReady?'Review again':'Review flights before printing'}</button></div>
-    </div>`:''}
+    ${canPrint?(reviewCheck.clean?
+      `<div class="card" style="margin-top:14px"><div class="mini"><b>No pre-archive findings for the selected pages.</b> Continue directly to Preview / Print pages. HeliLog rechecks before preview and confirmation; you still need to verify, print and sign the pages.</div></div>`:
+      `<div class="card" style="margin-top:14px">
+       <div class="head"><h2>Step 1 — Pre-archive flight review</h2></div>
+       <p>Review possible duplicates, PIC information, unusual UTC times and flight-time totals for these exact pages before printing. Findings never change your records.</p>
+       <div class="mini">${reviewCheck.error?htmlEscape(reviewCheck.error):reviewReady?'Findings acknowledged for this exact batch. Review again if needed.':'Findings require review and acknowledgement before previewing or printing this batch.'}</div>
+       <div class="actions" style="margin-top:10px"><button class="btn ${reviewReady?'':'primary'}" ${reviewCheck.error?'disabled':''} onclick="go('archivereview')">${reviewReady?'Review again':'Review flights before printing'}</button></div>
+      </div>`):''}
     ${draft.demoCount?`<div class="note" style="margin-top:14px;border-color:#b42318">
        <b>Example flights detected:</b> ${draft.demoCount} unchanged demonstration entries are present in this print batch.
        Do not sign these as genuine flight records. You may preview the layout, but archive confirmation is blocked until they are removed.
@@ -3253,7 +3458,7 @@ function printarchive(){
     <div class="card" style="margin-top:16px">
       <div class="head"><h2>Next print batch</h2></div>
       ${canPrint?
-        `<p class="muted">1. Review the selected flights. 2. Preview and print the A4 landscape pages. 3. Check totals and sign them. 4. Confirm the printed batch to lock the records.</p>
+        `<p class="muted">${reviewCheck.clean?'No review findings. ':reviewReady?'Findings reviewed. ':'Review findings before printing. '}Preview the A4 pages, verify totals, print and physically sign, then separately confirm the printed batch to lock the records.</p>
          <div style="display:flex;flex-wrap:wrap;gap:9px">
            <button class="btn primary" ${reviewReady?'':'disabled'} onclick="previewNextArchive()">Preview / Print pages</button>
            <button class="btn" ${previewReady&&reviewReady?'':'disabled'} onclick="confirmPrintedArchive()">Confirm printed & signed</button>
@@ -3316,7 +3521,13 @@ function addSimulator(editId=null){
          <div class="field"><label>Device category</label><select id="simCategory">
            ${['FNPT I','FNPT II','FTD','FFS','FS','Other'].map(c=>`<option value="${c}"${(old?.simCategory||'FNPT II')===c?' selected':''}>${c}</option>`).join('')}
          </select></div>
-         <div class="field"><label>Device / aircraft type (required for FS/FFS/FTD)</label><input id="simDevice" maxlength="90" placeholder="Device or represented aircraft type" value="${htmlEscape(old?.simDevice||'')}"></div>
+         <div class="field"><label for="simAircraftType">Represented helicopter ICAO type (for rule matching)</label><input id="simAircraftType" maxlength="8" placeholder="ICAO type designator" value="${htmlEscape(old?.simAircraftType||window.HeliLogV241SimulatorEvidence?.deviceType(old?.simDevice)||'')}">
+           <div class="mini">Enter the helicopter ICAO designator here. Older simulator device descriptions are retained in their original records; no separate device field is needed.</div></div>
+         <div class="field"><label for="simPilotConfig">Crew configuration for evidence matching</label><select id="simPilotConfig">
+           <option value="">Not specified — no automatic match</option>
+           <option value="single"${old?.simPilotConfig==='single'?' selected':''}>Single-pilot</option>
+           <option value="multi"${old?.simPilotConfig==='multi'?' selected':''}>Multi-pilot</option>
+         </select></div>
          <div class="field"><label>Device qualification / ID (optional)</label><input id="simQualification" maxlength="60" placeholder="e.g. Q1234" value="${htmlEscape(old?.simQualification||'')}"></div>
          <div class="field"><label>Total time of session (H:MM)</label><input id="simDuration" inputmode="decimal" placeholder="2:30" value="${old?fmt(old.stdMin||0):''}">
            <div class="mini">Include associated pre- and after-flight checks, per the paper-logbook instructions.</div></div>
@@ -3338,17 +3549,32 @@ function saveSimulatorSession(){
     alert('Archived simulator sessions require an addendum.');return;
   }
   clearFormError();
-  const date=readEuropeanDate('simDate',true),category=$('#simCategory').value,device=$('#simDevice').value.trim(),
-    qualification=$('#simQualification').value.trim(),remarks=$('#simRemarks').value.trim();
+  const date=readEuropeanDate('simDate',true),category=$('#simCategory').value,
+    enteredType=$('#simAircraftType').value.trim().toUpperCase(),
+    qualification=$('#simQualification').value.trim(),remarks=$('#simRemarks').value.trim(),
+    simPilotConfig=$('#simPilotConfig').value;
   const time=parseBroughtForwardMinutes($('#simDuration').value);
   if(!date)return showFormError('Enter a valid simulator session date in DD-MM-YYYY format.');
-  if(!device && !category.startsWith('FNPT'))return showFormError('Enter the simulator device or aircraft type (required for FS/FFS/FTD).');
+  if(enteredType&&!/^[A-Z0-9]{2,8}$/.test(enteredType))
+    return showFormError('Enter an ICAO helicopter type using 2–8 letters or digits.');
+  if(!enteredType && !category.startsWith('FNPT'))
+    return showFormError('Enter the represented ICAO helicopter type for FS, FFS or FTD sessions.');
   if(time===null||!Number.isSafeInteger(time)||time<=0)return showFormError('Enter positive simulator time in H:MM format.');
+  if(!['','single','multi'].includes(simPilotConfig))return showFormError('Choose a valid crew configuration.');
   const old=editingFlightId?S.flights.find(f=>f.id===editingFlightId):null;
+  // Preserve the original device identifier and matching fields if editing
+  // without changing the displayed type. This avoids silently changing old
+  // logbook records or invalidating reviewed linked FFS evidence.
+  const previousType=old?.simAircraftType||
+    window.HeliLogV241SimulatorEvidence?.deviceType(old?.simDevice)||'';
+  const typeUnchanged=!!old&&enteredType===previousType;
+  const device=typeUnchanged?old.simDevice||enteredType:enteredType;
+  const simAircraftType=typeUnchanged?old.simAircraftType:enteredType;
   if(editingFlightId&&!isSimulatorSession(old))return showFormError('Cannot convert a flight into a simulator session.');
   const entry={
     id:old?.id||'sim'+Date.now()+Math.random().toString(36).slice(2,8),
     entryType:'simulator',date,simCategory:category,simDevice:device,simQualification:qualification,
+    simAircraftType,simPilotConfig,
     stdType:[category,device,qualification?'('+qualification+')':''].filter(Boolean).join(' '),stdMin:time,
     mins:0,aid:'',dep:'',off:'',arr:'',on:'',role:'',picName:'',nightMin:0,ifrMin:0,
     takeoffDay:0,takeoffNight:0,landingDay:0,landingNight:0,crossCountry:false,specialOps:{},remarks,
@@ -3360,10 +3586,21 @@ function saveSimulatorSession(){
   if(!save())return;
   const id=entry.id;editingFlightId=null;clearFlightFormGuard();flight(id);
 }
+function v241ReviewSimulatorMatch(profileId,ruleId,sessionId){
+  go('operatorrules');
+  window.HeliLogV236OperatorRulesUI?.reviewSession(profileId,ruleId,sessionId);
+}
 function simulatorDetails(id){
   const f=effectiveFlight(S.flights.find(x=>x.id===id));
   if(!isSimulatorSession(f))return go('logbook');
   editingFlightId=null;
+  const suggestions=window.HeliLogV236OperatorRulesUI?.sessionMatches?.(f)||[];
+  const matched=suggestions.length?
+    '<div class="card" style="margin-top:14px"><h3>Suggested custom operator recencies</h3>'+
+    '<p class="mini">Based on the entered ICAO type, crew configuration and FFS category. Nothing is credited without reviewing a supporting document and confirming a qualifying quantity.</p>'+
+    suggestions.map(m=>'<div class="profileline"><b>'+htmlEscape(m.title)+'</b> · '+htmlEscape(m.operator)+
+      ' <button class="btn" type="button" onclick="v241ReviewSimulatorMatch(\''+m.profileId+'\',\''+m.ruleId+'\',\''+f.id+'\')">Review match</button></div>').join('')+'</div>':
+    '<div class="card" style="margin-top:14px"><h3>Operator recency matching</h3><p class="mini">No eligible custom operator rule matched. FFS matching requires a represented ICAO helicopter type, crew configuration and an operator rule that accepts FFS evidence. Simulator time alone grants no credit.</p></div>';
   app.innerHTML=header('Simulator session',formatDate(f.date)+' · '+htmlEscape(f.simCategory),
   `<div style="display:flex;gap:8px;flex-wrap:wrap">
     ${v229CanReturnToReview(id)?
@@ -3372,12 +3609,11 @@ function simulatorDetails(id){
     <button class="btn primary" onclick="editFlight('${f.id}')">${isArchivedFlight(f.id)?'Propose correction':'Edit session'}</button>
     ${!isArchivedFlight(f.id)?`<button class="btn dangerbtn" onclick="openDeleteModal('${f.id}')">Delete session</button>`:''}</div>`)+
     `<div class="card"><h2>${htmlEscape(simulatorDeviceLabel(f))}</h2>
-     <div class="grid stats">
+     <div class="grid stats" style="grid-template-columns:minmax(0,1fr);max-width:420px">
        <div class="card"><div class="label">Simulator session</div><div class="big">${fmt(f.stdMin)}</div></div>
-       <div class="card"><div class="label">Actual flight time</div><div class="big">0:00</div></div>
      </div><p><b>Exercise / remarks</b></p><p>${htmlEscape(f.remarks||'—')}</p>
      <p class="mini">Printed only in Synthetic Training Devices and Remarks columns. Does not add to actual helicopter flight time.</p></div>`+
-    correctionHistoryMarkup(id);
+    matched+correctionHistoryMarkup(id);
 }
 function quickAdd(){add(null,true);}
 function setFlightEntryMode(mode){
@@ -3524,8 +3760,8 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
   <div class="field">
     <label>Pilot configuration</label>
     <div class="choice-row">
-      <label class="choice-option"><input type="radio" name="pilotConfig" value="single" checked> Single-pilot</label>
-      <label class="choice-option"><input type="radio" name="pilotConfig" value="multi"> Multi-pilot</label>
+      <label class="choice-option"><input type="radio" name="pilotConfig" value="single" checked onchange="toggleRecencyEvidence()"> Single-pilot</label>
+      <label class="choice-option"><input type="radio" name="pilotConfig" value="multi" onchange="toggleRecencyEvidence()"> Multi-pilot</label>
     </div>
     <div class="mini">The total flight time will be allocated automatically in the PDF export.</div>
   </div>
@@ -3574,8 +3810,29 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
       <div class="mini">Recorded separately from PIC, Dual and total flight time. Can be part of the same flight.</div>
     </div>
   </div>
+
+  <details id="recencyEvidence" style="margin-top:14px;border:1px solid var(--line);padding:12px;border-radius:10px">
+    <summary style="cursor:pointer;font-weight:700">FCL.060 recency — automatic or manual</summary>
+    <div id="recencyAutoWrap">
+      <p class="mini">Single-pilot PIC/SOLO: HeliLog automatically estimates qualifying movements from the take-offs and landings already recorded above. No duplicate sequence entry is necessary. Check the approaches and any unusual crew arrangements yourself.</p>
+      <label class="choice-option" style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <input id="recencyAutoExclude" type="checkbox"> Exclude this flight from automatic recency estimates (e.g. you did not fly the complete approach/landing)
+      </label>
+    </div>
+    <div id="recencyManualWrap" style="display:none">
+      <p class="mini">For multi-pilot, DUAL, SPIC, PICUS or CO-PILOT: manually confirm complete take-off, approach and landing sequences flown by you as PF, if applicable. Do not confuse aircraft movements with your PF credit.</p>
+      <label class="choice-option" style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <input id="recencyPF" type="checkbox" onchange="toggleRecencyEvidence()"> I was pilot flying for these complete sequences
+      </label>
+      <div class="formgrid">
+        <div class="field"><label for="recencyDay">Confirmed day sequences</label><input id="recencyDay" type="number" min="0" max="100" step="1" value="0" disabled></div>
+        <div class="field"><label for="recencyNight">Confirmed night sequences</label><input id="recencyNight" type="number" min="0" max="100" step="1" value="0" disabled></div>
+      </div>
+      <p class="mini">Night sequences also count toward the general 3-sequence threshold. Approved simulator and IR credit require separate checks.</p>
+    </div>
+  </details>
   <div class="section-title">Specialised helicopter operations</div>
-  <div class="mini">Tick an operation performed during this flight to reveal its duration in H:MM. These hours are experience breakdowns and do not increase your total flight time.</div>
+  <div class="mini">Select the operations performed. Record operation time and completed cycles. Offshore counts are landings at qualifying offshore locations (not ordinary aerodrome landings).</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:10px;margin-top:12px">
     ${SPECIAL_OPS.map(op=>`<div style="border:1px solid var(--line);border-radius:9px;padding:10px">
       <label style="display:flex;gap:8px;align-items:start;cursor:pointer">
@@ -3583,12 +3840,19 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
         <span>${htmlEscape(op.label)}</span>
       </label>
       <div id="specialWrap_${op.code}" style="display:none;margin-top:9px">
-        <label for="specialTime_${op.code}" class="mini">Operation time (H:MM)</label>
-        <input id="specialTime_${op.code}" type="text" inputmode="decimal" placeholder="0:00" value="0:00" oninput="updateSpecialOpsPreview()">
+        <div class="special-count-fields">
+          <div><label for="specialTime_${op.code}" class="mini">Time (H:MM)</label>
+             <input id="specialTime_${op.code}" type="text" inputmode="decimal" placeholder="0:00" value="0:00" oninput="updateSpecialOpsPreview()"></div>
+          ${op.code==='NVIS'?'<div class="special-nvis-auto"><span class="mini">NVIS flights</span><strong>1 per flight</strong><span class="mini">Counted automatically</span></div>':`
+          <div><label for="specialDayCycles_${op.code}" class="mini">${op.code==='OFFSHORE'?'Day landings':'Day cycles'}</label>
+             <input id="specialDayCycles_${op.code}" type="number" min="0" max="9999" step="1" value="0" inputmode="numeric"></div>
+          <div><label for="specialNightCycles_${op.code}" class="mini">${op.code==='OFFSHORE'?'Night landings':'Night cycles'}</label>
+             <input id="specialNightCycles_${op.code}" type="number" min="0" max="9999" step="1" value="0" inputmode="numeric"></div>`}
+        </div>
       </div>
     </div>`).join('')}
   </div>
-  <div class="mini" style="margin-top:10px">Ticked activities with unknown duration may remain 0:00; they count as a flight but not as credited hours. Activities can overlap.</div>
+  <div class="mini" style="margin-top:10px">Offshore: count only landings at an offshore location (platform, helideck or vessel) with the corresponding take-off, departure and approach. HHO: completed hoist cycles including hover transitions. NVIS: flights, not cycles. Night counts require night time.</div>
   <div id="specialOpsPreview" class="mini" style="margin-top:8px"></div>
 </details>
 
@@ -3630,14 +3894,26 @@ if(existing){
   toggleInstructorTime();
   $('#crossCountry').checked=!!existing.crossCountry;
   $('#remarks').value=existing.remarks||'';
+  $('#recencyAutoExclude').checked=existing.recency?.excludeAuto===true;
+  if(existing.recency?.pfConfirmed){
+    $('#recencyPF').checked=true;
+    $('#recencyDay').value=existing.recency.day||0;
+    $('#recencyNight').value=existing.recency.night||0;
+    toggleRecencyEvidence();
+  }
   SPECIAL_OPS.forEach(op=>{
     if(Object.prototype.hasOwnProperty.call(existing.specialOps||{},op.code)){
       $('#specialCheck_'+op.code).checked=true;
       $('#specialTime_'+op.code).value=fmt(existing.specialOps[op.code]);
+      if(op.code!=='NVIS'){
+        $('#specialDayCycles_'+op.code).value=Number(existing.specialOpsCycles?.[op.code]?.day||0);
+        $('#specialNightCycles_'+op.code).value=Number(existing.specialOpsCycles?.[op.code]?.night||0);
+      }
       toggleSpecialOp(op.code);
     }
   });
-  if($('#instructorCheck').checked || Object.keys(existing.specialOps||{}).length) $('#moreDetails').open=true;
+  if($('#instructorCheck').checked || Object.keys(existing.specialOps||{}).length || existing.recency?.pfConfirmed || existing.recency?.excludeAuto) $('#moreDetails').open=true;
+  if(existing.recency?.pfConfirmed || existing.recency?.excludeAuto) $('#recencyEvidence').open=true;
 }else{
   $('#date').value=formatDate(new Date().toISOString().slice(0,10));
   if(quick){
@@ -3705,6 +3981,10 @@ function toggleSpecialOp(code){
   if(!checked){
     const field=document.getElementById('specialTime_'+code);
     if(field)field.value='0:00';
+    for(const id of ['specialDayCycles_','specialNightCycles_']){
+      const count=document.getElementById(id+code);
+      if(count)count.value='0';
+    }
   }
   updateSpecialOpsPreview();
 }
@@ -3730,6 +4010,67 @@ function collectSpecialOps(totalMinutes){
     ops[op.code]=minutes;
   }
   return ops;
+}
+function collectSpecialOpCycles(nightMinutes){
+  const result={};
+  for(const op of SPECIAL_OPS){
+    if(op.code==='NVIS'||!document.getElementById('specialCheck_'+op.code)?.checked)continue;
+    const dayInput=document.getElementById('specialDayCycles_'+op.code);
+    const nightInput=document.getElementById('specialNightCycles_'+op.code);
+    const rawDay=String(dayInput?.value??'').trim(),rawNight=String(nightInput?.value??'').trim();
+    const day=Number(rawDay),night=Number(rawNight);
+    if(!/^\d{1,4}$/.test(rawDay)||!/^\d{1,4}$/.test(rawNight)||
+      !Number.isSafeInteger(day)||!Number.isSafeInteger(night)||
+      day<0||night<0||day>9999||night>9999||(night>0&&nightMinutes<=0)){
+      $('#moreDetails').open=true;
+      if(dayInput)dayInput.classList.add('time-input-invalid');
+      if(nightInput)nightInput.classList.add('time-input-invalid');
+      showFormError(op.code+' requires whole, non-negative day/night counts (0–9999). Night counts require recorded night flight time.');
+      (night>0&&nightMinutes<=0?nightInput:dayInput)?.focus();
+      return null;
+    }
+    dayInput?.classList.remove('time-input-invalid');
+    nightInput?.classList.remove('time-input-invalid');
+    if(day||night)result[op.code]={day,night};
+  }
+  return result;
+}
+function toggleRecencyEvidence(){
+  const role=document.getElementById('role')?.value;
+  const cfg=document.querySelector('input[name="pilotConfig"]:checked')?.value||'single';
+  const auto=cfg==='single'&&['PIC','SOLO'].includes(role);
+  const autoWrap=document.getElementById('recencyAutoWrap');
+  const manualWrap=document.getElementById('recencyManualWrap');
+  if(autoWrap)autoWrap.style.display=auto?'block':'none';
+  if(manualWrap)manualWrap.style.display=auto?'none':'block';
+  const checked=!auto&&!!document.getElementById('recencyPF')?.checked;
+  for(const id of ['recencyDay','recencyNight']){
+    const input=document.getElementById(id);
+    if(input)input.disabled=!checked;
+  }
+}
+function collectRecencyEvidence(icao,dayTo,dayLdg,nightTo,nightLdg,nightMin,role,cfg,original){
+  const code=String(icao||'').trim().toUpperCase();
+  if(cfg==='single'&&['PIC','SOLO'].includes(role)){
+    if(document.getElementById('recencyAutoExclude')?.checked)return {excludeAuto:true,icao:code};
+    // Preserve historical explicit PF evidence when editing a PIC/SOLO flight.
+    // If movement counts change, read-only computation rechecks validity.
+    return original?.recency?.pfConfirmed===true?{...original.recency,icao:code}:null;
+  }
+  const flag=document.getElementById('recencyPF');
+  if(!flag?.checked)return null;
+  const day=Number(document.getElementById('recencyDay')?.value);
+  const night=Number(document.getElementById('recencyNight')?.value);
+  const valid=n=>Number.isSafeInteger(n)&&n>=0&&n<=100;
+  if(!valid(day)||!valid(night)||day+night===0||
+    day>Math.min(dayTo,dayLdg)||night>Math.min(nightTo,nightLdg)||
+    (night>0&&nightMin<=0)){
+    document.getElementById('moreDetails').open=true;
+    document.getElementById('recencyEvidence').open=true;
+    showFormError('Complete PF sequences must not exceed day/night take-offs or landings; night sequences need night time.');
+    return false;
+  }
+  return {pfConfirmed:true,day,night,icao:code};
 }
 function uppercasePlaceInput(el){
   let start=el.selectionStart, end=el.selectionEnd;
@@ -3980,6 +4321,7 @@ function roleChanged(){
     field.style.background='#fff';
   }
   if(typeof updateQuickPICVisibility==='function')updateQuickPICVisibility();
+  if(typeof toggleRecencyEvidence==='function')toggleRecencyEvidence();
 }
 
 function showFormError(msg){
@@ -4028,11 +4370,19 @@ function saveFlight(){
 
   const specialOps=collectSpecialOps(m);
   if(specialOps===null)return;
+  const specialOpsCycles=collectSpecialOpCycles(night);
+  if(specialOpsCycles===null)return;
   const instructorTime=collectInstructorTime(m);
   if(instructorTime===null)return;
   let pilotConfig=document.querySelector('input[name="pilotConfig"]:checked')?.value||'single';
-
   let role=$('#role').value;
+  const originalEntry=editingFlightId?S.flights.find(x=>x.id===editingFlightId):null;
+  const recencyEvidence=collectRecencyEvidence(ac($('#aid').value)?.icao,
+    Number($('#toDay').value||0),Number($('#ldgDay').value||0),
+    Number($('#toNight').value||0),Number($('#ldgNight').value||0),night,
+    role,pilotConfig,originalEntry);
+  if(recencyEvidence===false)return;
+
   let picName=$('#picName').value.trim();
   if(['PIC','SOLO'].includes(role))picName='SELF';
   if(!picName) return showFormError('Please enter the name of the PIC.');
@@ -4080,6 +4430,8 @@ function saveFlight(){
     stdMin:Number(original?.stdMin||0),
     crossCountry:$('#crossCountry').checked,
     specialOps,
+    specialOpsCycles,
+    recency:recencyEvidence,
     remarks:$('#remarks').value.trim(),
     createdAt:original?.createdAt||new Date().toISOString(),
     updatedAt:new Date().toISOString()
@@ -4105,9 +4457,11 @@ function flight(id){const entry=effectiveFlight(S.flights.find(x=>x.id===id));if
 <div class="kpi-grid"><div class="card"><div class="label">Total time</div><div class="big">${fmt(f.mins)}</div></div><div class="card"><div class="label">Pilot function</div><div class="big" style="font-size:20px">${f.role}</div></div><div class="card"><div class="label">Night</div><div class="big">${fmt(f.nightMin||0)}</div></div><div class="card"><div class="label">IFR</div><div class="big">${fmt(f.ifrMin||0)}</div></div></div>
 <div class="mini" style="margin-top:12px">Night entry: ${f.nightCalculation?.mode==='automatic'?'Automatically estimated from aerodrome coordinates and civil twilight':'Manually entered / legacy record'}.</div>
 <div class="formgrid" style="margin-top:18px"><div><b>Name of PIC</b><div class="muted">${htmlEscape(displayPICName(f)||'—')}</div></div><div><b>Engine configuration</b><div class="muted">✓ ${engineCode(a)==='ME'?'Multi-engine (ME)':'Single-engine (SE)'}</div></div><div><b>Pilot configuration</b><div class="muted">${flightPilotConfig(f)==='multi'?'Multi-pilot':'Single-pilot'}</div></div><div><b>Configuration time</b><div class="muted">${(()=>{let c=configurationTimes(f);return c.multi?`Multi-pilot ${fmt(c.multi)}`:c.spME?`Single-pilot ME ${fmt(c.spME)}`:`Single-pilot SE ${fmt(c.spSE)}`})()}</div></div><div><b>Take-offs</b><div class="muted">Day ${f.takeoffDay||0} · Night ${f.takeoffNight||0}</div></div><div><b>Landings</b><div class="muted">Day ${f.landingDay||0} · Night ${f.landingNight||0}</div></div><div><b>Cross-country</b><div class="muted">${f.crossCountry?'Yes':'No'}</div></div></div>
+<p><b>FCL.060 recency:</b> <span class="muted">${(()=>{const e=window.HeliLogV233Recency.evidence(f);return e.source==='excluded'?'Excluded from automatic estimate':e.source==='unverified'?'PF evidence not established':e.source==='estimated'?'Automatically estimated day '+e.day+' · night '+e.night+' movements':'Confirmed day '+e.day+' · night '+e.night+' PF sequences';})()}</span></p>
 <p><b>Remarks / endorsements</b><br><span class="muted">${htmlEscape(flightRemarksForDisplay(f)||'—')}</span></p>
 ${Object.keys(f.specialOps||{}).length?`<div class="card" style="margin-top:16px"><h3>Specialised helicopter operations</h3>
-${SPECIAL_OPS.filter(op=>Object.prototype.hasOwnProperty.call(f.specialOps||{},op.code)).map(op=>`<div class="profileline"><div class="k">${htmlEscape(op.label)}</div><b>${fmt(f.specialOps[op.code])}</b></div>`).join('')}
+${SPECIAL_OPS.filter(op=>Object.prototype.hasOwnProperty.call(f.specialOps||{},op.code)).map(op=>`<div class="profileline"><div class="k">${htmlEscape(op.label)}</div>
+ <b>${fmt(f.specialOps[op.code])}${op.code==='NVIS'?' · NVIS flight':f.specialOpsCycles?.[op.code]?' · Day '+Number(f.specialOpsCycles[op.code].day)+' / Night '+Number(f.specialOpsCycles[op.code].night):''}</b></div>`).join('')}
 <div class="mini">Breakdown only — no additional flight-time credit.</div></div>`:''}</div>`+
   correctionHistoryMarkup(id)}
 
@@ -4811,21 +5165,33 @@ function totals(){
   </div>
   <div class="card" style="margin-top:16px">
     <div class="head"><h2>Specialised helicopter operations experience</h2></div>
-    <div class="mini" style="margin-bottom:12px">Historical operation hours from your previous logbook are included separately from HeliLog flights. Categories may overlap and must not be added together or added to total flight time.</div>
+    <div class="mini" style="margin-bottom:12px">Previous-logbook hours are separate. Cycle and offshore-landing counts only reflect recorded HeliLog flights; operation categories may overlap.</div>
     ${opsTotals.length?`<div style="overflow-x:auto"><table>
-      <thead><tr><th>Operation</th><th>HeliLog flights</th><th>Previous</th><th>Recorded here</th><th>Combined</th><th>By ICAO type (HeliLog flights only)</th></tr></thead>
+      <thead><tr><th>Operation</th><th>HeliLog flights</th><th>Previous</th><th>Recorded here</th><th>Combined</th><th>Cycles / landings</th><th>By ICAO type (HeliLog flights only)</th></tr></thead>
       <tbody>${opsTotals.map(op=>{
         const byType=new Map();
         effectiveFlights().filter(f=>Object.prototype.hasOwnProperty.call(f.specialOps||{},op.code)).forEach(f=>{
           const type=ac(f.aid)?.icao||'—';
-          byType.set(type,(byType.get(type)||0)+Number(f.specialOps[op.code]||0));
+          if(!byType.has(type))byType.set(type,{mins:0,day:0,night:0,total:0,unrecorded:0});
+          const item=byType.get(type);
+          item.mins+=Number(f.specialOps[op.code]||0);
+          if(op.code==='NVIS')item.total++;
+          else {
+            const v=f.specialOpsCycles?.[op.code];
+            if(v&&Number.isSafeInteger(v.day)&&v.day>=0&&Number.isSafeInteger(v.night)&&v.night>=0){
+              item.day+=v.day;item.night+=v.night;item.total+=v.day+v.night;
+            } else item.unrecorded++;
+          }
         });
+        const label=op.counter==='landings'?'Offshore landings':op.counter==='flights'?'NVIS flights':'Cycles';
+        const countText=v=>op.counter==='flights'?v.total+' flights':v.total+' (D '+v.day+' / N '+v.night+')'+(v.unrecorded?' · '+v.unrecorded+' unknown':'');
         return `<tr><td><b>${htmlEscape(op.code)}</b><div class="mini">${htmlEscape(op.label)}</div></td>
           <td>${op.flights}</td><td>${fmt(op.previousMinutes)}</td><td>${fmt(op.recordedMinutes)}</td><td><b>${fmt(op.minutes)}</b></td>
-          <td>${[...byType.entries()].map(([type,mins])=>`${htmlEscape(type)} ${fmt(mins)}`).join(' · ')}</td></tr>`;
+          <td><b>${op.total}</b><div class="mini">${label}${op.counter==='flights'?'':' · D '+op.day+' / N '+op.night}${op.unrecorded?' · '+op.unrecorded+' unknown':''}</div></td>
+          <td>${[...byType.entries()].map(([type,v])=>`<b>${htmlEscape(type)}</b> ${fmt(v.mins)} <span class="mini">· ${countText(v)}</span>`).join('<div style="height:6px"></div>')}</td></tr>`;
       }).join('')}</tbody></table></div>`:
       '<div class="muted">No specialised operations recorded yet. Add previous experience through Settings → Import previous logbook totals, or use More details on a new flight.</div>'}
-    <div class="mini" style="margin-top:12px">For example, VRLL and HESLO 2 may describe overlapping portions of the same flight. Their category totals must not be added together.</div>
+    <div class="mini" style="margin-top:12px">Counts show day (D) and night (N). NVIS counts flights; offshore counts qualifying offshore landings. Previous-logbook hours have no associated cycle counts.</div>
   </div>`;
 }
 
@@ -5096,6 +5462,275 @@ function saveBroughtForwardTotals(ev){
 }
 
 const profileExpanded={medical:false,qualifications:false};
+/* HeliLog V2.37 — combined NVIS/HHO, offshore landings specialised-operation recency.
+ * "CAT" is not a flight classification: FCL.060 applies to passenger/CAT
+ * operations, but qualifying prior PF movements may be private/training.
+ */
+function recencyCurrent(){
+ const d=new Date();
+ return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
+}
+function recencyRows(){return window.HeliLogV233Recency.groups(effectiveFlights(),S.aircraft,recencyCurrent());}
+function recencyDaysTo(iso){
+ if(!iso)return null;
+ return Math.round((Date.parse(iso+'T00:00:00Z')-Date.parse(recencyCurrent()+'T00:00:00Z'))/86400000);
+}
+function recencyStatus(row,kind){
+ const confirmed=kind==='night'?row.nightDocumented:row.generalDocumented;
+ const threshold=kind==='night'?row.nightEstimated:row.generalEstimated;
+ const count=kind==='night'?row.night:row.general;
+ const target=kind==='night'?1:3;
+ const change=kind==='night'?row.nextNightLoss:row.nextGeneralLoss;
+ const days=recencyDaysTo(change);
+ return {count,target,confirmed,threshold,change,days,
+   text:confirmed?'Requirement met':threshold?'90-day threshold met':'Threshold not met',
+   tone:confirmed?'met':threshold?'estimated':'below',
+   short:confirmed?'Met':threshold?'Met':'Below threshold'};
+}
+function recencyStatusDetails(status){
+ const n=status.count;
+ const source=status.source==='flights'?'NVIS flight':status.source==='cycles'?'hoist cycle':
+   status.source==='landings'?'offshore landing':
+   status.confirmed?'confirmed PF sequence':'recorded movement pair';
+ const plural=n===1?'':'s';
+ const counted=n+' '+source+plural+' in the preceding 90 days.';
+ if(status.threshold)return counted;
+ return counted+' '+Math.max(0,status.target-n)+' more needed to reach the recorded threshold.';
+}
+function recencyLapseMarkup(status){
+ if(!status.threshold||!status.change)return '';
+ const days=status.days;
+ return `<div class="recency-lapse"><span>If no further qualifying flights:</span>
+   <b>Threshold falls below minimum on ${displayDate(status.change)}</b>
+   ${days!==null?`<span>In ${days} day${days===1?'':'s'}</span>`:''}
+ </div>`;
+}
+// View preferences only. Per-account and per-device: no logbook mutation,
+// cloud schema migration, or cross-account sharing of dashboard choices.
+function recencyDashboardStorageKey(){
+ const owner=(typeof v23AccountWorkspace==='function' && v23AccountWorkspace())?
+   String(window.HeliLogV23Sync.status().owner||''):'';
+ const scope=owner?'owner:'+owner:(typeof TEST_MODE!=='undefined' && TEST_MODE?'sandbox':'local');
+ return 'helilog_recency_dashboard_v1:'+scope;
+}
+function recencyDashboardKeys(){
+ try{
+   const raw=localStorage.getItem(recencyDashboardStorageKey());
+   if(!raw)return [];
+   const value=JSON.parse(raw);
+   if(!Array.isArray(value)||value.length>100)return [];
+   return [...new Set(value.filter(x=>typeof x==='string'&&
+     (/^[A-Z0-9]{2,8}\|(single|multi|all)\|(general|night|nvis|hho|hhoNight|offshore|offshoreNight)$/.test(x)||
+      /^operator\|[A-Za-z0-9:_-]{1,128}\|[A-Za-z0-9:_-]{1,128}$/.test(x)))
+     .map(key=>key.replace(/^([A-Z0-9]{2,8})\|(single|multi)\|(nvis|hho|hhoNight)$/,'$1|all|$3')))];
+ }catch{return [];}
+}
+function recencyDashboardOptions(rows){
+ const result=[];
+ for(const row of rows){
+   for(const kind of (row.nightApplicable?['general','night']:['general'])){
+     result.push({row,kind,key:row.type+'|'+row.config+'|'+kind});
+   }
+ }
+ const specialised=window.HeliLogV234SpecialRecency?.groups(effectiveFlights(),S.aircraft,recencyCurrent())||[];
+ for(const item of specialised){
+   const row={...item,special:true};
+   const prefix=item.id==='NVIS'?'nvis':item.id==='HHO'?'hho':'offshore';
+   result.push({row,kind:prefix,key:row.type+'|'+row.config+'|'+prefix});
+   if(item.nightTarget&&item.nightHistory)
+     result.push({row,kind:prefix+'Night',key:row.type+'|'+row.config+'|'+prefix+'Night'});
+ }
+ return result;
+}
+function recencyAllDashboardOptions(rows){
+ const legal=recencyDashboardOptions(rows);
+ const custom=window.HeliLogV236OperatorRulesUI?.dashboardOptions?.(
+   effectiveFlights(),S.aircraft,recencyCurrent())||[];
+ return legal.concat(custom);
+}
+function recencyOptionLabel(option){
+ return option.operatorRule?'Operator · '+option.rule.title:recencyOperationLabel(option.kind);
+}
+function recencyOperationLabel(kind){
+ return ({general:'Passenger-carrying',night:'Night PIC',
+   nvis:'NVIS',hho:'Hoist (HHO)',hhoNight:'Hoist (night)',
+   offshore:'Offshore landings',offshoreNight:'Offshore landings (night)'})[kind]||kind;
+}
+function recencyOptionStatus(option){
+ if(option.operatorRule){
+   const r=option.result,met=r.thresholdMet;
+   return {count:r.count,target:r.minimum,change:r.thresholdUntil,
+     periodDays:option.rule.periodDays,unit:r.unit,operator:true,
+     days:recencyDaysTo(r.thresholdUntil),threshold:met,confirmed:false,
+     tone:met?'met':'below',short:met?'Met':'Below threshold',
+     text:met?'Recorded threshold met':'Below recorded threshold',
+     source:r.unit};
+ }
+ if(!option.row.special)return recencyStatus(option.row,option.kind);
+ const {row,kind}=option,night=kind.endsWith('Night');
+ const count=night?row.night:row.day;
+ const target=night?row.nightTarget:row.dayTarget;
+ const met=count>=target;
+ const change=night?row.nightLapse:row.dayLapse;
+ return {count,target,change,days:recencyDaysTo(change),
+  threshold:met,confirmed:false,tone:met?'estimated':'below',
+  text:met?'Recorded threshold met':'Below recorded threshold',
+  short:met?'Recorded':'Below threshold',source:row.source};
+}
+// Presentation groups only: the underlying single-/multi-pilot calculations
+// and account/device dashboard preference keys remain separate.
+function recencyTypeGroups(options){
+ const groups=new Map();
+ for(const option of options){
+   if(!groups.has(option.row.type))groups.set(option.row.type,[]);
+   groups.get(option.row.type).push(option);
+ }
+ return [...groups].sort((a,b)=>a[0].localeCompare(b[0])).map(([type,items])=>({
+   type,
+   items:items.sort((a,b)=>(a.kind==='general'?0:1)-(b.kind==='general'?0:1)||
+     (a.row.config==='single'?0:1)-(b.row.config==='single'?0:1))
+ }));
+}
+function recencyPilotNote(all,option){
+ if(option.operatorRule)return option.row.config==='all'?'':option.row.config==='multi'?'Multi-pilot':'Single-pilot';
+ return all.some(other=>other!==option&&other.row.type===option.row.type&&
+   other.kind===option.kind&&other.row.config!==option.row.config)
+     ?(option.row.config==='multi'?'Multi-pilot':'Single-pilot'):'';
+}
+function recencySetDashboardIndicator(input){
+ const key=String(input?.dataset?.recencyKey||'');
+ const options=recencyAllDashboardOptions(recencyRows());
+ if(!options.some(o=>o.key===key))return;
+ const selected=new Set(recencyDashboardKeys());
+ if(input.checked)selected.add(key);else selected.delete(key);
+ // Exclude stale choices when saving, e.g. aircraft no longer flown.
+ const current=options.filter(o=>selected.has(o.key)).map(o=>o.key);
+ try{localStorage.setItem(recencyDashboardStorageKey(),JSON.stringify(current));}
+ catch{
+   input.checked=!input.checked;
+   const note=document.getElementById('recencyDashboardSaveMessage');
+   if(note)note.textContent='Could not save dashboard choices on this device. Browser storage may be unavailable.';
+   return;
+ }
+ const count=document.getElementById('recencyDashboardSelectionCount');
+ if(count)count.textContent=current.length+' selected';
+ const note=document.getElementById('recencyDashboardSaveMessage');
+ if(note)note.textContent='Saved on this device. Your dashboard will update when you open it.';
+}
+function recencyCompactDate(status){
+ if(status.operator){
+   if(status.threshold&&status.change)return 'Threshold until '+displayDate(status.change)+' if no further qualifying activity';
+   return Math.max(0,status.target-status.count)+' more recorded '+status.unit+' needed within '+status.periodDays+' days';
+ }
+ if(status.threshold&&status.change)return 'Threshold until '+displayDate(status.change)+' if no more flights';
+ return Math.max(0,status.target-status.count)+' more recorded '+(status.target-status.count===1?'movement pair':'movement pairs')+' needed';
+}
+function recencyCompactLabel(status){
+ return status.threshold?'Met':'Below threshold';
+}
+function recencySummaryMarkup(){
+ const options=recencyAllDashboardOptions(recencyRows());
+ const selected=new Set(recencyDashboardKeys());
+ const chosen=options.filter(o=>selected.has(o.key));
+ if(!chosen.length)return '';
+ const item=option=>{
+   const {row,kind}=option,status=recencyOptionStatus(option);
+   const pilot=recencyPilotNote(options,option);
+   return `<div class="recency-dashboard-row">
+     <div class="recency-dashboard-row-text">
+       <b class="recency-kind">${recencyOptionLabel(option)}</b>
+       ${pilot?`<span class="recency-pilot-note">${pilot}</span>`:''}
+       <div class="muted">${recencyCompactDate(status)}</div>
+     </div>
+     <span class="recency-compact-status recency-tone-${status.tone}">${recencyCompactLabel(status)}</span>
+   </div>`;
+ };
+ const groups=recencyTypeGroups(chosen).map(group=>`<section class="recency-type-group">
+   <div class="recency-type-heading">${htmlEscape(group.type)}</div>
+   <div class="recency-type-rows">${group.items.map(item).join('')}</div>
+ </section>`).join('');
+ return `<div class="card dashboard-recency-card">
+   <div class="head"><h2>Recent experience</h2><button class="btn" onclick="go('recency')">Customize</button></div>
+   <div class="recency-dashboard-list">${groups}</div>
+   <div class="mini recency-dashboard-disclaimer">Estimates only · Confirm approaches and privileges in Recency.</div>
+ </div>`;
+}
+function recency(){
+ const rows=recencyRows(),asOf=recencyCurrent();
+ const dashboardOptions=recencyAllDashboardOptions(rows);
+ const enabled=new Set(recencyDashboardKeys());
+ const selectedCount=dashboardOptions.filter(o=>enabled.has(o.key)).length;
+ const chooserItem=o=>{
+   const title=recencyOptionLabel(o);
+   const pilot=recencyPilotNote(dashboardOptions,o);
+   const status=recencyOptionStatus(o);
+   return `<label class="recency-dashboard-choice">
+     <input type="checkbox" data-recency-key="${o.key}" ${enabled.has(o.key)?'checked':''} onchange="recencySetDashboardIndicator(this)">
+     <span class="recency-choice-name"><b class="recency-kind">${title}</b>${pilot?`<span class="recency-pilot-note">${pilot}</span>`:''}</span>
+     <span class="recency-choice-status recency-tone-${status.tone}">${status.short}</span>
+   </label>`;
+ };
+ const typeChooser=recencyTypeGroups(dashboardOptions).map(group=>`<section class="recency-picker-type">
+   <div class="recency-type-heading">${htmlEscape(group.type)}</div>
+   <div class="recency-choice-grid">${group.items.map(chooserItem).join('')}</div>
+ </section>`).join('');
+ const renderOne=option=>{
+   const {row,kind}=option,status=recencyOptionStatus(option);
+   const headerTitle=recencyOptionLabel(option);
+   const pilot=recencyPilotNote(dashboardOptions,option);
+   return `<details class="recency-detail-row">
+     <summary>
+       <span class="recency-detail-main">
+         <b class="recency-kind">${headerTitle}</b>${pilot?`<span class="recency-pilot-note">${pilot}</span>`:''}
+         <span class="muted">${recencyCompactDate(status)}</span>
+       </span>
+       <span class="recency-compact-status recency-tone-${status.tone}">${recencyCompactLabel(status)}</span>
+       <span class="recency-expand-cue" aria-hidden="true">⌄</span>
+     </summary>
+     <div class="recency-detail-expanded">
+       <p>${status.operator
+         ?'Recorded '+status.count+' / '+status.target+' '+htmlEscape(status.unit)+' in the preceding '+status.periodDays+' days.'+
+           ' ('+option.result.flightCount+' flight-based + '+option.result.evidenceCount+' pilot-reviewed evidence)'
+           +(status.threshold?'':' '+Math.max(0,status.target-status.count)+' more needed.')
+         :recencyStatusDetails(status)}</p>
+       ${status.threshold&&status.change?`<p>If ${status.operator?'no further qualifying activity is recorded':'no more qualifying flights are made'}, the recorded threshold will fall below the minimum on <b>${displayDate(status.change)}</b>.</p>`:''}
+       ${!status.operator&&status.tone==='estimated'&&!row.special?'<p>Estimated using single-pilot PIC/SOLO take-off and landing pairs; approaches are not separately verified.</p>':''}
+       ${!status.operator&&row.special&&row.missingCounts?`<p>${row.missingCounts} earlier operation flight(s) lack recorded cycles/sequences and are not automatically credited.</p>`:''}
+       ${!status.operator&&!row.special&&row.unverifiedFlights?`<p>${row.unverifiedFlights} flight(s) have unverified PF movement pairs excluded from credit.</p>`:''}
+       <span class="mini">${status.operator
+         ?'Operator-defined requirement · '+htmlEscape(option.operatorName)+'. Only explicitly permitted recorded flights and pilot-reviewed, referenced FFS/check/training events count. Pilot review is not independent verification, operator approval or an EASA result.'
+           +(option.rule.monitor==='flights:night'?' Night time greater than zero defines a counted flight; Night VFR status is not independently verified.':'')
+           +(option.rule.monitor==='flights:night-vfr'?' Night VFR is inferred here from night time greater than zero and IFR time equal to zero. This is a tracking convention, not verified flight rules.':'')
+           +(option.result.missingCycleCounts?' '+option.result.missingCycleCounts+' operation flight(s) lack valid recorded cycles.':'')
+         :'EASA '+(row.special?row.rule:kind==='night'?'FCL.060(b)(2)':'FCL.060(b)(1)')+' · Rolling preceding 90 days. This indicator does not certify privileges. '+(row.special?'Cycles/sequences are self-recorded and still require operator and crew competency verification.':'')}</span>
+     </div>
+   </details>`;
+ };
+ const allGroups=recencyTypeGroups(dashboardOptions).map(group=>`<section class="recency-detail-type">
+   <div class="recency-type-heading">${htmlEscape(group.type)}</div>
+   <div class="recency-detail-list">${group.items.map(renderOne).join('')}</div>
+ </section>`).join('');
+ app.innerHTML=header('Recency','Select which recencies you want on the dashboard and view the full breakdown below',
+    '<button class="btn" onclick="go(\'dashboard\')">← Dashboard</button>')+
+   `<div class="card recency-picker-card">
+     <div class="head"><div><h2>Show on dashboard</h2><div class="muted">Choose which recencies appear on your dashboard.</div></div>
+       <span class="mini" id="recencyDashboardSelectionCount">${selectedCount} selected</span></div>
+     ${dashboardOptions.length?typeChooser:'<p class="muted">Add flights first to choose recency indicators.</p>'}
+     <div class="mini" style="margin-top:12px" id="recencyDashboardSaveMessage">Choices are saved on this device only. Unticking every option removes the recency card from the dashboard.</div>
+   </div>
+   <details class="card recency-method" style="margin-top:14px">
+     <summary style="cursor:pointer;font-weight:700">How HeliLog calculates recency</summary>
+     <p class="mini">Period: ${displayDate(window.HeliLogV233Recency.dateShift(asOf,-89))} to ${displayDate(asOf)}. Passenger-carrying recency requires 3 qualifying take-offs, approaches and landings as PF in the preceding 90 days. Night PIC requires a qualifying night sequence or an IR alternative under FCL.060.</p>
+     <p class="mini">Single-pilot PIC/SOLO movements are estimated from recorded take-offs and landings. NVIS counts recorded NVIS flights and HHO counts hoist cycles across SP/MP operation configurations of the same type. Offshore is separated by SP/MP and counts manually entered offshore landings that also represent complete qualifying take-off, departure and approach sequences. Entries are self-reported. Older flights without counts are not automatically credited. Training, operator approvals, night hover transitions, crew duties and permitted simulator credits still require independent verification.</p>
+     <p class="mini"><a target="_blank" rel="noopener noreferrer" href="https://www.easa.europa.eu/en/document-library/easy-access-rules/online-publications/easy-access-rules-aircrew-regulation-eu-no-11782011">EASA Aircrew Rules · FCL.060</a></p>
+   </details>
+   <div class="card recency-detail-card" style="margin-top:14px">
+     <div class="head"><div><h2>All recencies</h2><div class="muted">EASA and active operator requirements · select a row for details</div></div>
+     <button type="button" class="btn" onclick="go('operatorrules')">Manage operator rules</button></div>
+     ${dashboardOptions.length?allGroups:'<p class="muted">No flights recorded yet.</p>'}
+   </div>
+`;
+}
 function rememberProfileSection(which,node){
  if(!node?.isConnected)return;
  if(which==="medical"||which==="qualifications")profileExpanded[which]=node.open;
@@ -5362,18 +5997,32 @@ function backups(){
         <p><b>Full HeliLog backup</b></p>
         <p class="muted">Includes flights, aircraft, pilots, specialised-operation hours, imported totals, print archive snapshots, endorsements and signatures. JSON backups include a SHA-256 checksum.</p>
         <button class="btn primary" type="button" onclick="downloadFullBackup()">Download backup</button>
-        ${v23AccountWorkspace()?'<button class="btn" style="margin-left:8px" type="button" onclick="v28DownloadCloudRecovery()">Download verified cloud recovery package</button>':''}
       </div>
       <div>
-        <p><b>Restore from backup</b></p>
-        <p class="muted">${v23AccountWorkspace()?'Cloud account replacement is blocked for safety. You can inspect a recovery package without modifying any records.':'Select a backup to verify it first. HeliLog requires a safety copy before restoring.'}</p>
-        ${v23AccountWorkspace()?'<input id="v28RecoveryInput" type="file" accept=".json,application/json" style="display:none" onchange="v28InspectCloudRecovery(event)"><button class="btn" type="button" onclick="document.getElementById(\'v28RecoveryInput\').click()">Inspect cloud recovery file</button>':''}
-        <input id="restoreBackupInput" type="file" accept=".json,application/json" style="display:none" onchange="handleBackupRestoreFile(event)">
-        <button class="btn" type="button" onclick="document.getElementById('restoreBackupInput').click()" ${v23AccountWorkspace()?'disabled title="Restore will be available after cloud-safe migration"':''}>Choose backup file</button>
+        <p><b>Verify a saved backup — read-only</b></p>
+        <p class="muted">Verify a downloaded encrypted cloud snapshot here. Full HeliLog backups use a separate format and cannot be checked with this verifier. Inspection never restores or overwrites logbook records.</p>
+        ${v23AccountWorkspace()?`
+          <details open class="card" style="padding:12px;margin:12px 0">
+            <summary style="font-weight:700;cursor:pointer">Encrypted cloud snapshot</summary>
+            <p class="mini">Use for files downloaded with <b>Download encrypted backup</b>. The encrypted file and passphrase stay in your browser. This also works from the sign-in screen without cloud access.</p>
+            <form class="form" onsubmit="v232VerifyOfflineFile(event)">
+              <div class="field"><label for="v232OfflineFile">Encrypted snapshot JSON</label>
+                <input id="v232OfflineFile" type="file" accept=".json,application/json" required></div>
+              <div class="field"><label for="v232OfflinePass">Encryption passphrase</label>
+                <input id="v232OfflinePass" type="password" autocomplete="off" minlength="12" required></div>
+              <button class="btn primary" id="v232OfflineButton" type="submit">Verify encrypted backup offline</button>
+            </form>
+            <div id="v232OfflineResult" class="note" role="status" aria-live="polite" style="overflow-wrap:anywhere;margin-top:10px" hidden></div>
+          </details>
+        `: `
+          <p class="mini">Local workspace backups can be checked with the legacy local restore flow. This option is disabled for signed-in cloud accounts to protect synchronized history.</p>
+          <input id="restoreBackupInput" type="file" accept=".json,application/json" style="display:none" onchange="handleBackupRestoreFile(event)">
+          <button class="btn" type="button" onclick="document.getElementById('restoreBackupInput').click()">Choose local backup file</button>
+        `}
       </div>
     </div>
     <div id="backupRestoreStatus" style="margin-top:12px"></div>
-    ${v23AccountWorkspace()?'<div class="mini" style="margin-top:12px">Cloud recovery packages are SHA-256 verified and should be stored securely off-device. Downloads contain personal details and signatures. This version inspects files but intentionally does not overwrite synced cloud history.</div>'+ (v28Notice?'<div class="note" role="status" style="margin-top:8px">'+htmlEscape(v28Notice)+'</div>':''):''}
+    ${v23AccountWorkspace()?'<div class="mini" style="margin-top:12px">Encrypted snapshots use AES-256-GCM with a separate passphrase. Verification is read-only and does not prove the file has been stored independently; keep a copy outside HeliLog and away from this device.</div>':''}
   </div>
 
 
@@ -5966,8 +6615,59 @@ function deleteQualification(id){
   save();
   profile();
 }
-/* V2.31.4. Searchable, offline-friendly guide and current release notes. */
+/* V2.36.1. Searchable, offline-friendly guide and current release notes. */
 const HELILOG_GUIDE_TOPICS=[
+  {
+    "category": "Flight operations",
+    "title": "Advanced recency — custom operator profiles",
+    "summary": "Configure separate operator thresholds without changing EASA recency calculations.",
+    "steps": [
+      "Open Recency → Manage operator rules.",
+      "Create an operator profile, select Manage, then Add rule.",
+      "Enter a rule name, ICAO helicopter type, crew configuration, minimum, measurement unit and rolling period.",
+      "Select flight, approved FFS, check or training as permissible sources only where the operator requirements allow them.",
+      "Use Set active to choose the applicable operator profile; other profiles can remain inactive.",
+      "Profiles save per account on the current device. They are not synced or included in cloud backups.",
+      "This phase stores rule definitions only: no simulator/check evidence, training attachments, notifications or regulatory certification."
+    ],
+    "route": "operatorrules",
+    "action": "Manage operator rules"
+  },
+  {
+    "category": "Flight operations",
+    "title": "Specialised operations — cycles and recent experience",
+    "summary": "Record operational cycles alongside hours, then review the dedicated NVIS, HHO and offshore 90-day counters.",
+    "steps": [
+      "Open Full Flight Entry → More details → Specialised helicopter operations.",
+      "Tick the operations flown and enter Operation time (H:MM). For operations with cycles, enter completed Day cycles and Night cycles; OFFSHORE Day landings and Night landings count qualifying landings at offshore locations (platforms, helidecks or vessels), including the corresponding take-off, departure and approach.",
+      "A flight marked NVIS counts as one NVIS flight for the 90-day indicator, even if its operation-time entry is zero. NVIS does not use a cycle counter.",
+      "For HHO, only count hoist cycles containing a transition to and from hover. Night counts require recorded night flight time. Old entries without cycle counts remain unknown and are never silently credited.",
+      "Open Recency to see NVIS and Hoist thresholds combined across SP/MP records within an aircraft type, while offshore and passenger-carrying retain separate pilot configurations. Select dashboard indicators as desired.",
+      "These are record-based indicators, not authorisations. Operator approval, relevant crew role, training/checking, supervised operations and approved simulator alternatives must be checked separately."
+    ],
+    "route": "recency",
+    "action": "Open Recency"
+  },
+  {
+    "category": "Flight operations",
+    "title": "Recent experience — passenger and night (FCL.060)",
+    "summary": "Automatically estimate 90-day recency from single-pilot PIC/SOLO movements, with optional manual PF evidence.",
+    "steps": [
+      "Open Recency from the desktop navigation, the mobile More menu, or the dashboard Recent experience summary.",
+      "Under Show on dashboard, tick any combination of Passenger-carrying and Night PIC recency for each aircraft type and pilot configuration. Choices save automatically on this device; if none is selected, no recency card appears on the dashboard.",
+      "Recency follows a rolling preceding 90-day window, not a fixed certificate. The dashboard and details show a status instead of an ever-increasing x/3 counter; when enough qualifying movements are recorded, HeliLog shows when the recorded threshold would lapse if you make no further qualifying flights.",
+      "The Dashboard shows compact recent-experience rows next to Upcoming dates. On the Recency page, expand an item under All recencies to see counts, rule references and more detailed qualification notes.",
+      "Indicators are grouped under their aircraft type with Passenger-carrying and Night PIC as the row names. Single-/multi-pilot labels only appear when the same recency type exists in both pilot configurations.",
+      "A recorded threshold is labelled Met for simplicity; open the recency details to see whether the evidence was independently confirmed or estimated from paired movements. HeliLog does not certify privileges.",
+      "Review each type separately; single-pilot and multi-pilot flying are not automatically combined.",
+      "For single-pilot PIC/SOLO, normal day/night take-off and landing counts automatically provide a recency estimate, including earlier logbook flights. There is no need to enter the same movements again.",
+      "To exclude an exceptional PIC/SOLO flight from the estimate, edit the unsigned flight and tick Exclude from automatic recency estimate under Full details → More details. Other pilot functions and multi-pilot operations still offer manual PF evidence fields.",
+      "Only aircraft types/configurations with real flying history appear; Night PIC recency stays hidden where no night flights have been recorded. Old night experience remains visible even when the 90-day threshold has lapsed.",
+      "Private and training flights may count toward FCL.060 recency when qualified as PF; this does not classify them as CAT. Automatic paired-movement estimates cannot independently verify an approach, and the app never certifies legal currency. Archive history remains unchanged."
+    ],
+    "route": "recency",
+    "action": "Open Recency"
+  },
   {
     "category": "Records & signatures",
     "title": "Reusable pilot signatures",
@@ -5982,6 +6682,23 @@ const HELILOG_GUIDE_TOPICS=[
     ],
     "route": "pilots",
     "action": "Manage pilot signatures"
+  },
+  {
+    "category": "Safety",
+    "title": "Verify an independent encrypted backup offline",
+    "summary": "Check a saved encrypted file even if Supabase or your account is unavailable.",
+    "steps": [
+      "When signed in, open Settings → Backup & Recovery, make a fresh cloud snapshot, and choose Download encrypted backup. Select a strong passphrase and store it separately from the encrypted file.",
+      "Copy the downloaded encrypted JSON file to independently managed storage such as a secure drive or a separate storage provider. HeliLog does not upload it elsewhere automatically.",
+      "On the sign-in screen expand Verify an encrypted backup without signing in, or while signed in use Backup & Recovery → Verify encrypted backup offline. Both accept the saved encrypted cloud snapshot JSON and its original passphrase.",
+      "Use the encrypted snapshot verifier only for files downloaded through Download encrypted backup. Full HeliLog backups are a separate JSON format and cannot be checked with this verifier. Checking a file does not restore data.",
+      "A successful check confirms the file decrypted, its archived records and signed addenda passed structural checks, and its contents reconstructed with matching SHA-256 fingerprints in memory. No data is uploaded or restored.",
+      "Review the backup date, age and encrypted-file SHA-256 fingerprint. Check that the file you stored independently has the same fingerprint and is recent enough for your needs.",
+      "If a check fails, keep the original file unchanged and make a fresh encrypted backup when the cloud is available. Never uninstall your only working app or overwrite live records while troubleshooting.",
+      "An independent verified file is useful for future disaster recovery, but actually rebuilding a lost Supabase project remains a separate supervised process; this screen is not a restore tool."
+    ],
+    "route": "backups",
+    "action": "Open Backup & Recovery"
   },
   {
     "category": "Start here",
@@ -6081,9 +6798,9 @@ const HELILOG_GUIDE_TOPICS=[
       "On the desktop website, use Logbook → Export for CSV or a printable PDF copy.",
       "Exporting a PDF does not create numbered, permanently archived pages.",
       "On the web (not the installed iPhone app), open Print Archive and choose the number of pages to include in the next batch.",
-      "Select Review flights before printing. It flags possible duplicate flights, incomplete PIC names, unusual UTC times and discrepancies in totals—without changing any record.",
-      "Open the flagged entries to make corrections if needed. Acknowledge the review for this exact selection; changes to flights or selected pages require another review.",
-      "Only then preview the numbered pages, verify the running totals, print and physically sign them, and separately confirm the printed batch in HeliLog.",
+      "Pre-archive safety checks run automatically for the selected batch. When there are no findings, Preview / Print pages is available immediately. Otherwise select Review flights before printing to inspect possible duplicates, PIC identity, UTC time issues and totals.",
+      "If any findings or page-order warnings are shown, inspect the flagged entries and acknowledge that exact selection. Changing flight data, selected pages or findings requires a fresh check and, if necessary, another review.",
+      "Whether the checks are clean or findings have been acknowledged, preview the numbered pages, verify the running totals, print and physically sign them, and separately confirm the printed batch in HeliLog.",
       "Printing a PDF alone does not create a signed archive. Confirmed pages are locked; amend them through a signed correction addendum."
     ],
     "route": "logbook",
@@ -6095,13 +6812,13 @@ const HELILOG_GUIDE_TOPICS=[
     "summary": "Check the exact flights about to be printed for common issues before signing.",
     "steps": [
       "On the web open Print Archive, then choose how many pages to include in the next batch.",
-      "Select Review flights before printing to inspect the selected batch. A possible duplicate is compared with your entire logbook, including earlier archived entries.",
+      "HeliLog automatically runs read-only checks against the selected pages and the entire logbook, including earlier archived entries. If there are no findings, skip the acknowledgement page and select Preview / Print pages.",
       "Check missing PIC information and pilot links, flight duration versus UTC off/on times (including overnight flights), unusual very short or long flights, Night/IFR/instructor minutes and take-off versus landing counts.",
       "Review the independent calculations of PIC/Co-pilot/Dual, engine and single-/multi-pilot experience, and carried-forward plus closing totals.",
       "Review overlapping flight intervals, including multiple flights on the same day or an overnight arrival on the next UTC day. Flights that end when another starts are not overlaps.",
       "Use View entry or View related entry to inspect a flagged flight, then select Back to review to return to the same finding. A ticked acknowledgement stays checked only if the selected batch has not changed.",
-      "Edit only an unarchived entry through its normal form. After any flight data or selected page changes, review and acknowledge the updated batch again; never silently change or automatically delete anything.",
-      "Acknowledgement allows printing after you have checked exceptions; it is not official certification. If selected pages or flight records change, repeat the review.",
+      "Edit only an unarchived entry through its normal form. After any flight or page change, HeliLog rechecks the batch and requires acknowledgement if findings remain. Records are never silently changed or deleted.",
+      "When findings exist, select Review flights before printing and acknowledge the exceptions before preview. A clean batch requires no acknowledgement, but HeliLog rechecks safety before both preview and final confirmation.",
       "Print, verify and sign the paper pages before separately confirming the archive. Archived records remain protected."
     ],
     "route": "printarchive",
@@ -6168,6 +6885,113 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+ {v:"V2.42",name:"Faster clean printing and simpler Help & Guide",detail:"Getting-started instructions now appear first, with a compact expandable update history. Pre-archive checks run automatically; no findings means direct access to print preview. Findings still need explicit review and acknowledgement, and printed-and-signed confirmation remains separate."},
+ {v:"V2.41.2",name:"Cleaner simulator session details",detail:"Simulator details show only the recorded simulator duration. Removed the unnecessary Actual flight time: 0:00 box. Simulator sessions still do not add helicopter flight time or EASA recency."},
+ {v:"V2.41.1",name:"Simplify simulator helicopter type entry",detail:"The Represented helicopter ICAO type field is the only aircraft-type input for simulator sessions. Removed the older Device / aircraft type field without deleting legacy device descriptions or previously reviewed linked evidence."},
+ {v:"V2.41",name:"Match FFS sessions to operator recency",detail:"An FFS session with an explicit ICAO helicopter type and crew configuration suggests matching operator rules. Review the supporting document and enter qualifying manoeuvres before credit is counted. Linked approval becomes ineligible after the simulator session is edited or deleted until reviewed again. Legacy evidence stays intact; no automatic EASA recency credit."},
+ {v:"V2.40",name:"Phase 3C — simulator, check and training evidence",detail:"Add FFS, proficiency/check and training references to operator-specific rules. Draft entries are never counted. Pilot-reviewed entries count only with a document reference and an allowed source; mixed flight/evidence rolling dates remain traceable. The encrypted and revision-checked account cloud carries evidence with its operator profile. No file uploads, official EASA recency credits or operator approval are implied."},
+ {v:"V2.39.1",name:"Custom operator recency rules synchronize between devices",
+ detail:"Operator profiles and rules now sync through the private account cloud. Previous browser-only profiles remain preserved for recovery. Conflicting web/app versions require manual review with a verified backup. EASA recency calculations and signed archives are unchanged."},
+  {
+    "v": "V2.39",
+    "name": "Safer cloud recovery after interrupted local changes",
+    "detail": "If an existing flight or aircraft was edited or removed on this device but its cloud queue was never saved, HeliLog now stops instead of silently overwriting or restoring it. Open Cloud Account and review both copies before choosing, with a verified safety backup. Archived and signed records remain protected."
+  },
+  {
+    "v": "V2.38.1",
+    "name": "Night VFR uses existing IFR and night-time entries",
+    "detail": "Removed the separate VFR/IFR selector. For custom Night VFR recency, each distinct flight with positive night time and zero IFR minutes counts once. This is a user-selected heuristic; actual VFR flight rules are not independently verified. Existing flight records and archives are unchanged."
+  },
+  {
+    "v": "V2.38",
+    "name": "Recorded flight rules and Night VFR operator monitoring",
+    "detail": "Earlier test-only release introducing a VFR/IFR selector. Superseded by V2.38.1: flight entry again uses only the existing Night and IFR time fields, and custom Night VFR uses zero recorded IFR minutes as the VFR assumption."
+  },
+  {
+    "v": "V2.37",
+    "name": "Operator recency dashboard and night-flight monitoring",
+    "detail": "Active custom operator rules now use the same expandable Met / Below threshold recency cards and dashboard checkboxes as EASA. The Night flights source counts validated flights with positive recorded night minutes, but does not independently establish Night VFR."
+  },
+  {
+    "v": "V2.36.2",
+    "name": "Custom rules read recorded flight operations",
+    "detail": "Choose the precise activity source for each operator rule (HESLO cycles, hoist, offshore landings, NVIS or all flights). Recency shows read-only counts. Older unlinked rules require an explicit source selection. The duplicate Settings card was removed."
+  },
+  {
+    "v": "V2.36.1",
+    "name": "Operator rule editor: visible form and validation",
+    "detail": "Add Rule now brings the form into view. Save Rule shows invalid field feedback without discarding entered text or changing flight records."
+  },
+  {
+    "v": "V2.36",
+    "name": "Phase 3B — Custom operator recency profiles",
+    "detail": "Add operator profiles and editable rule thresholds, types, periods, configurations, units and permitted credit sources. All custom rules stay device-local, scoped to the account, and separate from EASA recency results."
+  },
+  {
+    "v": "V2.35",
+    "name": "Phase 3A — advanced recency foundation",
+    "detail": "Simplified Met badges retain their evidence explanations. Add an in-memory custom operator rule and pilot-reviewed credit model for future simulator, check and training evidence. No credits change EASA indicators or synchronized logbook data."
+  },
+  {
+    "v": "V2.34.1",
+    "name": "Offshore landings, compact entry, and clearer specialist recency",
+    "detail": "Offshore now records Day landings and Night landings at qualifying offshore locations (with complete take-off/departure/approach requirements). NVIS and HHO use combined SP/MP records within type, offshore remains SP/MP-specific, and specialised Totals show captured day/night cycles or offshore landings without manufacturing previous-logbook counts."
+  },
+  {
+    "v": "V2.34",
+    "name": "Specialised operations cycles and recency (Phase 2)",
+    "detail": "Full Flight Entry now stores day/night cycles next to operation hours, and complete offshore sequences where appropriate. NVIS counts one flight automatically. Recency shows recorded NVIS, hoist and offshore 90-day thresholds without overwriting historic entries or certifying legal privileges."
+  },
+  {
+    "v": "V2.33.6",
+    "name": "Recency grouped by helicopter type",
+    "detail": "Group dashboard and Recency page entries by helicopter type and put Passenger-carrying or Night PIC first; show single-/multi-pilot only when necessary to distinguish otherwise identical requirements. No change to flight evidence or calculation."
+  },
+  {
+    "v": "V2.33.5",
+    "name": "Clearer recency names",
+    "detail": "Highlight Passenger-carrying and Night PIC in the Recency dashboard, selector and detailed lists, leaving dates and supporting information normal-weight. Compact layout and calculations are unchanged."
+  },
+  {
+    "v": "V2.33.4",
+    "name": "Compact recent-experience dashboard and Recency page",
+    "detail": "Move selected recency into a compact list alongside Upcoming dates, with concise colour-coded statuses. Show all recencies as expandable rows, keeping details and explanations out of the default view."
+  },
+  {
+    "v": "V2.33.3",
+    "name": "Clear rolling recency statuses",
+    "detail": "Condensed dashboard selector; replace growing x/3 counters with requirement/threshold statuses, supporting recorded counts, and the date the 90-day threshold is projected to lapse if no further qualifying flights occur."
+  },
+  {
+    "v": "V2.33.2",
+    "name": "Choose dashboard recency indicators",
+    "detail": "Select passenger-carrying and night recent-experience cards per aircraft type from the Recency page. The dashboard shows only selected indicators; preferences are stored per account on this device without changing flight or cloud records."
+  },
+  {
+    "v": "V2.33.1",
+    "name": "Automatic single-pilot recency and relevant night indicators",
+    "detail": "Auto-estimate PIC/SOLO single-pilot PF movements without extra sequence entry. Hide unused night recency and clarify passenger-carrying eligibility versus the classification of a CAT flight. Keep exceptional-flight opt-out and separate verified evidence."
+  },
+  {
+    "v": "V2.33",
+    "name": "Passenger and night recent experience (Phase 1)",
+    "detail": "Dedicated Recency page and dashboard glance. Separate types/configurations and count only explicitly confirmed PF take-off/approach/landing sequences; older flights remain unverified. No account migrations or archive changes."
+  },
+  {
+    "v": "V2.32.2",
+    "name": "Simpler backup verification",
+    "detail": "Removed legacy unencrypted V2.8 recovery-package download and inspection controls from Backup & Restore. The encrypted snapshot verifier and cloud archive safeguards remain available."
+  },
+  {
+    "v": "V2.32.1",
+    "name": "Clear backup format selection",
+    "detail": "Added signed-in encrypted-file verification with format-specific errors. Inspections remain read-only and never restore data."
+  },
+  {
+    "v": "V2.32",
+    "name": "Offline encrypted recovery verification",
+    "detail": "Verify a separately saved encrypted snapshot from the sign-in screen even without access to the cloud. Decrypts and checks archive consistency in memory; never restores records."
+  },
   {
     "v": "V2.31.4",
     "name": "Quick Flight scroll behavior",
@@ -6259,7 +7083,13 @@ function helpGuideExpand(open){
  document.querySelectorAll('[data-help-topic]').forEach(el=>{if(!el.hidden)el.open=!!open;});
 }
 function helpGuide(){
- const html=HELILOG_GUIDE_TOPICS.map(topic=>`<details class="card guide-topic" data-help-topic>
+ // Put onboarding immediately before specialist topics, preserving the order
+ // of everything else, including search and expand-all behaviour.
+ const orderedTopics=[...HELILOG_GUIDE_TOPICS].sort((a,b)=>
+  Number(b.category==='Start here')-Number(a.category==='Start here'));
+ const recentUpdates=HELILOG_GUIDE_UPDATES.slice(0,3);
+ const pastUpdates=HELILOG_GUIDE_UPDATES.slice(3);
+ const html=orderedTopics.map(topic=>`<details class="card guide-topic" data-help-topic>
   <summary><span class="guide-topic-label"><small>${htmlEscape(topic.category)}</small><b>${htmlEscape(topic.title)}</b><span class="muted">${htmlEscape(topic.summary)}</span></span><span class="guide-chevron" aria-hidden="true">⌄</span></summary>
   <div class="guide-topic-body"><ol>${topic.steps.map(step=>`<li>${htmlEscape(step)}</li>`).join('')}</ol><div class="guide-topic-actions"><button class="btn" type="button" onclick="go('${topic.route}')">${htmlEscape(topic.action)} →</button></div></div>
  </details>`).join('');
@@ -6277,8 +7107,11 @@ function helpGuide(){
  <label for="helpSearch" class="guide-search-label">Search instructions</label><input id="helpSearch" class="guide-search" type="search" placeholder="Try: UTC, PIC, archive, backup…" oninput="helpGuideSearch()" autocomplete="off">
  <div class="mini" id="helpSearchResults" role="status" aria-live="polite">${HELILOG_GUIDE_TOPICS.length} topics</div>
  <div class="guide-topics">${html}</div><div id="helpNoResults" class="card" hidden>No matching topics. Try another keyword.</div></section>
- <section class="card guide-updates"><h2>What's new</h2><p class="muted">We update this guide when HeliLog gains new features.</p>
- ${HELILOG_GUIDE_UPDATES.map(x=>`<div class="guide-update"><span class="guide-version">${htmlEscape(x.v)}</span><div><b>${htmlEscape(x.name)}</b><div class="muted">${htmlEscape(x.detail)}</div></div></div>`).join('')}</section>
+ <section class="card guide-updates"><h2>What's new</h2><p class="muted">Recent improvements. Select an update to read details.</p>
+ ${recentUpdates.map((x,i)=>`<div class="guide-update"><span class="guide-version">${htmlEscape(x.v)}</span><details class="guide-update-details" ${i===0?'open':''}><summary><b>${htmlEscape(x.name)}</b></summary><p class="muted">${htmlEscape(x.detail)}</p></details></div>`).join('')}
+ ${pastUpdates.length?`<details class="guide-history"><summary>Older updates (${pastUpdates.length})</summary>
+  ${pastUpdates.map(x=>`<div class="guide-update"><span class="guide-version">${htmlEscape(x.v)}</span><details class="guide-update-details"><summary><b>${htmlEscape(x.name)}</b></summary><p class="muted">${htmlEscape(x.detail)}</p></details></div>`).join('')}
+ </details>`:''}</section>
  <p class="guide-disclaimer">HeliLog helps maintain records. Pilots remain responsible for accurate entries and meeting the rules of their competent authority.</p>`;
 }
 document.addEventListener('keydown',function(e){
@@ -6387,8 +7220,8 @@ function render(){
   }
   try{
     if(v!=='add'&&v!=='quickadd') editingFlightId=null;
-    ({dashboard,logbook,add,quickadd:quickAdd,aircraft,pilots,endorsements,printarchive,archivereview:v229PreArchiveReview,endorsementarchive:v2EndorsementArchive,totals,profile,settings,locations:v219LocationsPage,backups,cloud,testmode,mobilemore,help:helpGuide}[v]||dashboard)();
-    let moreViews=['mobilemore','aircraft','pilots','endorsements','endorsementarchive','totals','profile','settings','locations','backups','cloud','testmode','help'];
+    ({dashboard,logbook,add,quickadd:quickAdd,aircraft,pilots,endorsements,printarchive,archivereview:v229PreArchiveReview,endorsementarchive:v2EndorsementArchive,totals,recency,operatorrules:()=>window.HeliLogV236OperatorRulesUI.page(effectiveFlights(),S.aircraft,recencyCurrent()),profile,settings,locations:v219LocationsPage,backups,cloud,testmode,mobilemore,help:helpGuide}[v]||dashboard)();
+    let moreViews=['mobilemore','aircraft','pilots','endorsements','endorsementarchive','totals','recency','operatorrules','profile','settings','locations','backups','cloud','testmode','help'];
     document.querySelectorAll('[data-v]').forEach(b=>{
       let active=b.dataset.v===v || (b.dataset.v==='quickadd'&&v==='add') || (b.dataset.v==='settings' && (v==='cloud'||v==='backups'||v==='locations')) || (b.dataset.v==='mobilemore' && moreViews.includes(v));
       b.classList.toggle('on',active);

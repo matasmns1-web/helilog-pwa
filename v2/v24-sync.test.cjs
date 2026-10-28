@@ -97,7 +97,9 @@ test('print confirmation stays web only and requires confirmed cloud synchroniza
  assert.rejects(api.confirmBatch('flight',{confirmedAt:'2026-10-15'},['f1']),/web browser/);
 });
 test('V2.19 keeps the V2.4 cloud archive and sync modules versioned together',()=>{
- for(const file of ['cloud-config.js','cloud-foundation.js','cloud-view.js','cloud-sync.js','auth-gate.js','cloud-archives.js'])
-  assert.match(html,new RegExp(file.replace('.','\\.')+'\\?v=2\\.19-locations-1'));
- assert.match(html,/V2\.31\.4 · TEST ENVIRONMENT/);
+ for(const file of ['cloud-config.js','cloud-foundation.js','cloud-view.js','cloud-sync.js','auth-gate.js','cloud-archives.js']){
+  const url=file+'?v='+(['cloud-sync.js','auth-gate.js'].includes(file)?'2.39.1-operator-sync-1':'2.19-locations-1');
+  assert.ok(html.includes(url),'Missing versioned script: '+url);
+ }
+ assert.match(html,/V2\.42 · TEST ENVIRONMENT/);
 });
