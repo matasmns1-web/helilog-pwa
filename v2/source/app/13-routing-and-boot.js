@@ -105,10 +105,10 @@ function render(){
   }
   try{
     if(v!=='add'&&v!=='quickadd') editingFlightId=null;
-    ({dashboard,logbook,add,quickadd:quickAdd,aircraft,pilots,endorsements,printarchive,archivereview:v229PreArchiveReview,endorsementarchive:v2EndorsementArchive,totals,recency,operatorrules:()=>window.HeliLogV236OperatorRulesUI.page(effectiveFlights(),S.aircraft,recencyCurrent()),profile,settings,locations:v219LocationsPage,backups,cloud,testmode,mobilemore,help:helpGuide}[v]||dashboard)();
-    let moreViews=['mobilemore','aircraft','pilots','endorsements','endorsementarchive','totals','recency','operatorrules','profile','settings','locations','backups','cloud','testmode','help'];
+    ({dashboard,logbook,add,quickadd:quickAdd,aircraft,pilots,endorsements,printarchive,archivereview:v229PreArchiveReview,endorsementarchive:v2EndorsementArchive,totals,recency,operatorrules:()=>window.HeliLogV236OperatorRulesUI.page(effectiveFlights(),S.aircraft,recencyCurrent()),profile,settings,datamanagement:v244DataManagementPage,locations:v219LocationsPage,backups,cloud,testmode,mobilemore,help:helpGuide}[v]||dashboard)();
+    let moreViews=['mobilemore','aircraft','pilots','endorsements','endorsementarchive','totals','recency','operatorrules','profile','settings','datamanagement','locations','backups','cloud','testmode','help'];
     document.querySelectorAll('[data-v]').forEach(b=>{
-      let active=b.dataset.v===v || (b.dataset.v==='quickadd'&&v==='add') || (b.dataset.v==='settings' && (v==='cloud'||v==='backups'||v==='locations')) || (b.dataset.v==='mobilemore' && moreViews.includes(v));
+      let active=b.dataset.v===v || (b.dataset.v==='quickadd'&&v==='add') || (b.dataset.v==='settings' && (v==='cloud'||v==='backups'||v==='locations'||v==='datamanagement')) || (b.dataset.v==='mobilemore' && moreViews.includes(v));
       b.classList.toggle('on',active);
     });
     setTimeout(updatePWAStatus,0);

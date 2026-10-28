@@ -222,11 +222,11 @@ function settings(){
     <div id="integrityCheckResult" class="mini">No records will be changed by the check.</div>
   </div>
 
-  <div class="card settings-wide" id="v244DataManagement">
+  <div class="card" id="v244DataManagement">
     <div class="head">
-      <div><h2>Data management</h2><div class="muted">Account-owned records and protected reset actions.</div></div>
+      <div><h2>Data management</h2><div class="muted">Download and verify a safety copy, then review account reset options.</div></div>
+      <button class="btn" type="button" onclick="go('datamanagement')">Manage data</button>
     </div>
-    ${v244ResetPanel()}
   </div>
   <div class="card" id="settings-testmode-card">
     <div class="head">

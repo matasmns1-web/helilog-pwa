@@ -199,26 +199,98 @@ function testmode(){
     <div class="note" style="margin-top:16px">TEST DATA MUST NOT be used as a genuine pilot logbook. Sandbox archives are not official flying records, even when signed in a print preview.</div>`;
 }
 
-let v244Prepared=null,v244Busy=false,v244Notice='';
+let v244Prepared=null,v244Busy=false,v244Notice='',v244SafetyCopy=null;
 
+// This is a separate page, matching Cloud account and Backup & Recovery.
+function v244DataManagementPage(){
+ app.innerHTML=header('Data management','Back up, verify and manage this account’s logbook data',
+  '<button class="btn" type="button" onclick="go(\'settings\')">← Settings</button>')+
+  '<div id="v244DataManagementPage">'+v244ResetPanel()+'</div>';
+}
 function v244ResetPanel(){
  const account=v23AccountWorkspace();
  const sync=account?window.HeliLogV23Sync.status():null;
- const ready=account&&sync.resetSupported===true&&sync.state==="synced"&&sync.pending===0&&sync.conflicts===0&&Number.isSafeInteger(sync.resetGeneration);
- const valid=ready&&v244Prepared?.owner===sync.owner&&v244Prepared?.generation===sync.resetGeneration&&v244Prepared?.snapshot===JSON.stringify(S);
- return '<p class="muted">Permanently erase this account’s flights, simulator sessions, aircraft, licences, people, endorsements, signatures, imported totals, signed archive history, correction addenda and cloud snapshots. Your sign-in account remains active. Independently downloaded backups cannot be erased remotely.</p>'+
-  '<div class="note"><b>Important:</b> This also removes confirmed archive evidence. Keep the required flight records and a verified external backup before using this action. The action cannot be undone through HeliLog.</div>'+
-  (!account?'<p class="mini">Sign in to a cloud account to manage account-wide deletion. The old local-only sandbox reset remains separate.</p>':
-  (!sync.resetSupported?'<div class="note" role="status"><b>Test preview only.</b> The required server-side reset safeguards are not installed yet. Deletion is unavailable; normal logbook synchronization remains active.</div>':'')+
-  '<p class="mini">Cloud status: <b>'+v23Escape(sync.state)+'</b>. Reset is disabled while offline, syncing, or reviewing conflicts.</p>'+
-  '<button type="button" class="btn" onclick="v244PrepareReset()"'+(!ready||v244Busy?' disabled':'')+'>1. Download required safety backup</button>'+
-  (valid?'<form class="form" onsubmit="v244ExecuteReset(event)" style="margin-top:15px">'+
-  '<p class="note"><b>Safety backup requested.</b> Open the downloaded file, save it outside HeliLog and verify that it is readable before continuing.</p>'+
+ const snapshot=account?JSON.stringify(S):'';
+ const matching=!!(account&&v244SafetyCopy?.owner===sync.owner&&v244SafetyCopy?.snapshot===snapshot);
+ const verified=matching&&v244SafetyCopy.verified===true;
+ const ready=account&&sync.resetSupported===true&&sync.state==='synced'&&sync.pending===0&&sync.conflicts===0&&Number.isSafeInteger(sync.resetGeneration);
+ const prepared=ready&&verified&&v244Prepared?.owner===sync.owner&&v244Prepared?.generation===sync.resetGeneration&&v244Prepared?.snapshot===snapshot;
+ const disabled=v244Busy?' disabled':'';
+ return '<div class="card" style="margin-bottom:16px">'+
+  '<h2>1. Download a safety backup</h2>'+
+  '<p class="muted">Export the logbook currently saved on this device as a JSON file with a SHA-256 checksum. This is available independently of the cloud reset feature and does not alter any records. Store the download in a safe location outside HeliLog.</p>'+
+  (!account?'<p class="note">Sign in to your cloud account to use Data management.</p>':
+  '<button type="button" class="btn primary" onclick="v244DownloadSafetyCopy()"'+disabled+'>Download logbook backup</button>'+
+  '<div class="field" style="margin-top:14px"><label for="v244VerifySafetyFile">Verify the downloaded backup</label>'+
+  '<input id="v244VerifySafetyFile" type="file" accept=".json,application/json" onchange="v244VerifyBackupFile(event)"'+disabled+'>'+
+  '<div class="mini">Select the file you just downloaded. HeliLog checks its checksum and compares the contents to your current logbook locally. No file is uploaded.</div></div>'+
+  (verified?'<div class="successbox"><b>Backup verified.</b> The downloaded file matches the current account workspace on this device.</div>':
+   matching?'<div class="note">Backup download requested. Select the saved file above to verify it before proceeding.</div>':
+   '<p class="mini">No matching backup has been verified for the current logbook.</p>'))+
+  '</div>'+
+  '<div class="card" style="margin-bottom:16px">'+
+  '<h2>2. Delete all logbook data</h2>'+
+  '<p class="muted">Permanently erase this account’s flights, simulator sessions, aircraft, licences, people, endorsements, signatures, imported totals, signed archive history, correction addenda and cloud snapshots. Your login account remains active. Separately downloaded files cannot be deleted remotely.</p>'+
+  '<div class="note"><b>Important:</b> Signed archive evidence is included in deletion. Preserve any flight records you are required to keep. The reset cannot be undone in HeliLog.</div>'+
+  (!account?'':(!sync.resetSupported?'<div class="note" role="status"><b>Deletion unavailable on this test server.</b> Its required server-side reset safeguards have not been installed. Backup download and verification work independently; existing cloud synchronization is unchanged.</div>':'')+
+  '<p class="mini">Cloud status: <b>'+v23Escape(sync.state)+'</b>. Deletion also requires online synchronization, no pending changes and a verified backup.</p>'+
+  '<button type="button" class="btn" onclick="v244PrepareReset()"'+(!ready||!verified||v244Busy?' disabled':'')+'>Check cloud records and continue to deletion confirmation</button>'+
+  (prepared?'<form class="form" onsubmit="v244ExecuteReset(event)" style="margin-top:15px">'+
   '<div class="field"><label for="v244ResetPassword">Re-enter account password</label><input id="v244ResetPassword" type="password" autocomplete="current-password" required></div>'+
   '<div class="field"><label for="v244ResetPhrase">Type DELETE MY LOGBOOK</label><input id="v244ResetPhrase" type="text" autocomplete="off" required></div>'+
-  '<label><input id="v244ResetBackupVerified" type="checkbox" required> I have saved and verified an independent copy, and understand that all account logbook data and cloud snapshots will be erased.</label>'+
-  '<button type="submit" class="btn dangerbtn"'+(v244Busy?' disabled':'')+'>Permanently delete logbook data</button></form>':'')+
-  (v244Notice?'<div role="status" class="note" style="margin-top:10px">'+v23Escape(v244Notice)+'</div>':''));
+  '<label><input id="v244ResetBackupVerified" type="checkbox" required> I verified and securely stored my backup and understand that the logbook and cloud archives will be erased.</label>'+
+  '<button type="submit" class="btn dangerbtn"'+disabled+'>Permanently delete logbook data</button></form>':''))+
+  '</div>'+
+  (v244Notice?'<div class="note" role="status" style="margin-top:10px">'+v23Escape(v244Notice)+'</div>':'');
+}
+function v244RerenderDataManagement(){
+ if(location.hash==='#datamanagement'&&v23AccountWorkspace())v244DataManagementPage();
+}
+// A backup export is intentionally NOT gated on server-side deletion support.
+async function v244DownloadSafetyCopy(){
+ if(v244Busy||!v23AccountWorkspace())return;
+ v244Busy=true;v244Notice='';v244Prepared=null;v244SafetyCopy=null;
+ try{
+  const owner=window.HeliLogCloud.snapshot().userId;
+  const snapshot=JSON.stringify(S);
+  const file=await makeFullBackup();
+  if(owner!==window.HeliLogCloud.snapshot().userId||JSON.stringify(S)!==snapshot)
+   throw Error('Account data changed during export. Please download another copy.');
+  offerBackupFile(file,'HeliLog_Safety_Backup');
+  v244SafetyCopy={owner,snapshot,checksum:file.integrity.sha256,verified:false};
+  v244Notice='Backup download requested. Check your browser Downloads folder, save the file securely and select it above to verify the saved copy.';
+ }catch(error){
+  v244Notice='Backup was not prepared: '+String(error.message||error);
+ }finally{v244Busy=false;v244RerenderDataManagement();}
+}
+async function v244VerifyBackupFile(event){
+ if(v244Busy||!v23AccountWorkspace())return;
+ const field=event?.target,file=field?.files?.[0];
+ if(field)field.value='';
+ v244Busy=true;v244Notice='';v244Prepared=null;
+ try{
+  if(!file)throw Error('Select the JSON file you downloaded.');
+  if(file.size>100*1024*1024)throw Error('Backup file exceeds the 100 MB verification limit.');
+  const owner=window.HeliLogCloud.snapshot().userId;
+  const expected=JSON.stringify(S),safety=v244SafetyCopy;
+  if(!safety||safety.owner!==owner||safety.snapshot!==expected)
+   throw Error('Download a fresh backup of this account before verifying it.');
+  safety.verified=false;
+  const parsed=JSON.parse(await file.text());
+  if(parsed?.app!=='HeliLog'||parsed?.format!=='helilog-full-backup'||
+     parsed?.integrity?.algorithm!=='SHA-256'||typeof parsed?.integrity?.sha256!=='string')
+   throw Error('Not a checksum-protected HeliLog full backup.');
+  const fileData=JSON.stringify(parsed.data);
+  const actual=await sha256Hex(fileData);
+  if(actual!==parsed.integrity.sha256||actual!==safety.checksum||fileData!==expected)
+   throw Error('The file does not match the current account logbook or its checksum.');
+  if(owner!==window.HeliLogCloud.snapshot().userId||JSON.stringify(S)!==expected)
+   throw Error('The account changed during verification. Download a new file.');
+  safety.verified=true;
+  v244Notice='Backup VERIFIED: the selected file matches this device’s current logbook and SHA-256 checksum. Keep it securely outside the app. This check does not certify cloud snapshots or official recordkeeping compliance.';
+ }catch(error){
+  v244Notice='Backup NOT verified: '+String(error.message||error);
+ }finally{v244Busy=false;v244RerenderDataManagement();}
 }
 
 function v244FreshWorkspace(){
@@ -249,14 +321,13 @@ async function v244PrepareReset(){
    (S.endorsementV2Archive?.amendments||[]).length;
   if(localArchiveBatches!==audit.counts.batches||localSignedAddenda!==audit.counts.addenda)
    throw Error("This device has not loaded every signed cloud archive or correction. Sync and review the archive before making a deletion backup.");
-  const before=JSON.stringify(S),file=await makeFullBackup();
-  if(JSON.stringify(S)!==before||window.HeliLogCloud.snapshot().userId!==owner)
-   throw Error("Your logbook or account changed during backup. Nothing was deleted.");
-  offerBackupFile(file,"HeliLog_SAFETY_Before_Account_Reset");
+  const before=JSON.stringify(S);
+  if(!v244SafetyCopy?.verified||v244SafetyCopy.owner!==owner||v244SafetyCopy.snapshot!==before)
+   throw Error("Download and verify a fresh matching backup before continuing.");
   v244Prepared={owner,generation:sync.resetGeneration,snapshot:before};
-  v244Notice="Backup download requested. Verify it was saved before continuing.";
+  v244Notice="Archive and synchronization checks passed. Enter your password and the exact confirmation phrase to proceed.";
  }catch(e){v244Notice="Reset preparation stopped: "+String(e.message||e);}
- finally{v244Busy=false;if(location.hash==="#settings")settings();}
+ finally{v244Busy=false;v244RerenderDataManagement();}
 }
 
 async function v244ExecuteReset(event){
@@ -267,7 +338,7 @@ async function v244ExecuteReset(event){
  if(field)field.value="";
  const phrase=document.getElementById("v244ResetPhrase")?.value||"";
  const acknowledged=!!document.getElementById("v244ResetBackupVerified")?.checked;
- if(phrase!=="DELETE MY LOGBOOK"||!acknowledged||!password){v244Notice="Enter your account password, the exact phrase and confirm your verified safety backup.";settings();return;}
+ if(phrase!=="DELETE MY LOGBOOK"||!acknowledged||!password){v244Notice="Enter your account password, the exact phrase and confirm your verified safety backup.";v244RerenderDataManagement();return;}
  const owner=v244Prepared.owner,generation=v244Prepared.generation,before=v244Prepared.snapshot;
  if(!confirm("FINAL WARNING: Delete ALL logbook information, signed print archives, endorsements and cloud snapshots from this account? Your account login stays active. This operation cannot be undone."))return;
  v244Busy=true;v244Notice="";
@@ -295,7 +366,7 @@ async function v244ExecuteReset(event){
   const next=Number(outcome.data);
   window.HeliLogV24Archive.stop();
   window.HeliLogV23Sync.adoptGenerationAfterReset(next,v244FreshWorkspace());
-  v244Prepared=null;
+  v244Prepared=null;v244SafetyCopy=null;
   window.location.reload();
  }catch(e){
   v244Prepared=null;
@@ -304,7 +375,7 @@ async function v244ExecuteReset(event){
    "Deletion did not complete. Your records should remain unchanged. ")+String(e.message||e);
  }finally{
   password="";v244Busy=false;
-  if(location.hash==="#settings")settings();
+  v244RerenderDataManagement();
  }
 }
 
