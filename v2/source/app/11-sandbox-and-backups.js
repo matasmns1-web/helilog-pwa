@@ -241,6 +241,13 @@ async function v244PrepareReset(){
    throw Error("Resolve all unsynchronized changes and verify the account before resetting.");
   const audit=await v28ReadAudit(false);
   if(!audit.ok)throw Error("Cloud archive integrity check did not pass. Preserve both copies and review the findings before deleting.");
+  if(window.HeliLogV24Archive?.error?.())
+   throw Error("Cloud archive refresh is not healthy. A complete backup cannot be verified.");
+  const localArchiveBatches=(S.printArchive?.batches?.length||0)+(S.endorsementV2Archive?.batches?.length||0);
+  const localSignedAddenda=(S.printArchive?.corrections||[]).filter(c=>c.confirmedAt).length+
+   (S.endorsementV2Archive?.amendments||[]).length;
+  if(localArchiveBatches!==audit.counts.batches||localSignedAddenda!==audit.counts.addenda)
+   throw Error("This device has not loaded every signed cloud archive or correction. Sync and review the archive before making a deletion backup.");
   const before=JSON.stringify(S),file=await makeFullBackup();
   if(JSON.stringify(S)!==before||window.HeliLogCloud.snapshot().userId!==owner)
    throw Error("Your logbook or account changed during backup. Nothing was deleted.");

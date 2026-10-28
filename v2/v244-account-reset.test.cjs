@@ -56,6 +56,11 @@ test('a previously active device is fenced after another device reset',async()=>
  assert.equal(remoteWrites,0);
  assert.throws(()=>api.track(data),/reset check incomplete|cannot be queued/i);
 });
+test('reset preparation fails unless device and cloud archive counts match',()=>{
+ assert.match(app,/localArchiveBatches!==audit\.counts\.batches/);
+ assert.match(app,/localSignedAddenda!==audit\.counts\.addenda/);
+ assert.match(app,/Cloud archive refresh is not healthy/);
+});
 test('production remains separate and test release has a distinct cache',()=>{
  assert.match(read('v2/service-worker.js'),/helilog-v2-44-account-reset-1/);
  assert.match(app,/V2\.44 · TEST ENVIRONMENT/);
