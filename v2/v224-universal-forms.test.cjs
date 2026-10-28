@@ -48,9 +48,21 @@ test('test-only PWA release labels and offline cache are aligned',()=>{
   const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
   const manifest=JSON.parse(fs.readFileSync(path.join(root,'manifest.webmanifest'),'utf8'));
   const worker=fs.readFileSync(path.join(root,'service-worker.js'),'utf8');
-  assert.match(html,/HeliLog V2\.42 — Guide & Archive Fast Path · Test/);
-  assert.equal(manifest.name,'HeliLog V2.42 — Guide & Archive Fast Path Test');
-  assert.match(worker,/helilog-v2-42-guide-archive-1/);
+  assert.match(html,/HeliLog V2\.43 — Interface Copy Review · Test/);
+  assert.equal(manifest.name,'HeliLog V2.43 — Interface Copy Review Test');
+  assert.match(worker,/helilog-v2-43-copy-audit-1/);
   assert.match(html,/function quickAdd\(\)/);
   assert.match(html,/function saveFlight\(\)/);
+});
+
+
+test('current entry hints are neutral and the CSV import template is actually blank',()=>{
+  const importSource=source('03-import-and-integrity.js');
+  const printSource=source('05-archive-and-corrections.js');
+  const op=fs.readFileSync(path.join(__dirname,'operator-rules-ui.js'),'utf8');
+  assert.match(importSource,/let sample=\[IMPORT_HEADERS\];/);
+  assert.doesNotMatch(importSource,/Example cross-country flight|LY-XYZ|'Matas'/);
+  assert.match(printSource,/placeholder="Previous paper logbook reference"/);
+  assert.match(op,/placeholder="ICAO type designator"/);
+  assert.doesNotMatch(op,/placeholder="EC35"/);
 });

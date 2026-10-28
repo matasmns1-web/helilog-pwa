@@ -20,3 +20,13 @@ test('Guide is cached offline and does not alter the print engine',()=>{
  assert.match(sw,/const CACHE='helilog-v2-[a-z0-9-]+';/);
  assert.match(read('scripts/build-helilog-v2.cjs'),/13-help-guide\.js/);
 });
+
+
+test('guide describes current operator sync and simulator evidence, not earlier limitations',()=>{
+  const guide=read('v2/source/app/13-help-guide.js');
+  assert.match(guide,/Operator profiles, rules and associated evidence synchronize/);
+  assert.match(guide,/pilot-reviewed evidence is eligible/);
+  assert.doesNotMatch(guide,/They are not synced or included in cloud backups/);
+  assert.doesNotMatch(guide,/no simulator\/check evidence/);
+  assert.match(guide,/V2\.43/);
+});
