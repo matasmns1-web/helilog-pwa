@@ -1,8 +1,10 @@
 # HeliLog — Pilot logbook private beta
 
-**Stable production version: V2.43**, published from the repository root at [helilog-pwa.onrender.com](https://helilog-pwa.onrender.com). Each pilot account uses the separate **HeliLog Production** Supabase project; no test accounts or records are migrated automatically.
+**Stable production version: V2.44.1**, published from the repository root at [helilog-pwa.onrender.com](https://helilog-pwa.onrender.com). Each pilot account uses the separate **HeliLog Production** Supabase project; no test accounts or records are migrated automatically.
 
 Development and testing continue separately on branch `v2/development` at [helilog-v2-test.onrender.com](https://helilog-v2-test.onrender.com), connected to the TEST Supabase project.
+
+**V2.44.1 production update (28 October 2026):** Dedicated Data Management page, independently downloadable and checksum-verifiable safety backup, and a password- and confirmation-protected account reset backed by generation-fenced cloud synchronization. The matching production Supabase migration adds owner-restricted reset operations without deleting existing records; previously archived and signed records remain unchanged unless their owner explicitly confirms a logbook deletion. Production and test databases remain separate. Keep independent backups and required original flight records.
 
 **V2.43 production update (28 October 2026):** Promotes the tested application-wide wording review: corrected cloud synchronization and simulator evidence guidance, generic input hints, updated endorsement and archive help, and a truly blank CSV import template. No changes to flight calculations, signed paper archives, existing pilot records, or the production database. The original production Supabase configuration remains pinned and separate from TEST.
 

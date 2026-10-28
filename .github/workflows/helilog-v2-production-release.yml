@@ -21,7 +21,7 @@ jobs:
           node-version: '22'
       - name: Verify root V2 deployment, isolated Supabase and same-origin V1 archive
         run: node --test scripts/check-live-root.test.cjs
-      - name: Run complete V2.43 staging regression suite against production candidate sources
+      - name: Run complete V2.44.1 staging regression suite against production candidate sources
         run: node scripts/check-helilog-v2.cjs
       - name: Re-run production and manual-account regressions
         run: |

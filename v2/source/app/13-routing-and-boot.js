@@ -90,6 +90,7 @@ if(window.visualViewport) window.visualViewport.addEventListener('resize',update
 function render(){
   document.documentElement.classList.remove('helilog-quick-scroll-locked');
   if(!v23Unlocked){v23LoginView();return;}
+ if(window.HeliLogV23Sync.status().state==="reset_required"){v244ResetRequiredView();return;}
   let v=location.hash.slice(1)||'dashboard';
   if(v23AccountWorkspace()&&v==='testmode'){
     v='dashboard';if(location.hash!=='#dashboard')location.hash='#dashboard';
@@ -104,10 +105,10 @@ function render(){
   }
   try{
     if(v!=='add'&&v!=='quickadd') editingFlightId=null;
-    ({dashboard,logbook,add,quickadd:quickAdd,aircraft,pilots,endorsements,printarchive,archivereview:v229PreArchiveReview,endorsementarchive:v2EndorsementArchive,totals,recency,operatorrules:()=>window.HeliLogV236OperatorRulesUI.page(effectiveFlights(),S.aircraft,recencyCurrent()),profile,settings,locations:v219LocationsPage,backups,cloud,testmode,mobilemore,help:helpGuide}[v]||dashboard)();
-    let moreViews=['mobilemore','aircraft','pilots','endorsements','endorsementarchive','totals','recency','operatorrules','profile','settings','locations','backups','cloud','testmode','help'];
+    ({dashboard,logbook,add,quickadd:quickAdd,aircraft,pilots,endorsements,printarchive,archivereview:v229PreArchiveReview,endorsementarchive:v2EndorsementArchive,totals,recency,operatorrules:()=>window.HeliLogV236OperatorRulesUI.page(effectiveFlights(),S.aircraft,recencyCurrent()),profile,settings,datamanagement:v244DataManagementPage,locations:v219LocationsPage,backups,cloud,testmode,mobilemore,help:helpGuide}[v]||dashboard)();
+    let moreViews=['mobilemore','aircraft','pilots','endorsements','endorsementarchive','totals','recency','operatorrules','profile','settings','datamanagement','locations','backups','cloud','testmode','help'];
     document.querySelectorAll('[data-v]').forEach(b=>{
-      let active=b.dataset.v===v || (b.dataset.v==='quickadd'&&v==='add') || (b.dataset.v==='settings' && (v==='cloud'||v==='backups'||v==='locations')) || (b.dataset.v==='mobilemore' && moreViews.includes(v));
+      let active=b.dataset.v===v || (b.dataset.v==='quickadd'&&v==='add') || (b.dataset.v==='settings' && (v==='cloud'||v==='backups'||v==='locations'||v==='datamanagement')) || (b.dataset.v==='mobilemore' && moreViews.includes(v));
       b.classList.toggle('on',active);
     });
     setTimeout(updatePWAStatus,0);

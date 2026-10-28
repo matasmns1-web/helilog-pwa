@@ -68,6 +68,6 @@ test('review and print confirmation still require exact batch fingerprint',()=>{
  assert.match(archive,/pendingArchivePreview===JSON\.stringify\(draft\)/);
  assert.match(archive,/if\(!v229ArchiveReviewed\(draft\)\)/);
  assert.doesNotMatch(archive.slice(archive.indexOf('let v229ReviewReturn=null;'),archive.indexOf('function v229PreArchiveReview(){')),/localStorage|save\(|setItem\(|archiveBatch/);
- assert.match(read('service-worker.js'),/helilog-v2-43-copy-audit-1/);
- assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.43'/);
+ assert.match(read('service-worker.js'),/helilog-v2-44-1-data-management-1/);
+ assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.44\.1'/);
 });
