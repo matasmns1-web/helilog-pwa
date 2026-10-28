@@ -166,7 +166,10 @@ test('cross-flight overlap review stays purely read-only and never changes the i
 test('selected exact draft must be reviewed, changed page count invalidates review, and print and archive both gate',()=>{
  const s=read('source/app/05-archive-and-corrections.js');
  const lines=s.slice(s.indexOf('function v229ArchiveReviewed('),s.indexOf('function v229OpenReviewFlight('));
- assert.match(lines,/pendingArchiveReview===JSON\.stringify\(draft\)/);
+ assert.match(lines,/function v242ArchiveCheck\\(/);
+ assert.match(lines,/pendingArchiveReview===key/);
+ assert.match(s,/if\\(check\\.clean\\)\\{go\\("printarchive"\\);return;\\}/);
+ assert.match(s,/v242ReviewViewedKey/);
  assert.match(s,/pendingArchivePreview=null;pendingArchiveReview=null; \/\/ Review and preview must match/);
  assert.match(s,/if\(!v229ArchiveReviewed\(draft\)\)\{go\("archivereview"\);return;\}/);
  assert.match(s,/if\(!v229ArchiveReviewed\(draft\)\)\{\s*alert\("The reviewed flight batch changed/);
@@ -182,7 +185,7 @@ test('Help guide teaches onboarding, cloud sync, recovery, and new pre-archive r
  const guide=read('source/app/13-help-guide.js');
  for(const term of ['Pre-archive flight review','Review flights before printing',
   'Check sign-in connection','one shared cloud logbook','Restore these missing records','V2.34.1',
-  'repeat the review','brand-new device'])assert.ok(guide.toLowerCase().includes(term.toLowerCase()),term);
+  'requires a fresh check','brand-new device'])assert.ok(guide.toLowerCase().includes(term.toLowerCase()),term);
  assert.match(guide,/htmlEscape\(step\)/);
 });
 test('V2.34.1 external checker is versioned, cached offline and restricted to the test release',()=>{
