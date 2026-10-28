@@ -5,7 +5,7 @@ function editOwnProfile(){
     <div class="formgrid">
       <div class="field"><label for="ownFirstName">First name</label><input id="ownFirstName" autocomplete="given-name" required value="${htmlEscape(pilotNameParts().firstName)}"></div>
       <div class="field"><label for="ownLastName">Surname</label><input id="ownLastName" autocomplete="family-name" required value="${htmlEscape(pilotNameParts().lastName)}"></div>
-      <div class="field"><label>Licence type</label><input id="ownLicenceType" value="${htmlEscape(S.pilot.licenceType||'')}" placeholder="CPL(H)"></div>
+      <div class="field"><label>Licence type</label><input id="ownLicenceType" value="${htmlEscape(S.pilot.licenceType||'')}" placeholder="Licence type"></div>
       <div class="field"><label>Licence number</label><input id="ownLicenceNumber" value="${htmlEscape(S.pilot.licenceNumber||'')}" placeholder="Optional"></div>
       <div class="field"><label>Competent authority</label><input id="ownAuthority" value="${htmlEscape(S.pilot.authority||'')}"></div>
     </div>

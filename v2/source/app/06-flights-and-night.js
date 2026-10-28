@@ -26,12 +26,12 @@ function addSimulator(editId=null){
            <option value="single"${old?.simPilotConfig==='single'?' selected':''}>Single-pilot</option>
            <option value="multi"${old?.simPilotConfig==='multi'?' selected':''}>Multi-pilot</option>
          </select></div>
-         <div class="field"><label>Device qualification / ID (optional)</label><input id="simQualification" maxlength="60" placeholder="e.g. Q1234" value="${htmlEscape(old?.simQualification||'')}"></div>
+         <div class="field"><label>Device qualification / ID (optional)</label><input id="simQualification" maxlength="60" placeholder="Device qualification or reference" value="${htmlEscape(old?.simQualification||'')}"></div>
          <div class="field"><label>Total time of session (H:MM)</label><input id="simDuration" inputmode="decimal" placeholder="2:30" value="${old?fmt(old.stdMin||0):''}">
            <div class="mini">Include associated pre- and after-flight checks, per the paper-logbook instructions.</div></div>
        </div>
        <div class="field" style="margin-top:12px"><label>Exercise / proficiency check / remarks</label>
-         <textarea id="simRemarks" placeholder="e.g. IR(H) procedures, proficiency check, revalidation">${htmlEscape(old?.remarks||'')}</textarea></div>
+         <textarea id="simRemarks" placeholder="Training exercises or check details">${htmlEscape(old?.remarks||'')}</textarea></div>
        <div class="note">Only the Synthetic Training Devices Session and Remarks columns are filled on paper. Departure, arrival, aircraft flight time, PIC time and take-offs/landings remain blank.</div>
        ${(!!editId&&correctingArchivedId===editId)?`<div class="field"><label>Reason for correction (required)</label><textarea id="correctionReason" placeholder="Explain the correction and evidence" required></textarea></div>`:''}
        <div class="actions"><button class="btn" type="button" onclick="cancelFlightForm('${old?.id||''}')">Cancel</button>

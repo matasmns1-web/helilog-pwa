@@ -400,7 +400,7 @@
      '<div class="field"><label for="opEvidenceAmount">Qualifying '+esc(rule.unit)+'</label><input type="number" min="1" max="9999" step="1" id="opEvidenceAmount" value="'+esc(r.amount)+'"></div>'+
      (rule.configuration==='all'?'<div class="field"><label for="opEvidenceConfig">Crew configuration</label><select id="opEvidenceConfig" '+(linked?'disabled':'')+'>'+
        choices(['single','multi'],linked?.simPilotConfig||r.configuration,['Single-pilot','Multi-pilot'])+'</select></div>':'')+
-     '<div class="field"><label for="opEvidenceRef">Evidence reference</label><input id="opEvidenceRef" maxlength="240" placeholder="FFS report no. / check record reference" value="'+esc(r.evidenceRef)+'"></div>'+
+     '<div class="field"><label for="opEvidenceRef">Evidence reference</label><input id="opEvidenceRef" maxlength="240" placeholder="Supporting document reference" value="'+esc(r.evidenceRef)+'"></div>'+
      '<div class="field"><label for="opEvidenceNotes">Notes (optional)</label><input id="opEvidenceNotes" maxlength="500" value="'+esc(r.notes)+'"></div></div>'+
      '<label style="display:flex;align-items:flex-start;gap:9px;margin-top:12px"><input type="checkbox" id="opEvidenceReviewed" '+(r.status==='reviewed'&&!changed?'checked':'')+'><span>I have reviewed the supporting record and its permitted credit source. This is my own evidence review, not operator approval or EASA credit.</span></label>'+
      '<p class="mini">Leave unchecked to save a draft. Only reviewed entries with a reference and an allowed source can contribute to this operator-defined threshold.</p>'+
@@ -415,8 +415,8 @@
      .map(a=>String(a.icao||'').trim().toUpperCase()).filter(x=>/^[A-Z0-9]{2,8}$/.test(x));
    return '<div class="card" id="opRuleForm" style="margin-top:12px;scroll-margin-top:18px"><h3>'+(rule?'Edit rule':'Add rule')+'</h3>'+
     '<div class="grid">'+
-    '<div class="field"><label for="opRuleTitle">Rule name</label><input id="opRuleTitle" maxlength="120" value="'+esc(r.title)+'" placeholder="HHO operational recency"></div>'+
-    '<div class="field"><label for="opRuleType">ICAO helicopter type</label><input id="opRuleType" list="opAircraftTypes" maxlength="8" value="'+esc(r.aircraftType)+'" placeholder="EC35"><datalist id="opAircraftTypes">'+[...new Set(available)].map(x=>'<option value="'+esc(x)+'"></option>').join('')+'</datalist></div>'+
+    '<div class="field"><label for="opRuleTitle">Rule name</label><input id="opRuleTitle" maxlength="120" value="'+esc(r.title)+'" placeholder="Operator requirement name"></div>'+
+    '<div class="field"><label for="opRuleType">ICAO helicopter type</label><input id="opRuleType" list="opAircraftTypes" maxlength="8" value="'+esc(r.aircraftType)+'" placeholder="ICAO type designator"><datalist id="opAircraftTypes">'+[...new Set(available)].map(x=>'<option value="'+esc(x)+'"></option>').join('')+'</datalist></div>'+
     '<div class="field"><label for="opRuleMonitor">Monitor from recorded activity</label>'+
     '<select id="opRuleMonitor" onchange="HeliLogV236OperatorRulesUI.monitorChanged()"><option value="">Select a source…</option>'+
     monitor.OPTIONS.map(x=>'<option value="'+esc(x.id)+'"'+(x.id===r.monitor?' selected':'')+'>'+esc(x.label)+'</option>').join('')+
