@@ -474,6 +474,7 @@ async function v24InitArchive(){
 async function v23RefreshSync(){
  if(!v23AccountWorkspace())return;
  await window.HeliLogV23Sync.refresh();
+ if(window.HeliLogV23Sync.status().state==="reset_required"){render();return;}
  if(window.HeliLogV23Sync.extended() && window.HeliLogV23Sync.status().state==="synced"){
   if(!window.HeliLogV24Archive.available())await v24InitArchive();
   else await window.HeliLogV24Archive.refresh(()=>S,v24CommitArchiveRefresh);
