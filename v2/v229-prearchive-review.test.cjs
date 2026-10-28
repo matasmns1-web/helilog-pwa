@@ -166,9 +166,9 @@ test('cross-flight overlap review stays purely read-only and never changes the i
 test('selected exact draft must be reviewed, changed page count invalidates review, and print and archive both gate',()=>{
  const s=read('source/app/05-archive-and-corrections.js');
  const lines=s.slice(s.indexOf('function v229ArchiveReviewed('),s.indexOf('function v229OpenReviewFlight('));
- assert.match(lines,/function v242ArchiveCheck\\(/);
- assert.match(lines,/pendingArchiveReview===key/);
- assert.match(s,/if\\(check\\.clean\\)\\{go\\("printarchive"\\);return;\\}/);
+ assert.match(s,/function v242ArchiveCheck\(/);
+ assert.match(s,/pendingArchiveReview===key/);
+ assert.match(s,/if\(check\.clean\)\{go\("printarchive"\);return;\}/);
  assert.match(s,/v242ReviewViewedKey/);
  assert.match(s,/pendingArchivePreview=null;pendingArchiveReview=null; \/\/ Review and preview must match/);
  assert.match(s,/if\(!v229ArchiveReviewed\(draft\)\)\{go\("archivereview"\);return;\}/);
