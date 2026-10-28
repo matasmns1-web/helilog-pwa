@@ -59,9 +59,9 @@ test("record comparison hides raw saved signature images and never chooses a cop
  assert.match(gate,/v2281OpenConflictReview\(event\)/);
 });
 test("hotfix updates PWA cache without touching production, print or cloud database schema",()=>{
- assert.match(worker,/helilog-v2-41-2-sim-details-1/);
- assert.match(read("source/index.template.html"),/V2\.41\.2/);
- assert.match(read("auth-gate.js"),/HELILOG_TEST_VERSION='V2\.41\.2'/);
+ assert.match(worker,/helilog-v2-42-guide-archive-1/);
+ assert.match(read("source/index.template.html"),/V2\.42/);
+ assert.match(read("auth-gate.js"),/HELILOG_TEST_VERSION='V2\.42'/);
  assert.doesNotMatch(read("print.js"),/v2281OpenConflictReview/);
  assert.doesNotMatch(read("archive-integrity.js"),/v2281OpenConflictReview/);
 });
