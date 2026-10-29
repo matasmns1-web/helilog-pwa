@@ -10,8 +10,9 @@ function server(){
  const rows=[];
  let reads=0,mutations=0,broken=false,conflict=false;
  class Query{
-  constructor(){this.filter={};this.method='read';}
+  constructor(table){this.table=table;this.filter={};this.method='read';}
   select(){return this}eq(k,v){this.filter[k]=v;return this}
+  async single(){return{data:{reset_generation:0},error:null}}
   in(k,values){this.inValues={k,values};return this}
   order(){return this}range(){return this}
   insert(x){this.method='insert';this.item=x;return this}
@@ -25,7 +26,7 @@ function server(){
    return Promise.resolve({data:selected.map(x=>({...x})),error:null}).then(resolve,reject);
   }
  }
- return {rows,client:{from:()=>new Query(),rpc:async(name,args)=>{
+ return {rows,client:{from:table=>new Query(table),rpc:async(name,args)=>{
   if(name==='helilog_sync_mutation'){
    mutations++;
    if(conflict)return{data:null,error:{code:'PT409',message:'Cloud revision conflict'}};
