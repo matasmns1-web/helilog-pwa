@@ -40,7 +40,7 @@ test('inactive helicopter does not appear among active cards but stays accessibl
  assert.match(s.ctx.app.innerHTML,/NEW-001/);
  assert.doesNotMatch(s.ctx.app.innerHTML,/OLD-001/);
  assert.match(s.ctx.app.innerHTML,/Archived aircraft \(1\)/);
- s.ctx.showArchivedAircraft=true;s.ctx.aircraft();
+ vm.runInContext('showArchivedAircraft=true',s.ctx);s.ctx.aircraft();
  assert.match(s.ctx.app.innerHTML,/OLD-001/);
  assert.doesNotMatch(s.ctx.app.innerHTML,/NEW-001/);
  assert.match(s.ctx.app.innerHTML,/1:30/);
@@ -66,7 +66,7 @@ test('archived pilot is excluded from active list, and account holder cannot be 
  assert.match(s.ctx.app.innerHTML,/Account Holder/);
  assert.match(s.ctx.app.innerHTML,/Current Instructor/);
  assert.doesNotMatch(s.ctx.app.innerHTML,/Old Instructor/);
- s.ctx.showArchivedPilots=true;s.ctx.pilots();
+ vm.runInContext('showArchivedPilots=true',s.ctx);s.ctx.pilots();
  assert.match(s.ctx.app.innerHTML,/Old Instructor/);
  assert.match(s.ctx.app.innerHTML,/Signature/);
  s.ctx.togglePersonInactive('me');
