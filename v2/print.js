@@ -42,7 +42,20 @@
       (name?escapeHTML(name):'')+(name&&number?' · ':'')+
       (number?'No. '+escapeHTML(number):'')+'</div>';
   }
-  function oneEntry(entry,slot){
+  function oneEntry(entry,slot,legacy=false){
+    if(legacy){
+      if(!entry)return '<div class="entry empty"><div class="slotline">ENTRY '+slot+'</div><div class="unused">— UNUSED —</div></div>';
+      const e=entry.snapshot;
+      return '<article class="entry"><div class="slotline">ENTRY '+slot+' &nbsp;·&nbsp; '+escapeHTML(entry.endorsementId)+'</div>'+
+        '<div class="meta"><span><b>DATE</b> '+formatDate(e.date)+'</span><span><b>PLACE</b> '+escapeHTML(e.location||"—")+'</span>'+
+        '<span><b>CATEGORY</b> '+escapeHTML(e.category)+'</span></div>'+
+        '<h2>'+escapeHTML(e.title)+'</h2>'+
+        '<div class="endorsement-text">'+escapeHTML(e.text)+'</div>'+
+        (e.qualificationId?'<div class="qualification"><b>Related licence/rating:</b> '+escapeHTML(e.qualificationId)+'</div>':'')+
+        '<div class="signer"><div><b>ENDORSED BY</b><div>'+escapeHTML(e.signature?.name||"—")+'</div>'+
+        '<div class="small">'+escapeHTML(e.signature?.licence||"")+'</div></div>'+
+        signatureBlock(e.signature)+'</div></article>';
+    }
     if(!entry)return '<div class="entry empty"><div class="slotline">ENTRY '+slot+'</div><div class="unused">— UNUSED —</div></div>';
     const e=entry.snapshot;
     return '<article class="entry"><div class="slotline">ENTRY '+slot+'</div>'+
@@ -78,7 +91,7 @@
     const pages=[];
     for(let p=0;p<count;p++){
       const items=batch.items.slice(p*PER_PAGE,(p+1)*PER_PAGE);
-      const entries=Array.from({length:PER_PAGE},(_,j)=>oneEntry(items[j],p*PER_PAGE+j+1)).join("");
+      const entries=Array.from({length:PER_PAGE},(_,j)=>oneEntry(items[j],p*PER_PAGE+j+1,batch.layout!=='endorsement-sheet-v2')).join("");
       pages.push('<section class="page"><div class="heading"><div><h1>PILOT MEMORANDA / ENDORSEMENTS</h1>'+
         '<div class="sub">HeliLog V2 · Paper logbook endorsement section</div></div>'+
         '<div class="page-no">Endorsement page '+(batch.firstPage+p)+'<div class="sub">Batch '+escapeHTML(batch.id)+'</div></div></div>'+
@@ -92,8 +105,8 @@
     return '<div><b>Date:</b> '+formatDate(e.date)+' &nbsp; <b>Category:</b> '+escapeHTML(e.category)+
       ' &nbsp; <b>Place:</b> '+escapeHTML(e.location||"—")+'</div>'+
       '<div><b>Title:</b> '+escapeHTML(e.title)+'</div>'+
-      '<div><b>Endorsed by:</b> '+escapeHTML(e.signature?.name||'—')+'</div>'+
-      qualificationDetails(e)+
+      '<div><b>Endorser ID:</b> '+escapeHTML(e.signatoryPersonId)+'</div>'+
+      '<div><b>Related rating:</b> '+escapeHTML(e.qualificationId||"—")+'</div>'+
       '<div class="endorsement-text">'+escapeHTML(e.text)+'</div>';
   }
   function renderAmendment(proposal,originalArchive){
