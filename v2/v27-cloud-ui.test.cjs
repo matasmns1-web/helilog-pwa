@@ -47,7 +47,7 @@ test("conflict comparison is explicit and shows both copies without automatic ac
  const markup=api();
  assert.match(markup,/LY-OFF/);
  assert.match(markup,/LY-WEB/);
- assert.match(markup,/Keep this device copy/);
+ assert.match(markup,/Keep current device copy/);
  assert.match(markup,/Use current cloud copy/);
  assert.match(markup,/device-local safety snapshot/);
 });
