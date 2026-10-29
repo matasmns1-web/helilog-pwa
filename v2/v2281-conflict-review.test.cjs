@@ -53,7 +53,8 @@ test("Cloud page puts a labelled, device-specific issue panel before the ordinar
 test("record comparison hides raw saved signature images and never chooses a copy automatically",()=>{
  assert.match(view,/key==='savedSignatureData'\|\|key==='signatureData'/);
  assert.match(view,/id="v2281RecordComparison"/);
- assert.match(view,/Keep this device copy/);
+ assert.match(view,/Keep current device copy/);
+ assert.match(view,/Use earlier unsent copy/);
  assert.match(view,/Use current cloud copy/);
  assert.doesNotMatch(gate,/onclick="go\(\\'cloud\\'\)">Review on this device/);
  assert.match(gate,/v2281OpenConflictReview\(event\)/);
