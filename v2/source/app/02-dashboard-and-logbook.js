@@ -14,7 +14,10 @@ function dashboardPeriodFlights(days){
   let now=new Date();
   let cutoff=new Date(now.getFullYear(),now.getMonth(),now.getDate());
   cutoff.setDate(cutoff.getDate()-(days-1));
-  let cutoffStr=cutoff.toISOString().slice(0,10);
+  // Use the local calendar day, not UTC ISO midnight. Positive time zones
+  // otherwise include an extra day in 30/90/365-day dashboard filters.
+  const cutoffStr=[cutoff.getFullYear(),String(cutoff.getMonth()+1).padStart(2,'0'),
+   String(cutoff.getDate()).padStart(2,'0')].join('-');
   return effectiveFlights().filter(f=>!isSimulatorSession(f)&&String(f.date||'')>=cutoffStr);
 }
 function dashboardPeriodTotals(flights){
@@ -53,14 +56,18 @@ function setDashboardRange(days,button){
   document.querySelectorAll('.dashboard-range button').forEach(b=>b.classList.toggle('on',b===button));
 }
 function dashboard(){
-  let fs=effectiveFlights().filter(f=>!isSimulatorSession(f)).sort(compareFlightsNewest);
+  // Materialize corrected flights once; old aircraft totals re-resolved the
+  // complete correction history separately for every aircraft.
+  const entries=effectiveFlights();
+  let fs=entries.filter(f=>!isSimulatorSession(f)).sort(compareFlightsNewest);
   let t=calcTotals();
   let reminders=dashboardReminders().slice(0,6);
   let endorsements=[...(S.endorsements||[])].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,4);
-  let aircraftRows=S.aircraft.map(a=>{
-    let mins=effectiveFlights().filter(f=>f.aid===a.id).reduce((n,f)=>n+Number(f.mins||0),0);
-    return {a,mins};
-  }).sort((a,b)=>b.mins-a.mins);
+  const aircraftMinutes=new Map();
+  for(const f of entries)aircraftMinutes.set(f.aid,
+   (aircraftMinutes.get(f.aid)||0)+Number(f.mins||0));
+  let aircraftRows=S.aircraft.map(a=>({a,mins:aircraftMinutes.get(a.id)||0}))
+    .sort((a,b)=>b.mins-a.mins);
 
   app.innerHTML=header('Dashboard',`Welcome back, ${S.pilot.name}`,`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" onclick="go('quickadd')">⚡ Quick flight</button><button class="btn" onclick="go('add')">Full entry</button>${!v23AccountWorkspace()?`<button class="btn" onclick="go('testmode')">⚗ ${TEST_MODE?'Test Mode settings':'Open Test Mode'}</button>`:''}</div>`)+
   `<div class="card">
@@ -170,14 +177,19 @@ function getFilteredFlights(){
   let night=document.getElementById('filterNight')?.value||'';
   let ifr=document.getElementById('filterIFR')?.value||'';
 
+  // Build searchable text only when the pilot actually entered a query.
+  // Type and registration lookups are constant-time for large logbooks.
+  const aircraftById=new Map();
+  if(q)for(const a of S.aircraft)if(!aircraftById.has(a.id))aircraftById.set(a.id,a);
   return effectiveFlights().filter(f=>{
-    let a=ac(f.aid);
-    let searchable=[
-      f.date,f.dep,f.arr,f.off,f.on,f.picName,f.role,f.simCategory,f.simDevice,f.simQualification,f.stdType,flightRemarksForDisplay(f),
-      a?.icao,a?.reg,a?.manufacturer,a?.model,a?.variant
-    ].filter(Boolean).join(' ').toLowerCase();
-
-    if(q && !searchable.includes(q)) return false;
+    if(q){
+      const a=aircraftById.get(f.aid);
+      const searchable=[
+       f.date,f.dep,f.arr,f.off,f.on,f.picName,f.role,f.simCategory,f.simDevice,f.simQualification,f.stdType,flightRemarksForDisplay(f),
+       a?.icao,a?.reg,a?.manufacturer,a?.model,a?.variant
+      ].filter(Boolean).join(' ').toLowerCase();
+      if(!searchable.includes(q))return false;
+    }
     if(from && f.date<from) return false;
     if(to && f.date>to) return false;
     if(aircraftId && f.aid!==aircraftId) return false;
@@ -196,8 +208,10 @@ function applyLogbookFilters(){
   let body=document.getElementById('logbookBody');
   if(!body) return;
   let flights=getFilteredFlights();
+  const aircraftById=new Map();
+  for(const a of S.aircraft)if(!aircraftById.has(a.id))aircraftById.set(a.id,a);
   body.innerHTML=flights.length?flights.map(f=>{
-    let a=ac(f.aid);
+    let a=aircraftById.get(f.aid);
     return `<tr class="click" onclick="flight('${f.id}')">
       <td>${displayDate(f.date)}</td><td><b>${isSimulatorSession(f)?'SIM':a?.icao||'—'}</b></td><td>${isSimulatorSession(f)?htmlEscape(f.simCategory||'—'):a?.reg||'—'}</td>
       <td>${isSimulatorSession(f)?htmlEscape(f.stdType||simulatorDeviceLabel(f)):f.dep+' '+(f.off||'')}</td>

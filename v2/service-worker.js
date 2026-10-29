@@ -1,4 +1,4 @@
-const CACHE='helilog-v2-44-1-data-management-1';
+const CACHE='helilog-v2-45-stability-1';
 const SHELL=[
   './',
   './index.html',
