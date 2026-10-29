@@ -28,6 +28,7 @@ function env(errorCode){
 }
 test('PT409 is a normal conflict: preserves queued aircraft and stops after one request',async()=>{
  const e=env('PT409');
+ await e.api.ensureGeneration();
  e.state.aircraft.push({id:'a1',icao:'G2CA',reg:'LY-TEST'});
  e.api.track(e.state);
  await tick();
@@ -42,7 +43,7 @@ test('PT409 is a normal conflict: preserves queued aircraft and stops after one 
  assert.equal(saved[0].payload.reg,'LY-TEST');
 });
 test('legacy SQLSTATE 40001 remains backward-compatible and stops after one request',async()=>{
- const e=env('40001');e.state.aircraft.push({id:'a2',icao:'G2CA',reg:'LY-OLD'});
+ const e=env('40001');await e.api.ensureGeneration();e.state.aircraft.push({id:'a2',icao:'G2CA',reg:'LY-OLD'});
  e.api.track(e.state);await tick();
  assert.equal(e.api.status().state,'conflict');
  assert.equal(e.calls,1);
