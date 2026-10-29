@@ -211,7 +211,9 @@ function newPerson(editId=null){
         <div class="field"><label for="personFirstName">First name</label><input id="personFirstName" autocomplete="given-name" required value="${existing?htmlEscape(pilotNameParts(existing).firstName):''}" placeholder="First name"></div>
         <div class="field"><label for="personLastName">Surname</label><input id="personLastName" autocomplete="family-name" required value="${existing?htmlEscape(pilotNameParts(existing).lastName):''}" placeholder="Surname"></div>
         <div class="field"><label>Role / relationship</label><input id="personRole" value="${existing?htmlEscape(existing.role||'Pilot'):'Pilot'}" placeholder="Instructor, examiner, commander..."></div>
-        <div class="field"><label>Licence / identifier</label><input id="personLicence" value="${existing?htmlEscape(existing.licence||''):''}" placeholder="Optional"></div>
+        <div class="field"><label>Licence / qualification</label><input id="personLicence" value="${existing?htmlEscape(existing.licence||''):''}" placeholder="e.g. CPL(H), FI(H), FE(H)"></div>
+        <div class="field"><label>Licence number</label><input id="personLicenceNumber" value="${existing?htmlEscape(existing.licenceNumber||''):''}" placeholder="Optional"></div>
+        <div class="field"><label>FI / FE authorisation number</label><input id="personFiFeNumber" value="${existing?htmlEscape(existing.fiFeNumber||''):''}" placeholder="Optional"></div>
         <div class="field"><label>Notes</label><input id="personNotes" value="${existing?htmlEscape(existing.notes||''):''}" placeholder="Optional"></div>
       </div>
       <div class="mini" style="margin-top:14px">After saving, use Signature on this pilot’s card to capture or update their signature. It will never be applied automatically.</div>
@@ -228,6 +230,8 @@ function savePerson(e){
   let name=[firstName,lastName].filter(Boolean).join(' ');
   let role=$('#personRole').value.trim()||'Pilot';
   let licence=$('#personLicence').value.trim();
+  let licenceNumber=$('#personLicenceNumber')?.value.trim()||'';
+  let fiFeNumber=$('#personFiFeNumber')?.value.trim()||'';
   let notes=$('#personNotes').value.trim();
   if(!firstName||!lastName){
     alert('Please enter both the first name and surname.');
@@ -245,7 +249,7 @@ function savePerson(e){
     if(!p){go('pilots');return;}
     let oldName=p.name;
     p.name=name;p.firstName=firstName;p.lastName=lastName;
-    p.role=role;p.licence=licence;p.notes=notes;
+    p.role=role;p.licence=licence;p.licenceNumber=licenceNumber;p.fiFeNumber=fiFeNumber;p.notes=notes;
     S.flights.forEach(f=>{
       if(isArchivedFlight(f.id)) return;
       if(f.picPersonId===p.id || (!f.picPersonId && String(f.picName||'').toLowerCase()===oldName.toLowerCase())){
@@ -256,7 +260,7 @@ function savePerson(e){
   }else{
     S.people.push({
       id:'p'+Date.now()+Math.random().toString(36).slice(2,6),
-      name,firstName,lastName,role,licence,notes,isAccountHolder:false
+      name,firstName,lastName,role,licence,licenceNumber,fiFeNumber,notes,isAccountHolder:false
     });
   }
 
@@ -342,10 +346,14 @@ function v227WriteEndorsementSignature(e,person,png,method){
   if(!e||!person||e.signatoryPersonId!==person.id||e.signatureData||
     v2ArchiveBridge.isArchived(S,e.id)||!v227IsPNG(png))return false;
   const before={signatureData:e.signatureData,signedAt:e.signedAt,signedName:e.signedName,
-    signedLicence:e.signedLicence,signedSource:e.signedSource,signedConsentAt:e.signedConsentAt};
+    signedLicence:e.signedLicence,signedLicenceNumber:e.signedLicenceNumber,
+    signedFiFeNumber:e.signedFiFeNumber,signedSource:e.signedSource,signedConsentAt:e.signedConsentAt};
   const now=new Date().toISOString();
   e.signatureData=png;e.signedAt=now;e.signedName=person.name;
-  e.signedLicence=person.licence||'';e.signedSource=method;e.signedConsentAt=now;
+  e.signedLicence=person.licence||'';
+  e.signedLicenceNumber=person.licenceNumber||'';
+  e.signedFiFeNumber=person.fiFeNumber||'';
+  e.signedSource=method;e.signedConsentAt=now;
   if(!save()){Object.assign(e,before);return false;}
   return true;
 }
