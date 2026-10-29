@@ -159,3 +159,30 @@ test("V2.34.1 recovery is explicit and cloud connection copy does not claim unsy
  assert.match(sync,/remoteFingerprint/);
  assert.match(read("service-worker.js"),/helilog-v2-48-1-endorsement-archive-1/);
 });
+
+test("V2.49: iPad siteLocations stale queue remains reviewable with three explicit copies",async()=>{
+ const {server,iphone}=await makeRecovery(),writes=server.writes;
+ const original=[{icao:"EYVI",name:"Vilnius",latitude:54.6,longitude:25.2}];
+ const latest=[{icao:"EYVI",name:"Vilnius",latitude:54.7,longitude:25.3}];
+ iphone.data.siteLocations=copy(original);
+ await iphone.api.refresh();
+ assert.equal(iphone.api.status().state,"conflict");
+ let q=iphone.api.conflicts().find(x=>x.kind==="settings"&&x.id==="siteLocations");
+ assert.equal(q.reviewable,true);
+ assert.equal(q.unqueuedRecovery,true);
+ iphone.data.siteLocations=copy(latest);
+ const comparison=await iphone.api.previewRecordConflict("settings","siteLocations");
+ assert.deepEqual(comparison.local.data,latest);
+ assert.deepEqual(comparison.queued.data,original);
+ assert.deepEqual(comparison.cloud.data,[]);
+ assert.equal(server.writes,writes);
+ const result=await iphone.api.resolveRecordConflict("local");
+ const backup=JSON.parse(iphone.store.get(result.backupKey));
+ assert.deepEqual(backup.workspace.siteLocations,latest);
+ assert.deepEqual(backup.pending.find(x=>x.id==="siteLocations").payload.data,original);
+ assert.equal(server.writes,writes);
+ await iphone.api.refresh();await tick();
+ const remote=server.rows.find(x=>x.kind==="settings"&&x.record_id==="siteLocations");
+ assert.deepEqual(remote.payload.data,latest);
+ assert.equal(iphone.api.status().state,"synced");
+});
