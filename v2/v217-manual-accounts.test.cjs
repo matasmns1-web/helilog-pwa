@@ -34,7 +34,7 @@ test("staging stays connected only to existing test backend and private login",(
  assert.match(cloud,/owner|auth\.uid|verifiedClient/i);
 });
 test("version and offline PWA references are coherent",()=>{
- assert.match(page,/<title>HeliLog V2\.49\.1 — Cloud Conflict Review · Test<\/title>/);
+ assert.match(page,/<title>HeliLog V2\.49\.1 — Cloud Conflict CPU Fix · Test<\/title>/);
  assert.equal(manifest.name,"HeliLog V2.49.1 — Cloud Conflict CPU Fix Test");
  assert.match(worker,/helilog-v2-49-1-nonretryable-sync-1/);
  assert.match(gate,/HELILOG_TEST_VERSION='V2\.49\.1'/);

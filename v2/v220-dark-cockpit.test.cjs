@@ -11,12 +11,12 @@ const sw=read('service-worker.js');
 const manifest=JSON.parse(read('manifest.webmanifest'));
 
 test('Dark Cockpit remains visible and the current release is test-only',()=>{
-  assert.match(html,/<title>HeliLog V2\.49\.1 — Cloud Conflict Review · Test<\/title>/);
+  assert.match(html,/<title>HeliLog V2\.49\.1 — Cloud Conflict CPU Fix · Test<\/title>/);
   assert.match(html,/class="brand-version">V2\.49\.1 · TEST ENVIRONMENT/);
   assert.match(html,/class="nav-group-label">Flight operations/);
   assert.match(html,/class="nav-group-label">Records &amp; assets/);
   assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.49\.1'/);
-  assert.match(manifest.name,/V2\.49\.1 — Cloud Conflict Review Test/);
+  assert.match(manifest.name,/V2\.49\.1 — Cloud Conflict CPU Fix Test/);
   assert.equal(manifest.background_color,'#090f1b');
 });
 
