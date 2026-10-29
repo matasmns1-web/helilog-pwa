@@ -458,22 +458,30 @@
   const local=localRecord(snapshotFn(),kind,id);
   if((action==="delete")!== (local===null))
    throw Error("Local queue differs from the saved record. Preserve data and restart review.");
-  if(action==="put"&&canonical(q.payload)!==canonical(local))
-   throw Error("Local edits differ from the pending queue. Preserve data and restart review.");
+  // V2.49: a valid put can be followed by another saved local edit before
+  // its sync queue is updated (e.g. app close/offline). Show BOTH local
+  // versions, rather than leave this device permanently unable to compare.
+  // Never rebase or choose either copy automatically.
+  const queueDiverged=action==="put"&&canonical(q.payload)!==canonical(local);
+  if(queueDiverged&&local===null)
+   throw Error("An earlier unsent update and a local deletion differ. Preserve both versions for protected recovery.");
   recordPreview={owner,kind,id,generation,action,
-   localHash:canonical(local),remoteHash:canonical(row),
+   localHash:canonical(local),queueHash:canonical(q.payload),
+   queueDiverged,remoteHash:canonical(row),
    cloudRevision:row?Number(row.revision):null};
   return {kind,id,local:clone(local),cloud:row?clone(row.payload):null,
+   queued:queueDiverged?clone(q.payload):null,queueDiverged,
    localDeleted:local===null,cloudDeleted:row===null,
    cloudRevision:recordPreview.cloudRevision};
  }
  async function resolveRecordConflict(choice){
-  if(!["local","cloud"].includes(choice))throw Error("Choose device or cloud copy.");
+  if(!["local","cloud","queued"].includes(choice))throw Error("Choose the current device, earlier unsent, or cloud copy.");
   if(!recordPreview)throw Error("Review both copies before resolving.");
   const reviewed=recordPreview;
   const q=requireRecordReview(reviewed.kind,reviewed.id);
-  if(reviewed.owner!==owner||q.generation!==reviewed.generation||q.action!==reviewed.action)
-   throw Error("Pending edits changed since review. Review both copies again.");
+  if(reviewed.owner!==owner||q.generation!==reviewed.generation||q.action!==reviewed.action||
+     canonical(q.payload)!==reviewed.queueHash || (choice==="queued"&&!reviewed.queueDiverged))
+   throw Error("Pending edits changed since review. Review all saved versions again.");
   reconciling=true;
   const sessionOwner=owner;
   try{
@@ -482,6 +490,7 @@
     throw Error("Cloud account changed. No data was modified.");
    const before=clone(snapshotFn()),local=localRecord(before,reviewed.kind,reviewed.id);
    if(canonical(row)!==reviewed.remoteHash||canonical(local)!==reviewed.localHash||
+      canonical(q.payload)!==reviewed.queueHash ||
       q.generation!==reviewed.generation||!q.conflict)
     throw Error("One of the records changed since review. Review again; nothing was overwritten.");
    if(isProtectedRecord(reviewed.kind,reviewed.id))
@@ -511,16 +520,23 @@
    try{
     if(row){versions[k]=Number(row.revision);mirror[k]=canonical(row.payload);}
     else{delete versions[k];delete mirror[k];}
-    if(choice==="cloud"){
+    if(choice==="cloud"||choice==="queued"){
      const next=clone(before);
      const records=items(next,reviewed.kind).filter(x=>String(x.id)!==reviewed.id);
-     if(row)records.push(clone(row.payload));
+     const selected=choice==="cloud"?(row?row.payload:null):q.payload;
+     if(selected)records.push(clone(selected));
      putItems(next,reviewed.kind,records);
      replaceFn(next); // Account cache is written atomically by the host.
-     pending=pending.filter(entry=>entry!==q);
-    }else{
-     // Rebase ONLY the reviewed item against the version that was just checked.
-     // The next cloud write still uses revision-based compare-and-swap.
+     if(choice==="cloud")pending=pending.filter(entry=>entry!==q);
+    }
+    if(choice!=="cloud"){
+     // The current device and the earlier queued version are separate choices.
+     // Once chosen, update only this reviewed queue entry. Preserve the other
+     // copy in the independently verified backup made above.
+     if(choice==="local"&&reviewed.queueDiverged){
+      q.payload=clone(local);
+      q.generation=(q.generation||0)+1;
+     }
      q.baseRevision=row?Number(row.revision):null;
      q.conflict=false;
     }
@@ -533,7 +549,7 @@
    }catch(e){
     versions=previous.versions;mirror=previous.mirror;
     baseline=previous.baseline;pending=previous.pending;
-    if(choice==="cloud")try{replaceFn(before);}catch(rollbackError){
+    if(choice==="cloud"||choice==="queued")try{replaceFn(before);}catch(rollbackError){
      root.console?.error?.("Could not restore local workspace after failed resolution",rollbackError);
     }
     state="error";
