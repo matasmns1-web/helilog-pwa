@@ -1,4 +1,4 @@
-const CACHE='helilog-v2-49-cloud-conflict-review-1';
+const CACHE='helilog-v2-49-1-nonretryable-sync-1';
 const SHELL=[
   './',
   './index.html',

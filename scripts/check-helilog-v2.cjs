@@ -86,6 +86,7 @@ const GROUPS = Object.freeze([
       'v2/v248-endorsement-print.test.cjs',
       'v2/v2481-endorsement-archive-compat.test.cjs',
       'v2/v249-cloud-queued-conflict.test.cjs',
+      'v2/v2491-nonretryable-sync.test.cjs',
       'v2/v244-account-reset.test.cjs',
       'v2/v2441-data-management.test.cjs',
       'v2/v24-sync.test.cjs',
