@@ -29,8 +29,8 @@ test('three-way review performs no silent rebase and checks all versions before 
  assert.match(guide,/three-way cloud conflicts safely/);
 });
 test('new release uses separate test cache; production remains gated',()=>{
- assert.match(read('service-worker.js'),/helilog-v2-49-cloud-conflict-review-1/);
- assert.match(read('source/index.template.html'),/HeliLog V2\.49 — Cloud Conflict Review/);
- assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.49'/);
+ assert.match(read('service-worker.js'),/helilog-v2-49-1-nonretryable-sync-1/);
+ assert.match(read('source/index.template.html'),/HeliLog V2\.49\.1 — Cloud Conflict Review/);
+ assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.49\.1'/);
  assert.doesNotMatch(sync,/localStorage\.clear\(\)/);
 });
