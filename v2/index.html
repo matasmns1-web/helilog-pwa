@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.49.1 — Cloud Conflict CPU Fix · Test</title>
+<title>HeliLog V2.50 — Cloud Health & Reliability · Test</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -625,7 +625,7 @@ html.installed-touch-app .logbook-mobile-expanded .logbook-filter-secondary{disp
 <link rel="stylesheet" href="./guide.css?v=2.29" media="screen">
 </head>
 <body><div class="layout">
-<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.49.1 · TEST ENVIRONMENT</span></div><nav>
+<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.50 · TEST ENVIRONMENT</span></div><nav>
 <div class="nav-group-label">Flight operations</div>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="recency">◷ Recency</button>
 <div class="nav-group-label">Records &amp; assets</div>
@@ -6137,6 +6137,40 @@ function v219DeleteSite(code){
  v219Status('Removed '+code+'. Existing flight records are unchanged.');
 }
 
+/* V2.50 — compact, read-only device health. No network calls, background
+   polling or account-data writes are performed by Settings. */
+function v250CloudHealthTime(raw){
+ const stamp=typeof raw==="string"?Date.parse(raw):NaN;
+ if(!Number.isFinite(stamp))return 'Not yet recorded on this device';
+ const date=new Date(stamp);
+ return '<time datetime="'+htmlEscape(date.toISOString())+'">'+htmlEscape(date.toLocaleString())+'</time>';
+}
+function v250CloudHealthMarkup(){
+ if(!v23AccountWorkspace())return '<p class="mini">Sign in to see this device\'s sync diagnostics.</p>';
+ const st=window.HeliLogV23Sync.status();
+ const state=String(st.state||'inactive');
+ const names={synced:'Synced',syncing:'Sync in progress',connecting:'Checking',
+  pending:'Changes waiting',conflict:'Needs review',error:'Connection issue',
+  offline:'Offline',reset_required:'Account reset review required',inactive:'Not connected'};
+ const label=names[state]||'Status unknown';
+ const pending=Math.max(0,Number(st.pending)||0);
+ const conflicts=Math.max(0,Number(st.conflicts)||0);
+ const setup=window.HeliLogV23Sync.extended?.()===true;
+ return '<details class="v250-cloud-health" id="v250CloudHealth">'+
+  '<summary>Cloud health · '+htmlEscape(label)+(conflicts?' · '+conflicts+' conflict(s)':'')+'</summary>'+
+  '<div class="profilegrid" style="margin-top:12px">'+
+   '<div><div class="mini">Sync status</div><b>'+htmlEscape(label)+'</b></div>'+
+   '<div><div class="mini">Device network (browser reported)</div><b>'+(st.online?'Online':'Offline')+'</b></div>'+
+   '<div><div class="mini">Pending changes</div><b>'+pending+'</b></div>'+
+   '<div><div class="mini">Unresolved conflicts</div><b>'+conflicts+'</b></div>'+
+   '<div><div class="mini">Last successful cloud read</div><b>'+v250CloudHealthTime(st.lastCloudCheckAt)+'</b></div>'+
+   '<div><div class="mini">Last fully synced</div><b>'+v250CloudHealthTime(st.lastSyncedAt)+'</b></div>'+
+  '</div>'+
+  (st.error?'<div class="note" role="status" style="margin-top:10px">'+htmlEscape(st.error)+'</div>':'')+
+  (!setup?'<p class="mini">Full account synchronization setup is incomplete; manage it under Cloud account.</p>':'')+
+  '<p class="mini">Timestamps are saved only on this device. This panel does not contact Supabase or retry synchronization. Review conflicts and run a manual check under Cloud account.</p>'+
+  '</details>';
+}
 function settings(){
  app.innerHTML=header('Settings','Logbook, aerodromes, cloud account, backups and device preferences',
    `<button class="btn" type="button" onclick="go('profile')">← Profile</button>`)+
@@ -6151,6 +6185,7 @@ function settings(){
      <div class="card">
       <div class="head"><div><h2>Cloud account</h2><div class="muted">Connection, synchronization, conflicts and archive integrity.</div></div>
       <button class="btn" type="button" onclick="go('cloud')">Manage cloud account</button>
+      ${v250CloudHealthMarkup()}
      </div>
     </div>
      <div class="card">
@@ -7334,6 +7369,7 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {v:"V2.50",name:"Read-only Cloud Health in Settings",detail:"Settings → Cloud account now includes a compact Cloud health section with local timestamps for the last successful cloud read and fully synchronized state, pending uploads, conflicts, device network indicator and any sync error. The panel does not contact Supabase or retry synchronization; it uses the existing cloud sync status. Times are stored only on the signed-in device. Review conflicts or manually check/sync under Cloud account. The PT409 protection remains active."},
   {v:"V2.49.1",name:"Cloud conflict CPU safety fix",detail:"The TEST database now reports an actual cloud revision conflict as HTTP 409 (PT409), instead of SQLSTATE 40001 which PostgREST 14 could retry indefinitely and overload Supabase CPU. HeliLog treats PT409 as a preserved on-device conflict for manual review. The prior 40001 code remains recognized for compatibility. No data or archived records change."},
   {v:"V2.49",name:"Recover three-way cloud conflicts safely",detail:"When a device's pending offline sync differs from newer local edits, Compare copies shows the current device, earlier unsent queue and cloud versions. Choose which to keep after reviewing all copies. Each decision saves a verified device-local backup, protects archived records and uses revision-checked uploads; no copy is silently discarded."},
   {v:"V2.48.1",name:"Archived endorsement print compatibility fix",detail:"Preserve exact confirmed endorsement snapshots when preparing new print batches, including older entries with different print metadata. Validate signed dates, wording, signer details and signature data against the original signed record. Existing archived pages are not rewritten; new pages retain V2.48 licence and FI/FE number display."},
