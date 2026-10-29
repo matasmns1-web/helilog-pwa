@@ -126,6 +126,29 @@ function dashboard(){
   </div>`;
 }
 function row(f){let a=ac(f.aid);return `<tr class="click" onclick="flight('${f.id}')"><td>${displayDate(f.date)}</td><td><b>${isSimulatorSession(f)?'SIM':a?.icao||'—'}</b></td><td>${isSimulatorSession(f)?htmlEscape(f.stdType):f.dep+' → '+f.arr}</td><td>${fmt(isSimulatorSession(f)?f.stdMin:f.mins)}</td><td><span class="tag">${isSimulatorSession(f)?'SIM':f.role}</span></td></tr>`}
+// V2.45.1: pagination is presentation-only. The same complete filtered
+// collection drives the totals, while only the visible slice is rendered.
+let logbookPage=1,logbookPageCount=1,lastLogbookPageSize=0;
+function logbookPageSize(){
+  return (isStandaloneApp()||window.innerWidth<=850)?10:25;
+}
+function logbookViewportResized(){
+  if(!document.getElementById('logbookBody'))return;
+  const size=logbookPageSize();
+  if(size===lastLogbookPageSize)return;
+  logbookPage=1;
+  applyLogbookFilters();
+}
+function setLogbookPage(page){
+  const next=Math.max(1,Math.min(logbookPageCount,Math.trunc(Number(page)||1)));
+  if(next===logbookPage)return;
+  logbookPage=next;
+  applyLogbookFilters();
+  // On a phone, keep the first row near the top after pressing Next/Previous,
+  // without forcing desktop browsers to jump while paging.
+  if(logbookPageSize()===10)
+    document.getElementById('logbookBody')?.closest('table')?.scrollIntoView?.({block:'start',behavior:'smooth'});
+}
 function logbook(){
   let aircraftOptions=S.aircraft.map(a=>`<option value="${a.id}">${a.icao} — ${a.reg}</option>`).join('');
   app.innerHTML=header('Logbook',isInstalledTouchApp()?'View your flight records':'Search and filter your flight records',`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn desktop-only web-only-tool" onclick="openImportModal()">Import CSV</button><button class="btn desktop-only web-only-tool" onclick="openExportModal()">Export</button><button class="btn primary" onclick="go('add')">＋ Add flight</button></div>`)+`
@@ -149,6 +172,14 @@ function logbook(){
         <tbody id="logbookBody"></tbody>
       </table>
     </div>
+    <nav id="logbookPagination" class="logbook-pagination" aria-label="Logbook pages" hidden>
+      <span id="logbookPageSummary" class="logbook-page-summary" aria-live="polite"></span>
+      <div class="logbook-page-controls">
+        <button id="logbookPrevPage" type="button" class="btn" onclick="setLogbookPage(logbookPage-1)" aria-label="Previous logbook page">Previous</button>
+        <span id="logbookPageLabel" class="logbook-page-label"></span>
+        <button id="logbookNextPage" type="button" class="btn" onclick="setLogbookPage(logbookPage+1)" aria-label="Next logbook page">Next</button>
+      </div>
+    </nav>
     <div class="filtermeta">
       <div><span id="resultCount" class="resultcount">0 flights</span> shown</div>
       <div class="filtertotals">
@@ -162,8 +193,12 @@ function logbook(){
 
   ['logSearch','filterFrom','filterTo','filterAircraft','filterRole','filterXC','filterNight','filterIFR'].forEach(id=>{
     let el=document.getElementById(id);
-    el.addEventListener(['logSearch','filterFrom','filterTo'].includes(id)?'input':'change',applyLogbookFilters);
+    el.addEventListener(['logSearch','filterFrom','filterTo'].includes(id)?'input':'change',()=>{
+      logbookPage=1;applyLogbookFilters();
+    });
   });
+  // A single listener survives navigation without accumulating duplicates.
+  window.addEventListener('resize',logbookViewportResized);
   applyLogbookFilters();
 }
 
@@ -208,9 +243,25 @@ function applyLogbookFilters(){
   let body=document.getElementById('logbookBody');
   if(!body) return;
   let flights=getFilteredFlights();
+  const pageSize=logbookPageSize();
+  lastLogbookPageSize=pageSize;
+  logbookPageCount=Math.max(1,Math.ceil(flights.length/pageSize));
+  logbookPage=Math.min(Math.max(1,logbookPage),logbookPageCount);
+  const first=(logbookPage-1)*pageSize;
+  const visibleFlights=flights.slice(first,first+pageSize);
+  const pager=document.getElementById('logbookPagination');
+  if(pager){
+    pager.hidden=logbookPageCount<=1;
+    document.getElementById('logbookPageSummary').textContent=
+      `Showing ${first+1}–${first+visibleFlights.length} of ${flights.length} entries`;
+    document.getElementById('logbookPageLabel').textContent=
+      `Page ${logbookPage} of ${logbookPageCount}`;
+    document.getElementById('logbookPrevPage').disabled=logbookPage===1;
+    document.getElementById('logbookNextPage').disabled=logbookPage===logbookPageCount;
+  }
   const aircraftById=new Map();
   for(const a of S.aircraft)if(!aircraftById.has(a.id))aircraftById.set(a.id,a);
-  body.innerHTML=flights.length?flights.map(f=>{
+  body.innerHTML=visibleFlights.length?visibleFlights.map(f=>{
     let a=aircraftById.get(f.aid);
     return `<tr class="click" onclick="flight('${f.id}')">
       <td>${displayDate(f.date)}</td><td><b>${isSimulatorSession(f)?'SIM':a?.icao||'—'}</b></td><td>${isSimulatorSession(f)?htmlEscape(f.simCategory||'—'):a?.reg||'—'}</td>
@@ -243,6 +294,7 @@ function clearLogbookFilters(){
   ['logSearch','filterFrom','filterTo','filterAircraft','filterRole','filterXC','filterNight','filterIFR'].forEach(id=>{
     let el=document.getElementById(id); if(el) el.value='';
   });
+  logbookPage=1;
   applyLogbookFilters();
 }
 
