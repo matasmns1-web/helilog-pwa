@@ -885,7 +885,7 @@ function saveFlight(){
   let picName=$('#picName').value.trim();
   if(['PIC','SOLO'].includes(role))picName='SELF';
   if(!picName) return showFormError('Please enter the name of the PIC.');
-  if(!['PIC','SOLO'].includes(role) && picName.toLowerCase()===S.pilot.name.toLowerCase()){
+  if(!['PIC','SOLO'].includes(role) && (picName.toUpperCase()==='SELF' || picName.toLowerCase()===S.pilot.name.toLowerCase())){
     return showFormError('For '+role+', Name of PIC must be the commander/PIC of the flight, not the account holder.');
   }
 
