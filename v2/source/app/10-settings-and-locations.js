@@ -175,6 +175,40 @@ function v219DeleteSite(code){
  v219Status('Removed '+code+'. Existing flight records are unchanged.');
 }
 
+/* V2.50 — compact, read-only device health. No network calls, background
+   polling or account-data writes are performed by Settings. */
+function v250CloudHealthTime(raw){
+ const stamp=typeof raw==="string"?Date.parse(raw):NaN;
+ if(!Number.isFinite(stamp))return 'Not yet recorded on this device';
+ const date=new Date(stamp);
+ return '<time datetime="'+htmlEscape(date.toISOString())+'">'+htmlEscape(date.toLocaleString())+'</time>';
+}
+function v250CloudHealthMarkup(){
+ if(!v23AccountWorkspace())return '<p class="mini">Sign in to see this device\'s sync diagnostics.</p>';
+ const st=window.HeliLogV23Sync.status();
+ const state=String(st.state||'inactive');
+ const names={synced:'Synced',syncing:'Sync in progress',connecting:'Checking',
+  pending:'Changes waiting',conflict:'Needs review',error:'Connection issue',
+  offline:'Offline',reset_required:'Account reset review required',inactive:'Not connected'};
+ const label=names[state]||'Status unknown';
+ const pending=Math.max(0,Number(st.pending)||0);
+ const conflicts=Math.max(0,Number(st.conflicts)||0);
+ const setup=window.HeliLogV23Sync.extended?.()===true;
+ return '<details class="v250-cloud-health" id="v250CloudHealth">'+
+  '<summary>Cloud health · '+htmlEscape(label)+(conflicts?' · '+conflicts+' conflict(s)':'')+'</summary>'+
+  '<div class="profilegrid" style="margin-top:12px">'+
+   '<div><div class="mini">Sync status</div><b>'+htmlEscape(label)+'</b></div>'+
+   '<div><div class="mini">Device network (browser reported)</div><b>'+(st.online?'Online':'Offline')+'</b></div>'+
+   '<div><div class="mini">Pending changes</div><b>'+pending+'</b></div>'+
+   '<div><div class="mini">Unresolved conflicts</div><b>'+conflicts+'</b></div>'+
+   '<div><div class="mini">Last successful cloud read</div><b>'+v250CloudHealthTime(st.lastCloudCheckAt)+'</b></div>'+
+   '<div><div class="mini">Last fully synced</div><b>'+v250CloudHealthTime(st.lastSyncedAt)+'</b></div>'+
+  '</div>'+
+  (st.error?'<div class="note" role="status" style="margin-top:10px">'+htmlEscape(st.error)+'</div>':'')+
+  (!setup?'<p class="mini">Full account synchronization setup is incomplete; manage it under Cloud account.</p>':'')+
+  '<p class="mini">Timestamps are saved only on this device. This panel does not contact Supabase or retry synchronization. Review conflicts and run a manual check under Cloud account.</p>'+
+  '</details>';
+}
 function settings(){
  app.innerHTML=header('Settings','Logbook, aerodromes, cloud account, backups and device preferences',
    `<button class="btn" type="button" onclick="go('profile')">← Profile</button>`)+
@@ -189,6 +223,7 @@ function settings(){
      <div class="card">
       <div class="head"><div><h2>Cloud account</h2><div class="muted">Connection, synchronization, conflicts and archive integrity.</div></div>
       <button class="btn" type="button" onclick="go('cloud')">Manage cloud account</button>
+      ${v250CloudHealthMarkup()}
      </div>
     </div>
      <div class="card">
