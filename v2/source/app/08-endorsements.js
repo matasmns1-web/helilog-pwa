@@ -73,6 +73,8 @@ function endorsements(){
             <div>
               <div class="signature-status"><b>Signed by:</b> ${htmlEscape(e.signedName||signer?.name||'')}</div>
               ${e.signedLicence?`<div class="signature-status"><b>Licence / ID:</b> ${htmlEscape(e.signedLicence)}</div>`:''}
+              ${e.signedLicenceNumber?`<div class="signature-status"><b>Licence No.:</b> ${htmlEscape(e.signedLicenceNumber)}</div>`:''}
+              ${e.signedFiFeNumber?`<div class="signature-status"><b>FI / FE No.:</b> ${htmlEscape(e.signedFiFeNumber)}</div>`:''}
               <div class="signature-status"><b>Signed:</b> ${e.signedAt?htmlEscape(formatDateTime(e.signedAt)):'—'}</div>
             </div>
             <img src="${e.signatureData}" alt="Endorsement signature">
@@ -123,7 +125,7 @@ function endorsementForm(editId=null){
       <div class="field"><label>Related licence / rating</label>
         <select id="endorseQualification">
           <option value="">None</option>
-          ${(S.qualifications||[]).map(q=>`<option value="${q.id}"${e.qualificationId===q.id?' selected':''}>${htmlEscape(q.name)} — ${htmlEscape(q.category)}</option>`).join('')}
+          ${(S.qualifications||[]).map(q=>`<option value="${q.id}"${e.qualificationId===q.id?' selected':''}>${htmlEscape(q.name)} — ${htmlEscape(q.category)}${q.number?' · No. '+htmlEscape(q.number):''}</option>`).join('')}
         </select>
       </div>
 
@@ -175,6 +177,8 @@ function saveEndorsement(ev){
     e.signedAt='';
     e.signedName='';
     e.signedLicence='';
+    e.signedLicenceNumber='';
+    e.signedFiFeNumber='';
   }else{
     S.endorsements.push({
       id:'e'+Date.now()+Math.random().toString(36).slice(2,6),
