@@ -18,6 +18,6 @@ test('simulator time stays distinct from helicopter flight time',()=>{
  assert.ok(source.includes("entryType:'simulator'"));
  assert.ok(source.includes('mins:0'));
  assert.ok(source.includes('simAircraftType,simPilotConfig'));
- assert.ok(read('source/index.template.html').includes('V2.47.1 — CSV SELF PIC Fix'));
- assert.ok(read('service-worker.js').includes('helilog-v2-47-1-self-pic-fix-1'));
+ assert.ok(read('source/index.template.html').includes('V2.48 — Endorsement Print Details'));
+ assert.ok(read('service-worker.js').includes('helilog-v2-48-endorsement-print-1'));
 });
