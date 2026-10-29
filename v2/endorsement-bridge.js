@@ -19,9 +19,11 @@
   }
   return data;
  }
- function signatureOf(e){
+ // Display-only qualification and signer credentials are frozen in each
+ // print snapshot. IDs remain private links for archive validation.
+ function signatureOf(e,signer,frozenSnapshot){
   if(!e.signatureData)return null;
-  return {
+  const signature={
    signatoryPersonId:e.signatoryPersonId,
    name:e.signedName||"",
    licence:e.signedLicence||"",
@@ -30,23 +32,56 @@
    source:e.signedSource||"drawn",
    approvedAt:e.signedConsentAt||e.signedAt||""
   };
+  for(const [field,signedField,profileField] of [
+   ["licenceNumber","signedLicenceNumber","licenceNumber"],
+   ["fiFeNumber","signedFiFeNumber","fiFeNumber"]
+  ]){
+   let value="";
+   if(frozenSnapshot){
+    // Pre-V2.48 originals without identifiers remain unchanged.
+    if(Object.prototype.hasOwnProperty.call(frozenSnapshot.signature||{},field))
+     value=frozenSnapshot.signature[field];
+   }else{
+    value=Object.prototype.hasOwnProperty.call(e,signedField)
+     ?e[signedField]:(signer?.[profileField]||"");
+   }
+   if(String(value||"").trim())signature[field]=String(value).trim();
+  }
+  return signature;
  }
- function convertRecord(e){
+ function convertRecord(e,db,frozenSnapshot){
   const created=(e.createdAt&&String(e.createdAt).includes("T"))?e.createdAt:e.date+"T00:00:00.000Z";
-  return {id:e.id,date:e.date,category:e.category||"Other",title:e.title||"",
+  const signer=(db.people||[]).find(p=>p.id===e.signatoryPersonId);
+  const record={id:e.id,date:e.date,category:e.category||"Other",title:e.title||"",
    text:e.text||"",location:e.location||"",qualificationId:e.qualificationId||"",
-   signatoryPersonId:e.signatoryPersonId||"",signature:signatureOf(e),
+   signatoryPersonId:e.signatoryPersonId||"",signature:signatureOf(e,signer,frozenSnapshot),
    createdAt:created,updatedAt:e.signedAt||created};
+  if(frozenSnapshot){
+   for(const field of ["qualificationPrintName","qualificationPrintNumber"]){
+    if(Object.prototype.hasOwnProperty.call(frozenSnapshot,field))
+     record[field]=frozenSnapshot[field];
+   }
+  }else{
+   const qualification=(db.qualifications||[]).find(q=>q.id===e.qualificationId);
+   if(qualification?.name)record.qualificationPrintName=String(qualification.name);
+   if(qualification?.number)record.qualificationPrintNumber=String(qualification.number);
+  }
+  return record;
  }
  function workspace(db){
   const archive=stored(db);
   const people=(db.people||[]).map(p=>({id:p.id,name:p.name,licence:p.licence||"",role:p.role||""}));
+  const snapshots=new Map();
+  for(const batch of archive.batches){
+   for(const item of batch.items||[])if(item?.snapshot && !snapshots.has(item.endorsementId))
+    snapshots.set(item.endorsementId,item.snapshot);
+  }
   const state={
    schemaVersion:2,
    meta:{workspaceId:"v2-restored-interface",environment:"development",revision:0,
     createdAt:"2026-01-01T00:00:00.000Z",updatedAt:"2026-01-01T00:00:00.000Z"},
    people,aircraft:[],flights:[],
-   endorsements:(db.endorsements||[]).map(convertRecord),
+   endorsements:(db.endorsements||[]).map(e=>convertRecord(e,db,snapshots.get(e.id))),
    archives:{flights:[],endorsements:clone(archive.batches)},
    amendments:{flights:[],endorsements:clone(archive.amendments)}
   };
