@@ -26,5 +26,5 @@ test('original Quick/Full mode, PIC, night and save path are unchanged',()=>{
  assert.match(source,/if\(!editing\)setFlightEntryMode\(quick\?'quick':'full'\)/);
  assert.match(read('service-worker.js'),/helilog-v2-48-endorsement-print-1/);
  assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.48'/);
- assert.match(read('source/index.template.html'),/HeliLog V2\.48 — CSV SELF PIC Fix · Test/);
+ assert.match(read('source/index.template.html'),/HeliLog V2\.48 — Endorsement Print Details · Test/);
 });
