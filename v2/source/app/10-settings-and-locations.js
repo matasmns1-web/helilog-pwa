@@ -184,7 +184,7 @@ function v250CloudHealthTime(raw){
  return '<time datetime="'+htmlEscape(date.toISOString())+'">'+htmlEscape(date.toLocaleString())+'</time>';
 }
 function v250CloudHealthMarkup(){
- if(!v23AccountWorkspace())return '<p class="mini">Sign in to see this device\'s sync diagnostics.</p>';
+ if(typeof window==='undefined'||typeof v23AccountWorkspace!=='function'||!v23AccountWorkspace()||!window.HeliLogV23Sync?.status)return '<p class="mini">Sign in to see this device\'s sync diagnostics.</p>';
  const st=window.HeliLogV23Sync.status();
  const state=String(st.state||'inactive');
  const names={synced:'Synced',syncing:'Sync in progress',connecting:'Checking',
