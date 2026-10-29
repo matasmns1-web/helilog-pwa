@@ -20,13 +20,13 @@
     if(typeof value==="string"&&/^data:image\/png;base64,[a-zA-Z0-9+/=]+$/.test(value))return value;
     return "";
   }
-  function signatureBlock(signature){
+  function signatureBlock(signature,omitQualification=false){
     if(!signature)return '<div class="sigempty">No signature</div>';
     const src=signatureSrc(signature.data);
     const image=src?'<img alt="Signature captured by signer" src="'+src+'">':'<b>Signature image unavailable</b>';
     return '<div class="signed"><div class="signature-image">'+image+'</div>'+
       '<div class="sigcaption"><strong>'+escapeHTML(signature.name)+'</strong> &nbsp;'+
-      escapeHTML(signature.licence||"")+'<div>Signed: '+escapeHTML(signature.signedAt||"")+'</div></div></div>';
+      (omitQualification?'':escapeHTML(signature.licence||""))+'<div>Signed: '+escapeHTML(signature.signedAt||"")+'</div></div></div>';
   }
   function credentialDetails(signature){
     if(!signature)return '';
@@ -66,7 +66,7 @@
       qualificationDetails(e)+
       '<div class="signer"><div><b>ENDORSED BY</b><div>'+escapeHTML(e.signature?.name||"—")+'</div>'+
       credentialDetails(e.signature)+'</div>'+
-      signatureBlock(e.signature)+'</div></article>';
+      signatureBlock(e.signature,true)+'</div></article>';
   }
   function styles(){
     return '<style>'+
