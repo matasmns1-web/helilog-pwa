@@ -101,6 +101,8 @@ function repairFixture(opts={}){
  let saveSuccess=true,saveCount=0,confirmCount=0;
  const ctx=vm.createContext({
   S,app:{innerHTML:''},document:{},
+  htmlEscape:x=>String(x??''),header:(title,desc,actions)=>'<header>'+title+'</header>',
+  v227IsPNG:x=>typeof x==='string'&&x.startsWith('data:image/png;base64,'),
   personById:id=>S.people.find(p=>p.id===id),
   ownerPerson:()=>owner,
   isArchivedFlight:id=>id==='signed',
