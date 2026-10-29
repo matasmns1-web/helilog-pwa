@@ -1,22 +1,28 @@
+let showArchivedAircraft=false;
 function aircraft(){
+  const inactiveCount=S.aircraft.filter(a=>a.inactive===true).length;
   editingAircraftId=null;
-  app.innerHTML=header('Aircraft','ICAO type designator is the primary logbook identifier',`<button class="btn primary" onclick="newAircraft()">＋ Add aircraft</button>`)+
-  `<div class="grid aircraft">${S.aircraft.map(a=>{
+  app.innerHTML=header('Aircraft',showArchivedAircraft?'Archived registrations remain linked to all past flights and career totals':'Active aircraft appear when adding new flights. Archiving only hides future selections.',
+    `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="showArchivedAircraft=!showArchivedAircraft;aircraft()">${showArchivedAircraft?'← Active aircraft':`Archived aircraft (${inactiveCount})`}</button><button class="btn primary" onclick="newAircraft()">＋ Add aircraft</button></div>`)+
+  `<div class="grid aircraft">${S.aircraft.filter(a=>showArchivedAircraft?a.inactive===true:a.inactive!==true).map(a=>{
     let usedFlights=effectiveFlights().filter(f=>f.aid===a.id);
     let m=usedFlights.reduce((n,f)=>n+Number(f.mins||0),0);
     return `<div class="card">
       <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
         <div>
           <div class="icao">${a.icao}</div>
-          <h3>${a.reg}</h3>
+          <h3>${htmlEscape(a.reg)}</h3>${a.inactive===true?'<span class="badge gray">Inactive</span>':''}
         </div>
-        <button class="btn" type="button" onclick="editAircraft('${a.id}')">Edit</button>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+          <button class="btn" type="button" onclick="editAircraft('${a.id}')">Edit</button>
+          <button class="btn" type="button" onclick="toggleAircraftInactive('${a.id}')">${a.inactive===true?'Reactivate':'Archive'}</button>
+        </div>
       </div>
       <div class="muted">${a.manufacturer} ${a.model} ${a.variant||''}</div>
       <p><b>${fmt(m)}</b> <span class="muted">your time · ${usedFlights.length} flight${usedFlights.length===1?'':'s'}</span></p>
       <span class="muted">✓ ${engineCode(a)==='ME'?'Multi-engine (ME)':'Single-engine (SE)'}</span>
     </div>`;
-  }).join('')}</div>`;
+  }).join('')||'<div class="card"><p class="muted">No '+(showArchivedAircraft?'archived':'active')+' aircraft. '+(showArchivedAircraft?'Switch back to active aircraft.':'Add or reactivate a registration.')+'</p></div>'}</div>`;
 }
 
 function newAircraft(editId=null){
@@ -100,9 +106,22 @@ function saveAircraft(e){
   go('aircraft');
 }
 
+function toggleAircraftInactive(id){
+  const a=S.aircraft.find(x=>x.id===id);
+  if(!a)return;
+  const prior=a.inactive;
+  if(prior!==true && !confirm('Archive '+a.reg+'? It will be hidden from new-flight selection, but past flights, printed records and type totals will stay unchanged.'))return;
+  a.inactive=prior!==true;
+  if(!save()){a.inactive=prior;return;}
+  go('aircraft');
+}
+
+let showArchivedPilots=false;
 function pilots(){
+  const inactiveCount=S.people.filter(p=>!p.isAccountHolder&&p.inactive===true).length;
   editingPersonId=null;
   let cards=S.people
+    .filter(p=>showArchivedPilots?!p.isAccountHolder&&p.inactive===true:p.isAccountHolder||p.inactive!==true)
     .slice()
     .sort((a,b)=>(b.isAccountHolder?1:0)-(a.isAccountHolder?1:0) || a.name.localeCompare(b.name))
     .map(p=>{
@@ -113,12 +132,14 @@ function pilots(){
             <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
               <h3 style="margin:0">${htmlEscape(p.name)}</h3>
               ${p.isAccountHolder?'<span class="badge">Account holder</span>':'<span class="badge gray">'+htmlEscape(p.role||'Pilot')+'</span>'}
+              ${p.inactive===true?'<span class="badge gray">Inactive</span>':''}
             </div>
             ${p.licence?`<div class="muted" style="margin-top:5px">${htmlEscape(p.licence)}</div>`:''}
           </div>
           ${p.isAccountHolder
             ? `<button class="btn" type="button" onclick="go('profile')">Profile</button>`
             : `<button class="btn" type="button" onclick="editPerson('${p.id}')">Edit</button>`}
+          ${!p.isAccountHolder?`<button class="btn" type="button" onclick="togglePersonInactive('${p.id}')">${p.inactive===true?'Reactivate':'Archive'}</button>`:''}
           <button class="btn" type="button" onclick="v227EditSignature('${p.id}')">Signature</button>
         </div>
         <p><b>${linked.length}</b> <span class="muted">flight${linked.length===1?'':'s'} recorded with this person as PIC</span></p>
@@ -127,9 +148,9 @@ function pilots(){
       </div>`;
     }).join('');
 
-  app.innerHTML=header('Pilots','Saved pilot profiles for PIC selection and endorsements',
-    `<button class="btn primary" onclick="newPerson()">＋ Add pilot</button>`)+
-    `<div class="grid aircraft">${cards||'<div class="card"><p class="muted">No saved pilots yet.</p></div>'}</div>`;
+  app.innerHTML=header('Pilots',showArchivedPilots?'Archived pilots remain linked to past flights, endorsements and signatures':'Active pilots appear in new PIC and endorsement suggestions.',
+    `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="showArchivedPilots=!showArchivedPilots;pilots()">${showArchivedPilots?'← Active pilots':`Archived pilots (${inactiveCount})`}</button><button class="btn primary" onclick="newPerson()">＋ Add pilot</button></div>`)+
+    `<div class="grid aircraft">${cards||'<div class="card"><p class="muted">No '+(showArchivedPilots?'archived':'active')+' pilot profiles.</p></div>'}</div>`;
 }
 
 function newPerson(editId=null){
@@ -204,6 +225,16 @@ function savePerson(e){
 
 
 
+
+function togglePersonInactive(id){
+  const p=personById(id);
+  if(!p||p.isAccountHolder)return;
+  const prior=p.inactive;
+  if(prior!==true && !confirm('Archive '+p.name+'? The pilot will be hidden from new PIC and endorsement suggestions, but all past records and saved signatures will remain.'))return;
+  p.inactive=prior!==true;
+  if(!save()){p.inactive=prior;return;}
+  go('pilots');
+}
 
 /* V2.27 — consent-based pilot profile signatures.
  * Records are stored as PNG snapshots per person. Endorsements embed a copy,

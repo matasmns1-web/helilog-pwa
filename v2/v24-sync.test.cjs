@@ -101,5 +101,5 @@ test('V2.19 keeps the V2.4 cloud archive and sync modules versioned together',()
   const url=file+'?v='+(['cloud-sync.js','auth-gate.js'].includes(file)?'2.39.1-operator-sync-1':'2.19-locations-1');
   assert.ok(html.includes(url),'Missing versioned script: '+url);
  }
- assert.match(html,/V2\.46 · TEST ENVIRONMENT/);
+ assert.match(html,/V2\.47 · TEST ENVIRONMENT/);
 });

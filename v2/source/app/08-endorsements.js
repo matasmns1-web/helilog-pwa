@@ -104,7 +104,7 @@ function endorsementForm(editId=null){
     signatureData:''
   };
 
-  let signers=S.people.filter(p=>!p.isAccountHolder);
+  let signers=S.people.filter(p=>!p.isAccountHolder && (p.inactive!==true || (editId && e.signatoryPersonId===p.id)));
   app.innerHTML=header(editId?'Edit endorsement':'Add endorsement',
     'Record the wording written by an instructor, examiner or other authorised person.',
     `<button class="btn" onclick="go('endorsements')">Cancel</button>`)+

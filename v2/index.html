@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.46 — Mobile Logbook Filters · Test</title>
+<title>HeliLog V2.47 — Archived Aircraft & Pilots · Test</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -625,7 +625,7 @@ html.installed-touch-app .logbook-mobile-expanded .logbook-filter-secondary{disp
 <link rel="stylesheet" href="./guide.css?v=2.29" media="screen">
 </head>
 <body><div class="layout">
-<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.46 · TEST ENVIRONMENT</span></div><nav>
+<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.47 · TEST ENVIRONMENT</span></div><nav>
 <div class="nav-group-label">Flight operations</div>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="recency">◷ Recency</button>
 <div class="nav-group-label">Records &amp; assets</div>
@@ -3827,7 +3827,7 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
 <div class="section-title">Flight identification</div>
 <div class="formgrid quick-flight-identification">
   <div class="field"><label>Date</label>${europeanDateField('date','',true)}</div>
-  <div class="field"><label>Aircraft</label><select id="aid">${S.aircraft.map(a=>`<option value="${a.id}">${a.icao} — ${a.reg}</option>`).join('')}</select></div>
+  <div class="field"><label>Aircraft</label><select id="aid">${S.aircraft.filter(a=>a.inactive!==true || (editing && existing.aid===a.id)).map(a=>`<option value="${a.id}">${htmlEscape(a.icao)} — ${htmlEscape(a.reg)}${a.inactive===true?' (inactive — existing flight)':''}</option>`).join('')}</select></div>
 
   <div class="field"><label>Departure place</label><input id="dep" class="uppercase-input" maxlength="12" autocapitalize="characters" autocorrect="off" spellcheck="false" oninput="uppercasePlaceInput(this)"></div>
   <div class="field"><label>Departure time (UTC, 24h)</label>
@@ -3875,7 +3875,7 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
   <div class="field quick-pic-field">
     <label>Name of PIC</label>
     <input id="picName" list="picPeopleList" autocomplete="off">
-    <datalist id="picPeopleList">${S.people.filter(p=>!p.isAccountHolder).map(p=>`<option value="${htmlEscape(p.name)}"></option>`).join('')}</datalist>
+    <datalist id="picPeopleList">${S.people.filter(p=>!p.isAccountHolder&&p.inactive!==true).map(p=>`<option value="${htmlEscape(p.name)}"></option>`).join('')}</datalist>
     <div class="mini">Choose a saved pilot or type a new name. New names are saved automatically.</div>
   </div>
 </div>
@@ -3997,7 +3997,7 @@ populateTimePicker('onHour','onMinute');
 
 if(existing){
   $('#date').value=formatDate(existing.date||'');
-  $('#aid').value=existing.aid||S.aircraft[0]?.id||'';
+  $('#aid').value=existing.aid||S.aircraft.find(a=>a.inactive!==true)?.id||'';
   $('#dep').value=existing.dep||'';
   $('#arr').value=existing.arr||'';
   $('#off').value=existing.off||'';
@@ -4049,7 +4049,7 @@ if(existing){
   $('#date').value=formatDate(new Date().toISOString().slice(0,10));
   if(quick){
     const lastFlight=effectiveFlights().filter(f=>!isSimulatorSession(f)).sort(compareFlightsNewest)[0];
-    if(lastFlight && S.aircraft.some(a=>a.id===lastFlight.aid)) $('#aid').value=lastFlight.aid;
+    if(lastFlight && S.aircraft.some(a=>a.id===lastFlight.aid && a.inactive!==true)) $('#aid').value=lastFlight.aid;
   }
 }
 
@@ -4473,6 +4473,7 @@ function saveFlight(){
 
   if(readEuropeanDate('date',true)===null)return showFormError('Enter a valid flight date in DD-MM-YYYY format.');
   if(!$('#aid').value) return showFormError('Please select an aircraft.');
+  if(!editingFlightId && ac($('#aid').value)?.inactive===true) return showFormError('This aircraft is archived. Reactivate it under Aircraft before adding another flight.');
   if(!$('#dep').value.trim() || !$('#arr').value.trim()) return showFormError('Please enter both departure and arrival places.');
 
   let offValid=validateTimeField('off');
@@ -4631,25 +4632,31 @@ function confirmDeleteFlight(){
   go('logbook');
 }
 
+let showArchivedAircraft=false;
 function aircraft(){
+  const inactiveCount=S.aircraft.filter(a=>a.inactive===true).length;
   editingAircraftId=null;
-  app.innerHTML=header('Aircraft','ICAO type designator is the primary logbook identifier',`<button class="btn primary" onclick="newAircraft()">＋ Add aircraft</button>`)+
-  `<div class="grid aircraft">${S.aircraft.map(a=>{
+  app.innerHTML=header('Aircraft',showArchivedAircraft?'Archived registrations remain linked to all past flights and career totals':'Active aircraft appear when adding new flights. Archiving only hides future selections.',
+    `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="showArchivedAircraft=!showArchivedAircraft;aircraft()">${showArchivedAircraft?'← Active aircraft':`Archived aircraft (${inactiveCount})`}</button><button class="btn primary" onclick="newAircraft()">＋ Add aircraft</button></div>`)+
+  `<div class="grid aircraft">${S.aircraft.filter(a=>showArchivedAircraft?a.inactive===true:a.inactive!==true).map(a=>{
     let usedFlights=effectiveFlights().filter(f=>f.aid===a.id);
     let m=usedFlights.reduce((n,f)=>n+Number(f.mins||0),0);
     return `<div class="card">
       <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
         <div>
           <div class="icao">${a.icao}</div>
-          <h3>${a.reg}</h3>
+          <h3>${htmlEscape(a.reg)}</h3>${a.inactive===true?'<span class="badge gray">Inactive</span>':''}
         </div>
-        <button class="btn" type="button" onclick="editAircraft('${a.id}')">Edit</button>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+          <button class="btn" type="button" onclick="editAircraft('${a.id}')">Edit</button>
+          <button class="btn" type="button" onclick="toggleAircraftInactive('${a.id}')">${a.inactive===true?'Reactivate':'Archive'}</button>
+        </div>
       </div>
       <div class="muted">${a.manufacturer} ${a.model} ${a.variant||''}</div>
       <p><b>${fmt(m)}</b> <span class="muted">your time · ${usedFlights.length} flight${usedFlights.length===1?'':'s'}</span></p>
       <span class="muted">✓ ${engineCode(a)==='ME'?'Multi-engine (ME)':'Single-engine (SE)'}</span>
     </div>`;
-  }).join('')}</div>`;
+  }).join('')||'<div class="card"><p class="muted">No '+(showArchivedAircraft?'archived':'active')+' aircraft. '+(showArchivedAircraft?'Switch back to active aircraft.':'Add or reactivate a registration.')+'</p></div>'}</div>`;
 }
 
 function newAircraft(editId=null){
@@ -4733,9 +4740,22 @@ function saveAircraft(e){
   go('aircraft');
 }
 
+function toggleAircraftInactive(id){
+  const a=S.aircraft.find(x=>x.id===id);
+  if(!a)return;
+  const prior=a.inactive;
+  if(prior!==true && !confirm('Archive '+a.reg+'? It will be hidden from new-flight selection, but past flights, printed records and type totals will stay unchanged.'))return;
+  a.inactive=prior!==true;
+  if(!save()){a.inactive=prior;return;}
+  go('aircraft');
+}
+
+let showArchivedPilots=false;
 function pilots(){
+  const inactiveCount=S.people.filter(p=>!p.isAccountHolder&&p.inactive===true).length;
   editingPersonId=null;
   let cards=S.people
+    .filter(p=>showArchivedPilots?!p.isAccountHolder&&p.inactive===true:p.isAccountHolder||p.inactive!==true)
     .slice()
     .sort((a,b)=>(b.isAccountHolder?1:0)-(a.isAccountHolder?1:0) || a.name.localeCompare(b.name))
     .map(p=>{
@@ -4746,12 +4766,14 @@ function pilots(){
             <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
               <h3 style="margin:0">${htmlEscape(p.name)}</h3>
               ${p.isAccountHolder?'<span class="badge">Account holder</span>':'<span class="badge gray">'+htmlEscape(p.role||'Pilot')+'</span>'}
+              ${p.inactive===true?'<span class="badge gray">Inactive</span>':''}
             </div>
             ${p.licence?`<div class="muted" style="margin-top:5px">${htmlEscape(p.licence)}</div>`:''}
           </div>
           ${p.isAccountHolder
             ? `<button class="btn" type="button" onclick="go('profile')">Profile</button>`
             : `<button class="btn" type="button" onclick="editPerson('${p.id}')">Edit</button>`}
+          ${!p.isAccountHolder?`<button class="btn" type="button" onclick="togglePersonInactive('${p.id}')">${p.inactive===true?'Reactivate':'Archive'}</button>`:''}
           <button class="btn" type="button" onclick="v227EditSignature('${p.id}')">Signature</button>
         </div>
         <p><b>${linked.length}</b> <span class="muted">flight${linked.length===1?'':'s'} recorded with this person as PIC</span></p>
@@ -4760,9 +4782,9 @@ function pilots(){
       </div>`;
     }).join('');
 
-  app.innerHTML=header('Pilots','Saved pilot profiles for PIC selection and endorsements',
-    `<button class="btn primary" onclick="newPerson()">＋ Add pilot</button>`)+
-    `<div class="grid aircraft">${cards||'<div class="card"><p class="muted">No saved pilots yet.</p></div>'}</div>`;
+  app.innerHTML=header('Pilots',showArchivedPilots?'Archived pilots remain linked to past flights, endorsements and signatures':'Active pilots appear in new PIC and endorsement suggestions.',
+    `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="showArchivedPilots=!showArchivedPilots;pilots()">${showArchivedPilots?'← Active pilots':`Archived pilots (${inactiveCount})`}</button><button class="btn primary" onclick="newPerson()">＋ Add pilot</button></div>`)+
+    `<div class="grid aircraft">${cards||'<div class="card"><p class="muted">No '+(showArchivedPilots?'archived':'active')+' pilot profiles.</p></div>'}</div>`;
 }
 
 function newPerson(editId=null){
@@ -4837,6 +4859,16 @@ function savePerson(e){
 
 
 
+
+function togglePersonInactive(id){
+  const p=personById(id);
+  if(!p||p.isAccountHolder)return;
+  const prior=p.inactive;
+  if(prior!==true && !confirm('Archive '+p.name+'? The pilot will be hidden from new PIC and endorsement suggestions, but all past records and saved signatures will remain.'))return;
+  p.inactive=prior!==true;
+  if(!save()){p.inactive=prior;return;}
+  go('pilots');
+}
 
 /* V2.27 — consent-based pilot profile signatures.
  * Records are stored as PNG snapshots per person. Endorsements embed a copy,
@@ -5030,7 +5062,7 @@ function endorsementForm(editId=null){
     signatureData:''
   };
 
-  let signers=S.people.filter(p=>!p.isAccountHolder);
+  let signers=S.people.filter(p=>!p.isAccountHolder && (p.inactive!==true || (editId && e.signatoryPersonId===p.id)));
   app.innerHTML=header(editId?'Edit endorsement':'Add endorsement',
     'Record the wording written by an instructor, examiner or other authorised person.',
     `<button class="btn" onclick="go('endorsements')">Cancel</button>`)+
@@ -7236,6 +7268,7 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {v:"V2.47",name:"Archive inactive aircraft and pilot profiles",detail:"Use Archive on Aircraft or Pilots to hide registrations and people you no longer use. Open Archived aircraft or Archived pilots to reactivate them. Historical flights, type totals, signed print pages, endorsements, saved pilot signatures and cloud synchronization are preserved. Existing draft flights and endorsements retain their original inactive selection."},
   {v:"V2.46",name:"Mobile Logbook search and filters",detail:"Keep flight search visible in the installed app and narrow screens. Use More filters to choose a date range, helicopter, pilot function, cross-country, Night or IFR. A small badge shows how many filters are active when collapsed. Filtered totals and pagination still use the entire matching logbook; no flight or archive records change."},
  {v:"V2.45.1",name:"Paginated Logbook on web and installed app",detail:"Show 10 records per page on phones and installed apps or 25 on desktop. Previous/Next controls and a clear page count make large logbooks easier to browse. Searching and filtering still cover the entire logbook, and filtered totals still include every matching entry. Pagination does not modify flight records, archives or cloud data."},
  {v:"V2.45",name:"Stability & refinement — efficient flight views",detail:"Large logbooks render more efficiently: confirmed corrections are resolved once per flight snapshot, Dashboard aircraft time is aggregated in one pass, and Logbook filtering skips unnecessary search work. Dashboard date ranges now use the correct local calendar day. No changes to saved flights, paper archives, recency qualification rules or sync data."},
