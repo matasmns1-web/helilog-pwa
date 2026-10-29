@@ -20,26 +20,53 @@
     if(typeof value==="string"&&/^data:image\/png;base64,[a-zA-Z0-9+/=]+$/.test(value))return value;
     return "";
   }
-  function signatureBlock(signature){
+  function signatureBlock(signature,omitQualification=false){
     if(!signature)return '<div class="sigempty">No signature</div>';
     const src=signatureSrc(signature.data);
     const image=src?'<img alt="Signature captured by signer" src="'+src+'">':'<b>Signature image unavailable</b>';
     return '<div class="signed"><div class="signature-image">'+image+'</div>'+
       '<div class="sigcaption"><strong>'+escapeHTML(signature.name)+'</strong> &nbsp;'+
-      escapeHTML(signature.licence||"")+'<div>Signed: '+escapeHTML(signature.signedAt||"")+'</div></div></div>';
+      (omitQualification?'':escapeHTML(signature.licence||""))+'<div>Signed: '+escapeHTML(signature.signedAt||"")+'</div></div></div>';
   }
-  function oneEntry(entry,slot){
+  function credentialDetails(signature){
+    if(!signature)return '';
+    return (signature.licence?'<div class="small">Qualification / ID: '+escapeHTML(signature.licence)+'</div>':'')+
+      (signature.licenceNumber?'<div class="small"><b>Licence No.:</b> '+escapeHTML(signature.licenceNumber)+'</div>':'')+
+      (signature.fiFeNumber?'<div class="small"><b>FI / FE No.:</b> '+escapeHTML(signature.fiFeNumber)+'</div>':'');
+  }
+  function qualificationDetails(record){
+    const name=String(record.qualificationPrintName||'').trim();
+    const number=String(record.qualificationPrintNumber||'').trim();
+    if(!name&&!number)return '';
+    return '<div class="qualification"><b>Related licence / rating:</b> '+
+      (name?escapeHTML(name):'')+(name&&number?' · ':'')+
+      (number?'No. '+escapeHTML(number):'')+'</div>';
+  }
+  function oneEntry(entry,slot,legacy=false){
+    if(legacy){
+      if(!entry)return '<div class="entry empty"><div class="slotline">ENTRY '+slot+'</div><div class="unused">— UNUSED —</div></div>';
+      const e=entry.snapshot;
+      return '<article class="entry"><div class="slotline">ENTRY '+slot+' &nbsp;·&nbsp; '+escapeHTML(entry.endorsementId)+'</div>'+
+        '<div class="meta"><span><b>DATE</b> '+formatDate(e.date)+'</span><span><b>PLACE</b> '+escapeHTML(e.location||"—")+'</span>'+
+        '<span><b>CATEGORY</b> '+escapeHTML(e.category)+'</span></div>'+
+        '<h2>'+escapeHTML(e.title)+'</h2>'+
+        '<div class="endorsement-text">'+escapeHTML(e.text)+'</div>'+
+        (e.qualificationId?'<div class="qualification"><b>Related licence/rating:</b> '+escapeHTML(e.qualificationId)+'</div>':'')+
+        '<div class="signer"><div><b>ENDORSED BY</b><div>'+escapeHTML(e.signature?.name||"—")+'</div>'+
+        '<div class="small">'+escapeHTML(e.signature?.licence||"")+'</div></div>'+
+        signatureBlock(e.signature)+'</div></article>';
+    }
     if(!entry)return '<div class="entry empty"><div class="slotline">ENTRY '+slot+'</div><div class="unused">— UNUSED —</div></div>';
     const e=entry.snapshot;
-    return '<article class="entry"><div class="slotline">ENTRY '+slot+' &nbsp;·&nbsp; '+escapeHTML(entry.endorsementId)+'</div>'+
+    return '<article class="entry"><div class="slotline">ENTRY '+slot+'</div>'+
       '<div class="meta"><span><b>DATE</b> '+formatDate(e.date)+'</span><span><b>PLACE</b> '+escapeHTML(e.location||"—")+'</span>'+
       '<span><b>CATEGORY</b> '+escapeHTML(e.category)+'</span></div>'+
       '<h2>'+escapeHTML(e.title)+'</h2>'+
       '<div class="endorsement-text">'+escapeHTML(e.text)+'</div>'+
-      (e.qualificationId?'<div class="qualification"><b>Related licence/rating:</b> '+escapeHTML(e.qualificationId)+'</div>':'')+
+      qualificationDetails(e)+
       '<div class="signer"><div><b>ENDORSED BY</b><div>'+escapeHTML(e.signature?.name||"—")+'</div>'+
-      '<div class="small">'+escapeHTML(e.signature?.licence||"")+'</div></div>'+
-      signatureBlock(e.signature)+'</div></article>';
+      credentialDetails(e.signature)+'</div>'+
+      signatureBlock(e.signature,true)+'</div></article>';
   }
   function styles(){
     return '<style>'+
@@ -64,7 +91,7 @@
     const pages=[];
     for(let p=0;p<count;p++){
       const items=batch.items.slice(p*PER_PAGE,(p+1)*PER_PAGE);
-      const entries=Array.from({length:PER_PAGE},(_,j)=>oneEntry(items[j],p*PER_PAGE+j+1)).join("");
+      const entries=Array.from({length:PER_PAGE},(_,j)=>oneEntry(items[j],p*PER_PAGE+j+1,batch.layout!=='endorsement-sheet-v2')).join("");
       pages.push('<section class="page"><div class="heading"><div><h1>PILOT MEMORANDA / ENDORSEMENTS</h1>'+
         '<div class="sub">HeliLog V2 · Paper logbook endorsement section</div></div>'+
         '<div class="page-no">Endorsement page '+(batch.firstPage+p)+'<div class="sub">Batch '+escapeHTML(batch.id)+'</div></div></div>'+

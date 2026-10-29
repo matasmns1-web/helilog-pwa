@@ -36,7 +36,7 @@ test('Data management is a dedicated Settings route, not an inline destructive p
  assert.doesNotMatch(settings,/\$\{v244ResetPanel\(\)\}/);
  assert.match(routing,/datamanagement:v244DataManagementPage/);
  assert.match(routing,/v==='datamanagement'/);
- assert.match(app,/V2\.47\.1 · TEST ENVIRONMENT/);
+ assert.match(app,/V2\.48 · TEST ENVIRONMENT/);
 });
 test('backup download works independently of disabled cloud deletion',async()=>{
  const h=harness();const before=JSON.stringify(h.S);

@@ -9,7 +9,7 @@
   "use strict";
 
   const SCHEMA_VERSION = 2;
-  const ENDORSEMENT_LAYOUT = "endorsement-sheet-v1";
+  const ENDORSEMENT_LAYOUT = "endorsement-sheet-v2";
   const ENDORSEMENTS_PER_PAGE = 3;
   const EDITABLE_FIELDS = ["date", "category", "title", "text", "location", "qualificationId", "signatoryPersonId"];
 
