@@ -193,8 +193,8 @@ test('V2.34.1 external checker is versioned, cached offline and restricted to th
  const sw=read('service-worker.js');
  assert.match(html,/prearchive-review\.js\?v=2\.29/);
  assert.match(sw,/prearchive-review\.js\?v=2\.29/);
- assert.match(sw,/helilog-v2-49-1-nonretryable-sync-1/);
- assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.49\.1'/);
+ assert.match(sw,/helilog-v2-50-cloud-health-1/);
+ assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.50'/);
  const route=read('source/app/13-routing-and-boot.js');
  assert.match(route,/archivereview:v229PreArchiveReview/);
  assert.match(route,/v==='archivereview'/);
