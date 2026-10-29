@@ -26,5 +26,5 @@ test('original Quick/Full mode, PIC, night and save path are unchanged',()=>{
  assert.match(source,/if\(!editing\)setFlightEntryMode\(quick\?'quick':'full'\)/);
  assert.match(read('service-worker.js'),/helilog-v2-49-1-nonretryable-sync-1/);
  assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.49\.1'/);
- assert.match(read('source/index.template.html'),/HeliLog V2\.49\.1 — Cloud Conflict Review · Test/);
+ assert.match(read('source/index.template.html'),/HeliLog V2\.49\.1 — Cloud Conflict CPU Fix · Test/);
 });
