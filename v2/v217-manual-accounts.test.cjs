@@ -34,7 +34,7 @@ test("staging stays connected only to existing test backend and private login",(
  assert.match(cloud,/owner|auth\.uid|verifiedClient/i);
 });
 test("version and offline PWA references are coherent",()=>{
- assert.match(page,/<title>HeliLog V2\.48 — CSV SELF PIC Fix · Test<\/title>/);
+ assert.match(page,/<title>HeliLog V2\.48 — Endorsement Print Details · Test<\/title>/);
  assert.equal(manifest.name,"HeliLog V2.48 — Endorsement Print Details Test");
  assert.match(worker,/helilog-v2-48-endorsement-print-1/);
  assert.match(gate,/HELILOG_TEST_VERSION='V2\.48'/);
