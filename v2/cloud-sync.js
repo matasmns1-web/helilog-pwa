@@ -365,7 +365,10 @@
     }
     if(!isActive()||owner!==ownerAtStart)return false;
     if(result.error){
-     if(result.error.code==="23505" || result.error.code==="23503" || result.error.code==="40001"){
+     // PT409 is HeliLog's non-retryable HTTP 409 conflict in PostgREST 14.
+// Retain 40001 for compatibility with unpatched/legacy backends.
+     if(result.error.code==="23505" || result.error.code==="23503" ||
+        result.error.code==="40001" || result.error.code==="PT409"){
       q.conflict=true;state="conflict";problem="Cloud record conflict for "+k+". Local changes were preserved.";persist();notify();continue;
      }
      throw Error("Sync "+k+": "+result.error.message);
