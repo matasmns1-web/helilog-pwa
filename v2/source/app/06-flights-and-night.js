@@ -194,7 +194,7 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
 <div class="section-title">Flight identification</div>
 <div class="formgrid quick-flight-identification">
   <div class="field"><label>Date</label>${europeanDateField('date','',true)}</div>
-  <div class="field"><label>Aircraft</label><select id="aid">${S.aircraft.map(a=>`<option value="${a.id}">${a.icao} — ${a.reg}</option>`).join('')}</select></div>
+  <div class="field"><label>Aircraft</label><select id="aid">${S.aircraft.filter(a=>a.inactive!==true || (editing && existing.aid===a.id)).map(a=>`<option value="${a.id}">${htmlEscape(a.icao)} — ${htmlEscape(a.reg)}${a.inactive===true?' (inactive — existing flight)':''}</option>`).join('')}</select></div>
 
   <div class="field"><label>Departure place</label><input id="dep" class="uppercase-input" maxlength="12" autocapitalize="characters" autocorrect="off" spellcheck="false" oninput="uppercasePlaceInput(this)"></div>
   <div class="field"><label>Departure time (UTC, 24h)</label>
@@ -242,7 +242,7 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
   <div class="field quick-pic-field">
     <label>Name of PIC</label>
     <input id="picName" list="picPeopleList" autocomplete="off">
-    <datalist id="picPeopleList">${S.people.filter(p=>!p.isAccountHolder).map(p=>`<option value="${htmlEscape(p.name)}"></option>`).join('')}</datalist>
+    <datalist id="picPeopleList">${S.people.filter(p=>!p.isAccountHolder&&p.inactive!==true).map(p=>`<option value="${htmlEscape(p.name)}"></option>`).join('')}</datalist>
     <div class="mini">Choose a saved pilot or type a new name. New names are saved automatically.</div>
   </div>
 </div>
@@ -364,7 +364,7 @@ populateTimePicker('onHour','onMinute');
 
 if(existing){
   $('#date').value=formatDate(existing.date||'');
-  $('#aid').value=existing.aid||S.aircraft[0]?.id||'';
+  $('#aid').value=existing.aid||S.aircraft.find(a=>a.inactive!==true)?.id||'';
   $('#dep').value=existing.dep||'';
   $('#arr').value=existing.arr||'';
   $('#off').value=existing.off||'';
@@ -416,7 +416,7 @@ if(existing){
   $('#date').value=formatDate(new Date().toISOString().slice(0,10));
   if(quick){
     const lastFlight=effectiveFlights().filter(f=>!isSimulatorSession(f)).sort(compareFlightsNewest)[0];
-    if(lastFlight && S.aircraft.some(a=>a.id===lastFlight.aid)) $('#aid').value=lastFlight.aid;
+    if(lastFlight && S.aircraft.some(a=>a.id===lastFlight.aid && a.inactive!==true)) $('#aid').value=lastFlight.aid;
   }
 }
 
@@ -840,6 +840,7 @@ function saveFlight(){
 
   if(readEuropeanDate('date',true)===null)return showFormError('Enter a valid flight date in DD-MM-YYYY format.');
   if(!$('#aid').value) return showFormError('Please select an aircraft.');
+  if(!editingFlightId && ac($('#aid').value)?.inactive===true) return showFormError('This aircraft is archived. Reactivate it under Aircraft before adding another flight.');
   if(!$('#dep').value.trim() || !$('#arr').value.trim()) return showFormError('Please enter both departure and arrival places.');
 
   let offValid=validateTimeField('off');
