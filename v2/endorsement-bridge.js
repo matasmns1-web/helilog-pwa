@@ -57,15 +57,45 @@
    signatoryPersonId:e.signatoryPersonId||"",signature:signatureOf(e,signer,frozenSnapshot),
    createdAt:created,updatedAt:e.signedAt||created};
   if(frozenSnapshot){
-   for(const field of ["qualificationPrintName","qualificationPrintNumber"]){
-    if(Object.prototype.hasOwnProperty.call(frozenSnapshot,field))
-     record[field]=frozenSnapshot[field];
+   // V2.48.1: the confirmed snapshot is authoritative for its exact stored
+   // print metadata and property layout. Older snapshots did not have today's
+   // qualification/signer fields. Reconstructing them can trigger a false
+   // archive-integrity mismatch even when the signed source is unchanged.
+   //
+   // Validate the original signed facts against the current source first:
+   // NEVER trust a frozen snapshot as a substitute for modified signed data.
+   const immutableFields=["id","date","category","title","text","location",
+    "qualificationId","signatoryPersonId","createdAt","updatedAt"];
+   for(const key of immutableFields){
+    if(JSON.stringify(record[key])!==JSON.stringify(frozenSnapshot[key]))
+     throw Error("Endorsement archive integrity error: archived signed source differs in "+key+": "+e.id+
+      ". Keep the signed original and review any corrections.");
    }
-  }else{
-   const qualification=(db.qualifications||[]).find(q=>q.id===e.qualificationId);
-   if(qualification?.name)record.qualificationPrintName=String(qualification.name);
-   if(qualification?.number)record.qualificationPrintNumber=String(qualification.number);
+   const actualSignature=record.signature;
+   const frozenSignature=frozenSnapshot.signature;
+   if(!actualSignature||!frozenSignature)
+    throw Error("Endorsement archive integrity error: archived signature is missing: "+e.id);
+   for(const key of ["signatoryPersonId","name","licence","data","signedAt","source","approvedAt"]){
+    if(JSON.stringify(actualSignature[key])!==JSON.stringify(frozenSignature[key]))
+     throw Error("Endorsement archive integrity error: archived signed signature differs in "+key+": "+e.id+
+      ". Keep the signed original and review any corrections.");
+   }
+   // Explicitly captured numbers are part of signed record history; changes to
+   // these must not be quietly adopted from a later pilot-profile edit.
+   for(const [sourceKey,printedKey] of [
+    ["signedLicenceNumber","licenceNumber"],["signedFiFeNumber","fiFeNumber"]]){
+    if(Object.prototype.hasOwnProperty.call(e,sourceKey) &&
+       String(e[sourceKey]||"").trim()!==String(frozenSignature[printedKey]||"").trim())
+     throw Error("Endorsement archive integrity error: archived signed identifier differs: "+e.id);
+   }
+   // Preserve all original keys (including empty metadata) and their order.
+   // The domain validator still compares this frozen signed original against
+   // the archived snapshot, and signed content was independently checked above.
+   return clone(frozenSnapshot);
   }
+  const qualification=(db.qualifications||[]).find(q=>q.id===e.qualificationId);
+  if(qualification?.name)record.qualificationPrintName=String(qualification.name);
+  if(qualification?.number)record.qualificationPrintNumber=String(qualification.number);
   return record;
  }
  function workspace(db){

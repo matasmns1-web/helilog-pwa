@@ -1,4 +1,4 @@
-const CACHE='helilog-v2-48-endorsement-print-1';
+const CACHE='helilog-v2-48-1-endorsement-archive-1';
 const SHELL=[
   './',
   './index.html',
