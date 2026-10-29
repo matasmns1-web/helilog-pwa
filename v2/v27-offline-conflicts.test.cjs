@@ -157,11 +157,83 @@ test("archived records cannot be resolved through ordinary conflict controls",as
  assert.equal(b.api.conflicts()[0].reviewable,false);
  await assert.rejects(()=>b.api.previewRecordConflict("aircraft","a1"),/protected archive recovery/);
 });
-test("records changed locally after queuing require separate recovery",async()=>{
- const {b}=await conflict();
+test("V2.49: stale pending queue opens three-way review without uploading anything",async()=>{
+ const {s,b}=await conflict(),writes=s.writes;
  b.data.aircraft[0].reg="LY-NOT-QUEUED";
- await assert.rejects(()=>b.api.previewRecordConflict("aircraft","a1"),/pending queue/);
- assert.equal(b.data.aircraft[0].reg,"LY-NOT-QUEUED");
+ const preview=await b.api.previewRecordConflict("aircraft","a1");
+ assert.equal(preview.local.reg,"LY-NOT-QUEUED");
+ assert.equal(preview.queued.reg,"LY-OFFLINE");
+ assert.equal(preview.cloud.reg,"LY-CLOUD");
+ assert.equal(preview.queueDiverged,true);
+ assert.equal(s.writes,writes);
+ assert.equal(b.api.status().pending,1);
+});
+test("V2.49: keeping current device copy safely updates queued payload and sends only after explicit choice",async()=>{
+ const {s,b}=await conflict(),writes=s.writes;
+ b.data.aircraft[0].reg="LY-NOT-QUEUED";
+ await b.api.previewRecordConflict("aircraft","a1");
+ const result=await b.api.resolveRecordConflict("local");
+ const backup=JSON.parse(b.store.get(result.backupKey));
+ assert.equal(backup.workspace.aircraft[0].reg,"LY-NOT-QUEUED");
+ assert.equal(backup.pending[0].payload.reg,"LY-OFFLINE");
+ assert.equal(backup.cloudRow.payload.reg,"LY-CLOUD");
+ assert.equal(s.writes,writes);
+ const queue=JSON.parse(b.store.get("helilog_v23_queue_"+USER));
+ assert.equal(queue[0].payload.reg,"LY-NOT-QUEUED");
+ assert.equal(queue[0].baseRevision,2);
+ await b.api.refresh();await tick();
+ assert.equal(s.rows[0].payload.reg,"LY-NOT-QUEUED");
+ assert.equal(b.api.status().state,"synced");
+});
+test("V2.49: choosing the older unsent copy safely restores it and syncs it only after approval",async()=>{
+ const {s,b}=await conflict(),writes=s.writes;
+ b.data.aircraft[0].reg="LY-NOT-QUEUED";
+ await b.api.previewRecordConflict("aircraft","a1");
+ const result=await b.api.resolveRecordConflict("queued");
+ const backup=JSON.parse(b.store.get(result.backupKey));
+ assert.equal(backup.workspace.aircraft[0].reg,"LY-NOT-QUEUED");
+ assert.equal(backup.pending[0].payload.reg,"LY-OFFLINE");
+ assert.equal(b.data.aircraft[0].reg,"LY-OFFLINE");
+ assert.equal(s.writes,writes);
+ await b.api.refresh();await tick();
+ assert.equal(s.rows[0].payload.reg,"LY-OFFLINE");
+ assert.equal(b.api.status().state,"synced");
+});
+test("V2.49: choosing cloud preserves both device copies, no upload",async()=>{
+ const {s,b}=await conflict(),writes=s.writes;
+ b.data.aircraft[0].reg="LY-NOT-QUEUED";
+ await b.api.previewRecordConflict("aircraft","a1");
+ const result=await b.api.resolveRecordConflict("cloud");
+ const backup=JSON.parse(b.store.get(result.backupKey));
+ assert.equal(backup.workspace.aircraft[0].reg,"LY-NOT-QUEUED");
+ assert.equal(backup.pending[0].payload.reg,"LY-OFFLINE");
+ assert.equal(b.data.aircraft[0].reg,"LY-CLOUD");
+ assert.equal(s.writes,writes);
+ await b.api.refresh();
+ assert.equal(b.api.status().state,"synced");
+});
+test("V2.49: stale preview or missing verified backup never changes current, queued, or cloud data",async()=>{
+ const {s,b}=await conflict(),writes=s.writes;
+ b.data.aircraft[0].reg="LY-UNQUEUED";
+ await b.api.previewRecordConflict("aircraft","a1");
+ b.data.aircraft[0].reg="LY-CHANGED-AFTER-PREVIEW";
+ await assert.rejects(()=>b.api.resolveRecordConflict("local"),/changed since review/);
+ assert.equal(s.writes,writes);
+ const current=await b.api.previewRecordConflict("aircraft","a1");
+ assert.equal(current.local.reg,"LY-CHANGED-AFTER-PREVIEW");
+ b.failBackup();
+ await assert.rejects(()=>b.api.resolveRecordConflict("queued"),/No space for backup/);
+ assert.equal(b.data.aircraft[0].reg,"LY-CHANGED-AFTER-PREVIEW");
+ assert.equal(s.rows[0].payload.reg,"LY-CLOUD");
+ const queue=JSON.parse(b.store.get("helilog_v23_queue_"+USER));
+ assert.equal(queue[0].payload.reg,"LY-OFFLINE");
+});
+test("V2.49: queued choice is not offered when queue and current device already match",async()=>{
+ const {b}=await conflict();
+ const p=await b.api.previewRecordConflict("aircraft","a1");
+ assert.equal(p.queueDiverged,false);
+ assert.equal(p.queued,null);
+ await assert.rejects(()=>b.api.resolveRecordConflict("queued"),/changed since review|Pending edits changed/);
 });
 
 test("adopting remote aircraft deletion cannot orphan local flights",async()=>{

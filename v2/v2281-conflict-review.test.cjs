@@ -53,15 +53,16 @@ test("Cloud page puts a labelled, device-specific issue panel before the ordinar
 test("record comparison hides raw saved signature images and never chooses a copy automatically",()=>{
  assert.match(view,/key==='savedSignatureData'\|\|key==='signatureData'/);
  assert.match(view,/id="v2281RecordComparison"/);
- assert.match(view,/Keep this device copy/);
+ assert.match(view,/Keep current device copy/);
+ assert.match(view,/Use earlier unsent copy/);
  assert.match(view,/Use current cloud copy/);
  assert.doesNotMatch(gate,/onclick="go\(\\'cloud\\'\)">Review on this device/);
  assert.match(gate,/v2281OpenConflictReview\(event\)/);
 });
 test("hotfix updates PWA cache without touching production, print or cloud database schema",()=>{
- assert.match(worker,/helilog-v2-48-1-endorsement-archive-1/);
- assert.match(read("source/index.template.html"),/V2\.48\.1/);
- assert.match(read("auth-gate.js"),/HELILOG_TEST_VERSION='V2\.48\.1'/);
+ assert.match(worker,/helilog-v2-49-cloud-conflict-review-1/);
+ assert.match(read("source/index.template.html"),/V2\.49/);
+ assert.match(read("auth-gate.js"),/HELILOG_TEST_VERSION='V2\.49'/);
  assert.doesNotMatch(read("print.js"),/v2281OpenConflictReview/);
  assert.doesNotMatch(read("archive-integrity.js"),/v2281OpenConflictReview/);
 });
