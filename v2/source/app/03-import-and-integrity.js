@@ -443,6 +443,11 @@ async function handleCSVFile(e){
       if(total!==null && ifr!==null && ifr>total) errors.push(`Row ${rowNo}: ifr_time exceeds total_time.`);
       if(!roles.includes(role)) errors.push(`Row ${rowNo}: pilot_function must be ${roles.join(', ')}.`);
       if(!get('pic_name')) errors.push(`Row ${rowNo}: pic_name is required.`);
+      const importedPICName=get('pic_name').trim();
+      if(!['PIC','SOLO'].includes(role) && (
+        importedPICName.toUpperCase()==='SELF' ||
+        (S.pilot.name && importedPICName.toLowerCase()===S.pilot.name.trim().toLowerCase())
+      ))errors.push(`Row ${rowNo}: for ${role}, pic_name must identify the commander, not SELF or the account holder.`);
       if(xc===null) errors.push(`Row ${rowNo}: cross_country must be yes/no or true/false.`);
 
       parsed.push({
@@ -508,6 +513,11 @@ function confirmCSVImport(){
     alert('There are no new flights to import. All matching records already exist.');
     return;
   }
+  if(additions.some(item=>item.entryType!=='simulator'&&['PIC','SOLO'].includes(item.role)) &&
+     !ownerPerson()?.isAccountHolder){
+    alert('Complete the account-holder pilot profile before importing PIC or SOLO flights.');
+    return;
+  }
   let aircraftAdded=0;
   additions.forEach(item=>{
     if(item.entryType==='simulator'){
@@ -534,14 +544,15 @@ function confirmCSVImport(){
       S.aircraft.push(a); aircraftAdded++;
     }
 
-    let importedPerson=item.picName.toLowerCase()===S.pilot.name.toLowerCase()
-      ? ownerPerson()
-      : ensurePersonForName(item.picName);
+    // PIC and SOLO mean the logbook owner is the pilot. SELF is a display
+    // convention, never a separate commander/person profile.
+    const isOwnerFlight=['PIC','SOLO'].includes(item.role);
+    const importedPerson=isOwnerFlight?ownerPerson():ensurePersonForName(item.picName);
 
     S.flights.push({
       id:'f'+Date.now()+Math.random().toString(36).slice(2,8),
       date:item.date,aid:a.id,dep:item.dep,arr:item.arr,off:item.off,on:item.on,
-      mins:item.mins,role:item.role,picName:importedPerson?.name||item.picName,
+      mins:item.mins,role:item.role,picName:isOwnerFlight?'SELF':(importedPerson?.name||item.picName),
       picPersonId:importedPerson?.id||'',
       pilotConfig:item.pilotConfig||'single',
       nightMin:item.nightMin,ifrMin:item.ifrMin,

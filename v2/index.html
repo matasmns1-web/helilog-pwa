@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.47 — Archived Aircraft & Pilots · Test</title>
+<title>HeliLog V2.47.1 — CSV SELF PIC Fix · Test</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -625,7 +625,7 @@ html.installed-touch-app .logbook-mobile-expanded .logbook-filter-secondary{disp
 <link rel="stylesheet" href="./guide.css?v=2.29" media="screen">
 </head>
 <body><div class="layout">
-<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.47 · TEST ENVIRONMENT</span></div><nav>
+<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.47.1 · TEST ENVIRONMENT</span></div><nav>
 <div class="nav-group-label">Flight operations</div>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="recency">◷ Recency</button>
 <div class="nav-group-label">Records &amp; assets</div>
@@ -2222,6 +2222,11 @@ async function handleCSVFile(e){
       if(total!==null && ifr!==null && ifr>total) errors.push(`Row ${rowNo}: ifr_time exceeds total_time.`);
       if(!roles.includes(role)) errors.push(`Row ${rowNo}: pilot_function must be ${roles.join(', ')}.`);
       if(!get('pic_name')) errors.push(`Row ${rowNo}: pic_name is required.`);
+      const importedPICName=get('pic_name').trim();
+      if(!['PIC','SOLO'].includes(role) && (
+        importedPICName.toUpperCase()==='SELF' ||
+        (S.pilot.name && importedPICName.toLowerCase()===S.pilot.name.trim().toLowerCase())
+      ))errors.push(`Row ${rowNo}: for ${role}, pic_name must identify the commander, not SELF or the account holder.`);
       if(xc===null) errors.push(`Row ${rowNo}: cross_country must be yes/no or true/false.`);
 
       parsed.push({
@@ -2287,6 +2292,11 @@ function confirmCSVImport(){
     alert('There are no new flights to import. All matching records already exist.');
     return;
   }
+  if(additions.some(item=>item.entryType!=='simulator'&&['PIC','SOLO'].includes(item.role)) &&
+     !ownerPerson()?.isAccountHolder){
+    alert('Complete the account-holder pilot profile before importing PIC or SOLO flights.');
+    return;
+  }
   let aircraftAdded=0;
   additions.forEach(item=>{
     if(item.entryType==='simulator'){
@@ -2313,14 +2323,15 @@ function confirmCSVImport(){
       S.aircraft.push(a); aircraftAdded++;
     }
 
-    let importedPerson=item.picName.toLowerCase()===S.pilot.name.toLowerCase()
-      ? ownerPerson()
-      : ensurePersonForName(item.picName);
+    // PIC and SOLO mean the logbook owner is the pilot. SELF is a display
+    // convention, never a separate commander/person profile.
+    const isOwnerFlight=['PIC','SOLO'].includes(item.role);
+    const importedPerson=isOwnerFlight?ownerPerson():ensurePersonForName(item.picName);
 
     S.flights.push({
       id:'f'+Date.now()+Math.random().toString(36).slice(2,8),
       date:item.date,aid:a.id,dep:item.dep,arr:item.arr,off:item.off,on:item.on,
-      mins:item.mins,role:item.role,picName:importedPerson?.name||item.picName,
+      mins:item.mins,role:item.role,picName:isOwnerFlight?'SELF':(importedPerson?.name||item.picName),
       picPersonId:importedPerson?.id||'',
       pilotConfig:item.pilotConfig||'single',
       nightMin:item.nightMin,ifrMin:item.ifrMin,
@@ -4518,7 +4529,7 @@ function saveFlight(){
   let picName=$('#picName').value.trim();
   if(['PIC','SOLO'].includes(role))picName='SELF';
   if(!picName) return showFormError('Please enter the name of the PIC.');
-  if(!['PIC','SOLO'].includes(role) && picName.toLowerCase()===S.pilot.name.toLowerCase()){
+  if(!['PIC','SOLO'].includes(role) && (picName.toUpperCase()==='SELF' || picName.toLowerCase()===S.pilot.name.toLowerCase())){
     return showFormError('For '+role+', Name of PIC must be the commander/PIC of the flight, not the account holder.');
   }
 
@@ -4750,6 +4761,47 @@ function toggleAircraftInactive(id){
   go('aircraft');
 }
 
+// Literal SELF is a PIC display value, not an independent pilot profile.
+function isLegacySelfPilotProfile(person){
+  return !!person && !person.isAccountHolder && String(person.name||'').trim().toUpperCase()==='SELF';
+}
+function repairImportedSelfProfile(id){
+  const legacy=personById(id),owner=ownerPerson();
+  if(!isLegacySelfPilotProfile(legacy) || !owner?.isAccountHolder || owner.id===legacy?.id){
+    alert('The account-holder profile is unavailable. No records were changed.');
+    return;
+  }
+  const eligible=S.flights.filter(f=>!isSimulatorSession(f) &&
+    ['PIC','SOLO'].includes(f.role) && !isArchivedFlight(f.id) &&
+    (f.picPersonId===legacy.id ||
+      (!f.picPersonId && String(f.picName||'').trim().toUpperCase()==='SELF')));
+  const frozen=S.flights.filter(f=>isArchivedFlight(f.id) && f.picPersonId===legacy.id);
+  if(!eligible.length && !S.people.includes(legacy))return;
+  if(!confirm('Repair '+eligible.length+' unarchived PIC/SOLO flight(s) linked to SELF? They will be linked to your account-holder profile. '+frozen.length+' archived flight(s) will remain unchanged. An unneeded SELF profile will be removed; otherwise it will be hidden.'))return;
+  const oldPeople=S.people;
+  const before=eligible.map(f=>({f,picName:f.picName,picPersonId:f.picPersonId}));
+  const oldInactive=legacy.inactive;
+  eligible.forEach(f=>{f.picPersonId=owner.id;f.picName='SELF';});
+  const stillReferenced=S.flights.some(f=>f.picPersonId===legacy.id) ||
+    (S.endorsements||[]).some(e=>e.signatoryPersonId===legacy.id);
+  const hasProfileData=!!(
+    legacy.savedSignatureData || legacy.savedSignatureAt || legacy.savedSignatureConsentAt ||
+    String(legacy.licence||'').trim() || String(legacy.notes||'').trim() ||
+    (legacy.role && legacy.role!=='Pilot')
+  );
+  const removed=!stillReferenced&&!hasProfileData;
+  if(removed) S.people=S.people.filter(p=>p.id!==legacy.id);
+  else legacy.inactive=true;
+  if(!save()){
+    before.forEach(({f,picName,picPersonId})=>{f.picName=picName;f.picPersonId=picPersonId;});
+    S.people=oldPeople;
+    legacy.inactive=oldInactive;
+    return;
+  }
+  alert('Repaired '+eligible.length+' unarchived PIC/SOLO flight(s). The original archived records were not modified. '+(removed?'Unused SELF profile removed.':'SELF profile retained under Archived pilots because it is still referenced or contains saved information.'));
+  pilots();
+}
+
 let showArchivedPilots=false;
 function pilots(){
   const inactiveCount=S.people.filter(p=>!p.isAccountHolder&&p.inactive===true).length;
@@ -4774,6 +4826,7 @@ function pilots(){
             ? `<button class="btn" type="button" onclick="go('profile')">Profile</button>`
             : `<button class="btn" type="button" onclick="editPerson('${p.id}')">Edit</button>`}
           ${!p.isAccountHolder?`<button class="btn" type="button" onclick="togglePersonInactive('${p.id}')">${p.inactive===true?'Reactivate':'Archive'}</button>`:''}
+          ${isLegacySelfPilotProfile(p)?`<button class="btn" type="button" onclick="repairImportedSelfProfile('${p.id}')">Repair SELF imports</button>`:''}
           <button class="btn" type="button" onclick="v227EditSignature('${p.id}')">Signature</button>
         </div>
         <p><b>${linked.length}</b> <span class="muted">flight${linked.length===1?'':'s'} recorded with this person as PIC</span></p>
@@ -7268,6 +7321,7 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {v:"V2.47.1",name:"CSV SELF PIC import and safe profile repair",detail:"Imported PIC/SOLO flights use the account holder as PIC and show SELF without creating another pilot profile. Non-PIC records must name their actual commander. If an earlier import created a separate SELF pilot, use Pilots → Repair SELF imports to relink unarchived owner flights; signed archived records remain untouched. Unused placeholder profiles are removed, otherwise retained in Archived pilots."},
   {v:"V2.47",name:"Archive inactive aircraft and pilot profiles",detail:"Use Archive on Aircraft or Pilots to hide registrations and people you no longer use. Open Archived aircraft or Archived pilots to reactivate them. Historical flights, type totals, signed print pages, endorsements, saved pilot signatures and cloud synchronization are preserved. Existing draft flights and endorsements retain their original inactive selection."},
   {v:"V2.46",name:"Mobile Logbook search and filters",detail:"Keep flight search visible in the installed app and narrow screens. Use More filters to choose a date range, helicopter, pilot function, cross-country, Night or IFR. A small badge shows how many filters are active when collapsed. Filtered totals and pagination still use the entire matching logbook; no flight or archive records change."},
  {v:"V2.45.1",name:"Paginated Logbook on web and installed app",detail:"Show 10 records per page on phones and installed apps or 25 on desktop. Previous/Next controls and a clear page count make large logbooks easier to browse. Searching and filtering still cover the entire logbook, and filtered totals still include every matching entry. Pagination does not modify flight records, archives or cloud data."},

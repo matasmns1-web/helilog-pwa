@@ -116,6 +116,47 @@ function toggleAircraftInactive(id){
   go('aircraft');
 }
 
+// Literal SELF is a PIC display value, not an independent pilot profile.
+function isLegacySelfPilotProfile(person){
+  return !!person && !person.isAccountHolder && String(person.name||'').trim().toUpperCase()==='SELF';
+}
+function repairImportedSelfProfile(id){
+  const legacy=personById(id),owner=ownerPerson();
+  if(!isLegacySelfPilotProfile(legacy) || !owner?.isAccountHolder || owner.id===legacy?.id){
+    alert('The account-holder profile is unavailable. No records were changed.');
+    return;
+  }
+  const eligible=S.flights.filter(f=>!isSimulatorSession(f) &&
+    ['PIC','SOLO'].includes(f.role) && !isArchivedFlight(f.id) &&
+    (f.picPersonId===legacy.id ||
+      (!f.picPersonId && String(f.picName||'').trim().toUpperCase()==='SELF')));
+  const frozen=S.flights.filter(f=>isArchivedFlight(f.id) && f.picPersonId===legacy.id);
+  if(!eligible.length && !S.people.includes(legacy))return;
+  if(!confirm('Repair '+eligible.length+' unarchived PIC/SOLO flight(s) linked to SELF? They will be linked to your account-holder profile. '+frozen.length+' archived flight(s) will remain unchanged. An unneeded SELF profile will be removed; otherwise it will be hidden.'))return;
+  const oldPeople=S.people;
+  const before=eligible.map(f=>({f,picName:f.picName,picPersonId:f.picPersonId}));
+  const oldInactive=legacy.inactive;
+  eligible.forEach(f=>{f.picPersonId=owner.id;f.picName='SELF';});
+  const stillReferenced=S.flights.some(f=>f.picPersonId===legacy.id) ||
+    (S.endorsements||[]).some(e=>e.signatoryPersonId===legacy.id);
+  const hasProfileData=!!(
+    legacy.savedSignatureData || legacy.savedSignatureAt || legacy.savedSignatureConsentAt ||
+    String(legacy.licence||'').trim() || String(legacy.notes||'').trim() ||
+    (legacy.role && legacy.role!=='Pilot')
+  );
+  const removed=!stillReferenced&&!hasProfileData;
+  if(removed) S.people=S.people.filter(p=>p.id!==legacy.id);
+  else legacy.inactive=true;
+  if(!save()){
+    before.forEach(({f,picName,picPersonId})=>{f.picName=picName;f.picPersonId=picPersonId;});
+    S.people=oldPeople;
+    legacy.inactive=oldInactive;
+    return;
+  }
+  alert('Repaired '+eligible.length+' unarchived PIC/SOLO flight(s). The original archived records were not modified. '+(removed?'Unused SELF profile removed.':'SELF profile retained under Archived pilots because it is still referenced or contains saved information.'));
+  pilots();
+}
+
 let showArchivedPilots=false;
 function pilots(){
   const inactiveCount=S.people.filter(p=>!p.isAccountHolder&&p.inactive===true).length;
@@ -140,6 +181,7 @@ function pilots(){
             ? `<button class="btn" type="button" onclick="go('profile')">Profile</button>`
             : `<button class="btn" type="button" onclick="editPerson('${p.id}')">Edit</button>`}
           ${!p.isAccountHolder?`<button class="btn" type="button" onclick="togglePersonInactive('${p.id}')">${p.inactive===true?'Reactivate':'Archive'}</button>`:''}
+          ${isLegacySelfPilotProfile(p)?`<button class="btn" type="button" onclick="repairImportedSelfProfile('${p.id}')">Repair SELF imports</button>`:''}
           <button class="btn" type="button" onclick="v227EditSignature('${p.id}')">Signature</button>
         </div>
         <p><b>${linked.length}</b> <span class="muted">flight${linked.length===1?'':'s'} recorded with this person as PIC</span></p>

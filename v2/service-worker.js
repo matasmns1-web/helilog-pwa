@@ -1,4 +1,4 @@
-const CACHE='helilog-v2-47-inactive-assets-1';
+const CACHE='helilog-v2-47-1-self-pic-fix-1';
 const SHELL=[
   './',
   './index.html',
