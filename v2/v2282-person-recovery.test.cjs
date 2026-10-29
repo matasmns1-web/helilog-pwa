@@ -131,6 +131,6 @@ test("pilot signature comparison never displays raw PNGs and remains explicit",(
  assert.match(v,/Signature images are hidden/);
  assert.match(v,/Unsent local difference — review required/);
  assert.match(v,/v27ReviewRecordConflict/);
- assert.match(read("service-worker.js"),/helilog-v2-45-1-pagination-1/);
- assert.match(read("source/index.template.html"),/V2\.45\.1/);
+ assert.match(read("service-worker.js"),/helilog-v2-46-mobile-filters-1/);
+ assert.match(read("source/index.template.html"),/V2\.46/);
 });
