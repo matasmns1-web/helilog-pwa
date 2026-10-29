@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.45 — Stability & Refinement · Test</title>
+<title>HeliLog V2.45.1 — Logbook Pagination · Test</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -584,12 +584,27 @@ html.helilog-test-mode .brand::after{
 .special-count-fields label{font-size:11px;min-height:15px}
 .special-count-fields input[type="number"]{text-align:center;padding-inline:4px;font-variant-numeric:tabular-nums}
 @media(max-width:520px){.special-count-fields{grid-template-columns:minmax(0,1fr) repeat(2,minmax(0,.82fr));column-gap:5px}.special-count-fields label{font-size:10px}}
+
+/* V2.45.1: compact logbook paging instead of rendering the full history. */
+.logbook-pagination{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:14px 0 2px}
+.logbook-pagination[hidden]{display:none!important}
+.logbook-page-summary{font-size:12px;color:var(--muted)}
+.logbook-page-controls{display:flex;align-items:center;gap:10px}
+.logbook-page-controls .btn{min-width:84px}
+.logbook-page-label{font-size:13px;font-weight:750;white-space:nowrap;font-variant-numeric:tabular-nums}
+.logbook-page-controls .btn:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:650px){
+ .logbook-pagination{align-items:stretch;flex-direction:column;gap:9px}
+ .logbook-page-controls{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px}
+ .logbook-page-controls .btn{min-width:0;min-height:44px}
+ .logbook-page-label{text-align:center}
+}
 </style>
 <link rel="stylesheet" href="./dark-cockpit.css?v=2.20-cockpit-3" media="screen">
 <link rel="stylesheet" href="./guide.css?v=2.29" media="screen">
 </head>
 <body><div class="layout">
-<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.45 · TEST ENVIRONMENT</span></div><nav>
+<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.45.1 · TEST ENVIRONMENT</span></div><nav>
 <div class="nav-group-label">Flight operations</div>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="recency">◷ Recency</button>
 <div class="nav-group-label">Records &amp; assets</div>
@@ -1544,6 +1559,29 @@ function dashboard(){
   </div>`;
 }
 function row(f){let a=ac(f.aid);return `<tr class="click" onclick="flight('${f.id}')"><td>${displayDate(f.date)}</td><td><b>${isSimulatorSession(f)?'SIM':a?.icao||'—'}</b></td><td>${isSimulatorSession(f)?htmlEscape(f.stdType):f.dep+' → '+f.arr}</td><td>${fmt(isSimulatorSession(f)?f.stdMin:f.mins)}</td><td><span class="tag">${isSimulatorSession(f)?'SIM':f.role}</span></td></tr>`}
+// V2.45.1: pagination is presentation-only. The same complete filtered
+// collection drives the totals, while only the visible slice is rendered.
+let logbookPage=1,logbookPageCount=1,lastLogbookPageSize=0;
+function logbookPageSize(){
+  return (isStandaloneApp()||window.innerWidth<=850)?10:25;
+}
+function logbookViewportResized(){
+  if(!document.getElementById('logbookBody'))return;
+  const size=logbookPageSize();
+  if(size===lastLogbookPageSize)return;
+  logbookPage=1;
+  applyLogbookFilters();
+}
+function setLogbookPage(page){
+  const next=Math.max(1,Math.min(logbookPageCount,Math.trunc(Number(page)||1)));
+  if(next===logbookPage)return;
+  logbookPage=next;
+  applyLogbookFilters();
+  // On a phone, keep the first row near the top after pressing Next/Previous,
+  // without forcing desktop browsers to jump while paging.
+  if(logbookPageSize()===10)
+    document.getElementById('logbookBody')?.closest('table')?.scrollIntoView?.({block:'start',behavior:'smooth'});
+}
 function logbook(){
   let aircraftOptions=S.aircraft.map(a=>`<option value="${a.id}">${a.icao} — ${a.reg}</option>`).join('');
   app.innerHTML=header('Logbook',isInstalledTouchApp()?'View your flight records':'Search and filter your flight records',`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn desktop-only web-only-tool" onclick="openImportModal()">Import CSV</button><button class="btn desktop-only web-only-tool" onclick="openExportModal()">Export</button><button class="btn primary" onclick="go('add')">＋ Add flight</button></div>`)+`
@@ -1567,6 +1605,14 @@ function logbook(){
         <tbody id="logbookBody"></tbody>
       </table>
     </div>
+    <nav id="logbookPagination" class="logbook-pagination" aria-label="Logbook pages" hidden>
+      <span id="logbookPageSummary" class="logbook-page-summary" aria-live="polite"></span>
+      <div class="logbook-page-controls">
+        <button id="logbookPrevPage" type="button" class="btn" onclick="setLogbookPage(logbookPage-1)" aria-label="Previous logbook page">Previous</button>
+        <span id="logbookPageLabel" class="logbook-page-label"></span>
+        <button id="logbookNextPage" type="button" class="btn" onclick="setLogbookPage(logbookPage+1)" aria-label="Next logbook page">Next</button>
+      </div>
+    </nav>
     <div class="filtermeta">
       <div><span id="resultCount" class="resultcount">0 flights</span> shown</div>
       <div class="filtertotals">
@@ -1580,8 +1626,12 @@ function logbook(){
 
   ['logSearch','filterFrom','filterTo','filterAircraft','filterRole','filterXC','filterNight','filterIFR'].forEach(id=>{
     let el=document.getElementById(id);
-    el.addEventListener(['logSearch','filterFrom','filterTo'].includes(id)?'input':'change',applyLogbookFilters);
+    el.addEventListener(['logSearch','filterFrom','filterTo'].includes(id)?'input':'change',()=>{
+      logbookPage=1;applyLogbookFilters();
+    });
   });
+  // A single listener survives navigation without accumulating duplicates.
+  window.addEventListener('resize',logbookViewportResized);
   applyLogbookFilters();
 }
 
@@ -1626,9 +1676,25 @@ function applyLogbookFilters(){
   let body=document.getElementById('logbookBody');
   if(!body) return;
   let flights=getFilteredFlights();
+  const pageSize=logbookPageSize();
+  lastLogbookPageSize=pageSize;
+  logbookPageCount=Math.max(1,Math.ceil(flights.length/pageSize));
+  logbookPage=Math.min(Math.max(1,logbookPage),logbookPageCount);
+  const first=(logbookPage-1)*pageSize;
+  const visibleFlights=flights.slice(first,first+pageSize);
+  const pager=document.getElementById('logbookPagination');
+  if(pager){
+    pager.hidden=logbookPageCount<=1;
+    document.getElementById('logbookPageSummary').textContent=
+      `Showing ${first+1}–${first+visibleFlights.length} of ${flights.length} entries`;
+    document.getElementById('logbookPageLabel').textContent=
+      `Page ${logbookPage} of ${logbookPageCount}`;
+    document.getElementById('logbookPrevPage').disabled=logbookPage===1;
+    document.getElementById('logbookNextPage').disabled=logbookPage===logbookPageCount;
+  }
   const aircraftById=new Map();
   for(const a of S.aircraft)if(!aircraftById.has(a.id))aircraftById.set(a.id,a);
-  body.innerHTML=flights.length?flights.map(f=>{
+  body.innerHTML=visibleFlights.length?visibleFlights.map(f=>{
     let a=aircraftById.get(f.aid);
     return `<tr class="click" onclick="flight('${f.id}')">
       <td>${displayDate(f.date)}</td><td><b>${isSimulatorSession(f)?'SIM':a?.icao||'—'}</b></td><td>${isSimulatorSession(f)?htmlEscape(f.simCategory||'—'):a?.reg||'—'}</td>
@@ -1661,6 +1727,7 @@ function clearLogbookFilters(){
   ['logSearch','filterFrom','filterTo','filterAircraft','filterRole','filterXC','filterNight','filterIFR'].forEach(id=>{
     let el=document.getElementById(id); if(el) el.value='';
   });
+  logbookPage=1;
   applyLogbookFilters();
 }
 
@@ -7124,6 +7191,7 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+ {v:"V2.45.1",name:"Paginated Logbook on web and installed app",detail:"Show 10 records per page on phones and installed apps or 25 on desktop. Previous/Next controls and a clear page count make large logbooks easier to browse. Searching and filtering still cover the entire logbook, and filtered totals still include every matching entry. Pagination does not modify flight records, archives or cloud data."},
  {v:"V2.45",name:"Stability & refinement — efficient flight views",detail:"Large logbooks render more efficiently: confirmed corrections are resolved once per flight snapshot, Dashboard aircraft time is aggregated in one pass, and Logbook filtering skips unnecessary search work. Dashboard date ranges now use the correct local calendar day. No changes to saved flights, paper archives, recency qualification rules or sync data."},
  {v:"V2.44.1",name:"Dedicated data management and backup verification",detail:"Data management is now its own Settings page. Download and locally verify a complete device backup even while server-side deletion is unavailable. A verified copy and all cloud safeguards are required before irreversible deletion can be activated."},
  {v:"V2.44",name:"Protected account-wide data reset",detail:"The Data management area prepares a mandatory safety backup and requires fresh account-password verification before deleting logbook records, frozen print archives and cloud snapshots. Account login is retained. Other devices must explicitly acknowledge a reset before syncing."},
