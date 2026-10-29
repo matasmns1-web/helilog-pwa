@@ -19,7 +19,15 @@ function effectiveFlight(f,data=S){
   const recent=confirmedCorrections(data).filter(c=>c.flightId===f.id).at(-1);
   return recent?recent.after:f;
 }
-function effectiveFlights(data=S){return data.flights.map(f=>effectiveFlight(f,data));}
+// V2.45: resolve each confirmed correction once per logbook snapshot.
+// The last confirmed addendum for a flight wins, just as effectiveFlight()
+// does. No cached/stored data is changed, and unsigned proposals are ignored.
+function effectiveFlights(data=S){
+ const latestByFlight=new Map();
+ for(const correction of confirmedCorrections(data))
+   latestByFlight.set(correction.flightId,correction.after);
+ return data.flights.map(f=>f&&latestByFlight.has(f.id)?latestByFlight.get(f.id):f);
+}
 function correctionFieldTotals(f,aircraftSnapshot){
   return sumLogbookFields([f],aircraftSnapshot);
 }

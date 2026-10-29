@@ -268,6 +268,7 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+ {v:"V2.45",name:"Stability & refinement — efficient flight views",detail:"Large logbooks render more efficiently: confirmed corrections are resolved once per flight snapshot, Dashboard aircraft time is aggregated in one pass, and Logbook filtering skips unnecessary search work. Dashboard date ranges now use the correct local calendar day. No changes to saved flights, paper archives, recency qualification rules or sync data."},
  {v:"V2.44.1",name:"Dedicated data management and backup verification",detail:"Data management is now its own Settings page. Download and locally verify a complete device backup even while server-side deletion is unavailable. A verified copy and all cloud safeguards are required before irreversible deletion can be activated."},
  {v:"V2.44",name:"Protected account-wide data reset",detail:"The Data management area prepares a mandatory safety backup and requires fresh account-password verification before deleting logbook records, frozen print archives and cloud snapshots. Account login is retained. Other devices must explicitly acknowledge a reset before syncing."},
  {v:"V2.43",name:"Clearer, neutral guidance across HeliLog",detail:"Refresh outdated help and account messages, remove prototype labels from established features, and replace overly specific form examples with generic prompts. The CSV import template now starts blank. Existing records are unchanged."},
