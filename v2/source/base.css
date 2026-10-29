@@ -16,7 +16,6 @@ html.helilog-cloud-workspace nav button[data-v="testmode"],html.helilog-cloud-wo
 @media(max-width:550px){.v23-auth-container{align-items:flex-start;padding:18px 0}.v23-auth-card{padding:25px 20px}}
 /* Installed phone/tablet app: flight entry and viewing only; browser retains management tools. */
 html.installed-touch-app .web-only-tool,
-html.installed-touch-app .logbook-filter-controls,
 html.installed-touch-app nav button[data-v="printarchive"],
 html.helilog-installed-app nav button[data-v="printarchive"]{display:none!important}
 html.installed-touch-app .dashboard-actions{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -584,3 +583,25 @@ html.helilog-test-mode .brand::after{
  .logbook-page-controls .btn{min-width:0;min-height:44px}
  .logbook-page-label{text-align:center}
 }
+
+/* V2.46: mobile Logbook search stays visible; advanced filters open on demand.
+   Installed PWAs can filter records but retain all web-only archive/import limits. */
+.logbook-mobile-filter-bar{display:none}
+.logbook-filter-count{display:inline-flex;min-width:20px;justify-content:center;align-items:center;padding:2px 6px;border-radius:999px;font-size:12px;font-weight:800;background:var(--soft);color:var(--ink)}
+.logbook-filter-count[hidden],.logbook-mobile-clear[hidden]{display:none!important}
+@media(max-width:850px){
+  .logbook-mobile-filter-bar{display:flex;gap:9px;align-items:center;margin:-4px 0 12px}
+  .logbook-filter-toggle,.logbook-mobile-clear{min-height:44px}
+  .logbook-filter-toggle{display:inline-flex;align-items:center;gap:9px}
+  .logbook-filter-primary>.filterfield:not(:first-child),
+  .logbook-filter-secondary{display:none}
+  .logbook-mobile-expanded .logbook-filter-primary>.filterfield:not(:first-child){display:block}
+  .logbook-mobile-expanded .logbook-filter-secondary{display:grid}
+}
+html.installed-touch-app .logbook-mobile-filter-bar{display:flex;gap:9px;align-items:center;margin:-4px 0 12px}
+html.installed-touch-app .logbook-filter-toggle,html.installed-touch-app .logbook-mobile-clear{min-height:44px}
+html.installed-touch-app .logbook-filter-primary{grid-template-columns:1fr}
+html.installed-touch-app .logbook-filter-primary>.filterfield:not(:first-child),
+html.installed-touch-app .logbook-filter-secondary{display:none}
+html.installed-touch-app .logbook-mobile-expanded .logbook-filter-primary>.filterfield:not(:first-child){display:block}
+html.installed-touch-app .logbook-mobile-expanded .logbook-filter-secondary{display:grid}

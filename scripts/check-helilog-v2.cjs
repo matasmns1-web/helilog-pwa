@@ -80,6 +80,7 @@ const GROUPS = Object.freeze([
       'v2/v242-guide-clean-archive.test.cjs',
       'v2/v245-stability-performance.test.cjs',
       'v2/v2451-logbook-pagination.test.cjs',
+      'v2/v246-mobile-logbook-filters.test.cjs',
       'v2/v244-account-reset.test.cjs',
       'v2/v2441-data-management.test.cjs',
       'v2/v24-sync.test.cjs',

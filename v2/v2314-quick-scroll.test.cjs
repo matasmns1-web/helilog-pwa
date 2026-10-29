@@ -93,6 +93,6 @@ test('locked mode has no data writes and keeps existing flight-save validation',
  assert.doesNotMatch(lock,/localStorage|sessionStorage|save\(|insert\(|update\(|fetch\(/);
  for(const part of ['function saveFlight()','function setFlightEntryMode(mode)','function v218UpdateNight()'])
   assert.ok(formSource.includes(part));
- assert.match(read('service-worker.js'),/helilog-v2-45-1-pagination-1/);
- assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.45\.1'/);
+ assert.match(read('service-worker.js'),/helilog-v2-46-mobile-filters-1/);
+ assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.46'/);
 });
