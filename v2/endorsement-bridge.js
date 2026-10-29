@@ -68,16 +68,16 @@
     "qualificationId","signatoryPersonId","createdAt","updatedAt"];
    for(const key of immutableFields){
     if(JSON.stringify(record[key])!==JSON.stringify(frozenSnapshot[key]))
-     throw Error("Archived endorsement signed source differs in "+key+": "+e.id+
+     throw Error("Endorsement archive integrity error: archived signed source differs in "+key+": "+e.id+
       ". Keep the signed original and review any corrections.");
    }
    const actualSignature=record.signature;
    const frozenSignature=frozenSnapshot.signature;
    if(!actualSignature||!frozenSignature)
-    throw Error("Archived endorsement signature is missing: "+e.id);
+    throw Error("Endorsement archive integrity error: archived signature is missing: "+e.id);
    for(const key of ["signatoryPersonId","name","licence","data","signedAt","source","approvedAt"]){
     if(JSON.stringify(actualSignature[key])!==JSON.stringify(frozenSignature[key]))
-     throw Error("Archived endorsement signed signature differs in "+key+": "+e.id+
+     throw Error("Endorsement archive integrity error: archived signed signature differs in "+key+": "+e.id+
       ". Keep the signed original and review any corrections.");
    }
    // Explicitly captured numbers are part of signed record history; changes to
@@ -86,7 +86,7 @@
     ["signedLicenceNumber","licenceNumber"],["signedFiFeNumber","fiFeNumber"]]){
     if(Object.prototype.hasOwnProperty.call(e,sourceKey) &&
        String(e[sourceKey]||"").trim()!==String(frozenSignature[printedKey]||"").trim())
-     throw Error("Archived endorsement signed identifier differs: "+e.id);
+     throw Error("Endorsement archive integrity error: archived signed identifier differs: "+e.id);
    }
    // Preserve all original keys (including empty metadata) and their order.
    // The domain validator still compares this frozen signed original against
