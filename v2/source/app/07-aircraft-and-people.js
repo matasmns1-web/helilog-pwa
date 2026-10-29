@@ -141,7 +141,8 @@ function repairImportedSelfProfile(id){
     (S.endorsements||[]).some(e=>e.signatoryPersonId===legacy.id);
   const hasProfileData=!!(
     legacy.savedSignatureData || legacy.savedSignatureAt || legacy.savedSignatureConsentAt ||
-    String(legacy.licence||'').trim() || String(legacy.notes||'').trim() ||
+    String(legacy.licence||'').trim() || String(legacy.licenceNumber||'').trim() ||
+    String(legacy.fiFeNumber||'').trim() || String(legacy.notes||'').trim() ||
     (legacy.role && legacy.role!=='Pilot')
   );
   const removed=!stillReferenced&&!hasProfileData;
