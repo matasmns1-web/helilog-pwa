@@ -28,17 +28,31 @@
       '<div class="sigcaption"><strong>'+escapeHTML(signature.name)+'</strong> &nbsp;'+
       escapeHTML(signature.licence||"")+'<div>Signed: '+escapeHTML(signature.signedAt||"")+'</div></div></div>';
   }
+  function credentialDetails(signature){
+    if(!signature)return '';
+    return (signature.licence?'<div class="small">Qualification / ID: '+escapeHTML(signature.licence)+'</div>':'')+
+      (signature.licenceNumber?'<div class="small"><b>Licence No.:</b> '+escapeHTML(signature.licenceNumber)+'</div>':'')+
+      (signature.fiFeNumber?'<div class="small"><b>FI / FE No.:</b> '+escapeHTML(signature.fiFeNumber)+'</div>':'');
+  }
+  function qualificationDetails(record){
+    const name=String(record.qualificationPrintName||'').trim();
+    const number=String(record.qualificationPrintNumber||'').trim();
+    if(!name&&!number)return '';
+    return '<div class="qualification"><b>Related licence / rating:</b> '+
+      (name?escapeHTML(name):'')+(name&&number?' · ':'')+
+      (number?'No. '+escapeHTML(number):'')+'</div>';
+  }
   function oneEntry(entry,slot){
     if(!entry)return '<div class="entry empty"><div class="slotline">ENTRY '+slot+'</div><div class="unused">— UNUSED —</div></div>';
     const e=entry.snapshot;
-    return '<article class="entry"><div class="slotline">ENTRY '+slot+' &nbsp;·&nbsp; '+escapeHTML(entry.endorsementId)+'</div>'+
+    return '<article class="entry"><div class="slotline">ENTRY '+slot+'</div>'+
       '<div class="meta"><span><b>DATE</b> '+formatDate(e.date)+'</span><span><b>PLACE</b> '+escapeHTML(e.location||"—")+'</span>'+
       '<span><b>CATEGORY</b> '+escapeHTML(e.category)+'</span></div>'+
       '<h2>'+escapeHTML(e.title)+'</h2>'+
       '<div class="endorsement-text">'+escapeHTML(e.text)+'</div>'+
-      (e.qualificationId?'<div class="qualification"><b>Related licence/rating:</b> '+escapeHTML(e.qualificationId)+'</div>':'')+
+      qualificationDetails(e)+
       '<div class="signer"><div><b>ENDORSED BY</b><div>'+escapeHTML(e.signature?.name||"—")+'</div>'+
-      '<div class="small">'+escapeHTML(e.signature?.licence||"")+'</div></div>'+
+      credentialDetails(e.signature)+'</div>'+
       signatureBlock(e.signature)+'</div></article>';
   }
   function styles(){
@@ -78,8 +92,8 @@
     return '<div><b>Date:</b> '+formatDate(e.date)+' &nbsp; <b>Category:</b> '+escapeHTML(e.category)+
       ' &nbsp; <b>Place:</b> '+escapeHTML(e.location||"—")+'</div>'+
       '<div><b>Title:</b> '+escapeHTML(e.title)+'</div>'+
-      '<div><b>Endorser ID:</b> '+escapeHTML(e.signatoryPersonId)+'</div>'+
-      '<div><b>Related rating:</b> '+escapeHTML(e.qualificationId||"—")+'</div>'+
+      '<div><b>Endorsed by:</b> '+escapeHTML(e.signature?.name||'—')+'</div>'+
+      qualificationDetails(e)+
       '<div class="endorsement-text">'+escapeHTML(e.text)+'</div>';
   }
   function renderAmendment(proposal,originalArchive){
