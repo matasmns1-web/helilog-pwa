@@ -90,6 +90,7 @@ const GROUPS = Object.freeze([
       'v2/v250-cloud-health.test.cjs',
       'v2/v251-safe-cloud-diagnostics.test.cjs',
       'v2/v252-sync-activity.test.cjs',
+      'v2/v253-compact-help-topics.test.cjs',
       'v2/v244-account-reset.test.cjs',
       'v2/v2441-data-management.test.cjs',
       'v2/v24-sync.test.cjs',

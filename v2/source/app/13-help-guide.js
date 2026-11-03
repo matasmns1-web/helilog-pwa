@@ -268,6 +268,7 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {v:"V2.53",name:"Compact collapsible Help topics",detail:"The Help & User Guide now presents all 17 topics as short category-and-title rows, like What's new. Open a topic to read its description, full instructions and navigation button. Search finds hidden instructions without opening every result; Expand all and Collapse all are still available. Start here remains first."},
   {v:"V2.52",name:"Private automatic sync activity log",detail:"The Settings → Cloud account → Cloud health → Sync activity log now records significant status changes automatically, including conflicts, offline periods, failures and recoveries. Saved activity from your devices is synchronized privately to TEST Supabase when connected and retained in the cloud for 30 days. No raw errors, pilot names, flight records or signatures are sent. You can pause automatic logging on the same panel. The old copy-and-paste button is no longer shown."},
   {v:"V2.51",name:"Copy private Cloud Health status",detail:"In Settings → Cloud account → Cloud health, select Copy safe status summary to share device-reported sync state, queued change and conflict counts, cloud-check times and whether an error is present. The report deliberately excludes account identifiers, pilot or flight details, signatures and raw error messages. Copying happens only when pressed; no sync request is made and no data is changed."},
   {v:"V2.50",name:"Read-only Cloud Health in Settings",detail:"Settings → Cloud account now includes a compact Cloud health section with local timestamps for the last successful cloud read and fully synchronized state, pending uploads, conflicts, device network indicator and any sync error. The panel does not contact Supabase or retry synchronization; it uses the existing cloud sync status. Times are stored only on the signed-in device. Review conflicts or manually check/sync under Cloud account. The PT409 protection remains active."},
@@ -473,12 +474,12 @@ const HELILOG_GUIDE_UPDATES=[
 ];
 function helpGuideSearch(){
  const query=String(document.getElementById('helpSearch')?.value||'').trim().toLowerCase();let shown=0;
- document.querySelectorAll('[data-help-topic]').forEach(el=>{const visible=String(el.textContent||'').toLowerCase().includes(query);el.hidden=!visible;if(visible){shown++;if(query)el.open=true;}});
+ document.querySelectorAll('[data-help-topic]').forEach(el=>{const visible=String(el.textContent||'').toLowerCase().includes(query);el.hidden=!visible;if(visible)shown++;});
  const result=document.getElementById('helpSearchResults');if(result)result.textContent=shown+' topic'+(shown===1?'':'s')+(query?' found':'');
  const empty=document.getElementById('helpNoResults');if(empty)empty.hidden=shown!==0;
 }
 function helpGuideExpand(open){
- document.querySelectorAll('[data-help-topic]').forEach(el=>{if(!el.hidden)el.open=!!open;});
+ document.querySelectorAll('[data-help-topic]').forEach(el=>{if(el.hidden)return;const details=el.querySelector('details');if(details)details.open=!!open;});
 }
 function helpGuide(){
  // Put onboarding immediately before specialist topics, preserving the order
@@ -487,10 +488,12 @@ function helpGuide(){
   Number(b.category==='Start here')-Number(a.category==='Start here'));
  const recentUpdates=HELILOG_GUIDE_UPDATES.slice(0,3);
  const pastUpdates=HELILOG_GUIDE_UPDATES.slice(3);
- const html=orderedTopics.map(topic=>`<details class="card guide-topic" data-help-topic>
-  <summary><span class="guide-topic-label"><small>${htmlEscape(topic.category)}</small><b>${htmlEscape(topic.title)}</b><span class="muted">${htmlEscape(topic.summary)}</span></span><span class="guide-chevron" aria-hidden="true">⌄</span></summary>
-  <div class="guide-topic-body"><ol>${topic.steps.map(step=>`<li>${htmlEscape(step)}</li>`).join('')}</ol><div class="guide-topic-actions"><button class="btn" type="button" onclick="go('${topic.route}')">${htmlEscape(topic.action)} →</button></div></div>
- </details>`).join('');
+ const html=orderedTopics.map(topic=>`<div class="guide-topic-row" data-help-topic>
+  <span class="guide-topic-category">${htmlEscape(topic.category)}</span>
+  <details class="guide-topic"><summary><b>${htmlEscape(topic.title)}</b><span class="guide-chevron" aria-hidden="true">⌄</span></summary>
+  <div class="guide-topic-body"><p class="muted">${htmlEscape(topic.summary)}</p><ol>${topic.steps.map(step=>`<li>${htmlEscape(step)}</li>`).join('')}</ol><div class="guide-topic-actions"><button class="btn" type="button" onclick="go('${topic.route}')">${htmlEscape(topic.action)} →</button></div></div>
+  </details>
+ </div>`).join('');
  app.innerHTML=header('Help & User Guide','Learn the essentials and find instructions for every part of HeliLog')+
  `<section class="card guide-intro"><span class="guide-eyebrow">GETTING STARTED</span><h2>New to HeliLog?</h2><p class="muted">Sign in, complete your pilot profile, add your aircraft, enter a flight and check cloud synchronization. Another new device joins the same account—no primary/secondary setup is required.</p>
   <div class="guide-first-steps">

@@ -1,4 +1,4 @@
-const CACHE='helilog-v2-52-private-sync-activity-1';
+const CACHE='helilog-v2-53-compact-help-topics-1';
 const SHELL=[
   './',
   './index.html',
@@ -9,7 +9,7 @@ const SHELL=[
   './simulator-evidence.js?v=2.41.2',
   './operator-rules-ui.js?v=2.41',
   './dark-cockpit.css?v=2.20-cockpit-3',
-  './guide.css?v=2.29',
+  './guide.css?v=2.53',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png',
