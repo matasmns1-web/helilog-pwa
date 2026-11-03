@@ -1,5 +1,5 @@
 /* HeliLog V2.3 private login gate. No automatic import of V2.2 local data. */
-const HELILOG_TEST_VERSION='V2.51';
+const HELILOG_TEST_VERSION='V2.52';
 let v23Unlocked=false,v23AuthBusy=false,v23AuthMessage="";
 let v23RecoveryStage="signin",v23InviteStage="signin";
 function v23Escape(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
@@ -60,6 +60,7 @@ function v2281OpenConflictReview(event){
  },90);
 }
 function v23LoginView(){
+ window.HeliLogSyncActivity?.stop();
  v23Unlocked=false;
  document.documentElement.classList.add("helilog-locked");
  const st=window.HeliLogCloud.snapshot(),profile=st.status==="signed_in"&&!st.hasProfile;
@@ -331,6 +332,7 @@ async function v23EnterWorkspace(auth){
  if(typeof window.HeliLogCloud.client!=="function")
   throw Error("HeliLog loaded an outdated cached cloud module. Close and reopen the app, then reload the website while online. Your account and existing data are safe.");
  const client=await window.HeliLogCloud.client();
+ window.HeliLogSyncActivity?.start({userId:id,client});
  window.HeliLogV23Sync.start({
   userId:id,client,getData:()=>S,freshAccountDevice:stored===null,
   replaceData:next=>{
@@ -356,7 +358,7 @@ async function v23EnterWorkspace(auth){
    localStorage.setItem(KEY,JSON.stringify(updated));
    S=updated;
   },
-  onStatus:()=>v23UpdateSyncChip()
+  onStatus:st=>{v23UpdateSyncChip();window.HeliLogSyncActivity?.observe(st);}
  });
  await window.HeliLogV23Sync.refresh();
  // A genuinely fresh account cache can safely inherit the existing cloud

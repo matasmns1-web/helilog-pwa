@@ -41,12 +41,13 @@ function fixture({signedIn=true,clipboard=true,throws=false,status=baseline}={})
   copy:()=>vm.runInContext('v251CopyCloudHealthSummary()',ctx),
   health:()=>vm.runInContext('v250CloudHealthMarkup()',ctx)};
 }
-test('Cloud Health exposes an explicit copy action with accessible feedback and no eager clipboard call',()=>{
+test('Cloud Health exposes the passive activity log instead of an explicit copy action',()=>{
  const f=fixture();
  const html=f.health();
- assert.match(html,/id="v251CopyCloudDiagnostics"/);
- assert.match(html,/onclick="v251CopyCloudHealthSummary\(\)"/);
- assert.match(html,/id="v251CloudDiagnosticsStatus" role="status" aria-live="polite"/);
+ assert.match(html,/id="v252ActivityPanel"/);
+ assert.match(html,/ontoggle="v252ActivityOpened\(this\)"/);
+ assert.match(html,/id="v252ActivityRows"/);
+ assert.doesNotMatch(html,/id="v251CopyCloudDiagnostics"/);
  assert.equal(f.calls.copies.length,0);
  assert.equal(f.calls.refreshes,0);
 });
@@ -103,9 +104,10 @@ test('the generated app, local TEST cache, and help guide contain the feature',(
  const cache=read('service-worker.js');
  const guide=read('source/app/13-help-guide.js');
  assert.match(built,/function v251CloudHealthReport\(\)/);
- assert.match(built,/Copy safe status summary/);
- assert.match(built,/V2\.51 · TEST ENVIRONMENT/);
- assert.match(template,/V2\.51 · TEST ENVIRONMENT/);
- assert.match(cache,/helilog-v2-51-safe-cloud-diagnostics-1/);
+ assert.match(built,/Sync activity log/);
+ assert.match(built,/V2\.52 · TEST ENVIRONMENT/);
+ assert.match(template,/V2\.52 · TEST ENVIRONMENT/);
+ assert.match(cache,/helilog-v2-52-private-sync-activity-1/);
+ assert.match(guide,/v:"V2\.52",name:"Private automatic sync activity log"/);
  assert.match(guide,/v:"V2\.51",name:"Copy private Cloud Health status"/);
 });

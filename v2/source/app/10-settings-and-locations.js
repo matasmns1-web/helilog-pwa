@@ -206,7 +206,13 @@ function v250CloudHealthMarkup(){
   '</div>'+
   (st.error?'<div class="note" role="status" style="margin-top:10px">'+htmlEscape(st.error)+'</div>':'')+
   (!setup?'<p class="mini">Full account synchronization setup is incomplete; manage it under Cloud account.</p>':'')+
-  '<div style="margin-top:10px"><button class="btn" id="v251CopyCloudDiagnostics" type="button" onclick="v251CopyCloudHealthSummary()">Copy safe status summary</button><span class="mini" id="v251CloudDiagnosticsStatus" role="status" aria-live="polite" style="display:block;margin-top:6px"></span></div>'+
+  '<details id="v252ActivityPanel" style="margin-top:12px" ontoggle="v252ActivityOpened(this)">'+
+   '<summary><b>Sync activity log</b> · automatic, private</summary>'+
+   '<p class="mini">Records significant sync changes without flight details or raw error messages. Saves locally and sends to your account in Supabase when online. Cloud history is retained for 30 days.</p>'+
+   '<div id="v252ActivityRows" class="mini" role="status" aria-live="polite">Open to view recent activity.</div>'+
+   '<button class="btn" type="button" id="v252ActivityToggle" style="margin-top:10px" onclick="v252ToggleActivity()">'+
+   (window.HeliLogSyncActivity?.isEnabled()?'Pause automatic logging':'Enable automatic logging')+
+   '</button></details>'+
   '<p class="mini">Timestamps are saved only on this device. This panel does not contact Supabase or retry synchronization. Review conflicts and run a manual check under Cloud account.</p>'+
   '</details>';
 }
@@ -256,6 +262,45 @@ async function v251CopyCloudHealthSummary(){
   if(feedback)feedback.textContent='Could not copy. No data was shared.';
   return false;
  }
+}
+/* V2.52 TEST — activity log is passive until expanded; all labels are allowlisted. */
+const v252ActivityLabels={
+ sync_ok:"Cloud synchronized",sync_recovered:"Synchronization recovered",
+ changes_pending:"Changes waiting to synchronize",
+ conflict_detected:"Conflict needs review",sync_error:"Cloud connection or sync issue",
+ offline:"Device offline",reset_review_required:"Account reset needs review"
+};
+async function v252ActivityOpened(details){
+ if(!details?.open||!v23AccountWorkspace())return;
+ const target=document.getElementById('v252ActivityRows');
+ const api=window.HeliLogSyncActivity;
+ if(!target)return;
+ if(!api){target.textContent="Activity logging is unavailable on this device.";return;}
+ target.textContent="Loading recent sync events…";
+ const result=await api.recent();
+ if(!v23AccountWorkspace()||document.getElementById('v252ActivityRows')!==target)return;
+ const events=(result?.events||[]).slice(0,25);
+ if(!events.length){target.textContent="No sync events recorded yet.";return;}
+ target.innerHTML='<div style="display:grid;gap:8px;margin-top:9px">'+events.map(e=>{
+  const label=v252ActivityLabels[e.event_type]||"Sync event";
+  const stamp=typeof e.recorded_at==="string"?Date.parse(e.recorded_at):NaN;
+  const time=Number.isFinite(stamp)?new Date(stamp).toLocaleString():"Time unavailable";
+  const counts="Pending: "+Math.max(0,Number(e.pending_count)||0)+" · Conflicts: "+Math.max(0,Number(e.conflict_count)||0);
+  const device=["iPad","iPhone","Android","Desktop","Other"].includes(e.device_kind)?e.device_kind:"Unknown device";
+  return '<div style="padding:7px 0;border-bottom:1px solid var(--line,#ddd)"><b>'+
+   htmlEscape(label)+'</b><div class="mini">'+htmlEscape(device)+' · '+htmlEscape(time)+'</div>'+
+   '<div class="mini">'+htmlEscape(counts)+'</div></div>';
+ }).join('')+'</div>'+
+ (result.cloudAvailable?'':'<p class="mini">Cloud history unavailable. Showing saved events from this device.</p>');
+}
+function v252ToggleActivity(){
+ if(!v23AccountWorkspace()||!window.HeliLogSyncActivity)return;
+ const api=window.HeliLogSyncActivity;
+ const enabled=api.setEnabled(!api.isEnabled());
+ const button=document.getElementById('v252ActivityToggle');
+ if(button)button.textContent=enabled?'Pause automatic logging':'Enable automatic logging';
+ const details=document.getElementById('v252ActivityPanel');
+ if(details?.open)void v252ActivityOpened(details);
 }
 function settings(){
  app.innerHTML=header('Settings','Logbook, aerodromes, cloud account, backups and device preferences',
