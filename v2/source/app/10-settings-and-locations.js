@@ -175,6 +175,133 @@ function v219DeleteSite(code){
  v219Status('Removed '+code+'. Existing flight records are unchanged.');
 }
 
+/* V2.50 — compact, read-only device health. No network calls, background
+   polling or account-data writes are performed by Settings. */
+function v250CloudHealthTime(raw){
+ const stamp=typeof raw==="string"?Date.parse(raw):NaN;
+ if(!Number.isFinite(stamp))return 'Not yet recorded on this device';
+ const date=new Date(stamp);
+ return '<time datetime="'+htmlEscape(date.toISOString())+'">'+htmlEscape(date.toLocaleString())+'</time>';
+}
+function v250CloudHealthMarkup(){
+ if(typeof window==='undefined'||typeof v23AccountWorkspace!=='function'||!v23AccountWorkspace()||!window.HeliLogV23Sync?.status)return '<p class="mini">Sign in to see this device\'s sync diagnostics.</p>';
+ const st=window.HeliLogV23Sync.status();
+ const state=String(st.state||'inactive');
+ const names={synced:'Synced',syncing:'Sync in progress',connecting:'Checking',
+  pending:'Changes waiting',conflict:'Needs review',error:'Connection issue',
+  offline:'Offline',reset_required:'Account reset review required',inactive:'Not connected'};
+ const label=names[state]||'Status unknown';
+ const pending=Math.max(0,Number(st.pending)||0);
+ const conflicts=Math.max(0,Number(st.conflicts)||0);
+ const setup=window.HeliLogV23Sync.extended?.()===true;
+ return '<details class="v250-cloud-health" id="v250CloudHealth">'+
+  '<summary>Cloud health · '+htmlEscape(label)+(conflicts?' · '+conflicts+' conflict(s)':'')+'</summary>'+
+  '<div class="profilegrid" style="margin-top:12px">'+
+   '<div><div class="mini">Sync status</div><b>'+htmlEscape(label)+'</b></div>'+
+   '<div><div class="mini">Device network (browser reported)</div><b>'+(st.online?'Online':'Offline')+'</b></div>'+
+   '<div><div class="mini">Pending changes</div><b>'+pending+'</b></div>'+
+   '<div><div class="mini">Unresolved conflicts</div><b>'+conflicts+'</b></div>'+
+   '<div><div class="mini">Last successful cloud read</div><b>'+v250CloudHealthTime(st.lastCloudCheckAt)+'</b></div>'+
+   '<div><div class="mini">Last fully synced</div><b>'+v250CloudHealthTime(st.lastSyncedAt)+'</b></div>'+
+  '</div>'+
+  (st.error?'<div class="note" role="status" style="margin-top:10px">'+htmlEscape(st.error)+'</div>':'')+
+  (!setup?'<p class="mini">Full account synchronization setup is incomplete; manage it under Cloud account.</p>':'')+
+  '<details id="v252ActivityPanel" style="margin-top:12px" ontoggle="v252ActivityOpened(this)">'+
+   '<summary><b>Sync activity log</b> · automatic, private</summary>'+
+   '<p class="mini">Records significant sync changes without flight details or raw error messages. Saves locally and sends to your account in Supabase when online. Cloud history is retained for 30 days.</p>'+
+   '<div id="v252ActivityRows" class="mini" role="status" aria-live="polite">Open to view recent activity.</div>'+
+   '<button class="btn" type="button" id="v252ActivityToggle" style="margin-top:10px" onclick="v252ToggleActivity()">'+
+   (window.HeliLogSyncActivity?.isEnabled()?'Pause automatic logging':'Enable automatic logging')+
+   '</button></details>'+
+  '<p class="mini">Timestamps are saved only on this device. This panel does not contact Supabase or retry synchronization. Review conflicts and run a manual check under Cloud account.</p>'+
+  '</details>';
+}
+/* V2.51 — user-initiated, private device sync summary. Only explicitly
+   allowlisted labels and counters may leave this page via clipboard. */
+function v251CloudHealthReport(){
+ if(typeof window==='undefined'||typeof v23AccountWorkspace!=='function'||!v23AccountWorkspace()||!window.HeliLogV23Sync?.status)return '';
+ const sync=window.HeliLogV23Sync;
+ const st=sync.status()||{};
+ const labels={synced:'Synced',syncing:'Sync in progress',connecting:'Checking',
+  pending:'Changes waiting',conflict:'Needs review',error:'Connection issue',
+  offline:'Offline',reset_required:'Account reset review required',inactive:'Not connected'};
+ const count=value=>String(Math.max(0,Math.min(1000000000,Math.trunc(Number(value)||0))));
+ const timestamp=value=>{
+  const t=typeof value==='string'?Date.parse(value):NaN;
+  return Number.isFinite(t)?new Date(t).toISOString():'Not recorded';
+ };
+ return [
+  'HeliLog V2.51 - device sync diagnostics',
+  'Status: '+(labels[String(st.state)]||'Unknown'),
+  'Browser-reported network: '+(st.online===true?'Online':'Offline'),
+  'Full cloud setup: '+(sync.extended?.()===true?'Complete':'Incomplete'),
+  'Pending changes: '+count(st.pending),
+  'Unresolved conflicts: '+count(st.conflicts),
+  'Last successful cloud read (UTC): '+timestamp(st.lastCloudCheckAt),
+  'Last fully synced (UTC): '+timestamp(st.lastSyncedAt),
+  'Sync error present: '+(!!st.error?'Yes':'No'),
+  'Device-local status only. This summary excludes account identifiers, pilot details, flight records, signatures and raw error messages.'
+ ].join('\n');
+}
+async function v251CopyCloudHealthSummary(){
+ const feedback=typeof document!=='undefined'?document.getElementById('v251CloudDiagnosticsStatus'):null;
+ const report=v251CloudHealthReport();
+ if(!report){
+  if(feedback)feedback.textContent='Sign in to copy device diagnostics.';
+  return false;
+ }
+ if(typeof navigator==='undefined'||typeof navigator.clipboard?.writeText!=='function'){
+  if(feedback)feedback.textContent='Clipboard unavailable in this browser. No data was shared.';
+  return false;
+ }
+ try{
+  await navigator.clipboard.writeText(report);
+  if(feedback)feedback.textContent='Safe sync summary copied. No account or flight details included.';
+  return true;
+ }catch(_error){
+  if(feedback)feedback.textContent='Could not copy. No data was shared.';
+  return false;
+ }
+}
+/* V2.52 TEST — activity log is passive until expanded; all labels are allowlisted. */
+const v252ActivityLabels={
+ sync_ok:"Cloud synchronized",sync_recovered:"Synchronization recovered",
+ changes_pending:"Changes waiting to synchronize",
+ conflict_detected:"Conflict needs review",sync_error:"Cloud connection or sync issue",
+ offline:"Device offline",reset_review_required:"Account reset needs review"
+};
+async function v252ActivityOpened(details){
+ if(!details?.open||!v23AccountWorkspace())return;
+ const target=document.getElementById('v252ActivityRows');
+ const api=window.HeliLogSyncActivity;
+ if(!target)return;
+ if(!api){target.textContent="Activity logging is unavailable on this device.";return;}
+ target.textContent="Loading recent sync events…";
+ const result=await api.recent();
+ if(!v23AccountWorkspace()||document.getElementById('v252ActivityRows')!==target)return;
+ const events=(result?.events||[]).slice(0,25);
+ if(!events.length){target.textContent="No sync events recorded yet.";return;}
+ target.innerHTML='<div style="display:grid;gap:8px;margin-top:9px">'+events.map(e=>{
+  const label=v252ActivityLabels[e.event_type]||"Sync event";
+  const stamp=typeof e.recorded_at==="string"?Date.parse(e.recorded_at):NaN;
+  const time=Number.isFinite(stamp)?new Date(stamp).toLocaleString():"Time unavailable";
+  const counts="Pending: "+Math.max(0,Number(e.pending_count)||0)+" · Conflicts: "+Math.max(0,Number(e.conflict_count)||0);
+  const device=["iPad","iPhone","Android","Desktop","Other"].includes(e.device_kind)?e.device_kind:"Unknown device";
+  return '<div style="padding:7px 0;border-bottom:1px solid var(--line,#ddd)"><b>'+
+   htmlEscape(label)+'</b><div class="mini">'+htmlEscape(device)+' · '+htmlEscape(time)+'</div>'+
+   '<div class="mini">'+htmlEscape(counts)+'</div></div>';
+ }).join('')+'</div>'+
+ (result.cloudAvailable?'':'<p class="mini">Cloud history unavailable. Showing saved events from this device.</p>');
+}
+function v252ToggleActivity(){
+ if(!v23AccountWorkspace()||!window.HeliLogSyncActivity)return;
+ const api=window.HeliLogSyncActivity;
+ const enabled=api.setEnabled(!api.isEnabled());
+ const button=document.getElementById('v252ActivityToggle');
+ if(button)button.textContent=enabled?'Pause automatic logging':'Enable automatic logging';
+ const details=document.getElementById('v252ActivityPanel');
+ if(details?.open)void v252ActivityOpened(details);
+}
 function settings(){
  app.innerHTML=header('Settings','Logbook, aerodromes, cloud account, backups and device preferences',
    `<button class="btn" type="button" onclick="go('profile')">← Profile</button>`)+
@@ -189,6 +316,7 @@ function settings(){
      <div class="card">
       <div class="head"><div><h2>Cloud account</h2><div class="muted">Connection, synchronization, conflicts and archive integrity.</div></div>
       <button class="btn" type="button" onclick="go('cloud')">Manage cloud account</button>
+      ${v250CloudHealthMarkup()}
      </div>
     </div>
      <div class="card">

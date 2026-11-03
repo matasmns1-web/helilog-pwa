@@ -1,22 +1,28 @@
+let showArchivedAircraft=false;
 function aircraft(){
+  const inactiveCount=S.aircraft.filter(a=>a.inactive===true).length;
   editingAircraftId=null;
-  app.innerHTML=header('Aircraft','ICAO type designator is the primary logbook identifier',`<button class="btn primary" onclick="newAircraft()">＋ Add aircraft</button>`)+
-  `<div class="grid aircraft">${S.aircraft.map(a=>{
+  app.innerHTML=header('Aircraft',showArchivedAircraft?'Archived registrations remain linked to all past flights and career totals':'Active aircraft appear when adding new flights. Archiving only hides future selections.',
+    `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="showArchivedAircraft=!showArchivedAircraft;aircraft()">${showArchivedAircraft?'← Active aircraft':`Archived aircraft (${inactiveCount})`}</button><button class="btn primary" onclick="newAircraft()">＋ Add aircraft</button></div>`)+
+  `<div class="grid aircraft">${S.aircraft.filter(a=>showArchivedAircraft?a.inactive===true:a.inactive!==true).map(a=>{
     let usedFlights=effectiveFlights().filter(f=>f.aid===a.id);
     let m=usedFlights.reduce((n,f)=>n+Number(f.mins||0),0);
     return `<div class="card">
       <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
         <div>
           <div class="icao">${a.icao}</div>
-          <h3>${a.reg}</h3>
+          <h3>${htmlEscape(a.reg)}</h3>${a.inactive===true?'<span class="badge gray">Inactive</span>':''}
         </div>
-        <button class="btn" type="button" onclick="editAircraft('${a.id}')">Edit</button>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+          <button class="btn" type="button" onclick="editAircraft('${a.id}')">Edit</button>
+          <button class="btn" type="button" onclick="toggleAircraftInactive('${a.id}')">${a.inactive===true?'Reactivate':'Archive'}</button>
+        </div>
       </div>
       <div class="muted">${a.manufacturer} ${a.model} ${a.variant||''}</div>
       <p><b>${fmt(m)}</b> <span class="muted">your time · ${usedFlights.length} flight${usedFlights.length===1?'':'s'}</span></p>
       <span class="muted">✓ ${engineCode(a)==='ME'?'Multi-engine (ME)':'Single-engine (SE)'}</span>
     </div>`;
-  }).join('')}</div>`;
+  }).join('')||'<div class="card"><p class="muted">No '+(showArchivedAircraft?'archived':'active')+' aircraft. '+(showArchivedAircraft?'Switch back to active aircraft.':'Add or reactivate a registration.')+'</p></div>'}</div>`;
 }
 
 function newAircraft(editId=null){
@@ -100,9 +106,64 @@ function saveAircraft(e){
   go('aircraft');
 }
 
+function toggleAircraftInactive(id){
+  const a=S.aircraft.find(x=>x.id===id);
+  if(!a)return;
+  const prior=a.inactive;
+  if(prior!==true && !confirm('Archive '+a.reg+'? It will be hidden from new-flight selection, but past flights, printed records and type totals will stay unchanged.'))return;
+  a.inactive=prior!==true;
+  if(!save()){a.inactive=prior;return;}
+  go('aircraft');
+}
+
+// Literal SELF is a PIC display value, not an independent pilot profile.
+function isLegacySelfPilotProfile(person){
+  return !!person && !person.isAccountHolder && String(person.name||'').trim().toUpperCase()==='SELF';
+}
+function repairImportedSelfProfile(id){
+  const legacy=personById(id),owner=ownerPerson();
+  if(!isLegacySelfPilotProfile(legacy) || !owner?.isAccountHolder || owner.id===legacy?.id){
+    alert('The account-holder profile is unavailable. No records were changed.');
+    return;
+  }
+  const eligible=S.flights.filter(f=>!isSimulatorSession(f) &&
+    ['PIC','SOLO'].includes(f.role) && !isArchivedFlight(f.id) &&
+    (f.picPersonId===legacy.id ||
+      (!f.picPersonId && String(f.picName||'').trim().toUpperCase()==='SELF')));
+  const frozen=S.flights.filter(f=>isArchivedFlight(f.id) && f.picPersonId===legacy.id);
+  if(!eligible.length && !S.people.includes(legacy))return;
+  if(!confirm('Repair '+eligible.length+' unarchived PIC/SOLO flight(s) linked to SELF? They will be linked to your account-holder profile. '+frozen.length+' archived flight(s) will remain unchanged. An unneeded SELF profile will be removed; otherwise it will be hidden.'))return;
+  const oldPeople=S.people;
+  const before=eligible.map(f=>({f,picName:f.picName,picPersonId:f.picPersonId}));
+  const oldInactive=legacy.inactive;
+  eligible.forEach(f=>{f.picPersonId=owner.id;f.picName='SELF';});
+  const stillReferenced=S.flights.some(f=>f.picPersonId===legacy.id) ||
+    (S.endorsements||[]).some(e=>e.signatoryPersonId===legacy.id);
+  const hasProfileData=!!(
+    legacy.savedSignatureData || legacy.savedSignatureAt || legacy.savedSignatureConsentAt ||
+    String(legacy.licence||'').trim() || String(legacy.licenceNumber||'').trim() ||
+    String(legacy.fiFeNumber||'').trim() || String(legacy.notes||'').trim() ||
+    (legacy.role && legacy.role!=='Pilot')
+  );
+  const removed=!stillReferenced&&!hasProfileData;
+  if(removed) S.people=S.people.filter(p=>p.id!==legacy.id);
+  else legacy.inactive=true;
+  if(!save()){
+    before.forEach(({f,picName,picPersonId})=>{f.picName=picName;f.picPersonId=picPersonId;});
+    S.people=oldPeople;
+    legacy.inactive=oldInactive;
+    return;
+  }
+  alert('Repaired '+eligible.length+' unarchived PIC/SOLO flight(s). The original archived records were not modified. '+(removed?'Unused SELF profile removed.':'SELF profile retained under Archived pilots because it is still referenced or contains saved information.'));
+  pilots();
+}
+
+let showArchivedPilots=false;
 function pilots(){
+  const inactiveCount=S.people.filter(p=>!p.isAccountHolder&&p.inactive===true).length;
   editingPersonId=null;
   let cards=S.people
+    .filter(p=>showArchivedPilots?!p.isAccountHolder&&p.inactive===true:p.isAccountHolder||p.inactive!==true)
     .slice()
     .sort((a,b)=>(b.isAccountHolder?1:0)-(a.isAccountHolder?1:0) || a.name.localeCompare(b.name))
     .map(p=>{
@@ -113,12 +174,15 @@ function pilots(){
             <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
               <h3 style="margin:0">${htmlEscape(p.name)}</h3>
               ${p.isAccountHolder?'<span class="badge">Account holder</span>':'<span class="badge gray">'+htmlEscape(p.role||'Pilot')+'</span>'}
+              ${p.inactive===true?'<span class="badge gray">Inactive</span>':''}
             </div>
             ${p.licence?`<div class="muted" style="margin-top:5px">${htmlEscape(p.licence)}</div>`:''}
           </div>
           ${p.isAccountHolder
             ? `<button class="btn" type="button" onclick="go('profile')">Profile</button>`
             : `<button class="btn" type="button" onclick="editPerson('${p.id}')">Edit</button>`}
+          ${!p.isAccountHolder?`<button class="btn" type="button" onclick="togglePersonInactive('${p.id}')">${p.inactive===true?'Reactivate':'Archive'}</button>`:''}
+          ${isLegacySelfPilotProfile(p)?`<button class="btn" type="button" onclick="repairImportedSelfProfile('${p.id}')">Repair SELF imports</button>`:''}
           <button class="btn" type="button" onclick="v227EditSignature('${p.id}')">Signature</button>
         </div>
         <p><b>${linked.length}</b> <span class="muted">flight${linked.length===1?'':'s'} recorded with this person as PIC</span></p>
@@ -127,9 +191,9 @@ function pilots(){
       </div>`;
     }).join('');
 
-  app.innerHTML=header('Pilots','Saved pilot profiles for PIC selection and endorsements',
-    `<button class="btn primary" onclick="newPerson()">＋ Add pilot</button>`)+
-    `<div class="grid aircraft">${cards||'<div class="card"><p class="muted">No saved pilots yet.</p></div>'}</div>`;
+  app.innerHTML=header('Pilots',showArchivedPilots?'Archived pilots remain linked to past flights, endorsements and signatures':'Active pilots appear in new PIC and endorsement suggestions.',
+    `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="showArchivedPilots=!showArchivedPilots;pilots()">${showArchivedPilots?'← Active pilots':`Archived pilots (${inactiveCount})`}</button><button class="btn primary" onclick="newPerson()">＋ Add pilot</button></div>`)+
+    `<div class="grid aircraft">${cards||'<div class="card"><p class="muted">No '+(showArchivedPilots?'archived':'active')+' pilot profiles.</p></div>'}</div>`;
 }
 
 function newPerson(editId=null){
@@ -148,7 +212,9 @@ function newPerson(editId=null){
         <div class="field"><label for="personFirstName">First name</label><input id="personFirstName" autocomplete="given-name" required value="${existing?htmlEscape(pilotNameParts(existing).firstName):''}" placeholder="First name"></div>
         <div class="field"><label for="personLastName">Surname</label><input id="personLastName" autocomplete="family-name" required value="${existing?htmlEscape(pilotNameParts(existing).lastName):''}" placeholder="Surname"></div>
         <div class="field"><label>Role / relationship</label><input id="personRole" value="${existing?htmlEscape(existing.role||'Pilot'):'Pilot'}" placeholder="Instructor, examiner, commander..."></div>
-        <div class="field"><label>Licence / identifier</label><input id="personLicence" value="${existing?htmlEscape(existing.licence||''):''}" placeholder="Optional"></div>
+        <div class="field"><label>Licence / qualification</label><input id="personLicence" value="${existing?htmlEscape(existing.licence||''):''}" placeholder="e.g. CPL(H), FI(H), FE(H)"></div>
+        <div class="field"><label>Licence number</label><input id="personLicenceNumber" value="${existing?htmlEscape(existing.licenceNumber||''):''}" placeholder="Optional"></div>
+        <div class="field"><label>FI / FE authorisation number</label><input id="personFiFeNumber" value="${existing?htmlEscape(existing.fiFeNumber||''):''}" placeholder="Optional"></div>
         <div class="field"><label>Notes</label><input id="personNotes" value="${existing?htmlEscape(existing.notes||''):''}" placeholder="Optional"></div>
       </div>
       <div class="mini" style="margin-top:14px">After saving, use Signature on this pilot’s card to capture or update their signature. It will never be applied automatically.</div>
@@ -165,6 +231,8 @@ function savePerson(e){
   let name=[firstName,lastName].filter(Boolean).join(' ');
   let role=$('#personRole').value.trim()||'Pilot';
   let licence=$('#personLicence').value.trim();
+  let licenceNumber=$('#personLicenceNumber')?.value.trim()||'';
+  let fiFeNumber=$('#personFiFeNumber')?.value.trim()||'';
   let notes=$('#personNotes').value.trim();
   if(!firstName||!lastName){
     alert('Please enter both the first name and surname.');
@@ -182,7 +250,7 @@ function savePerson(e){
     if(!p){go('pilots');return;}
     let oldName=p.name;
     p.name=name;p.firstName=firstName;p.lastName=lastName;
-    p.role=role;p.licence=licence;p.notes=notes;
+    p.role=role;p.licence=licence;p.licenceNumber=licenceNumber;p.fiFeNumber=fiFeNumber;p.notes=notes;
     S.flights.forEach(f=>{
       if(isArchivedFlight(f.id)) return;
       if(f.picPersonId===p.id || (!f.picPersonId && String(f.picName||'').toLowerCase()===oldName.toLowerCase())){
@@ -193,7 +261,7 @@ function savePerson(e){
   }else{
     S.people.push({
       id:'p'+Date.now()+Math.random().toString(36).slice(2,6),
-      name,firstName,lastName,role,licence,notes,isAccountHolder:false
+      name,firstName,lastName,role,licence,licenceNumber,fiFeNumber,notes,isAccountHolder:false
     });
   }
 
@@ -204,6 +272,16 @@ function savePerson(e){
 
 
 
+
+function togglePersonInactive(id){
+  const p=personById(id);
+  if(!p||p.isAccountHolder)return;
+  const prior=p.inactive;
+  if(prior!==true && !confirm('Archive '+p.name+'? The pilot will be hidden from new PIC and endorsement suggestions, but all past records and saved signatures will remain.'))return;
+  p.inactive=prior!==true;
+  if(!save()){p.inactive=prior;return;}
+  go('pilots');
+}
 
 /* V2.27 — consent-based pilot profile signatures.
  * Records are stored as PNG snapshots per person. Endorsements embed a copy,
@@ -269,10 +347,14 @@ function v227WriteEndorsementSignature(e,person,png,method){
   if(!e||!person||e.signatoryPersonId!==person.id||e.signatureData||
     v2ArchiveBridge.isArchived(S,e.id)||!v227IsPNG(png))return false;
   const before={signatureData:e.signatureData,signedAt:e.signedAt,signedName:e.signedName,
-    signedLicence:e.signedLicence,signedSource:e.signedSource,signedConsentAt:e.signedConsentAt};
+    signedLicence:e.signedLicence,signedLicenceNumber:e.signedLicenceNumber,
+    signedFiFeNumber:e.signedFiFeNumber,signedSource:e.signedSource,signedConsentAt:e.signedConsentAt};
   const now=new Date().toISOString();
   e.signatureData=png;e.signedAt=now;e.signedName=person.name;
-  e.signedLicence=person.licence||'';e.signedSource=method;e.signedConsentAt=now;
+  e.signedLicence=person.licence||'';
+  e.signedLicenceNumber=person.licenceNumber||'';
+  e.signedFiFeNumber=person.fiFeNumber||'';
+  e.signedSource=method;e.signedConsentAt=now;
   if(!save()){Object.assign(e,before);return false;}
   return true;
 }

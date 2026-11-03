@@ -1,4 +1,4 @@
-const CACHE='helilog-v2-44-1-production-candidate-1';
+const CACHE='helilog-v2-52-production-candidate-1';
 const SHELL=[
   './',
   './index.html',
@@ -25,6 +25,7 @@ const SHELL=[
   './cloud-foundation.js?v=2.19-locations-1',
   './cloud-view.js?v=2.19-locations-1',
   './cloud-sync.js?v=2.39.1-operator-sync-1',
+  './sync-activity.js?v=2.52',
   './auth-gate.js?v=2.39.1-operator-sync-1',
   './cloud-archives.js?v=2.19-locations-1',
   './archive-integrity.js?v=2.19-locations-1',

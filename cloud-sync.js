@@ -36,7 +36,8 @@
   }else data[plural[kind]]=arr;
  }
  let owner="",db=null,pending=[],versions={},mirror={},baseline={},state="inactive",problem="",
-  running=false,paused=false,reconciling=false,pilotPreview=null,recordPreview=null,recoveryPreview=null,snapshotFn=null,replaceFn=null,listener=null,resetGeneration=null,remoteGeneration=null,fenceReady=false,freshDevice=false,resetCapable=false;
+  running=false,paused=false,reconciling=false,pilotPreview=null,recordPreview=null,recoveryPreview=null,snapshotFn=null,replaceFn=null,listener=null,resetGeneration=null,remoteGeneration=null,fenceReady=false,freshDevice=false,resetCapable=false,
+  health={lastCloudCheckAt:null,lastSyncedAt:null};
  const clone=x=>JSON.parse(JSON.stringify(x));
  // PostgreSQL JSONB may reorder object keys. Compare canonical values,
  // otherwise harmless key ordering could produce false sync conflicts.
@@ -57,6 +58,26 @@
  const extKey=u=>"helilog_v24_ext_"+u;
  const savedPreMigration=u=>"helilog_v24_pre_extension_"+u;
  const generationKey=u=>"helilog_v244_reset_generation_"+u;
+ // V2.50: local-only observation timestamps. Never trigger a network call
+ // or mutate cloud records to populate the diagnostics panel.
+ const healthKey=u=>"helilog_v250_sync_health_"+u;
+ function savedHealth(u){
+  try{
+   const raw=root.localStorage.getItem(healthKey(u));
+   if(!raw)return {lastCloudCheckAt:null,lastSyncedAt:null};
+   const value=JSON.parse(raw),safe=x=>typeof x==="string" &&
+    /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(x)&&Number.isFinite(Date.parse(x))?x:null;
+   return {lastCloudCheckAt:safe(value?.lastCloudCheckAt),lastSyncedAt:safe(value?.lastSyncedAt)};
+  }catch{return {lastCloudCheckAt:null,lastSyncedAt:null};}
+ }
+ function recordHealth(kind){
+  if(!owner)return;
+  const stamp=new Date().toISOString();
+  if(kind==="cloud")health.lastCloudCheckAt=stamp;
+  if(kind==="synced")health.lastSyncedAt=stamp;
+  try{root.localStorage.setItem(healthKey(owner),JSON.stringify(health));}
+  catch(e){root.console?.warn?.("Cloud health timestamp could not be saved; synchronization continues",e);}
+ }
  const read=(key,otherwise)=>{
   const raw=root.localStorage.getItem(key);
   if(raw===null)return otherwise;
@@ -66,7 +87,8 @@
  const persist=()=>{if(!owner)return;root.localStorage.setItem(queueKey(owner),JSON.stringify(pending));root.localStorage.setItem(versionKey(owner),JSON.stringify(versions));root.localStorage.setItem(mirrorKey(owner),JSON.stringify(mirror));};
  function notify(){try{listener?.(status());}catch(e){root.console?.warn?.("Cloud status view failed",e)}}
  function status(){
-  return {state,pending:pending.length,conflicts:pending.filter(q=>q.conflict).length,error:problem,owner,online:root.navigator?.onLine!==false,resetGeneration:resetCapable&&fenceReady?resetGeneration:null,resetSupported:resetCapable,remoteGeneration,resetRequired:state==="reset_required"};
+  return {state,pending:pending.length,conflicts:pending.filter(q=>q.conflict).length,error:problem,owner,online:root.navigator?.onLine!==false,resetGeneration:resetCapable&&fenceReady?resetGeneration:null,resetSupported:resetCapable,remoteGeneration,resetRequired:state==="reset_required",
+   lastCloudCheckAt:owner?health.lastCloudCheckAt:null,lastSyncedAt:owner?health.lastSyncedAt:null};
  }
  function isActive(){return !!owner&&!paused;}
  function mapOf(data){
@@ -79,13 +101,15 @@
  function parseKey(k){const i=k.indexOf(":");return {kind:k.slice(0,i),id:k.slice(i+1)};}
  function stop(){
   owner="";db=null;pending=[];versions={};mirror={};baseline={};state="inactive";problem="";extended=false;types=[...coreKinds];
-  running=false;paused=true;reconciling=false;pilotPreview=null;recordPreview=null;recoveryPreview=null;snapshotFn=null;replaceFn=null;resetGeneration=null;remoteGeneration=null;fenceReady=false;freshDevice=false;resetCapable=false;notify();
+  running=false;paused=true;reconciling=false;pilotPreview=null;recordPreview=null;recoveryPreview=null;snapshotFn=null;replaceFn=null;resetGeneration=null;remoteGeneration=null;fenceReady=false;freshDevice=false;resetCapable=false;
+  health={lastCloudCheckAt:null,lastSyncedAt:null};notify();
  }
  function start({userId,client,getData,replaceData,onStatus,freshAccountDevice=false}){
   if(!/^[0-9a-f-]{36}$/i.test(String(userId)))throw Error("A verified Supabase user ID is required.");
   if(!client?.from||typeof getData!=="function"||typeof replaceData!=="function")throw Error("Cloud workspace configuration is incomplete.");
   if(owner&&owner!==userId)stop();
   owner=userId;db=client;snapshotFn=getData;replaceFn=replaceData;listener=onStatus||null;
+  health=savedHealth(owner);
   freshDevice=!!freshAccountDevice;resetCapable=false;resetGeneration=read(generationKey(owner),null);
   if(resetGeneration!==null&&(!Number.isSafeInteger(resetGeneration)||resetGeneration<0))throw Error("Invalid reset marker.");
   fenceReady=typeof db.rpc!=="function";if(fenceReady){resetGeneration=0;remoteGeneration=0;}
@@ -198,6 +222,7 @@
    if(!await ensureGeneration())return false;
    const remote=await listRemote(sessionOwner);
    if(!isActive()||owner!==sessionOwner||reconciling)return false;
+   recordHealth("cloud");
    const rmap=new Map(remote.map(row=>[ident(row.kind,row.record_id),row]));
    // Recover an upload committed by the server when the device lost its
    // response (e.g. network changed just before the acknowledgement).
@@ -323,6 +348,7 @@
      "One or more records on this device still require manual review. Neither copy was overwritten.";
    }
    else{state=pending.length?"pending":"synced";problem="";}
+   if(state==="synced")recordHealth("synced");
    notify();return true;
   }catch(e){problem=String(e.message||e);state=root.navigator?.onLine===false?"offline":"error";notify();return false;}
  }
@@ -365,7 +391,10 @@
     }
     if(!isActive()||owner!==ownerAtStart)return false;
     if(result.error){
-     if(result.error.code==="23505" || result.error.code==="23503" || result.error.code==="40001"){
+     // PT409 is HeliLog's non-retryable HTTP 409 conflict in PostgREST 14.
+// Retain 40001 for compatibility with unpatched/legacy backends.
+     if(result.error.code==="23505" || result.error.code==="23503" ||
+        result.error.code==="40001" || result.error.code==="PT409"){
       q.conflict=true;state="conflict";problem="Cloud record conflict for "+k+". Local changes were preserved.";persist();notify();continue;
      }
      throw Error("Sync "+k+": "+result.error.message);
@@ -458,22 +487,30 @@
   const local=localRecord(snapshotFn(),kind,id);
   if((action==="delete")!== (local===null))
    throw Error("Local queue differs from the saved record. Preserve data and restart review.");
-  if(action==="put"&&canonical(q.payload)!==canonical(local))
-   throw Error("Local edits differ from the pending queue. Preserve data and restart review.");
+  // V2.49: a valid put can be followed by another saved local edit before
+  // its sync queue is updated (e.g. app close/offline). Show BOTH local
+  // versions, rather than leave this device permanently unable to compare.
+  // Never rebase or choose either copy automatically.
+  const queueDiverged=action==="put"&&canonical(q.payload)!==canonical(local);
+  if(queueDiverged&&local===null)
+   throw Error("An earlier unsent update and a local deletion differ. Preserve both versions for protected recovery.");
   recordPreview={owner,kind,id,generation,action,
-   localHash:canonical(local),remoteHash:canonical(row),
+   localHash:canonical(local),queueHash:canonical(q.payload),
+   queueDiverged,remoteHash:canonical(row),
    cloudRevision:row?Number(row.revision):null};
   return {kind,id,local:clone(local),cloud:row?clone(row.payload):null,
+   queued:queueDiverged?clone(q.payload):null,queueDiverged,
    localDeleted:local===null,cloudDeleted:row===null,
    cloudRevision:recordPreview.cloudRevision};
  }
  async function resolveRecordConflict(choice){
-  if(!["local","cloud"].includes(choice))throw Error("Choose device or cloud copy.");
+  if(!["local","cloud","queued"].includes(choice))throw Error("Choose the current device, earlier unsent, or cloud copy.");
   if(!recordPreview)throw Error("Review both copies before resolving.");
   const reviewed=recordPreview;
   const q=requireRecordReview(reviewed.kind,reviewed.id);
-  if(reviewed.owner!==owner||q.generation!==reviewed.generation||q.action!==reviewed.action)
-   throw Error("Pending edits changed since review. Review both copies again.");
+  if(reviewed.owner!==owner||q.generation!==reviewed.generation||q.action!==reviewed.action||
+     canonical(q.payload)!==reviewed.queueHash || (choice==="queued"&&!reviewed.queueDiverged))
+   throw Error("Pending edits changed since review. Review all saved versions again.");
   reconciling=true;
   const sessionOwner=owner;
   try{
@@ -482,6 +519,7 @@
     throw Error("Cloud account changed. No data was modified.");
    const before=clone(snapshotFn()),local=localRecord(before,reviewed.kind,reviewed.id);
    if(canonical(row)!==reviewed.remoteHash||canonical(local)!==reviewed.localHash||
+      canonical(q.payload)!==reviewed.queueHash ||
       q.generation!==reviewed.generation||!q.conflict)
     throw Error("One of the records changed since review. Review again; nothing was overwritten.");
    if(isProtectedRecord(reviewed.kind,reviewed.id))
@@ -511,16 +549,23 @@
    try{
     if(row){versions[k]=Number(row.revision);mirror[k]=canonical(row.payload);}
     else{delete versions[k];delete mirror[k];}
-    if(choice==="cloud"){
+    if(choice==="cloud"||choice==="queued"){
      const next=clone(before);
      const records=items(next,reviewed.kind).filter(x=>String(x.id)!==reviewed.id);
-     if(row)records.push(clone(row.payload));
+     const selected=choice==="cloud"?(row?row.payload:null):q.payload;
+     if(selected)records.push(clone(selected));
      putItems(next,reviewed.kind,records);
      replaceFn(next); // Account cache is written atomically by the host.
-     pending=pending.filter(entry=>entry!==q);
-    }else{
-     // Rebase ONLY the reviewed item against the version that was just checked.
-     // The next cloud write still uses revision-based compare-and-swap.
+     if(choice==="cloud")pending=pending.filter(entry=>entry!==q);
+    }
+    if(choice!=="cloud"){
+     // The current device and the earlier queued version are separate choices.
+     // Once chosen, update only this reviewed queue entry. Preserve the other
+     // copy in the independently verified backup made above.
+     if(choice==="local"&&reviewed.queueDiverged){
+      q.payload=clone(local);
+      q.generation=(q.generation||0)+1;
+     }
      q.baseRevision=row?Number(row.revision):null;
      q.conflict=false;
     }
@@ -533,7 +578,7 @@
    }catch(e){
     versions=previous.versions;mirror=previous.mirror;
     baseline=previous.baseline;pending=previous.pending;
-    if(choice==="cloud")try{replaceFn(before);}catch(rollbackError){
+    if(choice==="cloud"||choice==="queued")try{replaceFn(before);}catch(rollbackError){
      root.console?.error?.("Could not restore local workspace after failed resolution",rollbackError);
     }
     state="error";

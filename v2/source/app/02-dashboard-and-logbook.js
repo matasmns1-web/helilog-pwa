@@ -14,7 +14,10 @@ function dashboardPeriodFlights(days){
   let now=new Date();
   let cutoff=new Date(now.getFullYear(),now.getMonth(),now.getDate());
   cutoff.setDate(cutoff.getDate()-(days-1));
-  let cutoffStr=cutoff.toISOString().slice(0,10);
+  // Use the local calendar day, not UTC ISO midnight. Positive time zones
+  // otherwise include an extra day in 30/90/365-day dashboard filters.
+  const cutoffStr=[cutoff.getFullYear(),String(cutoff.getMonth()+1).padStart(2,'0'),
+   String(cutoff.getDate()).padStart(2,'0')].join('-');
   return effectiveFlights().filter(f=>!isSimulatorSession(f)&&String(f.date||'')>=cutoffStr);
 }
 function dashboardPeriodTotals(flights){
@@ -53,14 +56,18 @@ function setDashboardRange(days,button){
   document.querySelectorAll('.dashboard-range button').forEach(b=>b.classList.toggle('on',b===button));
 }
 function dashboard(){
-  let fs=effectiveFlights().filter(f=>!isSimulatorSession(f)).sort(compareFlightsNewest);
+  // Materialize corrected flights once; old aircraft totals re-resolved the
+  // complete correction history separately for every aircraft.
+  const entries=effectiveFlights();
+  let fs=entries.filter(f=>!isSimulatorSession(f)).sort(compareFlightsNewest);
   let t=calcTotals();
   let reminders=dashboardReminders().slice(0,6);
   let endorsements=[...(S.endorsements||[])].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,4);
-  let aircraftRows=S.aircraft.map(a=>{
-    let mins=effectiveFlights().filter(f=>f.aid===a.id).reduce((n,f)=>n+Number(f.mins||0),0);
-    return {a,mins};
-  }).sort((a,b)=>b.mins-a.mins);
+  const aircraftMinutes=new Map();
+  for(const f of entries)aircraftMinutes.set(f.aid,
+   (aircraftMinutes.get(f.aid)||0)+Number(f.mins||0));
+  let aircraftRows=S.aircraft.map(a=>({a,mins:aircraftMinutes.get(a.id)||0}))
+    .sort((a,b)=>b.mins-a.mins);
 
   app.innerHTML=header('Dashboard',`Welcome back, ${S.pilot.name}`,`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" onclick="go('quickadd')">⚡ Quick flight</button><button class="btn" onclick="go('add')">Full entry</button>${!v23AccountWorkspace()?`<button class="btn" onclick="go('testmode')">⚗ ${TEST_MODE?'Test Mode settings':'Open Test Mode'}</button>`:''}</div>`)+
   `<div class="card">
@@ -119,17 +126,63 @@ function dashboard(){
   </div>`;
 }
 function row(f){let a=ac(f.aid);return `<tr class="click" onclick="flight('${f.id}')"><td>${displayDate(f.date)}</td><td><b>${isSimulatorSession(f)?'SIM':a?.icao||'—'}</b></td><td>${isSimulatorSession(f)?htmlEscape(f.stdType):f.dep+' → '+f.arr}</td><td>${fmt(isSimulatorSession(f)?f.stdMin:f.mins)}</td><td><span class="tag">${isSimulatorSession(f)?'SIM':f.role}</span></td></tr>`}
+// V2.46: the mobile filters are presentation-only; pagination remains independent.
+// V2.45.1: pagination is presentation-only. The same complete filtered
+// collection drives the totals, while only the visible slice is rendered.
+let logbookPage=1,logbookPageCount=1,lastLogbookPageSize=0;
+function logbookPageSize(){
+  return (isStandaloneApp()||window.innerWidth<=850)?10:25;
+}
+function logbookViewportResized(){
+  if(!document.getElementById('logbookBody'))return;
+  const size=logbookPageSize();
+  if(size===lastLogbookPageSize)return;
+  logbookPage=1;
+  applyLogbookFilters();
+}
+function setLogbookPage(page){
+  const next=Math.max(1,Math.min(logbookPageCount,Math.trunc(Number(page)||1)));
+  if(next===logbookPage)return;
+  logbookPage=next;
+  applyLogbookFilters();
+  // On a phone, keep the first row near the top after pressing Next/Previous,
+  // without forcing desktop browsers to jump while paging.
+  if(logbookPageSize()===10)
+    document.getElementById('logbookBody')?.closest('table')?.scrollIntoView?.({block:'start',behavior:'smooth'});
+}
+function toggleLogbookMobileFilters(){
+  const card=document.querySelector('.logbook-flight-list');
+  const button=document.getElementById('logbookFilterToggle');
+  if(!card||!button)return;
+  const expanded=button.getAttribute('aria-expanded')!=='true';
+  card.classList.toggle('logbook-mobile-expanded',expanded);
+  button.setAttribute('aria-expanded',String(expanded));
+  const label=document.getElementById('logbookFilterToggleText');
+  if(label)label.textContent=expanded?'Hide filters':'More filters';
+}
+function updateLogbookMobileFilterStatus(){
+  const ids=['filterFrom','filterTo','filterAircraft','filterRole','filterXC','filterNight','filterIFR'];
+  const active=ids.filter(id=>!!document.getElementById(id)?.value).length;
+  const badge=document.getElementById('logbookFilterCount');
+  if(badge){badge.textContent=String(active);badge.hidden=active===0;}
+  const clear=document.getElementById('logbookMobileClear');
+  if(clear)clear.hidden=!active&&!document.getElementById('logSearch')?.value?.trim();
+}
 function logbook(){
   let aircraftOptions=S.aircraft.map(a=>`<option value="${a.id}">${a.icao} — ${a.reg}</option>`).join('');
   app.innerHTML=header('Logbook',isInstalledTouchApp()?'View your flight records':'Search and filter your flight records',`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn desktop-only web-only-tool" onclick="openImportModal()">Import CSV</button><button class="btn desktop-only web-only-tool" onclick="openExportModal()">Export</button><button class="btn primary" onclick="go('add')">＋ Add flight</button></div>`)+`
   <div class="card logbook-flight-list">
-    <div class="filterbar logbook-filter-controls">
-      <div class="filterfield"><label>Search</label><input id="logSearch" type="search" placeholder="Route, PIC, registration, remarks…"></div>
-      <div class="filterfield desktop-only"><label>From date</label>${europeanDateField('filterFrom')}</div>
-      <div class="filterfield desktop-only"><label>To date</label>${europeanDateField('filterTo')}</div>
-      <div class="filterfield desktop-only"><label>Aircraft</label><select id="filterAircraft"><option value="">All aircraft</option>${aircraftOptions}</select></div>
+    <div id="logbookPrimaryFilters" class="filterbar logbook-filter-primary">
+      <div class="filterfield"><label for="logSearch">Search</label><input id="logSearch" type="search" placeholder="Route, PIC, registration, remarks…"></div>
+      <div class="filterfield"><label>From date</label>${europeanDateField('filterFrom')}</div>
+      <div class="filterfield"><label>To date</label>${europeanDateField('filterTo')}</div>
+      <div class="filterfield"><label for="filterAircraft">Aircraft</label><select id="filterAircraft"><option value="">All aircraft</option>${aircraftOptions}</select></div>
     </div>
-    <div class="filterbar second desktop-only logbook-filter-controls">
+    <div class="logbook-mobile-filter-bar">
+      <button id="logbookFilterToggle" type="button" class="btn logbook-filter-toggle" aria-expanded="false" aria-controls="logbookPrimaryFilters logbookAdvancedFilters" onclick="toggleLogbookMobileFilters()"><span id="logbookFilterToggleText">More filters</span><span id="logbookFilterCount" class="logbook-filter-count" hidden></span></button>
+      <button id="logbookMobileClear" type="button" class="btn logbook-mobile-clear" onclick="clearLogbookFilters()" hidden>Clear</button>
+    </div>
+    <div id="logbookAdvancedFilters" class="filterbar second logbook-filter-secondary">
       <div class="filterfield"><label>Pilot function</label><select id="filterRole"><option value="">All functions</option>${['PIC','CO-PILOT','DUAL','SOLO','SPIC','PICUS'].map(r=>`<option>${r}</option>`).join('')}</select></div>
       <div class="filterfield"><label>Cross-country</label><select id="filterXC"><option value="">All flights</option><option value="yes">XC only</option><option value="no">Non-XC only</option></select></div>
       <div class="filterfield"><label>Night</label><select id="filterNight"><option value="">All flights</option><option value="yes">Night time recorded</option><option value="no">No night time</option></select></div>
@@ -142,6 +195,14 @@ function logbook(){
         <tbody id="logbookBody"></tbody>
       </table>
     </div>
+    <nav id="logbookPagination" class="logbook-pagination" aria-label="Logbook pages" hidden>
+      <span id="logbookPageSummary" class="logbook-page-summary" aria-live="polite"></span>
+      <div class="logbook-page-controls">
+        <button id="logbookPrevPage" type="button" class="btn" onclick="setLogbookPage(logbookPage-1)" aria-label="Previous logbook page">Previous</button>
+        <span id="logbookPageLabel" class="logbook-page-label"></span>
+        <button id="logbookNextPage" type="button" class="btn" onclick="setLogbookPage(logbookPage+1)" aria-label="Next logbook page">Next</button>
+      </div>
+    </nav>
     <div class="filtermeta">
       <div><span id="resultCount" class="resultcount">0 flights</span> shown</div>
       <div class="filtertotals">
@@ -155,8 +216,12 @@ function logbook(){
 
   ['logSearch','filterFrom','filterTo','filterAircraft','filterRole','filterXC','filterNight','filterIFR'].forEach(id=>{
     let el=document.getElementById(id);
-    el.addEventListener(['logSearch','filterFrom','filterTo'].includes(id)?'input':'change',applyLogbookFilters);
+    el.addEventListener(['logSearch','filterFrom','filterTo'].includes(id)?'input':'change',()=>{
+      logbookPage=1;applyLogbookFilters();
+    });
   });
+  // A single listener survives navigation without accumulating duplicates.
+  window.addEventListener('resize',logbookViewportResized);
   applyLogbookFilters();
 }
 
@@ -170,14 +235,19 @@ function getFilteredFlights(){
   let night=document.getElementById('filterNight')?.value||'';
   let ifr=document.getElementById('filterIFR')?.value||'';
 
+  // Build searchable text only when the pilot actually entered a query.
+  // Type and registration lookups are constant-time for large logbooks.
+  const aircraftById=new Map();
+  if(q)for(const a of S.aircraft)if(!aircraftById.has(a.id))aircraftById.set(a.id,a);
   return effectiveFlights().filter(f=>{
-    let a=ac(f.aid);
-    let searchable=[
-      f.date,f.dep,f.arr,f.off,f.on,f.picName,f.role,f.simCategory,f.simDevice,f.simQualification,f.stdType,flightRemarksForDisplay(f),
-      a?.icao,a?.reg,a?.manufacturer,a?.model,a?.variant
-    ].filter(Boolean).join(' ').toLowerCase();
-
-    if(q && !searchable.includes(q)) return false;
+    if(q){
+      const a=aircraftById.get(f.aid);
+      const searchable=[
+       f.date,f.dep,f.arr,f.off,f.on,f.picName,f.role,f.simCategory,f.simDevice,f.simQualification,f.stdType,flightRemarksForDisplay(f),
+       a?.icao,a?.reg,a?.manufacturer,a?.model,a?.variant
+      ].filter(Boolean).join(' ').toLowerCase();
+      if(!searchable.includes(q))return false;
+    }
     if(from && f.date<from) return false;
     if(to && f.date>to) return false;
     if(aircraftId && f.aid!==aircraftId) return false;
@@ -196,8 +266,26 @@ function applyLogbookFilters(){
   let body=document.getElementById('logbookBody');
   if(!body) return;
   let flights=getFilteredFlights();
-  body.innerHTML=flights.length?flights.map(f=>{
-    let a=ac(f.aid);
+  const pageSize=logbookPageSize();
+  lastLogbookPageSize=pageSize;
+  logbookPageCount=Math.max(1,Math.ceil(flights.length/pageSize));
+  logbookPage=Math.min(Math.max(1,logbookPage),logbookPageCount);
+  const first=(logbookPage-1)*pageSize;
+  const visibleFlights=flights.slice(first,first+pageSize);
+  const pager=document.getElementById('logbookPagination');
+  if(pager){
+    pager.hidden=logbookPageCount<=1;
+    document.getElementById('logbookPageSummary').textContent=
+      `Showing ${first+1}–${first+visibleFlights.length} of ${flights.length} entries`;
+    document.getElementById('logbookPageLabel').textContent=
+      `Page ${logbookPage} of ${logbookPageCount}`;
+    document.getElementById('logbookPrevPage').disabled=logbookPage===1;
+    document.getElementById('logbookNextPage').disabled=logbookPage===logbookPageCount;
+  }
+  const aircraftById=new Map();
+  for(const a of S.aircraft)if(!aircraftById.has(a.id))aircraftById.set(a.id,a);
+  body.innerHTML=visibleFlights.length?visibleFlights.map(f=>{
+    let a=aircraftById.get(f.aid);
     return `<tr class="click" onclick="flight('${f.id}')">
       <td>${displayDate(f.date)}</td><td><b>${isSimulatorSession(f)?'SIM':a?.icao||'—'}</b></td><td>${isSimulatorSession(f)?htmlEscape(f.simCategory||'—'):a?.reg||'—'}</td>
       <td>${isSimulatorSession(f)?htmlEscape(f.stdType||simulatorDeviceLabel(f)):f.dep+' '+(f.off||'')}</td>
@@ -223,12 +311,14 @@ function applyLogbookFilters(){
 
   document.getElementById('filteredIFRWrap').style.display=ifrFilter?'inline':'none';
   document.getElementById('filteredNightWrap').style.display=nightFilter?'inline':'none';
+  updateLogbookMobileFilterStatus();
 }
 
 function clearLogbookFilters(){
   ['logSearch','filterFrom','filterTo','filterAircraft','filterRole','filterXC','filterNight','filterIFR'].forEach(id=>{
     let el=document.getElementById(id); if(el) el.value='';
   });
+  logbookPage=1;
   applyLogbookFilters();
 }
 

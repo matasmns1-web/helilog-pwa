@@ -16,7 +16,6 @@ html.helilog-cloud-workspace nav button[data-v="testmode"],html.helilog-cloud-wo
 @media(max-width:550px){.v23-auth-container{align-items:flex-start;padding:18px 0}.v23-auth-card{padding:25px 20px}}
 /* Installed phone/tablet app: flight entry and viewing only; browser retains management tools. */
 html.installed-touch-app .web-only-tool,
-html.installed-touch-app .logbook-filter-controls,
 html.installed-touch-app nav button[data-v="printarchive"],
 html.helilog-installed-app nav button[data-v="printarchive"]{display:none!important}
 html.installed-touch-app .dashboard-actions{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -569,3 +568,40 @@ html.helilog-test-mode .brand::after{
 .special-count-fields label{font-size:11px;min-height:15px}
 .special-count-fields input[type="number"]{text-align:center;padding-inline:4px;font-variant-numeric:tabular-nums}
 @media(max-width:520px){.special-count-fields{grid-template-columns:minmax(0,1fr) repeat(2,minmax(0,.82fr));column-gap:5px}.special-count-fields label{font-size:10px}}
+
+/* V2.45.1: compact logbook paging instead of rendering the full history. */
+.logbook-pagination{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:14px 0 2px}
+.logbook-pagination[hidden]{display:none!important}
+.logbook-page-summary{font-size:12px;color:var(--muted)}
+.logbook-page-controls{display:flex;align-items:center;gap:10px}
+.logbook-page-controls .btn{min-width:84px}
+.logbook-page-label{font-size:13px;font-weight:750;white-space:nowrap;font-variant-numeric:tabular-nums}
+.logbook-page-controls .btn:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:650px){
+ .logbook-pagination{align-items:stretch;flex-direction:column;gap:9px}
+ .logbook-page-controls{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px}
+ .logbook-page-controls .btn{min-width:0;min-height:44px}
+ .logbook-page-label{text-align:center}
+}
+
+/* V2.46: mobile Logbook search stays visible; advanced filters open on demand.
+   Installed PWAs can filter records but retain all web-only archive/import limits. */
+.logbook-mobile-filter-bar{display:none}
+.logbook-filter-count{display:inline-flex;min-width:20px;justify-content:center;align-items:center;padding:2px 6px;border-radius:999px;font-size:12px;font-weight:800;background:var(--soft);color:var(--ink)}
+.logbook-filter-count[hidden],.logbook-mobile-clear[hidden]{display:none!important}
+@media(max-width:850px){
+  .logbook-mobile-filter-bar{display:flex;gap:9px;align-items:center;margin:-4px 0 12px}
+  .logbook-filter-toggle,.logbook-mobile-clear{min-height:44px}
+  .logbook-filter-toggle{display:inline-flex;align-items:center;gap:9px}
+  .logbook-filter-primary>.filterfield:not(:first-child),
+  .logbook-filter-secondary{display:none}
+  .logbook-mobile-expanded .logbook-filter-primary>.filterfield:not(:first-child){display:block}
+  .logbook-mobile-expanded .logbook-filter-secondary{display:grid}
+}
+html.installed-touch-app .logbook-mobile-filter-bar{display:flex;gap:9px;align-items:center;margin:-4px 0 12px}
+html.installed-touch-app .logbook-filter-toggle,html.installed-touch-app .logbook-mobile-clear{min-height:44px}
+html.installed-touch-app .logbook-filter-primary{grid-template-columns:1fr}
+html.installed-touch-app .logbook-filter-primary>.filterfield:not(:first-child),
+html.installed-touch-app .logbook-filter-secondary{display:none}
+html.installed-touch-app .logbook-mobile-expanded .logbook-filter-primary>.filterfield:not(:first-child){display:block}
+html.installed-touch-app .logbook-mobile-expanded .logbook-filter-secondary{display:grid}
