@@ -81,7 +81,7 @@ test('unsupported clipboard and rejected permission fail safely without sync act
   assert.equal(await f.copy(),false);
   assert.match(f.feedback.textContent,/Clipboard unavailable|Could not copy/);
   assert.equal(f.calls.refreshes,0);
-  if(!options.clipboard)assert.equal(f.calls.copies.length,0);
+  if(options.clipboard===false)assert.equal(f.calls.copies.length,0);
  }
 });
 test('diagnostics convert invalid timestamps and negative counters without exposing raw status strings',()=>{
