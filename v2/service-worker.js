@@ -1,4 +1,4 @@
-const CACHE='helilog-v2-50-cloud-health-1';
+const CACHE='helilog-v2-51-safe-cloud-diagnostics-1';
 const SHELL=[
   './',
   './index.html',
