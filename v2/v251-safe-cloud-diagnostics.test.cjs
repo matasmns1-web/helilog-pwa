@@ -41,12 +41,13 @@ function fixture({signedIn=true,clipboard=true,throws=false,status=baseline}={})
   copy:()=>vm.runInContext('v251CopyCloudHealthSummary()',ctx),
   health:()=>vm.runInContext('v250CloudHealthMarkup()',ctx)};
 }
-test('Cloud Health exposes an explicit copy action with accessible feedback and no eager clipboard call',()=>{
+test('Cloud Health exposes the passive activity log instead of an explicit copy action',()=>{
  const f=fixture();
  const html=f.health();
- assert.match(html,/id="v251CopyCloudDiagnostics"/);
- assert.match(html,/onclick="v251CopyCloudHealthSummary\(\)"/);
- assert.match(html,/id="v251CloudDiagnosticsStatus" role="status" aria-live="polite"/);
+ assert.match(html,/id="v252ActivityPanel"/);
+ assert.match(html,/ontoggle="v252ActivityOpened\(this\)"/);
+ assert.match(html,/id="v252ActivityRows"/);
+ assert.doesNotMatch(html,/id="v251CopyCloudDiagnostics"/);
  assert.equal(f.calls.copies.length,0);
  assert.equal(f.calls.refreshes,0);
 });
