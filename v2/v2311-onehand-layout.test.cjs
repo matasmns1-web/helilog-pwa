@@ -24,7 +24,7 @@ test('original Quick/Full mode, PIC, night and save path are unchanged',()=>{
    "function v218UpdateNight()","function saveFlight()","id=\"saveFlightBtn\""])
    assert.ok(source.includes(str),str);
  assert.match(source,/if\(!editing\)setFlightEntryMode\(quick\?'quick':'full'\)/);
- assert.match(read('service-worker.js'),/helilog-v2-51-safe-cloud-diagnostics-1/);
- assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.51'/);
- assert.match(read('source/index.template.html'),/HeliLog V2\.51 — Safe Sync Diagnostics · Test/);
+ assert.match(read('service-worker.js'),/helilog-v2-52-private-sync-activity-1/);
+ assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.52'/);
+ assert.match(read('source/index.template.html'),/HeliLog V2\.52 — Private Sync Activity · Test/);
 });
