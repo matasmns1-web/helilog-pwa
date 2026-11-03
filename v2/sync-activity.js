@@ -119,7 +119,7 @@
  }
  async function recent(){
   const own=owner,revision=epoch,localRows=local();
-  if(!own||!enabled||!db||root.navigator?.onLine===false)
+  if(!own||!db||root.navigator?.onLine===false)
    return {events:localRows.slice(0,MAX_REMOTE),cloudAvailable:false};
   try{
    const {data,error}=await db.from(TABLE)
