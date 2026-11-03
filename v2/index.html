@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.51 — Safe Sync Diagnostics · Test</title>
+<title>HeliLog V2.52 — Private Sync Activity · Test</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -625,7 +625,7 @@ html.installed-touch-app .logbook-mobile-expanded .logbook-filter-secondary{disp
 <link rel="stylesheet" href="./guide.css?v=2.29" media="screen">
 </head>
 <body><div class="layout">
-<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.51 · TEST ENVIRONMENT</span></div><nav>
+<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.52 · TEST ENVIRONMENT</span></div><nav>
 <div class="nav-group-label">Flight operations</div>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="recency">◷ Recency</button>
 <div class="nav-group-label">Records &amp; assets</div>
@@ -713,6 +713,7 @@ html.installed-touch-app .logbook-mobile-expanded .logbook-filter-secondary{disp
 <script src="./cloud-foundation.js?v=2.19-locations-1"></script>
 <script src="./cloud-view.js?v=2.19-locations-1"></script>
 <script src="./cloud-sync.js?v=2.39.1-operator-sync-1"></script>
+<script src="./sync-activity.js?v=2.52"></script>
 <script src="./auth-gate.js?v=2.39.1-operator-sync-1"></script>
 <script src="./cloud-archives.js?v=2.19-locations-1"></script>
 <script src="./archive-integrity.js?v=2.19-locations-1"></script>
@@ -6168,7 +6169,13 @@ function v250CloudHealthMarkup(){
   '</div>'+
   (st.error?'<div class="note" role="status" style="margin-top:10px">'+htmlEscape(st.error)+'</div>':'')+
   (!setup?'<p class="mini">Full account synchronization setup is incomplete; manage it under Cloud account.</p>':'')+
-  '<div style="margin-top:10px"><button class="btn" id="v251CopyCloudDiagnostics" type="button" onclick="v251CopyCloudHealthSummary()">Copy safe status summary</button><span class="mini" id="v251CloudDiagnosticsStatus" role="status" aria-live="polite" style="display:block;margin-top:6px"></span></div>'+
+  '<details id="v252ActivityPanel" style="margin-top:12px" ontoggle="v252ActivityOpened(this)">'+
+   '<summary><b>Sync activity log</b> · automatic, private</summary>'+
+   '<p class="mini">Records significant sync changes without flight details or raw error messages. Saves locally and sends to your account in Supabase when online. Cloud history is retained for 30 days.</p>'+
+   '<div id="v252ActivityRows" class="mini" role="status" aria-live="polite">Open to view recent activity.</div>'+
+   '<button class="btn" type="button" id="v252ActivityToggle" style="margin-top:10px" onclick="v252ToggleActivity()">'+
+   (window.HeliLogSyncActivity?.isEnabled()?'Pause automatic logging':'Enable automatic logging')+
+   '</button></details>'+
   '<p class="mini">Timestamps are saved only on this device. This panel does not contact Supabase or retry synchronization. Review conflicts and run a manual check under Cloud account.</p>'+
   '</details>';
 }
@@ -6218,6 +6225,45 @@ async function v251CopyCloudHealthSummary(){
   if(feedback)feedback.textContent='Could not copy. No data was shared.';
   return false;
  }
+}
+/* V2.52 TEST — activity log is passive until expanded; all labels are allowlisted. */
+const v252ActivityLabels={
+ sync_ok:"Cloud synchronized",sync_recovered:"Synchronization recovered",
+ changes_pending:"Changes waiting to synchronize",
+ conflict_detected:"Conflict needs review",sync_error:"Cloud connection or sync issue",
+ offline:"Device offline",reset_review_required:"Account reset needs review"
+};
+async function v252ActivityOpened(details){
+ if(!details?.open||!v23AccountWorkspace())return;
+ const target=document.getElementById('v252ActivityRows');
+ const api=window.HeliLogSyncActivity;
+ if(!target)return;
+ if(!api){target.textContent="Activity logging is unavailable on this device.";return;}
+ target.textContent="Loading recent sync events…";
+ const result=await api.recent();
+ if(!v23AccountWorkspace()||document.getElementById('v252ActivityRows')!==target)return;
+ const events=(result?.events||[]).slice(0,25);
+ if(!events.length){target.textContent="No sync events recorded yet.";return;}
+ target.innerHTML='<div style="display:grid;gap:8px;margin-top:9px">'+events.map(e=>{
+  const label=v252ActivityLabels[e.event_type]||"Sync event";
+  const stamp=typeof e.recorded_at==="string"?Date.parse(e.recorded_at):NaN;
+  const time=Number.isFinite(stamp)?new Date(stamp).toLocaleString():"Time unavailable";
+  const counts="Pending: "+Math.max(0,Number(e.pending_count)||0)+" · Conflicts: "+Math.max(0,Number(e.conflict_count)||0);
+  const device=["iPad","iPhone","Android","Desktop","Other"].includes(e.device_kind)?e.device_kind:"Unknown device";
+  return '<div style="padding:7px 0;border-bottom:1px solid var(--line,#ddd)"><b>'+
+   htmlEscape(label)+'</b><div class="mini">'+htmlEscape(device)+' · '+htmlEscape(time)+'</div>'+
+   '<div class="mini">'+htmlEscape(counts)+'</div></div>';
+ }).join('')+'</div>'+
+ (result.cloudAvailable?'':'<p class="mini">Cloud history unavailable. Showing saved events from this device.</p>');
+}
+function v252ToggleActivity(){
+ if(!v23AccountWorkspace()||!window.HeliLogSyncActivity)return;
+ const api=window.HeliLogSyncActivity;
+ const enabled=api.setEnabled(!api.isEnabled());
+ const button=document.getElementById('v252ActivityToggle');
+ if(button)button.textContent=enabled?'Pause automatic logging':'Enable automatic logging';
+ const details=document.getElementById('v252ActivityPanel');
+ if(details?.open)void v252ActivityOpened(details);
 }
 function settings(){
  app.innerHTML=header('Settings','Logbook, aerodromes, cloud account, backups and device preferences',
@@ -7417,6 +7463,7 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {v:"V2.52",name:"Private automatic sync activity log",detail:"The Settings → Cloud account → Cloud health → Sync activity log now records significant status changes automatically, including conflicts, offline periods, failures and recoveries. Saved activity from your devices is synchronized privately to TEST Supabase when connected and retained in the cloud for 30 days. No raw errors, pilot names, flight records or signatures are sent. You can pause automatic logging on the same panel. The old copy-and-paste button is no longer shown."},
   {v:"V2.51",name:"Copy private Cloud Health status",detail:"In Settings → Cloud account → Cloud health, select Copy safe status summary to share device-reported sync state, queued change and conflict counts, cloud-check times and whether an error is present. The report deliberately excludes account identifiers, pilot or flight details, signatures and raw error messages. Copying happens only when pressed; no sync request is made and no data is changed."},
   {v:"V2.50",name:"Read-only Cloud Health in Settings",detail:"Settings → Cloud account now includes a compact Cloud health section with local timestamps for the last successful cloud read and fully synchronized state, pending uploads, conflicts, device network indicator and any sync error. The panel does not contact Supabase or retry synchronization; it uses the existing cloud sync status. Times are stored only on the signed-in device. Review conflicts or manually check/sync under Cloud account. The PT409 protection remains active."},
   {v:"V2.49.1",name:"Cloud conflict CPU safety fix",detail:"The TEST database now reports an actual cloud revision conflict as HTTP 409 (PT409), instead of SQLSTATE 40001 which PostgREST 14 could retry indefinitely and overload Supabase CPU. HeliLog treats PT409 as a preserved on-device conflict for manual review. The prior 40001 code remains recognized for compatibility. No data or archived records change."},
