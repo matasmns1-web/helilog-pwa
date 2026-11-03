@@ -30,7 +30,7 @@ test('three-way review performs no silent rebase and checks all versions before 
 });
 test('new release uses separate test cache; production remains gated',()=>{
  assert.match(read('service-worker.js'),/helilog-v2-53-compact-help-topics-1/);
- assert.match(read('source/index.template.html'),/HeliLog V2\.53 — Private Sync Activity/);
+ assert.match(read('source/index.template.html'),/HeliLog V2\.53 — Compact Help Topics/);
  assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.53'/);
  assert.doesNotMatch(sync,/localStorage\.clear\(\)/);
 });
