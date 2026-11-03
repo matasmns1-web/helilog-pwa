@@ -47,7 +47,7 @@ test("conflict comparison is explicit and shows both copies without automatic ac
  const markup=api();
  assert.match(markup,/LY-OFF/);
  assert.match(markup,/LY-WEB/);
- assert.match(markup,/Keep this device copy/);
+ assert.match(markup,/Keep current device copy/);
  assert.match(markup,/Use current cloud copy/);
  assert.match(markup,/device-local safety snapshot/);
 });
@@ -58,10 +58,10 @@ test("Cloud Account setup avoids obsolete release labels",()=>{
 test("V2.7 remains Profile-only logout and ships coherent cache assets",()=>{
  assert.doesNotMatch(code,/onclick="v23SignOut\(\)"/);
  assert.match(html,/onclick="v23SignOut\(\)">Log out/);
- assert.match(html,/V2\.44\.1 · TEST ENVIRONMENT/);
- assert.match(auth,/HELILOG_TEST_VERSION='V2\.44\.1'/);
- assert.equal(manifest.name,"HeliLog V2.44.1 — Data Management Test");
- assert.match(worker,/helilog-v2-44-1-data-management-1/);
+ assert.match(html,/V2\.52 · TEST ENVIRONMENT/);
+ assert.match(auth,/HELILOG_TEST_VERSION='V2\.52'/);
+ assert.equal(manifest.name,"HeliLog V2.52 — Private Sync Activity Test");
+ assert.match(worker,/helilog-v2-52-private-sync-activity-1/);
  for(const name of ["cloud-view","cloud-sync","auth-gate"]){
   const url=name+".js?v="+(['cloud-sync','auth-gate'].includes(name)?'2.39.1-operator-sync-1':'2.19-locations-1');
   assert.ok(html.includes(url),name+" index");

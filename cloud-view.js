@@ -57,13 +57,16 @@ function v27RecordDiffMarkup(){
   v22CloudEscape(JSON.stringify(value,(key,part)=>key==='savedSignatureData'||key==='signatureData'?'[signature image hidden]':part,2))+'</pre>';
  return '<div id="v2281RecordComparison" role="region" aria-label="Compare device and cloud records" tabindex="-1" class="card" style="margin-top:16px;scroll-margin-top:14px"><div class="head"><h2>Review record conflict</h2></div>'+
   '<p><b>'+v22CloudEscape(p.kind)+': '+v22CloudEscape(p.id)+'</b></p>'+
-  '<p>These copies differ. Nothing has been overwritten. Review both versions before choosing.</p>'+
-  '<div class="profilegrid"><div><b>This device</b>'+display(p.local)+'</div>'+
+  '<p>'+(p.queueDiverged?'Three saved versions differ. No version has been overwritten. Compare all three before choosing.':'These copies differ. Nothing has been overwritten. Review both versions before choosing.')+'</p>'+
+  '<div class="profilegrid"><div><b>This device (current)</b>'+display(p.local)+'</div>'+
+  (p.queueDiverged?'<div><b>Earlier unsent device copy</b>'+display(p.queued)+'</div>':'')+
   '<div><b>Current cloud</b>'+display(p.cloud)+'</div></div>'+
   personSignatures+
-  '<div class="note" style="margin-top:12px">Before applying either choice, HeliLog saves a verified device-local safety snapshot of the complete workspace, both records and the pending queue. Keeping this device will attempt a revision-checked upload; if the cloud changes again, it will stop for a fresh review. This is not a remote backup.</div>'+
+  (p.queueDiverged?'<div class="note" style="margin-top:12px">The earlier unsent version is from this device\'s saved sync queue. It may contain edits not present in the current device copy. Choosing another version will preserve that earlier copy in the safety backup.</div>':'')+
+  '<div class="note" style="margin-top:12px">Before applying a choice, HeliLog saves a verified device-local safety snapshot of the complete workspace, current cloud record and original pending queue. A device or queued choice uses revision-checked cloud sync; if the cloud changes again, it stops for another review. No changes are uploaded before you choose. This is not a remote backup.</div>'+
   '<div class="actions" style="margin-top:12px">'+
-  '<button class="btn primary" type="button" onclick="v27ResolveRecordConflict(\'local\')"'+(v27RecordBusy?' disabled':'')+'>Keep this device copy</button>'+
+  '<button class="btn primary" type="button" onclick="v27ResolveRecordConflict(\'local\')"'+(v27RecordBusy?' disabled':'')+'>Keep current device copy</button>'+
+  (p.queueDiverged?'<button class="btn" type="button" onclick="v27ResolveRecordConflict(\'queued\')"'+(v27RecordBusy?' disabled':'')+'>Use earlier unsent copy</button>':'')+
   '<button class="btn" type="button" onclick="v27ResolveRecordConflict(\'cloud\')"'+(v27RecordBusy?' disabled':'')+'>Use current cloud copy</button></div></div>';
 }
 function v27ConflictsMarkup(){
@@ -171,10 +174,11 @@ async function v27ReviewRecordConflict(kind,id){
 }
 async function v27ResolveRecordConflict(choice){
  if(v27RecordBusy||!v27RecordPreview)return;
- const local=choice==="local";
- const question=local?
-  "Keep this DEVICE record and queue a revision-checked cloud update? A device-local safety backup will be saved first.":
-  "Use the CURRENT CLOUD version on this device, including deletion if the cloud record was removed? A device-local safety backup will be saved first.";
+ const question=choice==="local"?
+  "Keep the CURRENT DEVICE copy and update the pending cloud sync entry? All previous device/queue/cloud versions will be preserved in a verified local safety backup first.":
+  choice==="queued"?
+  "Restore the EARLIER UNSENT copy to this device and queue a revision-checked cloud update? The current device and cloud copies will be preserved in a verified local backup first.":
+  "Use the CURRENT CLOUD version on this device, including deletion if the cloud record was removed? Current device and unsent queue versions will first be preserved in a verified local safety backup.";
  if(!confirm(question))return;
  v27RecordBusy=true;v22CloudNotice="";
  try{
