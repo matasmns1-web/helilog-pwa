@@ -206,8 +206,56 @@ function v250CloudHealthMarkup(){
   '</div>'+
   (st.error?'<div class="note" role="status" style="margin-top:10px">'+htmlEscape(st.error)+'</div>':'')+
   (!setup?'<p class="mini">Full account synchronization setup is incomplete; manage it under Cloud account.</p>':'')+
+  '<div style="margin-top:10px"><button class="btn" id="v251CopyCloudDiagnostics" type="button" onclick="v251CopyCloudHealthSummary()">Copy safe status summary</button><span class="mini" id="v251CloudDiagnosticsStatus" role="status" aria-live="polite" style="display:block;margin-top:6px"></span></div>'+
   '<p class="mini">Timestamps are saved only on this device. This panel does not contact Supabase or retry synchronization. Review conflicts and run a manual check under Cloud account.</p>'+
   '</details>';
+}
+/* V2.51 — user-initiated, private device sync summary. Only explicitly
+   allowlisted labels and counters may leave this page via clipboard. */
+function v251CloudHealthReport(){
+ if(typeof window==='undefined'||typeof v23AccountWorkspace!=='function'||!v23AccountWorkspace()||!window.HeliLogV23Sync?.status)return '';
+ const sync=window.HeliLogV23Sync;
+ const st=sync.status()||{};
+ const labels={synced:'Synced',syncing:'Sync in progress',connecting:'Checking',
+  pending:'Changes waiting',conflict:'Needs review',error:'Connection issue',
+  offline:'Offline',reset_required:'Account reset review required',inactive:'Not connected'};
+ const count=value=>String(Math.max(0,Math.min(1000000000,Math.trunc(Number(value)||0))));
+ const timestamp=value=>{
+  const t=typeof value==='string'?Date.parse(value):NaN;
+  return Number.isFinite(t)?new Date(t).toISOString():'Not recorded';
+ };
+ return [
+  'HeliLog V2.51 - device sync diagnostics',
+  'Status: '+(labels[String(st.state)]||'Unknown'),
+  'Browser-reported network: '+(st.online===true?'Online':'Offline'),
+  'Full cloud setup: '+(sync.extended?.()===true?'Complete':'Incomplete'),
+  'Pending changes: '+count(st.pending),
+  'Unresolved conflicts: '+count(st.conflicts),
+  'Last successful cloud read (UTC): '+timestamp(st.lastCloudCheckAt),
+  'Last fully synced (UTC): '+timestamp(st.lastSyncedAt),
+  'Sync error present: '+(!!st.error?'Yes':'No'),
+  'Device-local status only. This summary excludes account identifiers, pilot details, flight records, signatures and raw error messages.'
+ ].join('\n');
+}
+async function v251CopyCloudHealthSummary(){
+ const feedback=typeof document!=='undefined'?document.getElementById('v251CloudDiagnosticsStatus'):null;
+ const report=v251CloudHealthReport();
+ if(!report){
+  if(feedback)feedback.textContent='Sign in to copy device diagnostics.';
+  return false;
+ }
+ if(typeof navigator==='undefined'||typeof navigator.clipboard?.writeText!=='function'){
+  if(feedback)feedback.textContent='Clipboard unavailable in this browser. No data was shared.';
+  return false;
+ }
+ try{
+  await navigator.clipboard.writeText(report);
+  if(feedback)feedback.textContent='Safe sync summary copied. No account or flight details included.';
+  return true;
+ }catch(_error){
+  if(feedback)feedback.textContent='Could not copy. No data was shared.';
+  return false;
+ }
 }
 function settings(){
  app.innerHTML=header('Settings','Logbook, aerodromes, cloud account, backups and device preferences',
