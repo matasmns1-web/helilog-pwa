@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.53 — Compact Help Topics · Test</title>
+<title>HeliLog V2.54 — PICUS/SPIC Certification · Test</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -625,7 +625,7 @@ html.installed-touch-app .logbook-mobile-expanded .logbook-filter-secondary{disp
 <link rel="stylesheet" href="./guide.css?v=2.53" media="screen">
 </head>
 <body><div class="layout">
-<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.53 · TEST ENVIRONMENT</span></div><nav>
+<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.54 · TEST ENVIRONMENT</span></div><nav>
 <div class="nav-group-label">Flight operations</div>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="recency">◷ Recency</button>
 <div class="nav-group-label">Records &amp; assets</div>
@@ -714,6 +714,7 @@ html.installed-touch-app .logbook-mobile-expanded .logbook-filter-secondary{disp
 <script src="./cloud-view.js?v=2.19-locations-1"></script>
 <script src="./cloud-sync.js?v=2.39.1-operator-sync-1"></script>
 <script src="./sync-activity.js?v=2.52"></script>
+<script src="./flight-certification.js?v=2.54"></script>
 <script src="./auth-gate.js?v=2.39.1-operator-sync-1"></script>
 <script src="./cloud-archives.js?v=2.19-locations-1"></script>
 <script src="./archive-integrity.js?v=2.19-locations-1"></script>
@@ -2621,7 +2622,7 @@ function exportPrintableLogbook(options={}){
       <td>${htmlEscape(f.stdType||'')}</td>
       <td class="num">${Number(f.stdMin||0)>0?fmt(f.stdMin):''}</td>
 
-      <td class="remarks">${htmlEscape(flightRemarksForDisplay(f))}</td>
+      <td class="remarks">${window.HeliLogV254Certification?.printRemarks?.(f,flightRemarksForDisplay(f))||htmlEscape(flightRemarksForDisplay(f))}</td>
     </tr>`;
   }
 
@@ -2781,6 +2782,9 @@ function exportPrintableLogbook(options={}){
       .type{font-weight:700}
       .pic-name{font-size:6.7px!important}
       .remarks{text-align:left!important;padding-left:3px!important;font-size:6.5px!important;overflow-wrap:anywhere}
+      .flight-commander-cert{font-size:6px;line-height:1.12;margin-top:1px;overflow-wrap:anywhere;break-inside:avoid}
+      .flight-commander-sig{display:block;max-width:25mm;max-height:5mm;object-fit:contain;object-position:left center;margin:1px 0}
+      .flight-commander-date,.flight-commander-pending{display:block;font-size:5.5px;line-height:1.1}
       .totals-row td{height:5.3mm;font-size:6.8px;font-weight:700;background:#f8f8f8}
       .totals-label{text-align:right!important;padding-right:5px!important}
       .page-footer{margin-top:4px;font-size:7.5px}
@@ -3174,6 +3178,16 @@ function v242ArchiveCheck(draft=nextArchiveDraft()){
    message:draft.ambiguousSimulatorDays+' day(s) contain both timed flights and undated-time simulator entries. Confirm print order.'});
   if(draft.demoCount>0)extra.push({severity:'critical',code:'demo-entry',
    message:draft.demoCount+' unchanged demonstration entries must be removed before confirming an official archive.'});
+  // V2.54: an electronically uncertified PICUS/SPIC flight still belongs in
+  // the flight log, but requires the PIC/FI countersignature before it is
+  // claimed as certified time. Never auto-sign or mutate archive evidence.
+  for(const f of draft.flights){
+   if(!window.HeliLogV254Certification?.required?.(f))continue;
+   const status=window.HeliLogV254Certification.status(f);
+   if(status!=="certified")extra.push({severity:"advisory",code:"commander-certification",
+    flightId:f.id,date:f.date,
+    message:f.role+" flight has "+(status==="invalid"?"invalid digital certification evidence":"no recorded digital PIC/FI countersignature")+". Confirm an original paper signature or obtain the PIC/FI signature in the Remarks column before using these hours for licensing."});
+  }
   const issues=[...result.issues,...extra];
   const report={...result,issues,critical:result.critical+extra.filter(x=>x.severity==='critical').length,
    advisory:result.advisory+extra.filter(x=>x.severity==='advisory').length};
@@ -4224,6 +4238,9 @@ function uppercasePlaceInput(el){
   }
 }
 function editFlight(id){
+  if(!isArchivedFlight(id)&&S.flights.find(f=>f.id===id)?.commanderCertification){
+    alert('This flight is countersigned. Withdraw certification in Flight details before changing the original entry.');return;
+  }
   if(isArchivedFlight(id))return startArchivedCorrection(id);
   const entry=S.flights.find(f=>f.id===id);
   if(isSimulatorSession(entry))addSimulator(id);
@@ -4478,6 +4495,8 @@ function clearFormError(){
   if(box){box.textContent='';box.classList.remove('show');}
 }
 function saveFlight(){
+  if(editingFlightId && !isArchivedFlight(editingFlightId)&&S.flights.find(f=>f.id===editingFlightId)?.commanderCertification)
+    return showFormError('This flight is countersigned. Withdraw certification from Flight details before editing; the signatory must countersign again afterward.');
   if(editingFlightId && isArchivedFlight(editingFlightId)&&correctingArchivedId!==editingFlightId){
     alert('This archived flight requires a correction addendum.');return;
   }
@@ -4595,7 +4614,7 @@ function saveFlight(){
   clearFlightFormGuard();
   flight(f.id);
 }
-function flight(id){const entry=effectiveFlight(S.flights.find(x=>x.id===id));if(isSimulatorSession(entry))return simulatorDetails(id);editingFlightId=null;let f=entry,a=ac(f.aid);app.innerHTML=header('Flight details',`${formatDate(f.date)} · ${a.icao}`,`<div style="display:flex;gap:8px;flex-wrap:wrap">${v229CanReturnToReview(id)?'<button class="btn" onclick="v229ReturnToReview()">← Back to review</button>':'<button class="btn" onclick="go(\'logbook\')">← Logbook</button>'}<button class="btn primary" onclick="editFlight('${id}')">${isArchivedFlight(id)?'Propose correction':'Edit flight'}</button>${!isArchivedFlight(id)?`<button class="btn dangerbtn" onclick="openDeleteModal('${id}')">Delete flight</button>`:''}</div>`)+`<div class="card">
+function flight(id){const entry=effectiveFlight(S.flights.find(x=>x.id===id));if(isSimulatorSession(entry))return simulatorDetails(id);editingFlightId=null;let f=entry,a=ac(f.aid);app.innerHTML=header('Flight details',`${formatDate(f.date)} · ${a.icao}`,`<div style="display:flex;gap:8px;flex-wrap:wrap">${v229CanReturnToReview(id)?'<button class="btn" onclick="v229ReturnToReview()">← Back to review</button>':'<button class="btn" onclick="go(\'logbook\')">← Logbook</button>'}${(!f.commanderCertification||isArchivedFlight(id))?`<button class="btn primary" onclick="editFlight('${id}')">${isArchivedFlight(id)?'Propose correction':'Edit flight'}</button>`:''}${!isArchivedFlight(id)&&!f.commanderCertification?`<button class="btn dangerbtn" onclick="openDeleteModal('${id}')">Delete flight</button>`:''}</div>`)+`<div class="card">
 <div class="icao">${a.icao}</div><div class="muted">${a.reg} · ${a.manufacturer} ${a.model} ${a.variant}</div>
 <h2 style="margin-top:22px">${f.dep} ${f.off||''} → ${f.arr} ${f.on||''}</h2>
 <div class="kpi-grid"><div class="card"><div class="label">Total time</div><div class="big">${fmt(f.mins)}</div></div><div class="card"><div class="label">Pilot function</div><div class="big" style="font-size:20px">${f.role}</div></div><div class="card"><div class="label">Night</div><div class="big">${fmt(f.nightMin||0)}</div></div><div class="card"><div class="label">IFR</div><div class="big">${fmt(f.ifrMin||0)}</div></div></div>
@@ -4603,6 +4622,7 @@ function flight(id){const entry=effectiveFlight(S.flights.find(x=>x.id===id));if
 <div class="formgrid" style="margin-top:18px"><div><b>Name of PIC</b><div class="muted">${htmlEscape(displayPICName(f)||'—')}</div></div><div><b>Engine configuration</b><div class="muted">✓ ${engineCode(a)==='ME'?'Multi-engine (ME)':'Single-engine (SE)'}</div></div><div><b>Pilot configuration</b><div class="muted">${flightPilotConfig(f)==='multi'?'Multi-pilot':'Single-pilot'}</div></div><div><b>Configuration time</b><div class="muted">${(()=>{let c=configurationTimes(f);return c.multi?`Multi-pilot ${fmt(c.multi)}`:c.spME?`Single-pilot ME ${fmt(c.spME)}`:`Single-pilot SE ${fmt(c.spSE)}`})()}</div></div><div><b>Take-offs</b><div class="muted">Day ${f.takeoffDay||0} · Night ${f.takeoffNight||0}</div></div><div><b>Landings</b><div class="muted">Day ${f.landingDay||0} · Night ${f.landingNight||0}</div></div><div><b>Cross-country</b><div class="muted">${f.crossCountry?'Yes':'No'}</div></div></div>
 <p><b>FCL.060 recency:</b> <span class="muted">${(()=>{const e=window.HeliLogV233Recency.evidence(f);return e.source==='excluded'?'Excluded from automatic estimate':e.source==='unverified'?'PF evidence not established':e.source==='estimated'?'Automatically estimated day '+e.day+' · night '+e.night+' movements':'Confirmed day '+e.day+' · night '+e.night+' PF sequences';})()}</span></p>
 <p><b>Remarks / endorsements</b><br><span class="muted">${htmlEscape(flightRemarksForDisplay(f)||'—')}</span></p>
+${v254CertificationMarkup(f)}
 ${Object.keys(f.specialOps||{}).length?`<div class="card" style="margin-top:16px"><h3>Specialised helicopter operations</h3>
 ${SPECIAL_OPS.filter(op=>Object.prototype.hasOwnProperty.call(f.specialOps||{},op.code)).map(op=>`<div class="profileline"><div class="k">${htmlEscape(op.label)}</div>
  <b>${fmt(f.specialOps[op.code])}${op.code==='NVIS'?' · NVIS flight':f.specialOpsCycles?.[op.code]?' · Day '+Number(f.specialOpsCycles[op.code].day)+' / Night '+Number(f.specialOpsCycles[op.code].night):''}</b></div>`).join('')}
@@ -4610,6 +4630,7 @@ ${SPECIAL_OPS.filter(op=>Object.prototype.hasOwnProperty.call(f.specialOps||{},o
   correctionHistoryMarkup(id)}
 
 function openDeleteModal(id){
+  if(S.flights.find(f=>f.id===id)?.commanderCertification){alert('A countersigned flight is protected. Withdraw its certification before deletion.');return;}
   if(isArchivedFlight(id)){
     alert('This flight is part of a confirmed print archive and cannot be deleted. A traceable amendment is required.');
     return;
@@ -4629,6 +4650,7 @@ function closeDeleteModal(){
 }
 function confirmDeleteFlight(){
   if(!pendingDeleteFlightId) return;
+  if(S.flights.find(f=>f.id===pendingDeleteFlightId)?.commanderCertification){closeDeleteModal();alert('Countersigned flights cannot be deleted. Withdraw certification before correcting.');return;}
   if(isArchivedFlight(pendingDeleteFlightId)){
     closeDeleteModal();
     alert('Archived flights cannot be deleted.');
@@ -4898,7 +4920,7 @@ function savePerson(e){
     p.name=name;p.firstName=firstName;p.lastName=lastName;
     p.role=role;p.licence=licence;p.licenceNumber=licenceNumber;p.fiFeNumber=fiFeNumber;p.notes=notes;
     S.flights.forEach(f=>{
-      if(isArchivedFlight(f.id)) return;
+      if(isArchivedFlight(f.id)||f.commanderCertification) return;
       if(f.picPersonId===p.id || (!f.picPersonId && String(f.picName||'').toLowerCase()===oldName.toLowerCase())){
         f.picPersonId=p.id;
         f.picName=name;
@@ -5341,9 +5363,133 @@ function applyEndorsementSignature(id){
   endorsements();
 }
 
+/* HeliLog V2.54 — flight-specific PICUS/SPIC countersignatures.
+ * Separate from endorsements; never silently apply a saved profile signature.
+ */
+let v254SignatureTarget=null;
+function v254CertificationApi(){return window.HeliLogV254Certification;}
+function v254Signatory(f){
+ if(!v254CertificationApi()?.required(f))return null;
+ const person=personById(f.picPersonId);
+ if(!person||person.isAccountHolder||String(person.name)!==String(f.picName))return null;
+ return person;
+}
+function v254CertificationMarkup(f){
+ const api=v254CertificationApi();
+ if(!api?.required(f))return "";
+ const state=api.status(f),cert=f.commanderCertification,person=v254Signatory(f);
+ const archived=isArchivedFlight(f.id);
+ const past=Array.isArray(f.certificationHistory)?f.certificationHistory.length:0;
+ const name=htmlEscape(f.picName||"Unknown commander");
+ return '<div class="card v254-certificate-card" style="margin-top:16px">'+
+  '<h3>'+htmlEscape(f.role)+' — commander / FI certification</h3>'+
+  (state==="certified"?
+   '<div class="note"><b>Electronically countersigned</b> by '+htmlEscape(cert.signedName)+
+     ' · '+htmlEscape(formatDateTime(cert.signedAt))+'</div>'+
+   '<img alt="Commander or instructor signature for this flight" class="v254-signed-image" style="display:block;width:100%;max-width:280px;max-height:95px;object-fit:contain;object-position:left center" src="'+cert.signatureData+'">'+
+   '<div class="mini">Saved as part of this specific flight. A later profile-signature change will not alter it.</div>':
+   '<div class="note"><b>'+(state==="invalid"?'Signature requires re-verification':
+     'Electronic countersignature pending')+'</b>. Recorded '+htmlEscape(f.role)+
+     ' time remains in the logbook, but it is not shown as digitally countersigned.</div>'+
+   '<div class="mini">The recorded PIC/FI is '+name+'. EASA AMC1 FCL.050 calls for their name and signature in Remarks. A handwritten signature may exist on a paper logbook even if not captured here.</div>')+
+  (past?'<div class="mini">Previous certifications withdrawn for correction: '+past+'. Earlier evidence remains stored with this record.</div>':'')+
+  (!archived&&state==="pending"?
+   '<div style="margin-top:12px"><button type="button" class="btn primary" onclick="v254OpenSigning('+htmlEscape(JSON.stringify(f.id))+')">Countersign this flight</button></div>'+
+   (!person?'<div class="mini">To sign electronically, first link the recorded commander/FI to a saved pilot profile with exactly the same name.</div>':''):
+   !archived&&cert?
+    '<div style="margin-top:12px"><button type="button" class="btn" onclick="v254WithdrawCertification('+htmlEscape(JSON.stringify(f.id))+')">Withdraw certification to correct flight</button></div>':
+    archived?'<div class="mini">Archived flight: existing signed pages remain unchanged. Use the paper countersignature or the established signed-addendum process for corrections.</div>':'')+
+  '<div class="mini" style="margin-top:10px">Digital signature capture does not independently verify identity or guarantee acceptance by your competent authority. Do not use someone else’s saved signature without their direct approval.</div></div>';
+}
+function v254OpenSigning(id){
+ const f=S.flights.find(x=>x.id===id),api=v254CertificationApi();
+ if(!f||!api?.required(f)||f.commanderCertification||isArchivedFlight(id)){
+  alert("Only an unsigned, unarchived PICUS/SPIC flight can be countersigned here.");return;
+ }
+ const person=v254Signatory(f);
+ if(!person){
+  alert("The Name of PIC must be linked to the same saved commander/FI profile before signing. Edit the flight first, then return.");
+  return;
+ }
+ v254SignatureTarget={id:f.id,subject:api.subject(f)};
+ const png=typeof v227IsPNG==="function"&&v227IsPNG(person.savedSignatureData);
+ app.innerHTML=header("Countersign "+htmlEscape(f.role)+" flight",
+   "The recorded commander or flight instructor must personally approve this flight.",
+   '<button class="btn" type="button" onclick="v254SignatureTarget=null;flight('+htmlEscape(JSON.stringify(id))+')">← Flight</button>')+
+  '<div class="card v254-certification-screen">'+
+  '<h2>'+htmlEscape(f.role)+' · '+htmlEscape(formatDate(f.date))+'</h2>'+
+  '<p><b>Flight:</b> '+htmlEscape(f.dep)+' '+htmlEscape(f.off)+' → '+htmlEscape(f.arr)+' '+htmlEscape(f.on)+
+    ' UTC · '+htmlEscape(fmt(f.mins))+'</p>'+
+  '<p><b>Recorded PIC / FI:</b> '+htmlEscape(person.name)+'</p>'+
+  '<p class="muted">'+htmlEscape(f.remarks||"")+'</p>'+
+  '<div class="note">This signature will certify the specific flight details above, including time and pilot function. The flight must be re-certified if corrected. The signatory should be present and review the full record.</div>'+
+  (png?'<div class="v227-saved-option"><b>Saved pilot signature</b>'+
+   '<p class="mini">The named commander may approve copying their previously saved profile signature to this flight.</p>'+
+   '<button class="btn" type="button" onclick="v254ApplySavedCertification('+htmlEscape(JSON.stringify(id))+')">Use saved signature</button></div>':'')+
+  '<div class="signature-canvas-wrap"><b>Or draw signature of '+htmlEscape(person.name)+'</b>'+
+  '<canvas id="signatureCanvas" width="900" height="260"></canvas>'+
+  '<div class="actions"><button class="btn" type="button" onclick="clearEndorsementSignature()">Clear</button>'+
+  '<button class="btn primary" type="button" onclick="v254ApplyDrawnCertification('+htmlEscape(JSON.stringify(id))+')">Apply drawn signature</button></div></div>'+
+  '<label class="v227-confirm"><input type="checkbox" id="v254ApproveCertification"> '+htmlEscape(person.name)+
+  ' has personally reviewed the full flight record and expressly approves countersigning this specific '+htmlEscape(f.role)+' flight now.</label>'+
+  '<p class="mini">Saving a signature does not independently verify signatory identity and is not a qualified electronic signature. Confirm acceptance with your competent authority.</p></div>';
+ setupEndorsementSignaturePad();
+}
+function v254ApplyCertification(id,png,source){
+ const api=v254CertificationApi();
+ const f=S.flights.find(x=>x.id===id);
+ const person=f&&v254Signatory(f);
+ if(!f||!person||!v254SignatureTarget||v254SignatureTarget.id!==id||
+    v254SignatureTarget.subject!==api.subject(f)||
+    f.commanderCertification||isArchivedFlight(id)){
+  alert("Flight details, commander or certification state changed. Reopen the flight and review it again.");return false;
+ }
+ if(!document.getElementById("v254ApproveCertification")?.checked){
+  alert("The recorded commander/FI must expressly approve countersigning this exact flight.");return false;
+ }
+ let cert;
+ try{cert=api.create(f,person,png,source);}
+ catch(e){alert(e.message);return false;}
+ if(!confirm("Confirm that "+person.name+" personally approves the countersignature for this "+f.role+" flight on "+f.date+"?"))return false;
+ f.commanderCertification=cert;
+ if(!save()){delete f.commanderCertification;return false;}
+ v254SignatureTarget=null;
+ flight(id);
+ return true;
+}
+function v254ApplySavedCertification(id){
+ const f=S.flights.find(x=>x.id===id),person=f&&v254Signatory(f);
+ if(!person||!v227IsPNG(person.savedSignatureData)){
+  alert("A valid saved signature is unavailable for this PIC/FI.");return;
+ }
+ v254ApplyCertification(id,person.savedSignatureData,"saved-profile");
+}
+function v254ApplyDrawnCertification(id){
+ const canvas=document.getElementById("signatureCanvas");
+ if(!canvas||!endorsementSignatureDirty){
+  alert("Please draw the commander/FI signature in the box first.");return;
+ }
+ const png=canvas.toDataURL("image/png");
+ if(!v227IsPNG(png)){alert("Invalid or oversized signature. Please draw it again.");return;}
+ v254ApplyCertification(id,png,"drawn");
+}
+function v254WithdrawCertification(id){
+ const f=S.flights.find(x=>x.id===id);
+ if(!f||!f.commanderCertification||isArchivedFlight(id)){
+  alert("Archived flights and unsigned flights cannot be changed through certification withdrawal.");return;
+ }
+ if(!confirm("Withdraw the recorded countersignature for this flight? The signed evidence will remain in its correction history, and the flight will become certification pending until the commander/FI signs the corrected version."))return;
+ const previous=f.commanderCertification,history=f.certificationHistory;
+ f.certificationHistory=[...(Array.isArray(history)?history:[]),
+  {...previous,withdrawnAt:new Date().toISOString()}];
+ delete f.commanderCertification;
+ if(!save()){f.commanderCertification=previous;if(history===undefined)delete f.certificationHistory;else f.certificationHistory=history;return;}
+ flight(id);
+}
 function totals(){
   let t=calcTotals(),by=combinedTotalsByType(),opsTotals=specialisedTotals();
   const simSessions=effectiveFlights().filter(isSimulatorSession),simMinutes=simSessions.reduce((n,f)=>n+Number(f.stdMin||0),0);
+  const certifications=window.HeliLogV254Certification?.sums?.(effectiveFlights())||{signedSpic:0,signedPicus:0,pendingSpic:0,pendingPicus:0,invalid:0};
   app.innerHTML=header('Totals','Your combined career totals')+
   `${confirmedCorrections().length?`<div class="note" style="margin-bottom:14px">Includes ${confirmedCorrections().length} confirmed archived-entry correction addendum(s). Original signed print batches remain unchanged; any revised carried-forward paper totals are documented in subsequent batches.</div>`:''}
   <div class="grid stats">${[['Total',t.total],['PIC',t.pic],['Co-pilot',t.copilot],['Dual',t.dual]].map(x=>`<div class="card"><div class="label">${x[0]}</div><div class="big">${fmt(x[1])}</div></div>`).join('')}</div>
@@ -5366,6 +5512,10 @@ function totals(){
       <div class="head"><h2>Additional breakdown</h2></div>
       <p>SPIC <span style="float:right">${fmt(t.spic)}</span></p>
       <p>PICUS <span style="float:right">${fmt(t.picus)}</span></p>
+      <div class="mini" style="margin-top:8px"><b>Digitally countersigned flight time (recorded here):</b></div>
+      <p class="mini">SPIC: ${fmt(certifications.signedSpic)} signed · ${fmt(certifications.pendingSpic)} not electronically certified</p>
+      <p class="mini">PICUS: ${fmt(certifications.signedPicus)} signed · ${fmt(certifications.pendingPicus)} not electronically certified</p>
+      <div class="mini">Earlier paper signatures are not automatically recognised. Unsigned PICUS/SPIC remains recorded but needs qualifying PIC/FI certification for licensing use; ${certifications.invalid} record(s) have mismatched digital evidence.</div>
       <p>Night <span style="float:right">${fmt(t.night)}</span></p>
       <p>IFR <span style="float:right">${fmt(t.ifr)}</span></p>
     </div>
@@ -7463,6 +7613,7 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {v:"V2.54",name:"PICUS and SPIC commander countersignatures",detail:"A PICUS or SPIC flight now shows a commander/FI certification panel in Flight details. The recorded PIC/FI can approve and draw or expressly reuse their saved signature for that specific unarchived flight. A printed logbook page includes the name and signed PNG in Remarks; otherwise space is left for a handwritten signature. Signed flights are protected from casual edits or deletion, while explicit withdrawal retains previous evidence for correction. Totals distinguish electronically signed and pending time and pre-archive review flags uncertified entries. Electronic signatures may not be accepted by every authority; confirm applicable requirements."},
   {v:"V2.53",name:"Compact collapsible Help topics",detail:"The Help & User Guide now presents all 17 topics as short category-and-title rows, like What's new. Open a topic to read its description, full instructions and navigation button. Search finds hidden instructions without opening every result; Expand all and Collapse all are still available. Start here remains first."},
   {v:"V2.52",name:"Private automatic sync activity log",detail:"The Settings → Cloud account → Cloud health → Sync activity log now records significant status changes automatically, including conflicts, offline periods, failures and recoveries. Saved activity from your devices is synchronized privately to TEST Supabase when connected and retained in the cloud for 30 days. No raw errors, pilot names, flight records or signatures are sent. You can pause automatic logging on the same panel. The old copy-and-paste button is no longer shown."},
   {v:"V2.51",name:"Copy private Cloud Health status",detail:"In Settings → Cloud account → Cloud health, select Copy safe status summary to share device-reported sync state, queued change and conflict counts, cloud-check times and whether an error is present. The report deliberately excludes account identifiers, pilot or flight details, signatures and raw error messages. Copying happens only when pressed; no sync request is made and no data is changed."},

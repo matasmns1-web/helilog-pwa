@@ -579,6 +579,9 @@ function uppercasePlaceInput(el){
   }
 }
 function editFlight(id){
+  if(!isArchivedFlight(id)&&S.flights.find(f=>f.id===id)?.commanderCertification){
+    alert('This flight is countersigned. Withdraw certification in Flight details before changing the original entry.');return;
+  }
   if(isArchivedFlight(id))return startArchivedCorrection(id);
   const entry=S.flights.find(f=>f.id===id);
   if(isSimulatorSession(entry))addSimulator(id);
@@ -833,6 +836,8 @@ function clearFormError(){
   if(box){box.textContent='';box.classList.remove('show');}
 }
 function saveFlight(){
+  if(editingFlightId && !isArchivedFlight(editingFlightId)&&S.flights.find(f=>f.id===editingFlightId)?.commanderCertification)
+    return showFormError('This flight is countersigned. Withdraw certification from Flight details before editing; the signatory must countersign again afterward.');
   if(editingFlightId && isArchivedFlight(editingFlightId)&&correctingArchivedId!==editingFlightId){
     alert('This archived flight requires a correction addendum.');return;
   }
@@ -950,7 +955,7 @@ function saveFlight(){
   clearFlightFormGuard();
   flight(f.id);
 }
-function flight(id){const entry=effectiveFlight(S.flights.find(x=>x.id===id));if(isSimulatorSession(entry))return simulatorDetails(id);editingFlightId=null;let f=entry,a=ac(f.aid);app.innerHTML=header('Flight details',`${formatDate(f.date)} · ${a.icao}`,`<div style="display:flex;gap:8px;flex-wrap:wrap">${v229CanReturnToReview(id)?'<button class="btn" onclick="v229ReturnToReview()">← Back to review</button>':'<button class="btn" onclick="go(\'logbook\')">← Logbook</button>'}<button class="btn primary" onclick="editFlight('${id}')">${isArchivedFlight(id)?'Propose correction':'Edit flight'}</button>${!isArchivedFlight(id)?`<button class="btn dangerbtn" onclick="openDeleteModal('${id}')">Delete flight</button>`:''}</div>`)+`<div class="card">
+function flight(id){const entry=effectiveFlight(S.flights.find(x=>x.id===id));if(isSimulatorSession(entry))return simulatorDetails(id);editingFlightId=null;let f=entry,a=ac(f.aid);app.innerHTML=header('Flight details',`${formatDate(f.date)} · ${a.icao}`,`<div style="display:flex;gap:8px;flex-wrap:wrap">${v229CanReturnToReview(id)?'<button class="btn" onclick="v229ReturnToReview()">← Back to review</button>':'<button class="btn" onclick="go(\'logbook\')">← Logbook</button>'}${(!f.commanderCertification||isArchivedFlight(id))?`<button class="btn primary" onclick="editFlight('${id}')">${isArchivedFlight(id)?'Propose correction':'Edit flight'}</button>`:''}${!isArchivedFlight(id)&&!f.commanderCertification?`<button class="btn dangerbtn" onclick="openDeleteModal('${id}')">Delete flight</button>`:''}</div>`)+`<div class="card">
 <div class="icao">${a.icao}</div><div class="muted">${a.reg} · ${a.manufacturer} ${a.model} ${a.variant}</div>
 <h2 style="margin-top:22px">${f.dep} ${f.off||''} → ${f.arr} ${f.on||''}</h2>
 <div class="kpi-grid"><div class="card"><div class="label">Total time</div><div class="big">${fmt(f.mins)}</div></div><div class="card"><div class="label">Pilot function</div><div class="big" style="font-size:20px">${f.role}</div></div><div class="card"><div class="label">Night</div><div class="big">${fmt(f.nightMin||0)}</div></div><div class="card"><div class="label">IFR</div><div class="big">${fmt(f.ifrMin||0)}</div></div></div>
@@ -958,6 +963,7 @@ function flight(id){const entry=effectiveFlight(S.flights.find(x=>x.id===id));if
 <div class="formgrid" style="margin-top:18px"><div><b>Name of PIC</b><div class="muted">${htmlEscape(displayPICName(f)||'—')}</div></div><div><b>Engine configuration</b><div class="muted">✓ ${engineCode(a)==='ME'?'Multi-engine (ME)':'Single-engine (SE)'}</div></div><div><b>Pilot configuration</b><div class="muted">${flightPilotConfig(f)==='multi'?'Multi-pilot':'Single-pilot'}</div></div><div><b>Configuration time</b><div class="muted">${(()=>{let c=configurationTimes(f);return c.multi?`Multi-pilot ${fmt(c.multi)}`:c.spME?`Single-pilot ME ${fmt(c.spME)}`:`Single-pilot SE ${fmt(c.spSE)}`})()}</div></div><div><b>Take-offs</b><div class="muted">Day ${f.takeoffDay||0} · Night ${f.takeoffNight||0}</div></div><div><b>Landings</b><div class="muted">Day ${f.landingDay||0} · Night ${f.landingNight||0}</div></div><div><b>Cross-country</b><div class="muted">${f.crossCountry?'Yes':'No'}</div></div></div>
 <p><b>FCL.060 recency:</b> <span class="muted">${(()=>{const e=window.HeliLogV233Recency.evidence(f);return e.source==='excluded'?'Excluded from automatic estimate':e.source==='unverified'?'PF evidence not established':e.source==='estimated'?'Automatically estimated day '+e.day+' · night '+e.night+' movements':'Confirmed day '+e.day+' · night '+e.night+' PF sequences';})()}</span></p>
 <p><b>Remarks / endorsements</b><br><span class="muted">${htmlEscape(flightRemarksForDisplay(f)||'—')}</span></p>
+${v254CertificationMarkup(f)}
 ${Object.keys(f.specialOps||{}).length?`<div class="card" style="margin-top:16px"><h3>Specialised helicopter operations</h3>
 ${SPECIAL_OPS.filter(op=>Object.prototype.hasOwnProperty.call(f.specialOps||{},op.code)).map(op=>`<div class="profileline"><div class="k">${htmlEscape(op.label)}</div>
  <b>${fmt(f.specialOps[op.code])}${op.code==='NVIS'?' · NVIS flight':f.specialOpsCycles?.[op.code]?' · Day '+Number(f.specialOpsCycles[op.code].day)+' / Night '+Number(f.specialOpsCycles[op.code].night):''}</b></div>`).join('')}
@@ -965,6 +971,7 @@ ${SPECIAL_OPS.filter(op=>Object.prototype.hasOwnProperty.call(f.specialOps||{},o
   correctionHistoryMarkup(id)}
 
 function openDeleteModal(id){
+  if(S.flights.find(f=>f.id===id)?.commanderCertification){alert('A countersigned flight is protected. Withdraw its certification before deletion.');return;}
   if(isArchivedFlight(id)){
     alert('This flight is part of a confirmed print archive and cannot be deleted. A traceable amendment is required.');
     return;
@@ -984,6 +991,7 @@ function closeDeleteModal(){
 }
 function confirmDeleteFlight(){
   if(!pendingDeleteFlightId) return;
+  if(S.flights.find(f=>f.id===pendingDeleteFlightId)?.commanderCertification){closeDeleteModal();alert('Countersigned flights cannot be deleted. Withdraw certification before correcting.');return;}
   if(isArchivedFlight(pendingDeleteFlightId)){
     closeDeleteModal();
     alert('Archived flights cannot be deleted.');

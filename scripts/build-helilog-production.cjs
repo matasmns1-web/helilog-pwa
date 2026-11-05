@@ -44,7 +44,7 @@ function prepare(){
   "apple-touch-icon.png","icon-192.png","icon-512.png",
   "domain.js","night-calculation.js","aerodrome-lookup.js","print.js","prearchive-review.js","offline-backup-check.js","recency.js","special-recency.js","advanced-recency.js","operator-flight-monitor.js","simulator-evidence.js","operator-rules-ui.js","endorsement-bridge.js","endorsement-ui.js",
   "cloud-config.js","cloud-foundation.js","cloud-view.js","cloud-sync.js","sync-activity.js",
-  "auth-gate.js","cloud-archives.js","archive-integrity.js",
+  "auth-gate.js","flight-certification.js","cloud-archives.js","archive-integrity.js",
   "recovery.js","cloud-backups.js","disaster-recovery.js"
  ];
  for(const file of files)must(fs.statSync(path.join(source,file)).isFile(),"missing asset "+file);

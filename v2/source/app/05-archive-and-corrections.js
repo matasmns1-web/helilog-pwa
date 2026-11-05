@@ -296,6 +296,16 @@ function v242ArchiveCheck(draft=nextArchiveDraft()){
    message:draft.ambiguousSimulatorDays+' day(s) contain both timed flights and undated-time simulator entries. Confirm print order.'});
   if(draft.demoCount>0)extra.push({severity:'critical',code:'demo-entry',
    message:draft.demoCount+' unchanged demonstration entries must be removed before confirming an official archive.'});
+  // V2.54: an electronically uncertified PICUS/SPIC flight still belongs in
+  // the flight log, but requires the PIC/FI countersignature before it is
+  // claimed as certified time. Never auto-sign or mutate archive evidence.
+  for(const f of draft.flights){
+   if(!window.HeliLogV254Certification?.required?.(f))continue;
+   const status=window.HeliLogV254Certification.status(f);
+   if(status!=="certified")extra.push({severity:"advisory",code:"commander-certification",
+    flightId:f.id,date:f.date,
+    message:f.role+" flight has "+(status==="invalid"?"invalid digital certification evidence":"no recorded digital PIC/FI countersignature")+". Confirm an original paper signature or obtain the PIC/FI signature in the Remarks column before using these hours for licensing."});
+  }
   const issues=[...result.issues,...extra];
   const report={...result,issues,critical:result.critical+extra.filter(x=>x.severity==='critical').length,
    advisory:result.advisory+extra.filter(x=>x.severity==='advisory').length};
