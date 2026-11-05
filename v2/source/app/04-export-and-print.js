@@ -154,11 +154,29 @@ function sumLogbookFields(list,aircraftSnapshot=null){
   };
 }
 
+// V2.55: Only the account holder may populate their own printed pilot-signature
+// box. A saved profile signature is re-used for new pages, not for reprinting
+// previously archived pages. Never borrow another person's signature.
+function v255AccountSignatureData(){
+  const owner=S.people?.find(p=>p&&p.isAccountHolder===true);
+  const pilotName=String(S.pilot?.name||'').trim().replace(/\s+/g,' ').toLowerCase();
+  const ownerName=String(owner?.name||'').trim().replace(/\s+/g,' ').toLowerCase();
+  return owner&&pilotName&&pilotName===ownerName&&
+    typeof v227IsPNG==='function'&&v227IsPNG(owner.savedSignatureData)
+      ?owner.savedSignatureData:'';
+}
 function exportPrintableLogbook(options={}){
   let flights=options.flights||exportFlightsForScope();
   if(!flights.length){alert('There are no flights to export.');return false;}
   let archiveAircraft=options.aircraft||null;
   let archivePilot=options.pilot||null;
+  // Keep historical signed batches in their exact old signature/footer format.
+  // A new archive stores the printed signature PNG as a frozen batch snapshot.
+  const signatureInBox=!options.archiveBatch||options.signatureLayoutVersion===1;
+  const storedPilotSignature=signatureInBox
+    ?(options.archiveBatch?options.pilotSignatureData:v255AccountSignatureData()):'';
+  const pilotSignatureData=typeof v227IsPNG==='function'&&v227IsPNG(storedPilotSignature)
+    ?storedPilotSignature:'';
   // Batches confirmed before V1.43.1 retain their EXACT three-column print layout.
   // New exports and new batches use the four-column engine/pilot layout.
   const legacyPaperLayout=options.paperLayoutVersion===1;
@@ -180,7 +198,11 @@ function exportPrintableLogbook(options={}){
     if(signatureCell){
       remarksCell=`<td class="totals-signature-cell" rowspan="3">
         <div class="totals-signature-title">PILOT SIGNATURE</div>
-        <div class="totals-signature-space"></div>
+        <div class="totals-signature-space">${signatureInBox?`
+          <div class="pilot-page-cert-statement">I certify that the entries on this page are a true record of the flights shown above.</div>
+          ${pilotSignatureData?`<img class="pilot-page-autosign" src="${pilotSignatureData}" alt="Saved signature of the logbook account holder">`:
+            '<div class="pilot-page-hand-sign" aria-label="Space for a handwritten pilot signature"></div>'}`:
+          ''}</div>
       </td>`;
     }else if(!remarksCovered){
       remarksCell='<td></td>';
@@ -383,10 +405,10 @@ function exportPrintableLogbook(options={}){
         flight-time adjustment ${signedHours(Number(options.openingCorrectionsDelta?.total||0))}.
         Signed correction addendum(s) must be retained with the paper logbook.
         </div>`:''}
-        <div class="certification">
+        ${!signatureInBox||TEST_MODE?`<div class="certification">
           ${TEST_MODE?'TEST MODE — FICTIONAL FLIGHTS AND SIMULATOR SESSIONS. NOT AN OFFICIAL LOGBOOK.':
           'I certify that the entries on this page are a true record of the flights shown above.'}
-        </div>
+        </div>`:''}
       </div>
     </section>`;
   }).join('');
@@ -430,7 +452,7 @@ function exportPrintableLogbook(options={}){
       .flight-commander-cert{font-size:6px;line-height:1.12;margin-top:1px;overflow-wrap:anywhere;break-inside:avoid}
       .flight-commander-sig{display:block;max-width:25mm;max-height:5mm;object-fit:contain;object-position:left center;margin:1px 0}
       .flight-commander-date,.flight-commander-pending{display:block;font-size:5.5px;line-height:1.1}
-      .totals-row td{height:5.3mm;font-size:6.8px;font-weight:700;background:#f8f8f8}
+      .totals-row td{height:${signatureInBox?'6.6':'5.3'}mm;font-size:6.8px;font-weight:700;background:#f8f8f8}
       .totals-label{text-align:right!important;padding-right:5px!important}
       .page-footer{margin-top:4px;font-size:7.5px}
       .certification{font-style:italic}
@@ -441,7 +463,7 @@ function exportPrintableLogbook(options={}){
       }
       .totals-signature-cell > div{box-sizing:border-box}
       .totals-signature-title{
-        height:5.3mm;
+        height:${signatureInBox?'4':'5.3'}mm;
         display:flex;
         align-items:center;
         justify-content:center;
@@ -452,9 +474,19 @@ function exportPrintableLogbook(options={}){
         background:#f2f2f2
       }
       .totals-signature-space{
-        height:10.6mm;
-        background:#fff
+        height:${signatureInBox?'15.8':'10.6'}mm;
+        background:#fff;
+        ${signatureInBox?'display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:1px;padding:1.5mm 1mm;':''}
       }
+      .pilot-page-cert-statement{
+        font-size:5.5px;font-weight:500;font-style:italic;text-align:center;
+        line-height:1.17;overflow-wrap:break-word
+      }
+      .pilot-page-autosign{
+        display:block;max-width:100%;width:100%;max-height:6.8mm;
+        object-fit:contain;object-position:center center
+      }
+      .pilot-page-hand-sign{height:4mm;width:88%;border-bottom:1px dotted #888;flex-shrink:0}
 
       .c-date{width:17mm}
       .c-place{width:9.5mm}

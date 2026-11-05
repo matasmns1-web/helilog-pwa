@@ -982,7 +982,7 @@ function openDeleteModal(id){
   let a=ac(f.aid);
   let modal=document.getElementById('deleteModal');
   let textEl=document.getElementById('deleteText');
-  textEl.textContent=isSimulatorSession(f)?`Delete simulator session ${formatDate(f.date)} · ${simulatorDeviceLabel(f)} · ${fmt(f.stdMin)}?`:`Delete ${formatDate(f.date)} · ${a?.icao||'aircraft'} · ${f.dep} → ${f.arr} · ${fmt(f.mins)}? This removes the flight from the V1 prototype.`;
+  textEl.textContent=isSimulatorSession(f)?`Delete simulator session ${formatDate(f.date)} · ${simulatorDeviceLabel(f)} · ${fmt(f.stdMin)}?`:`Delete ${formatDate(f.date)} · ${a?.icao||'aircraft'} · ${f.dep} → ${f.arr} · ${fmt(f.mins)}? This will delete the unarchived flight from your logbook. If cloud sync is enabled, the deletion will sync to your other devices when connected.`;
   modal.classList.add('open');
 }
 function closeDeleteModal(){

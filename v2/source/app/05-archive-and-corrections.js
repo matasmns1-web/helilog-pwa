@@ -201,6 +201,8 @@ function nextArchiveDraft(){
     id:'HL-'+String(seq).padStart(3,'0'),seq,
     paperLayoutVersion:2,
     paperFooterVersion:2, // V1.43.2: no engine/pilot summary footer on new pages
+    signatureLayoutVersion:1, // V2.55: certification statement in signature cell
+    pilotSignatureData:v255AccountSignatureData(), // frozen for stable reprint
     unclassifiedPriorEngineMinutes:previousEngineUnallocated(),
     unclassifiedPriorPilotMinutes:previousPilotUnallocated(),
     firstPage,pageCount,flightIds:flights.map(f=>f.id),flights,aircraft,pilot,
@@ -424,6 +426,7 @@ function previewNextArchive(){
   const opened=exportPrintableLogbook({
     flights:draft.flights,openingTotals:draft.openingTotals,firstPage:draft.firstPage,
     archiveBatch:draft.id,aircraft:draft.aircraft,pilot:draft.pilot,
+    signatureLayoutVersion:draft.signatureLayoutVersion,pilotSignatureData:draft.pilotSignatureData,
     blockUnusedRows:draft.unusedRowsBlocked,
     correctionsApplied:draft.correctionsApplied,
     openingCorrectionsDelta:draft.openingCorrectionsDelta,
@@ -436,7 +439,7 @@ function previewNextArchive(){
     pendingArchivePreview=JSON.stringify(draft);
     printarchive();
     const msg=document.getElementById('archivePreviewStatus');
-    if(msg)msg.innerHTML='<div class="successbox">PDF preview opened. Print it, check every page and sign it. Only then confirm the printed batch below.</div>';
+    if(msg)msg.innerHTML='<div class="successbox">PDF preview opened. Check every page and its pilot signature. A saved account-holder signature is inserted automatically for new pages when available; sign by hand if required or no signature is shown. Confirm the batch only after the pages are printed, checked and signed.</div>';
   }
 }
 async function confirmPrintedArchive(){
@@ -507,6 +510,7 @@ function reprintArchiveBatch(seq){
   if(!b)return;
   exportPrintableLogbook({
     flights:b.flights,aircraft:b.aircraft,pilot:b.pilot,
+    signatureLayoutVersion:b.signatureLayoutVersion,pilotSignatureData:b.pilotSignatureData,
     openingTotals:b.openingTotals,firstPage:b.firstPage,archiveBatch:b.id,
     blockUnusedRows:b.unusedRowsBlocked===true,
     correctionsApplied:b.correctionsApplied||[],
