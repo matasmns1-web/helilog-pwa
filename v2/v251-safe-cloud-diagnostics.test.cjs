@@ -105,9 +105,9 @@ test('the generated app, local TEST cache, and help guide contain the feature',(
  const guide=read('source/app/13-help-guide.js');
  assert.match(built,/function v251CloudHealthReport\(\)/);
  assert.match(built,/Sync activity log/);
- assert.match(built,/V2\.52 · TEST ENVIRONMENT/);
- assert.match(template,/V2\.52 · TEST ENVIRONMENT/);
- assert.match(cache,/helilog-v2-52-private-sync-activity-1/);
+ assert.match(built,/V2\.55 · TEST ENVIRONMENT/);
+ assert.match(template,/V2\.55 · TEST ENVIRONMENT/);
+ assert.match(cache,/helilog-v2-55-pilot-page-signature-1/);
  assert.match(guide,/v:"V2\.52",name:"Private automatic sync activity log"/);
  assert.match(guide,/v:"V2\.51",name:"Copy private Cloud Health status"/);
 });
