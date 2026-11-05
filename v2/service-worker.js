@@ -1,4 +1,4 @@
-const CACHE='helilog-v2-54-flight-certification-1';
+const CACHE='helilog-v2-55-pilot-page-signature-1';
 const SHELL=[
   './',
   './index.html',

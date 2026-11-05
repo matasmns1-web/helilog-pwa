@@ -92,6 +92,7 @@ const GROUPS = Object.freeze([
       'v2/v252-sync-activity.test.cjs',
       'v2/v253-compact-help-topics.test.cjs',
       'v2/v254-commander-certification.test.cjs',
+      'v2/v255-pilot-page-signature.test.cjs',
       'v2/v244-account-reset.test.cjs',
       'v2/v2441-data-management.test.cjs',
       'v2/v24-sync.test.cjs',

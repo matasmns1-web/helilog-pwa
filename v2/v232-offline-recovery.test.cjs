@@ -91,6 +91,6 @@ test('login screen can verify without signed-in workspace; password cleared and 
  assert.match(code,/window\.HeliLogV232OfflineCheck\.verifyText/);
  assert.match(html,/offline-backup-check\.js\?v=2\.32/);
  assert.match(sw,/offline-backup-check\.js\?v=2\.32/);
- assert.match(read('service-worker.js'),/helilog-v2-54-flight-certification-1/);
- assert.match(gate,/HELILOG_TEST_VERSION='V2\.54'/);
+ assert.match(read('service-worker.js'),/helilog-v2-55-pilot-page-signature-1/);
+ assert.match(gate,/HELILOG_TEST_VERSION='V2\.55'/);
 });
