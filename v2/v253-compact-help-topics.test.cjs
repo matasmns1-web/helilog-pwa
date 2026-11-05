@@ -1,5 +1,5 @@
 'use strict';
-/* V2.53 TEST: Help topics should be as compact as What’s new, without hiding content or breaking search. */
+/* V2.54 TEST: Help topics should be as compact as What’s new, without hiding content or breaking search. */
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const read=p=>fs.readFileSync(path.join(__dirname,p),'utf8');
@@ -66,12 +66,12 @@ test('Help, PWA assets and release labels are versioned together',()=>{
  const html=read('index.html'),template=read('source/index.template.html'),
  manifest=read('manifest.webmanifest'),worker=read('service-worker.js'),
  gate=read('auth-gate.js');
- assert.match(html,/HeliLog V2\.53 — Compact Help Topics · Test/);
- assert.match(html,/V2\.53 · TEST ENVIRONMENT/);
- assert.match(gate,/HELILOG_TEST_VERSION='V2\.53'/);
- assert.match(manifest,/HeliLog V2\.53 — Compact Help Topics Test/);
+ assert.match(html,/HeliLog V2\.54 — PICUS\/SPIC Certification · Test/);
+ assert.match(html,/V2\.54 · TEST ENVIRONMENT/);
+ assert.match(gate,/HELILOG_TEST_VERSION='V2\.54'/);
+ assert.match(manifest,/HeliLog V2\.54 — PICUS/SPIC Certification Test/);
  assert.match(template,/guide\.css\?v=2\.53/);
  assert.match(worker,/guide\.css\?v=2\.53/);
- assert.match(worker,/helilog-v2-53-compact-help-topics-1/);
+ assert.match(worker,/helilog-v2-54-flight-certification-1/);
  assert.match(html,/class="guide-topic-row"/);
 });

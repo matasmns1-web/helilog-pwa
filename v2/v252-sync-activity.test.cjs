@@ -1,5 +1,5 @@
 'use strict';
-/* V2.53 TEST — automatic private diagnostics independent of critical flight sync. */
+/* V2.54 TEST — automatic private diagnostics independent of critical flight sync. */
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
 const read=x=>fs.readFileSync(path.join(__dirname,x),'utf8');
@@ -129,7 +129,7 @@ test('UI replaces clipboard button, and recorder cannot call the flight sync pat
  assert.doesNotMatch(ui,/id="v251CopyCloudDiagnostics"/);
  assert.match(gate,/HeliLogSyncActivity\?\.observe\(st\)/);
  assert.match(template,/sync-activity\.js\?v=2\.52/);
- assert.match(worker,/helilog-v2-53-compact-help-topics-1/);
+ assert.match(worker,/helilog-v2-54-flight-certification-1/);
  assert.match(sql,/enable row level security/);
  assert.match(sql,/auth\.uid\(\)/);
  assert.match(sql,/30 days/);
