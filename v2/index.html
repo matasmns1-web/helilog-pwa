@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.54 — PICUS/SPIC Certification · Test</title>
+<title>HeliLog V2.55 — Page Pilot Signature · Test</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -625,7 +625,7 @@ html.installed-touch-app .logbook-mobile-expanded .logbook-filter-secondary{disp
 <link rel="stylesheet" href="./guide.css?v=2.53" media="screen">
 </head>
 <body><div class="layout">
-<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.54 · TEST ENVIRONMENT</span></div><nav>
+<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.55 · TEST ENVIRONMENT</span></div><nav>
 <div class="nav-group-label">Flight operations</div>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="recency">◷ Recency</button>
 <div class="nav-group-label">Records &amp; assets</div>
@@ -2509,11 +2509,29 @@ function sumLogbookFields(list,aircraftSnapshot=null){
   };
 }
 
+// V2.55: Only the account holder may populate their own printed pilot-signature
+// box. A saved profile signature is re-used for new pages, not for reprinting
+// previously archived pages. Never borrow another person's signature.
+function v255AccountSignatureData(){
+  const owner=S.people?.find(p=>p&&p.isAccountHolder===true);
+  const pilotName=String(S.pilot?.name||'').trim().replace(/\s+/g,' ').toLowerCase();
+  const ownerName=String(owner?.name||'').trim().replace(/\s+/g,' ').toLowerCase();
+  return owner&&pilotName&&pilotName===ownerName&&
+    typeof v227IsPNG==='function'&&v227IsPNG(owner.savedSignatureData)
+      ?owner.savedSignatureData:'';
+}
 function exportPrintableLogbook(options={}){
   let flights=options.flights||exportFlightsForScope();
   if(!flights.length){alert('There are no flights to export.');return false;}
   let archiveAircraft=options.aircraft||null;
   let archivePilot=options.pilot||null;
+  // Keep historical signed batches in their exact old signature/footer format.
+  // A new archive stores the printed signature PNG as a frozen batch snapshot.
+  const signatureInBox=!options.archiveBatch||options.signatureLayoutVersion===1;
+  const storedPilotSignature=signatureInBox
+    ?(options.archiveBatch?options.pilotSignatureData:v255AccountSignatureData()):'';
+  const pilotSignatureData=typeof v227IsPNG==='function'&&v227IsPNG(storedPilotSignature)
+    ?storedPilotSignature:'';
   // Batches confirmed before V1.43.1 retain their EXACT three-column print layout.
   // New exports and new batches use the four-column engine/pilot layout.
   const legacyPaperLayout=options.paperLayoutVersion===1;
@@ -2535,7 +2553,11 @@ function exportPrintableLogbook(options={}){
     if(signatureCell){
       remarksCell=`<td class="totals-signature-cell" rowspan="3">
         <div class="totals-signature-title">PILOT SIGNATURE</div>
-        <div class="totals-signature-space"></div>
+        <div class="totals-signature-space">${signatureInBox?`
+          <div class="pilot-page-cert-statement">I certify that the entries on this page are a true record of the flights shown above.</div>
+          ${pilotSignatureData?`<img class="pilot-page-autosign" src="${pilotSignatureData}" alt="Saved signature of the logbook account holder">`:
+            '<div class="pilot-page-hand-sign" aria-label="Space for a handwritten pilot signature"></div>'}`:
+          ''}</div>
       </td>`;
     }else if(!remarksCovered){
       remarksCell='<td></td>';
@@ -2738,10 +2760,10 @@ function exportPrintableLogbook(options={}){
         flight-time adjustment ${signedHours(Number(options.openingCorrectionsDelta?.total||0))}.
         Signed correction addendum(s) must be retained with the paper logbook.
         </div>`:''}
-        <div class="certification">
+        ${!signatureInBox||TEST_MODE?`<div class="certification">
           ${TEST_MODE?'TEST MODE — FICTIONAL FLIGHTS AND SIMULATOR SESSIONS. NOT AN OFFICIAL LOGBOOK.':
           'I certify that the entries on this page are a true record of the flights shown above.'}
-        </div>
+        </div>`:''}
       </div>
     </section>`;
   }).join('');
@@ -2785,7 +2807,7 @@ function exportPrintableLogbook(options={}){
       .flight-commander-cert{font-size:6px;line-height:1.12;margin-top:1px;overflow-wrap:anywhere;break-inside:avoid}
       .flight-commander-sig{display:block;max-width:25mm;max-height:5mm;object-fit:contain;object-position:left center;margin:1px 0}
       .flight-commander-date,.flight-commander-pending{display:block;font-size:5.5px;line-height:1.1}
-      .totals-row td{height:5.3mm;font-size:6.8px;font-weight:700;background:#f8f8f8}
+      .totals-row td{height:${signatureInBox?'6.6':'5.3'}mm;font-size:6.8px;font-weight:700;background:#f8f8f8}
       .totals-label{text-align:right!important;padding-right:5px!important}
       .page-footer{margin-top:4px;font-size:7.5px}
       .certification{font-style:italic}
@@ -2796,7 +2818,7 @@ function exportPrintableLogbook(options={}){
       }
       .totals-signature-cell > div{box-sizing:border-box}
       .totals-signature-title{
-        height:5.3mm;
+        height:${signatureInBox?'4':'5.3'}mm;
         display:flex;
         align-items:center;
         justify-content:center;
@@ -2807,9 +2829,19 @@ function exportPrintableLogbook(options={}){
         background:#f2f2f2
       }
       .totals-signature-space{
-        height:10.6mm;
-        background:#fff
+        height:${signatureInBox?'15.8':'10.6'}mm;
+        background:#fff;
+        ${signatureInBox?'display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:1px;padding:1.5mm 1mm;':''}
       }
+      .pilot-page-cert-statement{
+        font-size:5.5px;font-weight:500;font-style:italic;text-align:center;
+        line-height:1.17;overflow-wrap:break-word
+      }
+      .pilot-page-autosign{
+        display:block;max-width:100%;width:100%;max-height:6.8mm;
+        object-fit:contain;object-position:center center
+      }
+      .pilot-page-hand-sign{height:4mm;width:88%;border-bottom:1px dotted #888;flex-shrink:0}
 
       .c-date{width:17mm}
       .c-place{width:9.5mm}
@@ -3083,6 +3115,8 @@ function nextArchiveDraft(){
     id:'HL-'+String(seq).padStart(3,'0'),seq,
     paperLayoutVersion:2,
     paperFooterVersion:2, // V1.43.2: no engine/pilot summary footer on new pages
+    signatureLayoutVersion:1, // V2.55: certification statement in signature cell
+    pilotSignatureData:v255AccountSignatureData(), // frozen for stable reprint
     unclassifiedPriorEngineMinutes:previousEngineUnallocated(),
     unclassifiedPriorPilotMinutes:previousPilotUnallocated(),
     firstPage,pageCount,flightIds:flights.map(f=>f.id),flights,aircraft,pilot,
@@ -3306,6 +3340,7 @@ function previewNextArchive(){
   const opened=exportPrintableLogbook({
     flights:draft.flights,openingTotals:draft.openingTotals,firstPage:draft.firstPage,
     archiveBatch:draft.id,aircraft:draft.aircraft,pilot:draft.pilot,
+    signatureLayoutVersion:draft.signatureLayoutVersion,pilotSignatureData:draft.pilotSignatureData,
     blockUnusedRows:draft.unusedRowsBlocked,
     correctionsApplied:draft.correctionsApplied,
     openingCorrectionsDelta:draft.openingCorrectionsDelta,
@@ -3318,7 +3353,7 @@ function previewNextArchive(){
     pendingArchivePreview=JSON.stringify(draft);
     printarchive();
     const msg=document.getElementById('archivePreviewStatus');
-    if(msg)msg.innerHTML='<div class="successbox">PDF preview opened. Print it, check every page and sign it. Only then confirm the printed batch below.</div>';
+    if(msg)msg.innerHTML='<div class="successbox">PDF preview opened. Check every page and its pilot signature. A saved account-holder signature is inserted automatically for new pages when available; sign by hand if required or no signature is shown. Confirm the batch only after the pages are printed, checked and signed.</div>';
   }
 }
 async function confirmPrintedArchive(){
@@ -3389,6 +3424,7 @@ function reprintArchiveBatch(seq){
   if(!b)return;
   exportPrintableLogbook({
     flights:b.flights,aircraft:b.aircraft,pilot:b.pilot,
+    signatureLayoutVersion:b.signatureLayoutVersion,pilotSignatureData:b.pilotSignatureData,
     openingTotals:b.openingTotals,firstPage:b.firstPage,archiveBatch:b.id,
     blockUnusedRows:b.unusedRowsBlocked===true,
     correctionsApplied:b.correctionsApplied||[],
@@ -4641,7 +4677,7 @@ function openDeleteModal(id){
   let a=ac(f.aid);
   let modal=document.getElementById('deleteModal');
   let textEl=document.getElementById('deleteText');
-  textEl.textContent=isSimulatorSession(f)?`Delete simulator session ${formatDate(f.date)} · ${simulatorDeviceLabel(f)} · ${fmt(f.stdMin)}?`:`Delete ${formatDate(f.date)} · ${a?.icao||'aircraft'} · ${f.dep} → ${f.arr} · ${fmt(f.mins)}? This removes the flight from the V1 prototype.`;
+  textEl.textContent=isSimulatorSession(f)?`Delete simulator session ${formatDate(f.date)} · ${simulatorDeviceLabel(f)} · ${fmt(f.stdMin)}?`:`Delete ${formatDate(f.date)} · ${a?.icao||'aircraft'} · ${f.dep} → ${f.arr} · ${fmt(f.mins)}? This will delete the unarchived flight from your logbook. If cloud sync is enabled, the deletion will sync to your other devices when connected.`;
   modal.classList.add('open');
 }
 function closeDeleteModal(){
@@ -7613,6 +7649,7 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {v:"V2.55",name:"Pilot signature inside the printed page box",detail:"New printable logbook pages now place the page certification statement inside the PILOT SIGNATURE cell and automatically display the account holder's saved profile signature beneath it. If no valid saved signature is available, there is space to sign by hand. New archive batches snapshot the exact signature so later profile changes cannot alter archived reprints; previous archived page layouts stay unchanged. Always check and approve the printed page and ensure the signature method is accepted by your competent authority. The Delete flight confirmation no longer mentions the obsolete V1 prototype."},
   {v:"V2.54",name:"PICUS and SPIC commander countersignatures",detail:"A PICUS or SPIC flight now shows a commander/FI certification panel in Flight details. The recorded PIC/FI can approve and draw or expressly reuse their saved signature for that specific unarchived flight. A printed logbook page includes the name and signed PNG in Remarks; otherwise space is left for a handwritten signature. Signed flights are protected from casual edits or deletion, while explicit withdrawal retains previous evidence for correction. Totals distinguish electronically signed and pending time and pre-archive review flags uncertified entries. Electronic signatures may not be accepted by every authority; confirm applicable requirements."},
   {v:"V2.53",name:"Compact collapsible Help topics",detail:"The Help & User Guide now presents all 17 topics as short category-and-title rows, like What's new. Open a topic to read its description, full instructions and navigation button. Search finds hidden instructions without opening every result; Expand all and Collapse all are still available. Start here remains first."},
   {v:"V2.52",name:"Private automatic sync activity log",detail:"The Settings → Cloud account → Cloud health → Sync activity log now records significant status changes automatically, including conflicts, offline periods, failures and recoveries. Saved activity from your devices is synchronized privately to TEST Supabase when connected and retained in the cloud for 30 days. No raw errors, pilot names, flight records or signatures are sent. You can pause automatic logging on the same panel. The old copy-and-paste button is no longer shown."},
