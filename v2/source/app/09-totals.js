@@ -1,6 +1,7 @@
 function totals(){
   let t=calcTotals(),by=combinedTotalsByType(),opsTotals=specialisedTotals();
   const simSessions=effectiveFlights().filter(isSimulatorSession),simMinutes=simSessions.reduce((n,f)=>n+Number(f.stdMin||0),0);
+  const certifications=window.HeliLogV254Certification?.sums?.(effectiveFlights())||{signedSpic:0,signedPicus:0,pendingSpic:0,pendingPicus:0,invalid:0};
   app.innerHTML=header('Totals','Your combined career totals')+
   `${confirmedCorrections().length?`<div class="note" style="margin-bottom:14px">Includes ${confirmedCorrections().length} confirmed archived-entry correction addendum(s). Original signed print batches remain unchanged; any revised carried-forward paper totals are documented in subsequent batches.</div>`:''}
   <div class="grid stats">${[['Total',t.total],['PIC',t.pic],['Co-pilot',t.copilot],['Dual',t.dual]].map(x=>`<div class="card"><div class="label">${x[0]}</div><div class="big">${fmt(x[1])}</div></div>`).join('')}</div>
@@ -23,6 +24,10 @@ function totals(){
       <div class="head"><h2>Additional breakdown</h2></div>
       <p>SPIC <span style="float:right">${fmt(t.spic)}</span></p>
       <p>PICUS <span style="float:right">${fmt(t.picus)}</span></p>
+      <div class="mini" style="margin-top:8px"><b>Digitally countersigned flight time (recorded here):</b></div>
+      <p class="mini">SPIC: ${fmt(certifications.signedSpic)} signed · ${fmt(certifications.pendingSpic)} not electronically certified</p>
+      <p class="mini">PICUS: ${fmt(certifications.signedPicus)} signed · ${fmt(certifications.pendingPicus)} not electronically certified</p>
+      <div class="mini">Earlier paper signatures are not automatically recognised. Unsigned PICUS/SPIC remains recorded but needs qualifying PIC/FI certification for licensing use; ${certifications.invalid} record(s) have mismatched digital evidence.</div>
       <p>Night <span style="float:right">${fmt(t.night)}</span></p>
       <p>IFR <span style="float:right">${fmt(t.ifr)}</span></p>
     </div>

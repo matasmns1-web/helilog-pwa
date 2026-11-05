@@ -252,7 +252,7 @@ function savePerson(e){
     p.name=name;p.firstName=firstName;p.lastName=lastName;
     p.role=role;p.licence=licence;p.licenceNumber=licenceNumber;p.fiFeNumber=fiFeNumber;p.notes=notes;
     S.flights.forEach(f=>{
-      if(isArchivedFlight(f.id)) return;
+      if(isArchivedFlight(f.id)||f.commanderCertification) return;
       if(f.picPersonId===p.id || (!f.picPersonId && String(f.picName||'').toLowerCase()===oldName.toLowerCase())){
         f.picPersonId=p.id;
         f.picName=name;

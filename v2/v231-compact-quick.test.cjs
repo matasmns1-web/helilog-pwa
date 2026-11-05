@@ -62,7 +62,7 @@ test('Help Guide explains compact and full entry limitations without promising a
 });
 test('PWA is versioned for Quick Flight update and production remains gated',()=>{
  const html=read('source/index.template.html'),worker=read('service-worker.js');
- assert.match(html,/HeliLog V2\.52 — Private Sync Activity · Test/);
- assert.match(worker,/helilog-v2-52-private-sync-activity-1/);
- assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.52'/);
+ assert.match(html,/HeliLog V2\.55 — Page Pilot Signature · Test/);
+ assert.match(worker,/helilog-v2-55-pilot-page-signature-1/);
+ assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.55'/);
 });

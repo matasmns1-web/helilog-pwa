@@ -1,4 +1,4 @@
-const CACHE='helilog-v2-52-private-sync-activity-1';
+const CACHE='helilog-v2-55-pilot-page-signature-1';
 const SHELL=[
   './',
   './index.html',
@@ -9,7 +9,7 @@ const SHELL=[
   './simulator-evidence.js?v=2.41.2',
   './operator-rules-ui.js?v=2.41',
   './dark-cockpit.css?v=2.20-cockpit-3',
-  './guide.css?v=2.29',
+  './guide.css?v=2.53',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png',
@@ -26,6 +26,7 @@ const SHELL=[
   './cloud-view.js?v=2.19-locations-1',
   './cloud-sync.js?v=2.39.1-operator-sync-1',
   './sync-activity.js?v=2.52',
+  './flight-certification.js?v=2.54',
   './auth-gate.js?v=2.39.1-operator-sync-1',
   './cloud-archives.js?v=2.19-locations-1',
   './archive-integrity.js?v=2.19-locations-1',
