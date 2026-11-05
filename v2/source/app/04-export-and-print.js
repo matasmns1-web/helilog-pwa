@@ -267,7 +267,7 @@ function exportPrintableLogbook(options={}){
       <td>${htmlEscape(f.stdType||'')}</td>
       <td class="num">${Number(f.stdMin||0)>0?fmt(f.stdMin):''}</td>
 
-      <td class="remarks">${htmlEscape(flightRemarksForDisplay(f))}</td>
+      <td class="remarks">${window.HeliLogV254Certification?.printRemarks?.(f,flightRemarksForDisplay(f))||htmlEscape(flightRemarksForDisplay(f))}</td>
     </tr>`;
   }
 
@@ -427,6 +427,9 @@ function exportPrintableLogbook(options={}){
       .type{font-weight:700}
       .pic-name{font-size:6.7px!important}
       .remarks{text-align:left!important;padding-left:3px!important;font-size:6.5px!important;overflow-wrap:anywhere}
+      .flight-commander-cert{font-size:6px;line-height:1.12;margin-top:1px;overflow-wrap:anywhere;break-inside:avoid}
+      .flight-commander-sig{display:block;max-width:25mm;max-height:5mm;object-fit:contain;object-position:left center;margin:1px 0}
+      .flight-commander-date,.flight-commander-pending{display:block;font-size:5.5px;line-height:1.1}
       .totals-row td{height:5.3mm;font-size:6.8px;font-weight:700;background:#f8f8f8}
       .totals-label{text-align:right!important;padding-right:5px!important}
       .page-footer{margin-top:4px;font-size:7.5px}

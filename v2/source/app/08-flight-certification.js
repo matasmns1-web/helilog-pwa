@@ -29,10 +29,10 @@ function v254CertificationMarkup(f){
    '<div class="mini">The recorded PIC/FI is '+name+'. EASA AMC1 FCL.050 calls for their name and signature in Remarks. A handwritten signature may exist on a paper logbook even if not captured here.</div>')+
   (past?'<div class="mini">Previous certifications withdrawn for correction: '+past+'. Earlier evidence remains stored with this record.</div>':'')+
   (!archived&&state==="pending"?
-   '<div style="margin-top:12px"><button type="button" class="btn primary" onclick="v254OpenSigning('+JSON.stringify(f.id).replaceAll('"','&quot;')+')">Countersign this flight</button></div>'+
+   '<div style="margin-top:12px"><button type="button" class="btn primary" onclick="v254OpenSigning('+htmlEscape(JSON.stringify(f.id))+')">Countersign this flight</button></div>'+
    (!person?'<div class="mini">To sign electronically, first link the recorded commander/FI to a saved pilot profile with exactly the same name.</div>':''):
    !archived&&cert?
-    '<div style="margin-top:12px"><button type="button" class="btn" onclick="v254WithdrawCertification('+JSON.stringify(f.id).replaceAll('"','&quot;')+')">Withdraw certification to correct flight</button></div>':
+    '<div style="margin-top:12px"><button type="button" class="btn" onclick="v254WithdrawCertification('+htmlEscape(JSON.stringify(f.id))+')">Withdraw certification to correct flight</button></div>':
     archived?'<div class="mini">Archived flight: existing signed pages remain unchanged. Use the paper countersignature or the established signed-addendum process for corrections.</div>':'')+
   '<div class="mini" style="margin-top:10px">Digital signature capture does not independently verify identity or guarantee acceptance by your competent authority. Do not use someone else’s saved signature without their direct approval.</div></div>';
 }
@@ -50,7 +50,7 @@ function v254OpenSigning(id){
  const png=typeof v227IsPNG==="function"&&v227IsPNG(person.savedSignatureData);
  app.innerHTML=header("Countersign "+htmlEscape(f.role)+" flight",
    "The recorded commander or flight instructor must personally approve this flight.",
-   '<button class="btn" type="button" onclick="v254SignatureTarget=null;flight('+JSON.stringify(id).replaceAll('"','&quot;')+')">← Flight</button>')+
+   '<button class="btn" type="button" onclick="v254SignatureTarget=null;flight('+htmlEscape(JSON.stringify(id))+')">← Flight</button>')+
   '<div class="card v254-certification-screen">'+
   '<h2>'+htmlEscape(f.role)+' · '+htmlEscape(formatDate(f.date))+'</h2>'+
   '<p><b>Flight:</b> '+htmlEscape(f.dep)+' '+htmlEscape(f.off)+' → '+htmlEscape(f.arr)+' '+htmlEscape(f.on)+
@@ -60,11 +60,11 @@ function v254OpenSigning(id){
   '<div class="note">This signature will certify the specific flight details above, including time and pilot function. The flight must be re-certified if corrected. The signatory should be present and review the full record.</div>'+
   (png?'<div class="v227-saved-option"><b>Saved pilot signature</b>'+
    '<p class="mini">The named commander may approve copying their previously saved profile signature to this flight.</p>'+
-   '<button class="btn" type="button" onclick="v254ApplySavedCertification('+JSON.stringify(id).replaceAll('"','&quot;')+')">Use saved signature</button></div>':'')+
+   '<button class="btn" type="button" onclick="v254ApplySavedCertification('+htmlEscape(JSON.stringify(id))+')">Use saved signature</button></div>':'')+
   '<div class="signature-canvas-wrap"><b>Or draw signature of '+htmlEscape(person.name)+'</b>'+
   '<canvas id="signatureCanvas" width="900" height="260"></canvas>'+
   '<div class="actions"><button class="btn" type="button" onclick="clearEndorsementSignature()">Clear</button>'+
-  '<button class="btn primary" type="button" onclick="v254ApplyDrawnCertification('+JSON.stringify(id).replaceAll('"','&quot;')+')">Apply drawn signature</button></div></div>'+
+  '<button class="btn primary" type="button" onclick="v254ApplyDrawnCertification('+htmlEscape(JSON.stringify(id))+')">Apply drawn signature</button></div></div>'+
   '<label class="v227-confirm"><input type="checkbox" id="v254ApproveCertification"> '+htmlEscape(person.name)+
   ' has personally reviewed the full flight record and expressly approves countersigning this specific '+htmlEscape(f.role)+' flight now.</label>'+
   '<p class="mini">Saving a signature does not independently verify signatory identity and is not a qualified electronic signature. Confirm acceptance with your competent authority.</p></div>';

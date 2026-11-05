@@ -20,6 +20,7 @@ const APP_PARTS = Object.freeze([
   '06-flights-and-night.js',
   '07-aircraft-and-people.js',
   '08-endorsements.js',
+  '08-flight-certification.js',
   '09-totals.js',
   '09-recency.js',
   '10-settings-and-locations.js',

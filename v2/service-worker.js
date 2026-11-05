@@ -1,4 +1,4 @@
-const CACHE='helilog-v2-53-compact-help-topics-1';
+const CACHE='helilog-v2-54-flight-certification-1';
 const SHELL=[
   './',
   './index.html',
@@ -26,6 +26,7 @@ const SHELL=[
   './cloud-view.js?v=2.19-locations-1',
   './cloud-sync.js?v=2.39.1-operator-sync-1',
   './sync-activity.js?v=2.52',
+  './flight-certification.js?v=2.54',
   './auth-gate.js?v=2.39.1-operator-sync-1',
   './cloud-archives.js?v=2.19-locations-1',
   './archive-integrity.js?v=2.19-locations-1',
