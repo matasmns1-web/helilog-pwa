@@ -15,7 +15,9 @@
   "stdType","stdMin","crossCountry","specialOps","specialOpsCycles","recency","remarks"];
  const VALID_PNG=/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/;
  function escapeHTML(value){
-  return String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;":"&#39;"}[ch]));
+  return String(value??"").replace(/[&<>"']/g,ch=>({
+   "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
+  }[ch]));
  }
  function canonical(value){
   if(Array.isArray(value))return value.map(canonical);
