@@ -21,7 +21,7 @@ function v254CertificationMarkup(f){
   (state==="certified"?
    '<div class="note"><b>Electronically countersigned</b> by '+htmlEscape(cert.signedName)+
      ' · '+htmlEscape(formatDateTime(cert.signedAt))+'</div>'+
-   '<img alt="Commander or instructor signature for this flight" class="v254-signed-image" src="'+cert.signatureData+'">'+
+   '<img alt="Commander or instructor signature for this flight" class="v254-signed-image" style="display:block;width:100%;max-width:280px;max-height:95px;object-fit:contain;object-position:left center" src="'+cert.signatureData+'">'+
    '<div class="mini">Saved as part of this specific flight. A later profile-signature change will not alter it.</div>':
    '<div class="note"><b>'+(state==="invalid"?'Signature requires re-verification':
      'Electronic countersignature pending')+'</b>. Recorded '+htmlEscape(f.role)+
