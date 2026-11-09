@@ -129,7 +129,7 @@ test('UI replaces clipboard button, and recorder cannot call the flight sync pat
  assert.doesNotMatch(ui,/id="v251CopyCloudDiagnostics"/);
  assert.match(gate,/HeliLogSyncActivity\?\.observe\(st\)/);
  assert.match(template,/sync-activity\.js\?v=2\.52/);
- assert.match(worker,/helilog-v2-56-medical-ops-1/);
+ assert.match(worker,/helilog-v2-56-1-compact-special-ops-1/);
  assert.match(sql,/enable row level security/);
  assert.match(sql,/auth\.uid\(\)/);
  assert.match(sql,/30 days/);

@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.56 — HEMS and HAA Hours · Test</title>
+<title>HeliLog V2.56.1 — HEMS and HAA Hours · Test</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -625,7 +625,7 @@ html.installed-touch-app .logbook-mobile-expanded .logbook-filter-secondary{disp
 <link rel="stylesheet" href="./guide.css?v=2.53" media="screen">
 </head>
 <body><div class="layout">
-<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.56 · TEST ENVIRONMENT</span></div><nav>
+<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.56.1 · TEST ENVIRONMENT</span></div><nav>
 <div class="nav-group-label">Flight operations</div>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="recency">◷ Recency</button>
 <div class="nav-group-label">Records &amp; assets</div>
@@ -5526,6 +5526,7 @@ function v254WithdrawCertification(id){
 }
 function totals(){
   let t=calcTotals(),by=combinedTotalsByType(),opsTotals=specialisedTotals();
+  const showPreviousOps=opsTotals.some(op=>op.previousMinutes>0);
   const simSessions=effectiveFlights().filter(isSimulatorSession),simMinutes=simSessions.reduce((n,f)=>n+Number(f.stdMin||0),0);
   const certifications=window.HeliLogV254Certification?.sums?.(effectiveFlights())||{signedSpic:0,signedPicus:0,pendingSpic:0,pendingPicus:0,invalid:0};
   app.innerHTML=header('Totals','Your combined career totals')+
@@ -5583,9 +5584,9 @@ function totals(){
   </div>
   <div class="card" style="margin-top:16px">
     <div class="head"><h2>Specialised helicopter operations experience</h2></div>
-    <div class="mini" style="margin-bottom:12px">Previous-logbook hours are separate. Cycle and offshore-landing counts only reflect recorded HeliLog flights; operation categories may overlap.</div>
+    <div class="mini" style="margin-bottom:12px">${showPreviousOps?'Previous-logbook hours are separate. ':''}Cycle and offshore-landing counts only reflect recorded HeliLog flights; operation categories may overlap.</div>
     ${opsTotals.length?`<div style="overflow-x:auto"><table>
-      <thead><tr><th>Operation</th><th>HeliLog flights</th><th>Previous</th><th>Recorded here</th><th>Combined</th><th>Flights / cycles / landings</th><th>By ICAO type (HeliLog flights only)</th></tr></thead>
+      <thead><tr><th>Operation</th><th>HeliLog flights</th>${showPreviousOps?'<th>Previous</th><th>Recorded here</th><th>Combined</th>':'<th>Hours</th>'}<th>Flights / cycles / landings</th><th>By ICAO type (HeliLog flights only)</th></tr></thead>
       <tbody>${opsTotals.map(op=>{
         const byType=new Map();
         effectiveFlights().filter(f=>Object.prototype.hasOwnProperty.call(f.specialOps||{},op.code)).forEach(f=>{
@@ -5604,12 +5605,12 @@ function totals(){
         const label=op.counter==='landings'?'Offshore landings':op.counter==='flights'?'Flights':'Cycles';
         const countText=v=>op.counter==='flights'?v.total+' flights':v.total+' (D '+v.day+' / N '+v.night+')'+(v.unrecorded?' · '+v.unrecorded+' unknown':'');
         return `<tr><td><b>${htmlEscape(op.code)}</b><div class="mini">${htmlEscape(op.label)}</div></td>
-          <td>${op.flights}</td><td>${fmt(op.previousMinutes)}</td><td>${fmt(op.recordedMinutes)}</td><td><b>${fmt(op.minutes)}</b></td>
+          <td>${op.flights}</td>${showPreviousOps?`<td>${fmt(op.previousMinutes)}</td><td>${fmt(op.recordedMinutes)}</td><td><b>${fmt(op.minutes)}</b></td>`:`<td><b>${fmt(op.recordedMinutes)}</b></td>`}
           <td><b>${op.total}</b><div class="mini">${label}${op.counter==='flights'?'':' · D '+op.day+' / N '+op.night}${op.unrecorded?' · '+op.unrecorded+' unknown':''}</div></td>
           <td>${[...byType.entries()].map(([type,v])=>`<b>${htmlEscape(type)}</b> ${fmt(v.mins)} <span class="mini">· ${countText(v)}</span>`).join('<div style="height:6px"></div>')}</td></tr>`;
       }).join('')}</tbody></table></div>`:
       '<div class="muted">No specialised operations recorded yet. Add previous experience through Settings → Import previous logbook totals, or use More details on a new flight.</div>'}
-    <div class="mini" style="margin-top:12px">Counts show day (D) and night (N) for applicable cycles or landings. NVIS, HEMS and HAA count tagged flights automatically, with no cycles. These are experience totals, not regulatory recency or HEMS/HAA approval. Historical hours have no associated cycle counts.</div>
+    <div class="mini" style="margin-top:12px">Counts show day (D) and night (N) for applicable cycles or landings. NVIS, HEMS and HAA count tagged flights automatically, with no cycles. These are experience totals, not regulatory recency or HEMS/HAA approval.${showPreviousOps?' Historical hours have no associated cycle counts.':''}</div>
   </div>`;
 }
 
@@ -7651,6 +7652,7 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {v:"V2.56.1",name:"Hide empty previous operation hours",detail:"Specialised helicopter operations Totals now show a compact Hours column when no previous experience is entered. The empty Previous and redundant Combined columns disappear, and both return automatically when historical hours are present. This is display-only; existing recorded hours, career totals, flight counts and signed archives are unchanged."},
   {v:"V2.56",name:"HEMS and HAA hours and flights",detail:"Full Flight Entry now lets pilots record qualifying EASA HEMS or FAA HAA experience separately under Specialised helicopter operations. Enter the portion of each flight flown in that operation (H:MM); the marked flight counts once, without cycle fields. Historical experience can be entered under Previous specialised operations. Totals show previous, recorded and combined hours and marked flight counts. This is experience tracking only: HEMS and HAA have different regulatory definitions; no approval, training or recency is inferred. Existing flights and archives are unchanged."},
   {v:"V2.55",name:"Pilot signature inside the printed page box",detail:"New printable logbook pages now place the page certification statement inside the PILOT SIGNATURE cell and automatically display the account holder's saved profile signature beneath it. If no valid saved signature is available, there is space to sign by hand. New archive batches snapshot the exact signature so later profile changes cannot alter archived reprints; previous archived page layouts stay unchanged. Always check and approve the printed page and ensure the signature method is accepted by your competent authority. The Delete flight confirmation no longer mentions the obsolete V1 prototype."},
   {v:"V2.54",name:"PICUS and SPIC commander countersignatures",detail:"A PICUS or SPIC flight now shows a commander/FI certification panel in Flight details. The recorded PIC/FI can approve and draw or expressly reuse their saved signature for that specific unarchived flight. A printed logbook page includes the name and signed PNG in Remarks; otherwise space is left for a handwritten signature. Signed flights are protected from casual edits or deletion, while explicit withdrawal retains previous evidence for correction. Totals distinguish electronically signed and pending time and pre-archive review flags uncertified entries. Electronic signatures may not be accepted by every authority; confirm applicable requirements."},
