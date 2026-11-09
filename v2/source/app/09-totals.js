@@ -59,7 +59,7 @@ function totals(){
     <div class="head"><h2>Specialised helicopter operations experience</h2></div>
     <div class="mini" style="margin-bottom:12px">Previous-logbook hours are separate. Cycle and offshore-landing counts only reflect recorded HeliLog flights; operation categories may overlap.</div>
     ${opsTotals.length?`<div style="overflow-x:auto"><table>
-      <thead><tr><th>Operation</th><th>HeliLog flights</th><th>Previous</th><th>Recorded here</th><th>Combined</th><th>Cycles / landings</th><th>By ICAO type (HeliLog flights only)</th></tr></thead>
+      <thead><tr><th>Operation</th><th>HeliLog flights</th><th>Previous</th><th>Recorded here</th><th>Combined</th><th>Flights / cycles / landings</th><th>By ICAO type (HeliLog flights only)</th></tr></thead>
       <tbody>${opsTotals.map(op=>{
         const byType=new Map();
         effectiveFlights().filter(f=>Object.prototype.hasOwnProperty.call(f.specialOps||{},op.code)).forEach(f=>{
@@ -67,7 +67,7 @@ function totals(){
           if(!byType.has(type))byType.set(type,{mins:0,day:0,night:0,total:0,unrecorded:0});
           const item=byType.get(type);
           item.mins+=Number(f.specialOps[op.code]||0);
-          if(op.code==='NVIS')item.total++;
+          if(op.counter==='flights')item.total++;
           else {
             const v=f.specialOpsCycles?.[op.code];
             if(v&&Number.isSafeInteger(v.day)&&v.day>=0&&Number.isSafeInteger(v.night)&&v.night>=0){
@@ -75,7 +75,7 @@ function totals(){
             } else item.unrecorded++;
           }
         });
-        const label=op.counter==='landings'?'Offshore landings':op.counter==='flights'?'NVIS flights':'Cycles';
+        const label=op.counter==='landings'?'Offshore landings':op.counter==='flights'?'Flights':'Cycles';
         const countText=v=>op.counter==='flights'?v.total+' flights':v.total+' (D '+v.day+' / N '+v.night+')'+(v.unrecorded?' · '+v.unrecorded+' unknown':'');
         return `<tr><td><b>${htmlEscape(op.code)}</b><div class="mini">${htmlEscape(op.label)}</div></td>
           <td>${op.flights}</td><td>${fmt(op.previousMinutes)}</td><td>${fmt(op.recordedMinutes)}</td><td><b>${fmt(op.minutes)}</b></td>
@@ -83,7 +83,7 @@ function totals(){
           <td>${[...byType.entries()].map(([type,v])=>`<b>${htmlEscape(type)}</b> ${fmt(v.mins)} <span class="mini">· ${countText(v)}</span>`).join('<div style="height:6px"></div>')}</td></tr>`;
       }).join('')}</tbody></table></div>`:
       '<div class="muted">No specialised operations recorded yet. Add previous experience through Settings → Import previous logbook totals, or use More details on a new flight.</div>'}
-    <div class="mini" style="margin-top:12px">Counts show day (D) and night (N). NVIS counts flights; offshore counts qualifying offshore landings. Previous-logbook hours have no associated cycle counts.</div>
+    <div class="mini" style="margin-top:12px">Counts show day (D) and night (N) for applicable cycles or landings. NVIS, HEMS and HAA count tagged flights automatically, with no cycles. These are experience totals, not regulatory recency or HEMS/HAA approval. Historical hours have no associated cycle counts.</div>
   </div>`;
 }
 

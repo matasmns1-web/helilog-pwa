@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.55 — Page Pilot Signature · Test</title>
+<title>HeliLog V2.56 — HEMS and HAA Hours · Test</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -625,7 +625,7 @@ html.installed-touch-app .logbook-mobile-expanded .logbook-filter-secondary{disp
 <link rel="stylesheet" href="./guide.css?v=2.53" media="screen">
 </head>
 <body><div class="layout">
-<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.55 · TEST ENVIRONMENT</span></div><nav>
+<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.56 · TEST ENVIRONMENT</span></div><nav>
 <div class="nav-group-label">Flight operations</div>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="recency">◷ Recency</button>
 <div class="nav-group-label">Records &amp; assets</div>
@@ -1219,6 +1219,8 @@ const SPECIAL_OPS=[
   {code:'NVIS',label:'NVG / NVIS — Night-vision operations'},
   {code:'HHO',label:'HHO — Helicopter hoist operations'},
   {code:'OFFSHORE',label:'Offshore operations'},
+  {code:'HEMS',label:'HEMS — Emergency medical service (EASA)'},
+  {code:'HAA',label:'HAA — Helicopter air ambulance (FAA Part 135)'},
   {code:'FIRE',label:'Aerial firefighting / water bucket'},
   {code:'MOUNTAIN',label:'Mountain operations'},
   {code:'SURVEY',label:'Aerial survey / patrol'}
@@ -1251,9 +1253,9 @@ function specialisedTotals(){
     const historical=Number(previous?.[op.code]||0);
     const previousMinutes=Number.isSafeInteger(historical)&&historical>=0?historical:0;
     // Count only explicitly captured cycles/landings. Historic hours have no counts.
-    const counter=op.code==='NVIS'?'flights':op.code==='OFFSHORE'?'landings':'cycles';
+    const counter=['NVIS','HEMS','HAA'].includes(op.code)?'flights':op.code==='OFFSHORE'?'landings':'cycles';
     const counts=flights.reduce((out,f)=>{
-      if(op.code==='NVIS'){out.total++;return out;}
+      if(counter==='flights'){out.total++;return out;}
       const v=f.specialOpsCycles?.[op.code];
       if(!v||!Number.isSafeInteger(v.day)||!Number.isSafeInteger(v.night)||v.day<0||v.night<0){out.unrecorded++;return out;}
       out.day+=v.day;out.night+=v.night;out.total+=v.day+v.night;
@@ -4025,7 +4027,7 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
     </div>
   </details>
   <div class="section-title">Specialised helicopter operations</div>
-  <div class="mini">Select the operations performed. Record operation time and completed cycles. Offshore counts are landings at qualifying offshore locations (not ordinary aerodrome landings).</div>
+  <div class="mini">Select the operations performed and record their actual time. HEMS and HAA track medical-operation hours and flights, not cycles; use the category matching the operator and jurisdiction. Offshore counts are landings at qualifying offshore locations (not ordinary aerodrome landings).</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:10px;margin-top:12px">
     ${SPECIAL_OPS.map(op=>`<div style="border:1px solid var(--line);border-radius:9px;padding:10px">
       <label style="display:flex;gap:8px;align-items:start;cursor:pointer">
@@ -4036,7 +4038,7 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
         <div class="special-count-fields">
           <div><label for="specialTime_${op.code}" class="mini">Time (H:MM)</label>
              <input id="specialTime_${op.code}" type="text" inputmode="decimal" placeholder="0:00" value="0:00" oninput="updateSpecialOpsPreview()"></div>
-          ${op.code==='NVIS'?'<div class="special-nvis-auto"><span class="mini">NVIS flights</span><strong>1 per flight</strong><span class="mini">Counted automatically</span></div>':`
+          ${['NVIS','HEMS','HAA'].includes(op.code)?'<div class="special-nvis-auto"><span class="mini">'+(op.code==='NVIS'?'NVIS flights':'Medical flights')+'</span><strong>1 per flight</strong><span class="mini">Counted automatically</span></div>':`
           <div><label for="specialDayCycles_${op.code}" class="mini">${op.code==='OFFSHORE'?'Day landings':'Day cycles'}</label>
              <input id="specialDayCycles_${op.code}" type="number" min="0" max="9999" step="1" value="0" inputmode="numeric"></div>
           <div><label for="specialNightCycles_${op.code}" class="mini">${op.code==='OFFSHORE'?'Night landings':'Night cycles'}</label>
@@ -4045,7 +4047,7 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
       </div>
     </div>`).join('')}
   </div>
-  <div class="mini" style="margin-top:10px">Offshore: count only landings at an offshore location (platform, helideck or vessel) with the corresponding take-off, departure and approach. HHO: completed hoist cycles including hover transitions. NVIS: flights, not cycles. Night counts require night time.</div>
+  <div class="mini" style="margin-top:10px">Offshore: count only landings at an offshore location (platform, helideck or vessel) with the corresponding take-off, departure and approach. HHO: completed hoist cycles including hover transitions. NVIS, HEMS and HAA: count flights automatically, with no cycle fields. Medical missions must qualify under the relevant operator approval; these totals do not establish legal qualifications. Night counts require night time.</div>
   <div id="specialOpsPreview" class="mini" style="margin-top:8px"></div>
 </details>
 
@@ -4207,7 +4209,7 @@ function collectSpecialOps(totalMinutes){
 function collectSpecialOpCycles(nightMinutes){
   const result={};
   for(const op of SPECIAL_OPS){
-    if(op.code==='NVIS'||!document.getElementById('specialCheck_'+op.code)?.checked)continue;
+    if(['NVIS','HEMS','HAA'].includes(op.code)||!document.getElementById('specialCheck_'+op.code)?.checked)continue;
     const dayInput=document.getElementById('specialDayCycles_'+op.code);
     const nightInput=document.getElementById('specialNightCycles_'+op.code);
     const rawDay=String(dayInput?.value??'').trim(),rawNight=String(nightInput?.value??'').trim();
@@ -5583,7 +5585,7 @@ function totals(){
     <div class="head"><h2>Specialised helicopter operations experience</h2></div>
     <div class="mini" style="margin-bottom:12px">Previous-logbook hours are separate. Cycle and offshore-landing counts only reflect recorded HeliLog flights; operation categories may overlap.</div>
     ${opsTotals.length?`<div style="overflow-x:auto"><table>
-      <thead><tr><th>Operation</th><th>HeliLog flights</th><th>Previous</th><th>Recorded here</th><th>Combined</th><th>Cycles / landings</th><th>By ICAO type (HeliLog flights only)</th></tr></thead>
+      <thead><tr><th>Operation</th><th>HeliLog flights</th><th>Previous</th><th>Recorded here</th><th>Combined</th><th>Flights / cycles / landings</th><th>By ICAO type (HeliLog flights only)</th></tr></thead>
       <tbody>${opsTotals.map(op=>{
         const byType=new Map();
         effectiveFlights().filter(f=>Object.prototype.hasOwnProperty.call(f.specialOps||{},op.code)).forEach(f=>{
@@ -5591,7 +5593,7 @@ function totals(){
           if(!byType.has(type))byType.set(type,{mins:0,day:0,night:0,total:0,unrecorded:0});
           const item=byType.get(type);
           item.mins+=Number(f.specialOps[op.code]||0);
-          if(op.code==='NVIS')item.total++;
+          if(op.counter==='flights')item.total++;
           else {
             const v=f.specialOpsCycles?.[op.code];
             if(v&&Number.isSafeInteger(v.day)&&v.day>=0&&Number.isSafeInteger(v.night)&&v.night>=0){
@@ -5599,7 +5601,7 @@ function totals(){
             } else item.unrecorded++;
           }
         });
-        const label=op.counter==='landings'?'Offshore landings':op.counter==='flights'?'NVIS flights':'Cycles';
+        const label=op.counter==='landings'?'Offshore landings':op.counter==='flights'?'Flights':'Cycles';
         const countText=v=>op.counter==='flights'?v.total+' flights':v.total+' (D '+v.day+' / N '+v.night+')'+(v.unrecorded?' · '+v.unrecorded+' unknown':'');
         return `<tr><td><b>${htmlEscape(op.code)}</b><div class="mini">${htmlEscape(op.label)}</div></td>
           <td>${op.flights}</td><td>${fmt(op.previousMinutes)}</td><td>${fmt(op.recordedMinutes)}</td><td><b>${fmt(op.minutes)}</b></td>
@@ -5607,7 +5609,7 @@ function totals(){
           <td>${[...byType.entries()].map(([type,v])=>`<b>${htmlEscape(type)}</b> ${fmt(v.mins)} <span class="mini">· ${countText(v)}</span>`).join('<div style="height:6px"></div>')}</td></tr>`;
       }).join('')}</tbody></table></div>`:
       '<div class="muted">No specialised operations recorded yet. Add previous experience through Settings → Import previous logbook totals, or use More details on a new flight.</div>'}
-    <div class="mini" style="margin-top:12px">Counts show day (D) and night (N). NVIS counts flights; offshore counts qualifying offshore landings. Previous-logbook hours have no associated cycle counts.</div>
+    <div class="mini" style="margin-top:12px">Counts show day (D) and night (N) for applicable cycles or landings. NVIS, HEMS and HAA count tagged flights automatically, with no cycles. These are experience totals, not regulatory recency or HEMS/HAA approval. Historical hours have no associated cycle counts.</div>
   </div>`;
 }
 
@@ -7404,7 +7406,7 @@ const HELILOG_GUIDE_TOPICS=[
     "steps": [
       "Open Full Flight Entry → More details → Specialised helicopter operations.",
       "Tick the operations flown and enter Operation time (H:MM). For operations with cycles, enter completed Day cycles and Night cycles; OFFSHORE Day landings and Night landings count qualifying landings at offshore locations (platforms, helidecks or vessels), including the corresponding take-off, departure and approach.",
-      "A flight marked NVIS counts as one NVIS flight for the 90-day indicator, even if its operation-time entry is zero. NVIS does not use a cycle counter.",
+      "A flight marked NVIS counts as one NVIS flight for the 90-day indicator, even if its operation-time entry is zero. NVIS does not use a cycle counter. HEMS (EASA) and HAA (FAA Part 135) also count marked flights automatically, but have no HeliLog recency counter; only log time that qualifies under the relevant operator and jurisdiction.",
       "For HHO, only count hoist cycles containing a transition to and from hover. Night counts require recorded night flight time. Old entries without cycle counts remain unknown and are never silently credited.",
       "Open Recency to see NVIS and Hoist thresholds combined across SP/MP records within an aircraft type, while offshore and passenger-carrying retain separate pilot configurations. Select dashboard indicators as desired.",
       "These are record-based indicators, not authorisations. Operator approval, relevant crew role, training/checking, supervised operations and approved simulator alternatives must be checked separately."
@@ -7546,7 +7548,7 @@ const HELILOG_GUIDE_TOPICS=[
       "Open Totals for PIC, Co-pilot, Dual, aircraft engine and pilot-configuration breakdowns.",
       "Historical paper logbook time can be entered as brought-forward totals in Settings.",
       "Under Settings → Import previous logbook totals, enter your carried-forward flight time, pilot/engine breakdown and aircraft-type hours.",
-      "For historical specialist operations, use Specialised operations… to open a compact popup. Enter hours for VRLL, HESLO, HEC, NVIS, HHO, offshore and other categories as H:MM or decimal hours.",
+      "For historical specialist operations, use Specialised operations… to open a compact popup. Enter hours for VRLL, HESLO, HEC, NVIS, HHO, HEMS, HAA, offshore and other categories as H:MM or decimal hours.",
       "Apply the popup values, then confirm Import totals / Save correction on the main form. Cancelling the popup discards only the edits made within the popup.",
       "On Totals, Previous + Recorded here = Combined specialised-operation hours. Historical hours do not create flights, and overlapping categories are not added to Total flying time.",
       "Review all totals against original documents before using them in official applications."
@@ -7649,6 +7651,7 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {v:"V2.56",name:"HEMS and HAA hours and flights",detail:"Full Flight Entry now lets pilots record qualifying EASA HEMS or FAA HAA experience separately under Specialised helicopter operations. Enter the portion of each flight flown in that operation (H:MM); the marked flight counts once, without cycle fields. Historical experience can be entered under Previous specialised operations. Totals show previous, recorded and combined hours and marked flight counts. This is experience tracking only: HEMS and HAA have different regulatory definitions; no approval, training or recency is inferred. Existing flights and archives are unchanged."},
   {v:"V2.55",name:"Pilot signature inside the printed page box",detail:"New printable logbook pages now place the page certification statement inside the PILOT SIGNATURE cell and automatically display the account holder's saved profile signature beneath it. If no valid saved signature is available, there is space to sign by hand. New archive batches snapshot the exact signature so later profile changes cannot alter archived reprints; previous archived page layouts stay unchanged. Always check and approve the printed page and ensure the signature method is accepted by your competent authority. The Delete flight confirmation no longer mentions the obsolete V1 prototype."},
   {v:"V2.54",name:"PICUS and SPIC commander countersignatures",detail:"A PICUS or SPIC flight now shows a commander/FI certification panel in Flight details. The recorded PIC/FI can approve and draw or expressly reuse their saved signature for that specific unarchived flight. A printed logbook page includes the name and signed PNG in Remarks; otherwise space is left for a handwritten signature. Signed flights are protected from casual edits or deletion, while explicit withdrawal retains previous evidence for correction. Totals distinguish electronically signed and pending time and pre-archive review flags uncertified entries. Electronic signatures may not be accepted by every authority; confirm applicable requirements."},
   {v:"V2.53",name:"Compact collapsible Help topics",detail:"The Help & User Guide now presents all 17 topics as short category-and-title rows, like What's new. Open a topic to read its description, full instructions and navigation button. Search finds hidden instructions without opening every result; Expand all and Collapse all are still available. Start here remains first."},

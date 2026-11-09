@@ -434,6 +434,8 @@ const SPECIAL_OPS=[
   {code:'NVIS',label:'NVG / NVIS — Night-vision operations'},
   {code:'HHO',label:'HHO — Helicopter hoist operations'},
   {code:'OFFSHORE',label:'Offshore operations'},
+  {code:'HEMS',label:'HEMS — Emergency medical service (EASA)'},
+  {code:'HAA',label:'HAA — Helicopter air ambulance (FAA Part 135)'},
   {code:'FIRE',label:'Aerial firefighting / water bucket'},
   {code:'MOUNTAIN',label:'Mountain operations'},
   {code:'SURVEY',label:'Aerial survey / patrol'}
@@ -466,9 +468,9 @@ function specialisedTotals(){
     const historical=Number(previous?.[op.code]||0);
     const previousMinutes=Number.isSafeInteger(historical)&&historical>=0?historical:0;
     // Count only explicitly captured cycles/landings. Historic hours have no counts.
-    const counter=op.code==='NVIS'?'flights':op.code==='OFFSHORE'?'landings':'cycles';
+    const counter=['NVIS','HEMS','HAA'].includes(op.code)?'flights':op.code==='OFFSHORE'?'landings':'cycles';
     const counts=flights.reduce((out,f)=>{
-      if(op.code==='NVIS'){out.total++;return out;}
+      if(counter==='flights'){out.total++;return out;}
       const v=f.specialOpsCycles?.[op.code];
       if(!v||!Number.isSafeInteger(v.day)||!Number.isSafeInteger(v.night)||v.day<0||v.night<0){out.unrecorded++;return out;}
       out.day+=v.day;out.night+=v.night;out.total+=v.day+v.night;
