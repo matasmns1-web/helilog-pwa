@@ -97,8 +97,9 @@ test('UI requires explicit signing consent, protects signed flights and preserve
  assert.match(archives,/code:"commander-certification"/);
  assert.match(print,/HeliLogV254Certification\?\.printRemarks/);
  assert.match(print,/\.flight-commander-sig/);
- assert.match(total,/signedPicus/);
- assert.match(total,/pendingPicus/);
+ assert.doesNotMatch(total,/signedPicus|pendingPicus|HeliLogV254Certification/);
+ assert.match(read('flight-certification.js'),/signedPicus/);
+ assert.match(read('flight-certification.js'),/pendingPicus/);
 });
 test('assets, help, staging version and build script are wired for TEST only',()=>{
  const template=read('source/index.template.html'),worker=read('service-worker.js'),
