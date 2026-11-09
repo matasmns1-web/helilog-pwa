@@ -66,12 +66,12 @@ test('Help, PWA assets and release labels are versioned together',()=>{
  const html=read('index.html'),template=read('source/index.template.html'),
  manifest=read('manifest.webmanifest'),worker=read('service-worker.js'),
  gate=read('auth-gate.js');
- assert.match(html,/HeliLog V2\.55 — Page Pilot Signature · Test/);
- assert.match(html,/V2\.55 · TEST ENVIRONMENT/);
- assert.match(gate,/HELILOG_TEST_VERSION='V2\.55'/);
- assert.match(manifest,/HeliLog V2\.55 — Page Pilot Signature Test/);
+ assert.match(html,/HeliLog V2\.56 — HEMS and HAA Hours · Test/);
+ assert.match(html,/V2\.56 · TEST ENVIRONMENT/);
+ assert.match(gate,/HELILOG_TEST_VERSION='V2\.56'/);
+ assert.match(manifest,/HeliLog V2\.56 — Page Pilot Signature Test/);
  assert.match(template,/guide\.css\?v=2\.53/);
  assert.match(worker,/guide\.css\?v=2\.53/);
- assert.match(worker,/helilog-v2-55-pilot-page-signature-1/);
+ assert.match(worker,/helilog-v2-56-medical-ops-1/);
  assert.match(html,/class="guide-topic-row"/);
 });

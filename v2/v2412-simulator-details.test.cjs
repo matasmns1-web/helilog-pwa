@@ -19,5 +19,5 @@ test('simulator time stays distinct from helicopter flight time',()=>{
  assert.ok(source.includes('mins:0'));
  assert.ok(source.includes('simAircraftType,simPilotConfig'));
  assert.ok(read('source/index.template.html').includes('V2.55 — Page Pilot Signature'));
- assert.ok(read('service-worker.js').includes('helilog-v2-55-pilot-page-signature-1'));
+ assert.ok(read('service-worker.js').includes('helilog-v2-56-medical-ops-1'));
 });
