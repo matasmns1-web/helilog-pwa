@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.56.1 — HEMS and HAA Hours · Test</title>
+<title>HeliLog V2.56.2 — Compact Signature Totals · Test</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -625,7 +625,7 @@ html.installed-touch-app .logbook-mobile-expanded .logbook-filter-secondary{disp
 <link rel="stylesheet" href="./guide.css?v=2.53" media="screen">
 </head>
 <body><div class="layout">
-<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.56.1 · TEST ENVIRONMENT</span></div><nav>
+<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.56.2 · TEST ENVIRONMENT</span></div><nav>
 <div class="nav-group-label">Flight operations</div>
 <button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="recency">◷ Recency</button>
 <div class="nav-group-label">Records &amp; assets</div>
@@ -5529,6 +5529,10 @@ function totals(){
   const showPreviousOps=opsTotals.some(op=>op.previousMinutes>0);
   const simSessions=effectiveFlights().filter(isSimulatorSession),simMinutes=simSessions.reduce((n,f)=>n+Number(f.stdMin||0),0);
   const certifications=window.HeliLogV254Certification?.sums?.(effectiveFlights())||{signedSpic:0,signedPicus:0,pendingSpic:0,pendingPicus:0,invalid:0};
+  // UI-only: the digital countersignature breakdown stays available on demand.
+  const digitallySignedMinutes=Number(certifications.signedSpic||0)+Number(certifications.signedPicus||0);
+  const noDigitalSignatureMinutes=Number(certifications.pendingSpic||0)+Number(certifications.pendingPicus||0);
+  const showSignatureSummary=digitallySignedMinutes>0||noDigitalSignatureMinutes>0||Number(certifications.invalid||0)>0;
   app.innerHTML=header('Totals','Your combined career totals')+
   `${confirmedCorrections().length?`<div class="note" style="margin-bottom:14px">Includes ${confirmedCorrections().length} confirmed archived-entry correction addendum(s). Original signed print batches remain unchanged; any revised carried-forward paper totals are documented in subsequent batches.</div>`:''}
   <div class="grid stats">${[['Total',t.total],['PIC',t.pic],['Co-pilot',t.copilot],['Dual',t.dual]].map(x=>`<div class="card"><div class="label">${x[0]}</div><div class="big">${fmt(x[1])}</div></div>`).join('')}</div>
@@ -5551,10 +5555,15 @@ function totals(){
       <div class="head"><h2>Additional breakdown</h2></div>
       <p>SPIC <span style="float:right">${fmt(t.spic)}</span></p>
       <p>PICUS <span style="float:right">${fmt(t.picus)}</span></p>
-      <div class="mini" style="margin-top:8px"><b>Digitally countersigned flight time (recorded here):</b></div>
-      <p class="mini">SPIC: ${fmt(certifications.signedSpic)} signed · ${fmt(certifications.pendingSpic)} not electronically certified</p>
-      <p class="mini">PICUS: ${fmt(certifications.signedPicus)} signed · ${fmt(certifications.pendingPicus)} not electronically certified</p>
-      <div class="mini">Earlier paper signatures are not automatically recognised. Unsigned PICUS/SPIC remains recorded but needs qualifying PIC/FI certification for licensing use; ${certifications.invalid} record(s) have mismatched digital evidence.</div>
+      ${showSignatureSummary?`<details class="v2562-signature-details" style="margin:8px 0">
+        <summary style="cursor:pointer;line-height:1.6"><b>PICUS/SPIC signatures</b> <span class="mini">· ${fmt(digitallySignedMinutes)} digitally signed${noDigitalSignatureMinutes>0?' · '+fmt(noDigitalSignatureMinutes)+' without digital certification':''}${certifications.invalid>0?' · '+certifications.invalid+' need review':''}</span></summary>
+        <div class="mini" style="padding:8px 0 4px 14px">
+          <div><b>Digital countersignatures (flights recorded here)</b></div>
+          <div>SPIC: ${fmt(certifications.signedSpic)} signed · ${fmt(certifications.pendingSpic)} not electronically certified</div>
+          <div>PICUS: ${fmt(certifications.signedPicus)} signed · ${fmt(certifications.pendingPicus)} not electronically certified</div>
+          <div style="margin-top:6px">Earlier paper signatures are not automatically recognised. Flight time without electronic certification remains recorded but needs qualifying PIC/FI certification for licensing use.${certifications.invalid>0?' '+certifications.invalid+' record(s) have mismatched digital evidence.':''}</div>
+        </div>
+      </details>`:''}
       <p>Night <span style="float:right">${fmt(t.night)}</span></p>
       <p>IFR <span style="float:right">${fmt(t.ifr)}</span></p>
     </div>
@@ -7652,6 +7661,7 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {v:"V2.56.2",name:"Compact PICUS/SPIC certification summary",detail:"On Totals, digital PICUS/SPIC countersignatures now occupy a compact expandable row instead of several permanently visible paragraphs. The summary shows recorded digital time, and any hours without digital certification or mismatched evidence. Expand to see the SPIC/PICUS breakdown and signature guidance. No certification checks, flight totals, recorded signatures or signed archives are changed."},
   {v:"V2.56.1",name:"Hide empty previous operation hours",detail:"Specialised helicopter operations Totals now show a compact Hours column when no previous experience is entered. The empty Previous and redundant Combined columns disappear, and both return automatically when historical hours are present. This is display-only; existing recorded hours, career totals, flight counts and signed archives are unchanged."},
   {v:"V2.56",name:"HEMS and HAA hours and flights",detail:"Full Flight Entry now lets pilots record qualifying EASA HEMS or FAA HAA experience separately under Specialised helicopter operations. Enter the portion of each flight flown in that operation (H:MM); the marked flight counts once, without cycle fields. Historical experience can be entered under Previous specialised operations. Totals show previous, recorded and combined hours and marked flight counts. This is experience tracking only: HEMS and HAA have different regulatory definitions; no approval, training or recency is inferred. Existing flights and archives are unchanged."},
   {v:"V2.55",name:"Pilot signature inside the printed page box",detail:"New printable logbook pages now place the page certification statement inside the PILOT SIGNATURE cell and automatically display the account holder's saved profile signature beneath it. If no valid saved signature is available, there is space to sign by hand. New archive batches snapshot the exact signature so later profile changes cannot alter archived reprints; previous archived page layouts stay unchanged. Always check and approve the printed page and ensure the signature method is accepted by your competent authority. The Delete flight confirmation no longer mentions the obsolete V1 prototype."},

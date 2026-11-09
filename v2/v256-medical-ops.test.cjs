@@ -66,8 +66,8 @@ test('help explains regulatory distinctions; no invented HEMS/HAA recency or new
  assert.match(read('source/app/03-import-and-integrity.js'),/validSpecialOps\(data,total\)/);
  assert.match(read('source/app/09-recency.js'),/Recency|recency/);
  assert.doesNotMatch(read('special-recency.js'),/HEMS|HAA/);
- assert.match(read('index.html'),/V2\.56\.1 · TEST ENVIRONMENT/);
- assert.match(read('manifest.webmanifest'),/HeliLog V2\.56\.1 — HEMS and HAA Hours Test/);
- assert.match(read('service-worker.js'),/helilog-v2-56-1-compact-special-ops-1/);
- assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.56\.1'/);
+ assert.match(read('index.html'),/V2\.56\.2 · TEST ENVIRONMENT/);
+ assert.match(read('manifest.webmanifest'),/HeliLog V2\.56\.2 — Compact Signature Totals Test/);
+ assert.match(read('service-worker.js'),/helilog-v2-56-2-compact-signatures-1/);
+ assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.56\.2'/);
 });
