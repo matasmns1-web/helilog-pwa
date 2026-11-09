@@ -97,8 +97,9 @@ test('UI requires explicit signing consent, protects signed flights and preserve
  assert.match(archives,/code:"commander-certification"/);
  assert.match(print,/HeliLogV254Certification\?\.printRemarks/);
  assert.match(print,/\.flight-commander-sig/);
- assert.match(total,/signedPicus/);
- assert.match(total,/pendingPicus/);
+ assert.doesNotMatch(total,/signedPicus|pendingPicus|HeliLogV254Certification/);
+ assert.match(read('flight-certification.js'),/signedPicus/);
+ assert.match(read('flight-certification.js'),/pendingPicus/);
 });
 test('assets, help, staging version and build script are wired for TEST only',()=>{
  const template=read('source/index.template.html'),worker=read('service-worker.js'),
@@ -106,10 +107,10 @@ test('assets, help, staging version and build script are wired for TEST only',()
  manifest=read('manifest.webmanifest'),build=read('../scripts/build-helilog-v2.cjs');
  assert.match(template,/src="\.\/flight-certification\.js\?v=2\.54"/);
  assert.match(worker,/flight-certification\.js\?v=2\.54/);
- assert.match(index,/V2\.56\.2 · TEST ENVIRONMENT/);
+ assert.match(index,/V2\.56\.3 · TEST ENVIRONMENT/);
  assert.match(index,/v254CertificationMarkup/);
  assert.match(guide,/V2\.54/);
- assert.match(gate,/HELILOG_TEST_VERSION='V2\.56\.2'/);
- assert.match(manifest,/V2\.56\.2 — Compact Signature Totals Test/);
+ assert.match(gate,/HELILOG_TEST_VERSION='V2\.56\.3'/);
+ assert.match(manifest,/V2\.56\.3 — Clean Totals Test/);
  assert.match(build,/08-flight-certification\.js/);
 });

@@ -1,5 +1,5 @@
 'use strict';
-/* V2.56.2: show historical operation columns only when any operation has
+/* V2.56.3: show historical operation columns only when any operation has
  * positive brought-forward time. This is a read-only presentation rule. */
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
@@ -59,10 +59,10 @@ test('no operation totals still shows the standard empty-state notice',()=>{
  assert.doesNotMatch(html,/<th>Previous<\/th>|<th>Combined<\/th>/);
 });
 test('app version/cache and help describe the display-only change',()=>{
- assert.match(read('source/index.template.html'),/HeliLog V2\.56\.2 — Compact Signature Totals · Test/);
- assert.match(read('index.html'),/V2\.56\.2 · TEST ENVIRONMENT/);
- assert.match(read('manifest.webmanifest'),/HeliLog V2\.56\.2 — Compact Signature Totals Test/);
- assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.56\.2'/);
- assert.match(read('service-worker.js'),/helilog-v2-56-2-compact-signatures-1/);
+ assert.match(read('source/index.template.html'),/HeliLog V2\.56\.3 — Clean Totals · Test/);
+ assert.match(read('index.html'),/V2\.56\.3 · TEST ENVIRONMENT/);
+ assert.match(read('manifest.webmanifest'),/HeliLog V2\.56\.3 — Clean Totals Test/);
+ assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.56\.3'/);
+ assert.match(read('service-worker.js'),/helilog-v2-56-3-clean-totals-1/);
  assert.match(read('source/app/13-help-guide.js'),/v:"V2\.56\.1",name:"Hide empty previous operation hours"/);
 });

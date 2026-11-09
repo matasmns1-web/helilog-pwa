@@ -1,4 +1,4 @@
-const CACHE='helilog-v2-56-2-compact-signatures-1';
+const CACHE='helilog-v2-56-3-clean-totals-1';
 const SHELL=[
   './',
   './index.html',
