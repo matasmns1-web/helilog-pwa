@@ -69,7 +69,7 @@ test('Help, PWA assets and release labels are versioned together',()=>{
  assert.match(html,/HeliLog V2\.56 — HEMS and HAA Hours · Test/);
  assert.match(html,/V2\.56 · TEST ENVIRONMENT/);
  assert.match(gate,/HELILOG_TEST_VERSION='V2\.56'/);
- assert.match(manifest,/HeliLog V2\.56 — Page Pilot Signature Test/);
+ assert.match(manifest,/HeliLog V2\.56 — HEMS and HAA Hours Test/);
  assert.match(template,/guide\.css\?v=2\.53/);
  assert.match(worker,/guide\.css\?v=2\.53/);
  assert.match(worker,/helilog-v2-56-medical-ops-1/);
