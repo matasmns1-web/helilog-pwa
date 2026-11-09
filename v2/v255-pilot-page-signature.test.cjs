@@ -104,12 +104,12 @@ test('all app assets and release notes are versioned for TEST only',()=>{
  const template=read('source/index.template.html'),app=read('index.html'),
   guide=read('source/app/13-help-guide.js'),worker=read('service-worker.js'),
   manifest=read('manifest.webmanifest'),gate=read('auth-gate.js');
- assert.match(template,/V2\.55 · TEST ENVIRONMENT/);
- assert.match(app,/V2\.55 · TEST ENVIRONMENT/);
+ assert.match(template,/V2\.56 · TEST ENVIRONMENT/);
+ assert.match(app,/V2\.56 · TEST ENVIRONMENT/);
  assert.match(app,/function v255AccountSignatureData\(\)/);
  assert.match(app,/pilot-page-autosign/);
  assert.match(guide,/v:"V2\.55",name:"Pilot signature inside the printed page box"/);
- assert.match(worker,/helilog-v2-55-pilot-page-signature-1/);
- assert.match(manifest,/HeliLog V2\.55 — Page Pilot Signature Test/);
- assert.match(gate,/HELILOG_TEST_VERSION='V2\.55'/);
+ assert.match(worker,/helilog-v2-56-medical-ops-1/);
+ assert.match(manifest,/HeliLog V2\.56 — HEMS and HAA Hours Test/);
+ assert.match(gate,/HELILOG_TEST_VERSION='V2\.56'/);
 });

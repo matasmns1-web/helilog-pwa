@@ -48,9 +48,9 @@ test('test-only PWA release labels and offline cache are aligned',()=>{
   const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
   const manifest=JSON.parse(fs.readFileSync(path.join(root,'manifest.webmanifest'),'utf8'));
   const worker=fs.readFileSync(path.join(root,'service-worker.js'),'utf8');
-  assert.match(html,/HeliLog V2\.55 — Page Pilot Signature · Test/);
-  assert.equal(manifest.name,'HeliLog V2.55 — Page Pilot Signature Test');
-  assert.match(worker,/helilog-v2-55-pilot-page-signature-1/);
+  assert.match(html,/HeliLog V2\.56 — HEMS and HAA Hours · Test/);
+  assert.equal(manifest.name,'HeliLog V2.56 — HEMS and HAA Hours Test');
+  assert.match(worker,/helilog-v2-56-medical-ops-1/);
   assert.match(html,/function quickAdd\(\)/);
   assert.match(html,/function saveFlight\(\)/);
 });

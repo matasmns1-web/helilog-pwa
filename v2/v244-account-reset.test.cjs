@@ -99,7 +99,7 @@ test('without TEST migration, logbook keeps legacy sync and deletion remains dis
  assert.match(app,/sync\.resetSupported===true/);
 });
 test('production remains separate and test release has a distinct cache',()=>{
- assert.match(read('v2/service-worker.js'),/helilog-v2-55-pilot-page-signature-1/);
- assert.match(app,/V2\.55 · TEST ENVIRONMENT/);
- assert.match(read('v2/manifest.webmanifest'),/V2\.55/);
+ assert.match(read('v2/service-worker.js'),/helilog-v2-56-medical-ops-1/);
+ assert.match(app,/V2\.56 · TEST ENVIRONMENT/);
+ assert.match(read('v2/manifest.webmanifest'),/V2\.56/);
 });

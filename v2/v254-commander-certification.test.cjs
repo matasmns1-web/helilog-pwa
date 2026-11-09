@@ -106,10 +106,10 @@ test('assets, help, staging version and build script are wired for TEST only',()
  manifest=read('manifest.webmanifest'),build=read('../scripts/build-helilog-v2.cjs');
  assert.match(template,/src="\.\/flight-certification\.js\?v=2\.54"/);
  assert.match(worker,/flight-certification\.js\?v=2\.54/);
- assert.match(index,/V2\.55 · TEST ENVIRONMENT/);
+ assert.match(index,/V2\.56 · TEST ENVIRONMENT/);
  assert.match(index,/v254CertificationMarkup/);
  assert.match(guide,/V2\.54/);
- assert.match(gate,/HELILOG_TEST_VERSION='V2\.55'/);
- assert.match(manifest,/V2\.55 — Page Pilot Signature Test/);
+ assert.match(gate,/HELILOG_TEST_VERSION='V2\.56'/);
+ assert.match(manifest,/V2\.56 — HEMS and HAA Hours Test/);
  assert.match(build,/08-flight-certification\.js/);
 });

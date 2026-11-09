@@ -330,7 +330,7 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
     </div>
   </details>
   <div class="section-title">Specialised helicopter operations</div>
-  <div class="mini">Select the operations performed. Record operation time and completed cycles. Offshore counts are landings at qualifying offshore locations (not ordinary aerodrome landings).</div>
+  <div class="mini">Select the operations performed and record their actual time. HEMS and HAA track medical-operation hours and flights, not cycles; use the category matching the operator and jurisdiction. Offshore counts are landings at qualifying offshore locations (not ordinary aerodrome landings).</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:10px;margin-top:12px">
     ${SPECIAL_OPS.map(op=>`<div style="border:1px solid var(--line);border-radius:9px;padding:10px">
       <label style="display:flex;gap:8px;align-items:start;cursor:pointer">
@@ -341,7 +341,7 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
         <div class="special-count-fields">
           <div><label for="specialTime_${op.code}" class="mini">Time (H:MM)</label>
              <input id="specialTime_${op.code}" type="text" inputmode="decimal" placeholder="0:00" value="0:00" oninput="updateSpecialOpsPreview()"></div>
-          ${op.code==='NVIS'?'<div class="special-nvis-auto"><span class="mini">NVIS flights</span><strong>1 per flight</strong><span class="mini">Counted automatically</span></div>':`
+          ${['NVIS','HEMS','HAA'].includes(op.code)?'<div class="special-nvis-auto"><span class="mini">'+(op.code==='NVIS'?'NVIS flights':'Medical flights')+'</span><strong>1 per flight</strong><span class="mini">Counted automatically</span></div>':`
           <div><label for="specialDayCycles_${op.code}" class="mini">${op.code==='OFFSHORE'?'Day landings':'Day cycles'}</label>
              <input id="specialDayCycles_${op.code}" type="number" min="0" max="9999" step="1" value="0" inputmode="numeric"></div>
           <div><label for="specialNightCycles_${op.code}" class="mini">${op.code==='OFFSHORE'?'Night landings':'Night cycles'}</label>
@@ -350,7 +350,7 @@ ${!editing?`<div class="choice-row quick-entry-advanced" style="margin-bottom:16
       </div>
     </div>`).join('')}
   </div>
-  <div class="mini" style="margin-top:10px">Offshore: count only landings at an offshore location (platform, helideck or vessel) with the corresponding take-off, departure and approach. HHO: completed hoist cycles including hover transitions. NVIS: flights, not cycles. Night counts require night time.</div>
+  <div class="mini" style="margin-top:10px">Offshore: count only landings at an offshore location (platform, helideck or vessel) with the corresponding take-off, departure and approach. HHO: completed hoist cycles including hover transitions. NVIS, HEMS and HAA: count flights automatically, with no cycle fields. Medical missions must qualify under the relevant operator approval; these totals do not establish legal qualifications. Night counts require night time.</div>
   <div id="specialOpsPreview" class="mini" style="margin-top:8px"></div>
 </details>
 
@@ -512,7 +512,7 @@ function collectSpecialOps(totalMinutes){
 function collectSpecialOpCycles(nightMinutes){
   const result={};
   for(const op of SPECIAL_OPS){
-    if(op.code==='NVIS'||!document.getElementById('specialCheck_'+op.code)?.checked)continue;
+    if(['NVIS','HEMS','HAA'].includes(op.code)||!document.getElementById('specialCheck_'+op.code)?.checked)continue;
     const dayInput=document.getElementById('specialDayCycles_'+op.code);
     const nightInput=document.getElementById('specialNightCycles_'+op.code);
     const rawDay=String(dayInput?.value??'').trim(),rawNight=String(nightInput?.value??'').trim();
