@@ -66,7 +66,7 @@ test('offshore entry form uses concise day/night landing labels and is not auto-
  assert.match(entry,/platform, helideck or vessel/);
  assert.match(entry,/specialOpsCycles,/);
  const tot=fs.readFileSync(path.join(__dirname,'source/app/09-totals.js'),'utf8');
- assert.match(tot,/Cycles \/ landings/);
+ assert.match(tot,/Flights \/ cycles \/ landings/);
  assert.match(tot,/countText/);
  const ui=fs.readFileSync(path.join(__dirname,'source/app/09-recency.js'),'utf8');
  assert.match(ui,/Offshore landings/);
