@@ -1,5 +1,5 @@
 'use strict';
-/* V2.56.3: Totals shows SPIC/PICUS hours without any digital-signature status.
+/* V2.57: Totals shows SPIC/PICUS hours without any digital-signature status.
  * Flight-specific commander/FI signatures, signing requirements and print
  * archive validation remain part of the existing separate modules. */
 const test=require('node:test'),assert=require('node:assert/strict');
@@ -46,10 +46,10 @@ test('flight certification and archive protections remain in their own modules',
   assert.match(read('source/app/04-export-and-print.js'),/HeliLogV254Certification\?\.printRemarks/);
 });
 test('release metadata and help note describe TEST-only presentation change',()=>{
-  assert.match(read('source/index.template.html'),/HeliLog V2\.56\.3 — Clean Totals · Test/);
-  assert.match(read('index.html'),/V2\.56\.3 · TEST ENVIRONMENT/);
-  assert.match(read('manifest.webmanifest'),/HeliLog V2\.56\.3 — Clean Totals Test/);
-  assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.56\.3'/);
-  assert.match(read('service-worker.js'),/helilog-v2-56-3-clean-totals-1/);
+  assert.match(read('source/index.template.html'),/HeliLog V2\.57 — Flight Statistics · Test/);
+  assert.match(read('index.html'),/V2\.57 · TEST ENVIRONMENT/);
+  assert.match(read('manifest.webmanifest'),/HeliLog V2\.57 — Flight Statistics Test/);
+  assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.57'/);
+  assert.match(read('service-worker.js'),/helilog-v2-57-flight-statistics-1/);
   assert.match(read('source/app/13-help-guide.js'),/v:"V2\.56\.3",name:"Simpler Totals without signature-status indicators"/);
 });

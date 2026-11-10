@@ -102,10 +102,10 @@ test("logout is visible only in Profile and checks unsaved edits",()=>{
  assert.match(auth,/if\(typeof confirmLeaveFlightForm==="function"&&!confirmLeaveFlightForm\(\)\)return;/);
 });
 test("V2.19 installs new assets together while keeping older profile migration explicit",()=>{
- assert.match(html,/<title>HeliLog V2\.56\.3/);
- assert.match(html,/V2\.56\.3 · TEST ENVIRONMENT/);
- assert.equal(manifest.name,"HeliLog V2.56.3 — Clean Totals Test");
- assert.match(worker,/helilog-v2-56-3-clean-totals-1/);
+ assert.match(html,/<title>HeliLog V2\.57/);
+ assert.match(html,/V2\.57 · TEST ENVIRONMENT/);
+ assert.equal(manifest.name,"HeliLog V2.57 — Flight Statistics Test");
+ assert.match(worker,/helilog-v2-57-flight-statistics-1/);
  assert.match(worker,/cloud-sync\.js\?v=2\.39\.1-operator-sync-1/);
  assert.match(html,/cloud-sync\.js\?v=2\.39\.1-operator-sync-1/);
  assert.match(html,/id="ownFirstName"/);
