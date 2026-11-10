@@ -22,6 +22,7 @@ const APP_PARTS = Object.freeze([
   '08-endorsements.js',
   '08-flight-certification.js',
   '09-totals.js',
+  '09-flight-statistics.js',
   '09-recency.js',
   '10-settings-and-locations.js',
   '11-sandbox-and-backups.js',

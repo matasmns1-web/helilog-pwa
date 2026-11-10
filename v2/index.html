@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<title>HeliLog V2.56.3 — Clean Totals · Test</title>
+<title>HeliLog V2.57 — Flight Statistics · Test</title>
 <style>
 :root{--bg:#f4f6f8;--panel:#fff;--ink:#17202a;--muted:#6b7280;--line:#e5e7eb;--dark:#111827;--soft:#eef2f7}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
@@ -620,14 +620,60 @@ html.installed-touch-app .logbook-filter-primary>.filterfield:not(:first-child),
 html.installed-touch-app .logbook-filter-secondary{display:none}
 html.installed-touch-app .logbook-mobile-expanded .logbook-filter-primary>.filterfield:not(:first-child){display:block}
 html.installed-touch-app .logbook-mobile-expanded .logbook-filter-secondary{display:grid}
+
+/* V2.57: compact, helicopter-focused Flight Statistics — read-only views. */
+.flight-stats-filters .head{gap:10px}
+.flight-stats-filtergrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
+.flight-stats-filtergrid>*{min-width:0}
+.flight-stats-more{margin-top:11px;background:transparent;border:1px solid var(--line);border-radius:9px;padding:10px 12px}
+.flight-stats-more summary{font-size:13px;color:var(--ink)}
+.flight-stats-more .flight-stats-filtergrid{margin-top:12px}
+.flight-stats-kpis{grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.flight-stats-kpis>.card{padding:14px}
+.flight-stats-kpis .big{font-size:24px;line-height:1.25}
+.flight-stats-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.flight-stats-grid>.card{min-width:0}
+.flight-stats-barlist{display:grid;gap:13px}
+.flight-stats-barrow{min-width:0}
+.flight-stats-barhead{display:flex;justify-content:space-between;gap:12px;align-items:baseline;margin-bottom:5px;font-size:13px}
+.flight-stats-barhead b{min-width:0;overflow-wrap:anywhere}
+.flight-stats-barhead>span{white-space:nowrap;font-variant-numeric:tabular-nums}
+.flight-stats-track{height:7px;background:var(--soft);border-radius:999px;overflow:hidden}
+.flight-stats-track>span{display:block;height:100%;background:#51c9ba;border-radius:999px}
+.flight-stats-trend{display:grid;gap:11px}
+.flight-stats-trendrow{display:grid;grid-template-columns:72px minmax(0,1fr) 52px;align-items:center;gap:10px;font-size:12px;font-variant-numeric:tabular-nums}
+.flight-stats-trendrow>b{text-align:right}
+.flight-stats-detail{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 16px}
+.flight-stats-detail .head{grid-column:1/-1}
+.flight-stats-detail>div:not(.head){display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}
+.flight-stats-detail>div:not(.head) b{font-variant-numeric:tabular-nums}
+@media(max-width:1150px){
+  .flight-stats-filtergrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .flight-stats-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .flight-stats-detail{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:700px){
+  .flight-stats-filters .head{align-items:center}
+  .flight-stats-filtergrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .flight-stats-filtergrid .filterfield select,.flight-stats-filtergrid .filterfield input{min-height:43px;max-width:100%}
+  .flight-stats-grid{grid-template-columns:1fr}
+  .flight-stats-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .flight-stats-kpis>.card{padding:12px}
+  .flight-stats-kpis .big{font-size:23px}
+  .flight-stats-detail{grid-template-columns:1fr 1fr;gap:0 12px}
+  .flight-stats-barhead{font-size:12px}
+}
+@media(max-width:380px){
+  .flight-stats-filtergrid{grid-template-columns:1fr}
+}
 </style>
 <link rel="stylesheet" href="./dark-cockpit.css?v=2.20-cockpit-3" media="screen">
 <link rel="stylesheet" href="./guide.css?v=2.53" media="screen">
 </head>
 <body><div class="layout">
-<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.56.3 · TEST ENVIRONMENT</span></div><nav>
+<aside><div class="brand"><span class="brand-symbol" aria-hidden="true">🚁</span><span class="brand-wordmark">HeliLog</span><span class="brand-version">V2.57 · TEST ENVIRONMENT</span></div><nav>
 <div class="nav-group-label">Flight operations</div>
-<button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="recency">◷ Recency</button>
+<button data-v="dashboard">▣ Dashboard</button><button data-v="logbook">▤ Logbook</button><button data-v="totals">◉ Totals</button><button data-v="statistics">▥ Statistics</button><button data-v="recency">◷ Recency</button>
 <div class="nav-group-label">Records &amp; assets</div>
 <button data-v="aircraft">🚁 Aircraft</button><button data-v="pilots">👤 Pilots</button><button data-v="endorsements">✎ Endorsements</button><button data-v="printarchive">▤ Print archive</button>
 <div class="nav-group-label">Account</div>
@@ -1441,6 +1487,7 @@ function mobilemore(){
     <button class="card more-link" onclick="go('endorsements')"><span>✎</span><b>Endorsements</b><span class="muted">Memoranda and signatures</span></button>
     ${!isStandaloneApp()?`<button class="card more-link" onclick="go('endorsementarchive')"><span>▤</span><b>Endorsement archive</b><span class="muted">Printed pages and corrections</span></button>`:''}
     <button class="card more-link" onclick="go('totals')"><span>◉</span><b>Totals</b><span class="muted">Flight-time breakdown</span></button>
+    <button class="card more-link" onclick="go('statistics')"><span>▥</span><b>Statistics</b><span class="muted">Filter and explore flight hours</span></button>
     <button class="card more-link" onclick="go('recency')"><span>◷</span><b>Recency</b><span class="muted">90-day passenger and night evidence</span></button>
     <button class="card more-link" onclick="go('profile')"><span>○</span><b>Profile</b><span class="muted">Pilot details, medical, licences and ratings</span></button>
     <button class="card more-link" onclick="go('settings')"><span>⚙</span><b>Settings</b><span class="muted">Logbook, cloud sync, backups and device</span></button>
@@ -1529,7 +1576,7 @@ function dashboard(){
 
   app.innerHTML=header('Dashboard',`Welcome back, ${S.pilot.name}`,`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" onclick="go('quickadd')">⚡ Quick flight</button><button class="btn" onclick="go('add')">Full entry</button>${!v23AccountWorkspace()?`<button class="btn" onclick="go('testmode')">⚗ ${TEST_MODE?'Test Mode settings':'Open Test Mode'}</button>`:''}</div>`)+
   `<div class="card">
-    <div class="head"><div><h2>Flight-time overview</h2><div class="muted"><span id="dashFlightCount">${fs.length}</span> flights in selected period</div></div></div>
+    <div class="head"><div><h2>Flight-time overview</h2><div class="muted"><span id="dashFlightCount">${fs.length}</span> flights in selected period</div></div><button class="btn" type="button" onclick="go('statistics')">Statistics</button></div>
     <div class="dashboard-range">
       <button class="btn" onclick="setDashboardRange(30,this)">30 days</button>
       <button class="btn" onclick="setDashboardRange(90,this)">90 days</button>
@@ -5876,6 +5923,235 @@ function saveBroughtForwardTotals(ev){
 }
 
 const profileExpanded={medical:false,qualifications:false};
+/* V2.57 — read-only flight statistics. Corrected flight snapshots are supplied
+ * by effectiveFlights(); previous paper totals and simulator hours do not
+ * acquire invented dates or inflate flight-time statistics. */
+const FLIGHT_STATS_PIC_ROLES=['PIC','SOLO','SPIC','PICUS'];
+const FLIGHT_STATS_ROLES=['PIC','SOLO','SPIC','PICUS','CO-PILOT','DUAL'];
+let flightStatsSelection={range:'all',type:'',role:'',operation:'',condition:'',crew:'',from:'',to:''};
+function flightStatsTodayISO(){
+  const now=new Date();
+  return [now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),
+    String(now.getDate()).padStart(2,'0')].join('-');
+}
+function flightStatsValidISO(s){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(String(s||'')))return false;
+  const [y,m,d]=s.split('-').map(Number);
+  const date=new Date(y,m-1,d);
+  return date.getFullYear()===y&&date.getMonth()===m-1&&date.getDate()===d;
+}
+function flightStatsDateBefore(today,days){
+  const [y,m,d]=today.split('-').map(Number),date=new Date(y,m-1,d);
+  date.setDate(date.getDate()-days);
+  return [date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),
+    String(date.getDate()).padStart(2,'0')].join('-');
+}
+function flightStatsBounds(filters,today=flightStatsTodayISO()){
+  const range=filters.range||'all';
+  if(range==='90')return {from:flightStatsDateBefore(today,89),to:today};
+  if(range==='365')return {from:flightStatsDateBefore(today,364),to:today};
+  if(range==='year')return {from:today.slice(0,4)+'-01-01',to:today};
+  if(range==='custom'){
+    const from=filters.from||'',to=filters.to||'';
+    if((from&&!flightStatsValidISO(from))||(to&&!flightStatsValidISO(to))||(from&&to&&from>to))
+      return {from,to,invalid:true};
+    return {from,to};
+  }
+  return {from:'',to:''};
+}
+function flightStatsMinutes(n){
+  const v=Number(n);
+  return Number.isSafeInteger(v)&&v>=0?v:0;
+}
+function flightStatsCompute(entries,aircraft,operations,filters={},today=flightStatsTodayISO()){
+  const bounds=flightStatsBounds(filters,today),byAircraft=new Map();
+  for(const a of aircraft||[])if(a?.id&&!byAircraft.has(a.id))byAircraft.set(a.id,a);
+  const byType=new Map(),byRole=new Map(),byOp=new Map(),byPeriod=new Map();
+  const totals={flights:0,minutes:0,pic:0,copilot:0,dual:0,night:0,ifr:0,xc:0,
+    engineSE:0,engineME:0,single:0,multi:0,takeoffs:0,landings:0};
+  let eligible=0,simulators=0;
+  const roleNames=FLIGHT_STATS_ROLES;
+  for(const f of entries||[]){
+    if(!f)continue;
+    if(f.entryType==='simulator'){simulators++;continue;}
+    eligible++;
+    const date=String(f.date||'');
+    if(bounds.invalid||(bounds.from&&date<bounds.from)||(bounds.to&&date>bounds.to))continue;
+    const a=byAircraft.get(f.aid);
+    const type=String(a?.icao||'—').trim().toUpperCase()||'—';
+    const role=String(f.role||'—').toUpperCase();
+    const opData=f.specialOps&&typeof f.specialOps==='object'&&!Array.isArray(f.specialOps)?f.specialOps:{};
+    if(filters.type&&type!==filters.type)continue;
+    if(filters.role&&filters.role!=='PIC_GROUP'&&role!==filters.role)continue;
+    if(filters.role==='PIC_GROUP'&&!FLIGHT_STATS_PIC_ROLES.includes(role))continue;
+    if(filters.operation&&!Object.prototype.hasOwnProperty.call(opData,filters.operation))continue;
+    if(filters.crew&&flightPilotConfig(f)!==filters.crew)continue;
+    if(filters.condition==='night'&&!(flightStatsMinutes(f.nightMin)>0))continue;
+    if(filters.condition==='ifr'&&!(flightStatsMinutes(f.ifrMin)>0))continue;
+    if(filters.condition==='xc'&&!f.crossCountry)continue;
+    const minutes=flightStatsMinutes(f.mins),night=Math.min(minutes,flightStatsMinutes(f.nightMin)),
+      ifr=Math.min(minutes,flightStatsMinutes(f.ifrMin));
+    totals.flights++;
+    totals.minutes+=minutes;
+    if(FLIGHT_STATS_PIC_ROLES.includes(role))totals.pic+=minutes;
+    if(role==='CO-PILOT')totals.copilot+=minutes;
+    if(role==='DUAL')totals.dual+=minutes;
+    totals.night+=night;totals.ifr+=ifr;
+    if(f.crossCountry)totals.xc+=minutes;
+    if(engineCode(a)==='ME')totals.engineME+=minutes;else totals.engineSE+=minutes;
+    if(flightPilotConfig(f)==='multi')totals.multi+=minutes;else totals.single+=minutes;
+    totals.takeoffs+=flightStatsMinutes(f.takeoffDay)+flightStatsMinutes(f.takeoffNight);
+    totals.landings+=flightStatsMinutes(f.landingDay)+flightStatsMinutes(f.landingNight);
+    const typeRow=byType.get(type)||{key:type,minutes:0,flights:0};
+    typeRow.minutes+=minutes;typeRow.flights++;byType.set(type,typeRow);
+    const roleRow=byRole.get(role)||{key:role,minutes:0,flights:0};
+    roleRow.minutes+=minutes;roleRow.flights++;byRole.set(role,roleRow);
+    for(const op of operations||[]){
+      if(!Object.prototype.hasOwnProperty.call(opData,op.code))continue;
+      const opRow=byOp.get(op.code)||{key:op.code,label:op.label,minutes:0,flights:0};
+      opRow.flights++;opRow.minutes+=Math.min(minutes,flightStatsMinutes(opData[op.code]));
+      byOp.set(op.code,opRow);
+    }
+    if(flightStatsValidISO(date)){
+      const bucket=(filters.range||'all')==='all'?date.slice(0,4):date.slice(0,7);
+      const row=byPeriod.get(bucket)||{key:bucket,minutes:0,flights:0};
+      row.minutes+=minutes;row.flights++;byPeriod.set(bucket,row);
+    }
+  }
+  const sort=(map)=>[...map.values()].sort((a,b)=>b.minutes-a.minutes||a.key.localeCompare(b.key));
+  return {totals,byType:sort(byType),byRole:sort(byRole),byOp:sort(byOp),
+    trend:[...byPeriod.values()].sort((a,b)=>a.key.localeCompare(b.key)),
+    bounds,eligible,simulators};
+}
+function flightStatsBarRows(rows,unit='hours',maxItems=8){
+  if(!rows.length)return '<div class="mini">No recorded flight time in this selection.</div>';
+  const max=Math.max(1,...rows.map(x=>x.minutes));
+  return '<div class="flight-stats-barlist">'+rows.slice(0,maxItems).map(x=>{
+    const width=x.minutes>0?Math.max(2,Math.round(100*x.minutes/max)):0;
+    const label=htmlEscape(x.label||x.key);
+    return '<div class="flight-stats-barrow"><div class="flight-stats-barhead"><b>'+label+
+      '</b><span>'+fmt(x.minutes)+' <span class="mini">· '+x.flights+
+      ' flight'+(x.flights===1?'':'s')+'</span></span></div>'+
+      '<div class="flight-stats-track" aria-hidden="true"><span style="width:'+width+'%"></span></div></div>';
+  }).join('')+'</div>'+(rows.length>maxItems?
+    '<div class="mini" style="margin-top:9px">Showing the top '+maxItems+' categories by recorded hours.</div>':'');
+}
+function flightStatsTrendMarkup(rows){
+  if(!rows.length)return '<div class="mini">No dated flights match these filters.</div>';
+  const max=Math.max(1,...rows.map(x=>x.minutes));
+  return '<div class="flight-stats-trend" role="list" aria-label="Recorded flight time by period">'+
+    rows.slice(-12).map(x=>{
+      const w=x.minutes>0?Math.max(2,Math.round(100*x.minutes/max)):0;
+      return '<div role="listitem" class="flight-stats-trendrow"><span>'+htmlEscape(x.key)+'</span>'+
+        '<div class="flight-stats-track" aria-hidden="true"><span style="width:'+w+'%"></span></div>'+
+        '<b>'+fmt(x.minutes)+'</b></div>';
+    }).join('')+'</div>';
+}
+function flightStatsOption(value,label,selected){
+  return '<option value="'+htmlEscape(value)+'"'+(selected===value?' selected':'')+'>'+htmlEscape(label)+'</option>';
+}
+function flightStatsPage(){
+  const active=flightStatsSelection;
+  const types=[...new Set((S.aircraft||[]).map(a=>String(a.icao||'').trim().toUpperCase()).filter(Boolean))].sort();
+  const usedOps=new Set();
+  for(const f of effectiveFlights())if(f?.entryType!=='simulator')
+    for(const code of Object.keys(f?.specialOps||{}))usedOps.add(code);
+  const options=SPECIAL_OPS.filter(op=>usedOps.has(op.code));
+  const select=(id,items)=>'<select id="'+id+'" onchange="flightStatsRefresh()">'+items.join('')+'</select>';
+  app.innerHTML=header('Flight statistics','Explore your recorded helicopter experience',
+    '<button class="btn" type="button" onclick="go(\'totals\')">Career totals</button>')+
+    '<div class="card flight-stats-filters">'+
+      '<div class="head"><h2>Filter flights</h2><button class="btn" type="button" onclick="flightStatsReset()">Clear filters</button></div>'+
+      '<div class="flight-stats-filtergrid">'+
+        '<div class="filterfield"><label for="flightStatsRange">Period</label>'+
+        select('flightStatsRange',[
+          flightStatsOption('all','All recorded flights',active.range),
+          flightStatsOption('90','Last 90 days',active.range),
+          flightStatsOption('365','Last 12 months',active.range),
+          flightStatsOption('year','This year',active.range),
+          flightStatsOption('custom','Custom dates',active.range)])+'</div>'+
+        '<div class="filterfield"><label for="flightStatsType">ICAO helicopter type</label>'+
+        select('flightStatsType',[flightStatsOption('','All types',active.type),...types.map(t=>flightStatsOption(t,t,active.type))])+'</div>'+
+        '<div class="filterfield"><label for="flightStatsRole">Pilot function</label>'+
+        select('flightStatsRole',[flightStatsOption('','All functions',active.role),flightStatsOption('PIC_GROUP','PIC total (PIC, SOLO, SPIC, PICUS)',active.role),
+          ...FLIGHT_STATS_ROLES.map(r=>flightStatsOption(r,r,active.role))])+'</div>'+
+        '<div class="filterfield"><label for="flightStatsOp">Specialised operation</label>'+
+        select('flightStatsOp',[flightStatsOption('','All operations',active.operation),
+          ...options.map(op=>flightStatsOption(op.code,op.label,active.operation))])+'</div>'+
+      '</div>'+
+      '<details class="flight-stats-more"'+(active.range==='custom'||active.crew||active.condition?' open':'')+'><summary>More filters · dates, conditions & crew</summary>'+
+        '<div class="flight-stats-filtergrid">'+
+        '<div class="filterfield"><label for="flightStatsFrom">From</label><input type="date" id="flightStatsFrom" value="'+htmlEscape(active.from)+'" onchange="flightStatsUseCustomDate()"></div>'+
+        '<div class="filterfield"><label for="flightStatsTo">To</label><input type="date" id="flightStatsTo" value="'+htmlEscape(active.to)+'" onchange="flightStatsUseCustomDate()"></div>'+
+        '<div class="filterfield"><label for="flightStatsCondition">Flight condition</label>'+
+          select('flightStatsCondition',[
+            flightStatsOption('','All flights',active.condition),
+            flightStatsOption('night','Night time recorded',active.condition),
+            flightStatsOption('ifr','IFR time recorded',active.condition),
+            flightStatsOption('xc','Cross-country flights',active.condition)])+'</div>'+
+        '<div class="filterfield"><label for="flightStatsCrew">Crew configuration</label>'+
+          select('flightStatsCrew',[
+            flightStatsOption('','SP and MP',active.crew),
+            flightStatsOption('single','Single-pilot',active.crew),
+            flightStatsOption('multi','Multi-pilot',active.crew)])+'</div>'+
+        '</div></details>'+
+      '<div class="mini" style="margin-top:11px">Read-only statistics from your recorded flights, including confirmed archive corrections. Simulator sessions and previous paper-logbook totals are excluded; see Career totals for combined experience.</div>'+
+    '</div><div id="flightStatsResults"></div>';
+  flightStatsRefresh();
+}
+function flightStatsReset(){
+  flightStatsSelection={range:'all',type:'',role:'',operation:'',condition:'',crew:'',from:'',to:''};
+  flightStatsPage();
+}
+function flightStatsUseCustomDate(){
+  const range=document.getElementById('flightStatsRange');
+  if(range)range.value='custom';
+  flightStatsRefresh();
+}
+function flightStatsRefresh(){
+  const value=id=>document.getElementById(id)?.value||'';
+  const state={
+    range:value('flightStatsRange'),type:value('flightStatsType'),role:value('flightStatsRole'),
+    operation:value('flightStatsOp'),condition:value('flightStatsCondition'),
+    crew:value('flightStatsCrew'),from:value('flightStatsFrom'),to:value('flightStatsTo')
+  };
+  flightStatsSelection=state;
+  const result=document.getElementById('flightStatsResults');
+  if(!result)return;
+  const stats=flightStatsCompute(effectiveFlights(),S.aircraft,SPECIAL_OPS,state);
+  const t=stats.totals;
+  const card=(name,value)=>'<div class="card"><div class="label">'+name+'</div><div class="big">'+value+'</div></div>';
+  result.innerHTML=(stats.bounds.invalid?
+    '<div class="note" role="alert" style="margin-top:12px">Please select a valid date range (From must not be after To).</div>':'')+
+    '<div class="grid flight-stats-kpis" style="margin-top:14px">'+
+      card('Flights',String(t.flights))+card('Flight time',fmt(t.minutes))+
+      card('PIC time',fmt(t.pic))+card('Night',fmt(t.night))+
+      card('IFR',fmt(t.ifr))+card('Cross-country',fmt(t.xc))+
+    '</div>'+
+    '<div class="flight-stats-grid" style="margin-top:14px">'+
+      '<div class="card"><div class="head"><h2>By ICAO helicopter type</h2></div>'+
+        flightStatsBarRows(stats.byType)+'</div>'+
+      '<div class="card"><div class="head"><h2>By pilot function</h2></div>'+
+        flightStatsBarRows(stats.byRole)+'</div>'+
+      '<div class="card"><div class="head"><h2>Specialised operations</h2></div>'+
+        flightStatsBarRows(stats.byOp)+
+        '<div class="mini" style="margin-top:10px">Operation hours are subsets of flight time. Categories can overlap and must not be added together.</div></div>'+
+      '<div class="card"><div class="head"><h2>Flying-hours trend</h2></div>'+
+        flightStatsTrendMarkup(stats.trend)+
+        '<div class="mini" style="margin-top:10px">Calendar '+(state.range==='all'?'years':'months')+
+        ' · recorded flight time only</div></div>'+
+    '</div>'+
+    '<div class="card flight-stats-detail" style="margin-top:14px"><div class="head"><h2>Selected experience</h2></div>'+
+      '<div><span>Single-engine</span><b>'+fmt(t.engineSE)+'</b></div>'+
+      '<div><span>Multi-engine</span><b>'+fmt(t.engineME)+'</b></div>'+
+      '<div><span>Single-pilot</span><b>'+fmt(t.single)+'</b></div>'+
+      '<div><span>Multi-pilot</span><b>'+fmt(t.multi)+'</b></div>'+
+      '<div><span>Co-pilot</span><b>'+fmt(t.copilot)+'</b></div>'+
+      '<div><span>Dual</span><b>'+fmt(t.dual)+'</b></div>'+
+      '<div><span>Take-offs</span><b>'+t.takeoffs+'</b></div>'+
+      '<div><span>Landings</span><b>'+t.landings+'</b></div>'+
+    '</div>';
+}
 /* HeliLog V2.37 — combined NVIS/HHO, offshore landings specialised-operation recency.
  * "CAT" is not a flight classification: FCL.060 applies to passenger/CAT
  * operations, but qualifying prior PF movements may be private/training.
@@ -7647,6 +7923,7 @@ const HELILOG_GUIDE_TOPICS=[
   }
 ];
 const HELILOG_GUIDE_UPDATES=[
+  {v:"V2.57",name:"Helicopter Flight Statistics",detail:"A new read-only Statistics page filters confirmed recorded flights by dates, ICAO type, pilot function (including PIC grouping), specialist operation, crew configuration, Night, IFR or cross-country. Compact summary cards, ICAO and pilot-function breakdowns, medical/specialist operation hours, monthly or yearly trends and flight counts update in place. Previous paper-logbook experience and simulator sessions stay excluded from these date-filtered statistics; use Totals for combined career totals. Records, signed archives, cloud data and EASA recency rules remain unchanged."},
   {v:"V2.56.3",name:"Simpler Totals without signature-status indicators",detail:"The Totals → Additional breakdown card now shows only SPIC, PICUS, Night and IFR time. Removed the optional digital-signature status section entirely. This does not remove or change flight-specific PICUS/SPIC countersignatures, pre-archive validation, printed signatures, certification evidence or signed records."},
   {v:"V2.56.2",name:"Compact PICUS/SPIC certification summary",detail:"On Totals, digital PICUS/SPIC countersignatures now occupy a compact expandable row instead of several permanently visible paragraphs. The summary shows recorded digital time, and any hours without digital certification or mismatched evidence. Expand to see the SPIC/PICUS breakdown and signature guidance. No certification checks, flight totals, recorded signatures or signed archives are changed."},
   {v:"V2.56.1",name:"Hide empty previous operation hours",detail:"Specialised helicopter operations Totals now show a compact Hours column when no previous experience is entered. The empty Previous and redundant Combined columns disappear, and both return automatically when historical hours are present. This is display-only; existing recorded hours, career totals, flight counts and signed archives are unchanged."},
@@ -8007,8 +8284,8 @@ function render(){
   }
   try{
     if(v!=='add'&&v!=='quickadd') editingFlightId=null;
-    ({dashboard,logbook,add,quickadd:quickAdd,aircraft,pilots,endorsements,printarchive,archivereview:v229PreArchiveReview,endorsementarchive:v2EndorsementArchive,totals,recency,operatorrules:()=>window.HeliLogV236OperatorRulesUI.page(effectiveFlights(),S.aircraft,recencyCurrent()),profile,settings,datamanagement:v244DataManagementPage,locations:v219LocationsPage,backups,cloud,testmode,mobilemore,help:helpGuide}[v]||dashboard)();
-    let moreViews=['mobilemore','aircraft','pilots','endorsements','endorsementarchive','totals','recency','operatorrules','profile','settings','datamanagement','locations','backups','cloud','testmode','help'];
+    ({dashboard,logbook,add,quickadd:quickAdd,aircraft,pilots,endorsements,printarchive,archivereview:v229PreArchiveReview,endorsementarchive:v2EndorsementArchive,totals,statistics:flightStatsPage,recency,operatorrules:()=>window.HeliLogV236OperatorRulesUI.page(effectiveFlights(),S.aircraft,recencyCurrent()),profile,settings,datamanagement:v244DataManagementPage,locations:v219LocationsPage,backups,cloud,testmode,mobilemore,help:helpGuide}[v]||dashboard)();
+    let moreViews=['mobilemore','aircraft','pilots','endorsements','endorsementarchive','totals','statistics','recency','operatorrules','profile','settings','datamanagement','locations','backups','cloud','testmode','help'];
     document.querySelectorAll('[data-v]').forEach(b=>{
       let active=b.dataset.v===v || (b.dataset.v==='quickadd'&&v==='add') || (b.dataset.v==='settings' && (v==='cloud'||v==='backups'||v==='locations'||v==='datamanagement')) || (b.dataset.v==='mobilemore' && moreViews.includes(v));
       b.classList.toggle('on',active);
