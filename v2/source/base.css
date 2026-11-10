@@ -605,3 +605,49 @@ html.installed-touch-app .logbook-filter-primary>.filterfield:not(:first-child),
 html.installed-touch-app .logbook-filter-secondary{display:none}
 html.installed-touch-app .logbook-mobile-expanded .logbook-filter-primary>.filterfield:not(:first-child){display:block}
 html.installed-touch-app .logbook-mobile-expanded .logbook-filter-secondary{display:grid}
+
+/* V2.57: compact, helicopter-focused Flight Statistics — read-only views. */
+.flight-stats-filters .head{gap:10px}
+.flight-stats-filtergrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
+.flight-stats-filtergrid>*{min-width:0}
+.flight-stats-more{margin-top:11px;background:transparent;border:1px solid var(--line);border-radius:9px;padding:10px 12px}
+.flight-stats-more summary{font-size:13px;color:var(--ink)}
+.flight-stats-more .flight-stats-filtergrid{margin-top:12px}
+.flight-stats-kpis{grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.flight-stats-kpis>.card{padding:14px}
+.flight-stats-kpis .big{font-size:24px;line-height:1.25}
+.flight-stats-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.flight-stats-grid>.card{min-width:0}
+.flight-stats-barlist{display:grid;gap:13px}
+.flight-stats-barrow{min-width:0}
+.flight-stats-barhead{display:flex;justify-content:space-between;gap:12px;align-items:baseline;margin-bottom:5px;font-size:13px}
+.flight-stats-barhead b{min-width:0;overflow-wrap:anywhere}
+.flight-stats-barhead>span{white-space:nowrap;font-variant-numeric:tabular-nums}
+.flight-stats-track{height:7px;background:var(--soft);border-radius:999px;overflow:hidden}
+.flight-stats-track>span{display:block;height:100%;background:#51c9ba;border-radius:999px}
+.flight-stats-trend{display:grid;gap:11px}
+.flight-stats-trendrow{display:grid;grid-template-columns:72px minmax(0,1fr) 52px;align-items:center;gap:10px;font-size:12px;font-variant-numeric:tabular-nums}
+.flight-stats-trendrow>b{text-align:right}
+.flight-stats-detail{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 16px}
+.flight-stats-detail .head{grid-column:1/-1}
+.flight-stats-detail>div:not(.head){display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}
+.flight-stats-detail>div:not(.head) b{font-variant-numeric:tabular-nums}
+@media(max-width:1150px){
+  .flight-stats-filtergrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .flight-stats-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .flight-stats-detail{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:700px){
+  .flight-stats-filters .head{align-items:center}
+  .flight-stats-filtergrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .flight-stats-filtergrid .filterfield select,.flight-stats-filtergrid .filterfield input{min-height:43px;max-width:100%}
+  .flight-stats-grid{grid-template-columns:1fr}
+  .flight-stats-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .flight-stats-kpis>.card{padding:12px}
+  .flight-stats-kpis .big{font-size:23px}
+  .flight-stats-detail{grid-template-columns:1fr 1fr;gap:0 12px}
+  .flight-stats-barhead{font-size:12px}
+}
+@media(max-width:380px){
+  .flight-stats-filtergrid{grid-template-columns:1fr}
+}

@@ -96,6 +96,7 @@ const GROUPS = Object.freeze([
       'v2/v256-medical-ops.test.cjs',
       'v2/v2561-compact-special-ops.test.cjs',
       'v2/v2563-hide-certification-totals.test.cjs',
+      'v2/v257-flight-statistics.test.cjs',
       'v2/v244-account-reset.test.cjs',
       'v2/v2441-data-management.test.cjs',
       'v2/v24-sync.test.cjs',

@@ -131,7 +131,7 @@ test("Settings is the only Cloud/Backup top-level navigation entry and nested ro
  assert.doesNotMatch(aside,/data-v="cloud"|data-v="backups"/);
  assert.match(more,/onclick="go\('settings'\)"><span>⚙<\/span><b>Settings<\/b>/);
  assert.doesNotMatch(more,/onclick="go\('cloud'\)"|onclick="go\('backups'\)"/);
- assert.match(html,/totals,recency,operatorrules:\(\)=>window\.HeliLogV236OperatorRulesUI\.page\(effectiveFlights\(\),S\.aircraft,recencyCurrent\(\)\),profile,settings,datamanagement:v244DataManagementPage,locations:v219LocationsPage,backups,cloud,testmode,mobilemore/);
+ assert.match(html,/totals,statistics:flightStatsPage,recency,operatorrules:\(\)=>window\.HeliLogV236OperatorRulesUI\.page\(effectiveFlights\(\),S\.aircraft,recencyCurrent\(\)\),profile,settings,datamanagement:v244DataManagementPage,locations:v219LocationsPage,backups,cloud,testmode,mobilemore/);
  assert.match(html,/moreViews=\[[^\]]*'settings','datamanagement','locations','backups','cloud'/);
  assert.match(html,/b.dataset.v==='settings' && \(v==='cloud'\|\|v==='backups'\|\|v==='locations'\|\|v==='datamanagement'\)/);
  assert.match(cloud,/go\('settings'\)/);
@@ -153,6 +153,6 @@ test("The UI-only release retains archived-flight handlers and updates PWA cache
   "downloadFullBackup","restoreCheckedBackup","showIntegrityCheck","editMedical",
   "saveMedical","saveQualification","deleteQualification"])
   assert.match(html,new RegExp("function "+name+"\\("));
- assert.match(html,/HeliLog V2\.56\.3 — Clean Totals · Test/);
- assert.match(worker,/helilog-v2-56-3-clean-totals-1/);
+ assert.match(html,/HeliLog V2\.57 — Flight Statistics · Test/);
+ assert.match(worker,/helilog-v2-57-flight-statistics-1/);
 });

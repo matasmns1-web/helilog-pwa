@@ -71,7 +71,7 @@ function dashboard(){
 
   app.innerHTML=header('Dashboard',`Welcome back, ${S.pilot.name}`,`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" onclick="go('quickadd')">⚡ Quick flight</button><button class="btn" onclick="go('add')">Full entry</button>${!v23AccountWorkspace()?`<button class="btn" onclick="go('testmode')">⚗ ${TEST_MODE?'Test Mode settings':'Open Test Mode'}</button>`:''}</div>`)+
   `<div class="card">
-    <div class="head"><div><h2>Flight-time overview</h2><div class="muted"><span id="dashFlightCount">${fs.length}</span> flights in selected period</div></div></div>
+    <div class="head"><div><h2>Flight-time overview</h2><div class="muted"><span id="dashFlightCount">${fs.length}</span> flights in selected period</div></div><button class="btn" type="button" onclick="go('statistics')">Statistics</button></div>
     <div class="dashboard-range">
       <button class="btn" onclick="setDashboardRange(30,this)">30 days</button>
       <button class="btn" onclick="setDashboardRange(90,this)">90 days</button>
