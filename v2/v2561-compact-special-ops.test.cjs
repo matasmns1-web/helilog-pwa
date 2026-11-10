@@ -64,5 +64,5 @@ test('app version/cache and help describe the display-only change',()=>{
  assert.match(read('manifest.webmanifest'),/HeliLog V2\.57 — Flight Statistics Test/);
  assert.match(read('auth-gate.js'),/HELILOG_TEST_VERSION='V2\.57'/);
  assert.match(read('service-worker.js'),/helilog-v2-57-flight-statistics-1/);
- assert.match(read('source/app/13-help-guide.js'),/v:"V2\.57\.1",name:"Hide empty previous operation hours"/);
+ assert.match(read('source/app/13-help-guide.js'),/v:"V2\.56\.1",name:"Hide empty previous operation hours"/);
 });
